@@ -42,7 +42,8 @@ export const PaymentReminderDue: Story = story(footerConfirms(FACTS)["Send a pay
 export const PaymentReminderPastDue: Story = story(footerConfirms({ ...FACTS, dueOn: "Nov 17", pastDue: true })["Send a payment reminder"]!)
 export const MoveVisit: Story = story(FOOTER.Move!)
 export const OnMyWay: Story = story(FOOTER["On my way"]!)
-export const RecordPayment: Story = story(FOOTER["Record the payment"]!)
+/** The same check while an invoice is out: the receipt, and the open invoice is settled and its pay link closes. */
+export const RecordCheckSettlesInvoice: Story = story(collectConfirm("check", { ...FACTS, invoiceOpen: true }, "1042"))
 export const Refund: Story = story(FOOTER["Refund $145"]!)
 export const SendCardLink: Story = story(FOOTER["Send card link"]!)
 /** "Cancel this job. Andrea gets a text that the repair is canceled. Nothing is charged." */

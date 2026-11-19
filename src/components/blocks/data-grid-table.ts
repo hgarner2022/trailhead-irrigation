@@ -34,6 +34,8 @@ import {
 export interface GridColumnMeta {
   align?: "right"
   href?(row: object): string
+  /** the first column draws its own cell (a chip that is itself a link), so the grid wraps it in no link or button */
+  bare?: boolean
   csv?(row: object): string
 }
 

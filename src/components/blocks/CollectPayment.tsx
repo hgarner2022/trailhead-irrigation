@@ -42,6 +42,8 @@ export interface CollectPaymentProps {
   notNow?: boolean
   /** called once the money has gone through (or the invoice has), so a panel can drop its Cancel and leave the one Close */
   onSettled?: () => void
+  /** the money has gone through: the page changes state and says so in a toast, so the block shows no result card of its own and no Close (the way paid and its words are passed) */
+  onDone?: (done: { way: PayChoice; title: string; line: string }) => void
   className?: string
 }
 
@@ -73,7 +75,7 @@ export interface AskCopy {
   reportOption?: { label: string; with: string; without: string }
 }
 
-export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, onInvoice, onLater, onClose, buttonLabel, notNow, confirmFor, onSettled, className }: CollectPaymentProps) {
+export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, onInvoice, onLater, onClose, buttonLabel, notNow, confirmFor, onSettled, onDone, className }: CollectPaymentProps) {
   const [choice, setChoice] = useState<PayChoice>(plan.initial)
   const [more, setMore] = useState(false)
   const [reference, setReference] = useState("")
@@ -91,7 +93,8 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
   const handed = picked.value === "check" || picked.value === "venmo" || picked.value === "cash"
   const settle = (answer: Answer, done: { title: string; line: string }) => {
     if (answer.ok) {
-      setResult(done)
+      if (onDone) onDone({ way: picked.value, ...done })
+      else setResult(done)
       onSettled?.()
     } else setProblem(answer.message)
   }

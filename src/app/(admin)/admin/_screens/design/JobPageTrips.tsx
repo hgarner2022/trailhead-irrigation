@@ -9,7 +9,8 @@ import { TripRow } from "@/components/blocks/TripRow"
 import type { MultiTripData, TripData } from "./trip-fixtures"
 import { PHONE_LINK } from "./trip-fixtures"
 import Link from "next/link"
-import { Actions, Aside, Badges, BillingCard, CONTACT, EditLink, MessagesCard, Notice, bandItems, hasFooter } from "./JobPageParts"
+import { BillingCard } from "./BillingCard"
+import { Actions, Aside, Badges, CONTACT, EditLink, MessagesCard, Notice, bandItems, hasFooter } from "./JobPageParts"
 import type { ConfirmFacts } from "./confirm-copy"
 
 // A job with more than one trip (docs/plans/2026-11-19-job-object-design.md): a Season Pass, or a repair with a return trip, on the same page
@@ -76,7 +77,7 @@ function TripsPage({ data }: { data: MultiTripData }) {
       <SectionCard title="What's included" id="included-h" action={data.pass || data.pills.some((p) => p.status === "cancelled") ? undefined : <EditLink />}>
         <LineItemList lines={data.lines} totals={data.totals} />
       </SectionCard>
-      <BillingCard data={{ billing: data.billing }} facts={facts} />
+      <BillingCard data={{ billing: data.billing }} />
       <MessagesCard messages={data.messages} />
     </RecordPage>
   )

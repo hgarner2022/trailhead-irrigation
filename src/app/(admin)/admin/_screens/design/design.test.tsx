@@ -1,5 +1,5 @@
 import { beforeAll, describe, it, expect, vi } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import { JobPage } from "./JobPage"
 import { JobPagePass, JobPageReturnTrip } from "./JobPageTrips"
 import { InvoicePanel } from "./InvoicePanel"
@@ -19,7 +19,7 @@ beforeAll(() => {
 })
 
 describe("job page, one trip", () => {
-  const PRIMARY: Record<string, string | null> = { unscheduled: "Schedule", scheduled: "Move", today: "On my way", late: "Mark done", "invoice-sent": "Send a payment reminder", "past-due": "Send a payment reminder", "on-the-way": "Mark done", active: "Mark done", "done-paid": null, canceled: null }
+  const PRIMARY: Record<string, string | null> = { unscheduled: "Schedule", scheduled: "Move", today: "On my way", late: "Mark done", "done-unpaid": "Collect payment", refunded: "Collect payment", "invoice-sent": "Send a payment reminder", "past-due": "Send a payment reminder", "on-the-way": "Mark done", active: "Mark done", "done-paid": null, canceled: null }
   for (const state of JOB_STATES) {
     it(`renders ${state} with the customer as the title`, () => {
       render(<JobPage job={jobPageOf(state)} />)
@@ -32,9 +32,93 @@ describe("job page, one trip", () => {
     })
   }
 
-  it("shows How is this paid? inline with the card first when done and unpaid", () => {
+  it("opens How is this paid? from the one Collect payment button, card first, and holds no result card in Billing", () => {
     render(<JobPage job={jobPageOf("done-unpaid")} />)
-    expect(screen.getByText(/How is this paid/i)).toBeInTheDocument()
+    expect(screen.queryByText(/How is this paid/i)).toBeNull()
+    expect(screen.getByText("No invoice or payment yet.")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Record the payment" })).toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: "Collect payment" }))
+    const dialog = screen.getByRole("dialog")
+    expect(within(dialog).getAllByText(/How is this paid/i).length).toBeGreaterThan(0)
+    expect(within(dialog).getByRole("radio", { name: /Visa ending 4242/ })).toBeChecked()
+    expect(within(dialog).getByRole("button", { name: "Charge $145 to the Visa ending 4242" })).toBeInTheDocument()
+  })
+
+  it("keeps Collect payment beside the reminder on an invoice that is out, with no Record the payment header button", () => {
+    render(<JobPage job={jobPageOf("invoice-sent")} />)
+    expect(screen.getByRole("button", { name: "Collect payment" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Record the payment" })).toBeNull()
+    expect(screen.queryByText("No invoice or payment yet.")).toBeNull()
+    const table = document.querySelector("[data-slot=invoice-table]") as HTMLElement
+    expect(within(table).getByText("INV-2026-0001")).toBeInTheDocument()
+    expect(within(table).getByText("Invoice sent")).toBeInTheDocument()
+    expect(within(table).getByRole("button", { name: "Remind" })).toBeInTheDocument()
+    expect(within(table).getByRole("link", { name: "Open invoice" })).toBeInTheDocument()
+  })
+
+  it("says Paid in full in green with how, when and who, then the facts and a Payments table", () => {
+    render(<JobPage job={jobPageOf("paid-check")} />)
+    const line = document.querySelector("[data-slot=settled-line]") as HTMLElement
+    expect(line).toHaveAttribute("data-tone", "paid")
+    expect(line).toHaveTextContent("Paid in full. $145 paid by check #1042 on Nov 18, recorded by Ryan")
+    const table = document.querySelector("[data-slot=payment-table]") as HTMLElement
+    expect(within(table).getByText("Check #1042")).toBeInTheDocument()
+    expect(within(table).getByRole("link", { name: "Receipt" })).toBeInTheDocument()
+    expect(within(table).queryByText(/Open in Stripe/)).toBeNull()
+    expect(within(table).getByRole("button", { name: /More for the \$145 payment/ })).toBeInTheDocument()
+  })
+
+  it("offers Open in Stripe on a card payment", () => {
+    render(<JobPage job={jobPageOf("paid-card")} />)
+    const link = within(document.querySelector("[data-slot=payment-table]") as HTMLElement).getByRole("link", { name: /Open in Stripe/ })
+    expect(link).toHaveAttribute("target", "_blank")
+  })
+
+  it("shows a refund as its own negative grey row and keeps the payment", () => {
+    render(<JobPage job={jobPageOf("refunded")} />)
+    const table = document.querySelector("[data-slot=payment-table]") as HTMLElement
+    expect(within(table).getByText("-$145")).toBeInTheDocument()
+    expect(within(table).getByText("Refunded")).toBeInTheDocument()
+    expect(within(table).getByText("$145")).toBeInTheDocument()
+    expect(document.querySelector("[data-slot=settled-line]")).toHaveAttribute("data-tone", "refunded")
+  })
+
+  it("opens the reminder with a non-editable preview, an Add a line box counted to 140 and no without-notifying caret", () => {
+    render(<JobPage job={jobPageOf("invoice-sent")} />)
+    fireEvent.click(screen.getAllByRole("button", { name: "Send a payment reminder" })[0]!)
+    const dialog = screen.getByRole("dialog")
+    expect(within(dialog).getByText(/Edit the wording in Settings/)).toBeInTheDocument()
+    expect(within(dialog).queryByRole("button", { name: /without notifying|More ways/i })).toBeNull()
+    fireEvent.change(within(dialog).getByLabelText(/Add a line/), { target: { value: "Thank you!" } })
+    expect(within(dialog).getByText(/Pay here: trailheadirrigation.com\/pay\/1042 Thank you!/)).toBeInTheDocument()
+    expect(within(dialog).getByLabelText(/Add a line/)).toHaveAttribute("maxlength", "140")
+  })
+
+  it("links the invoice number to its page as a chip and keeps the visit-report note", () => {
+    render(<JobPage job={jobPageOf("invoice-sent")} />)
+    const chip = document.querySelector("[data-slot=invoice-table] [data-slot=record-chip]") as HTMLElement
+    expect(chip).toHaveAttribute("href", "/admin/invoices?invoice=inv-1")
+    expect(chip).toHaveTextContent("INV-2026-0001")
+    expect(screen.getByText("Includes the visit report")).toBeInTheDocument()
+    expect(document.body.textContent).not.toContain("trailheadirrigation.com/pay/1042 ")
+  })
+
+  it("groups Photos as From Andrea above Ours, with the booking photo marked and no box or Remove on the customer's", () => {
+    render(<JobPage job={jobPageOf("scheduled")} />)
+    const heads = Array.from(document.querySelectorAll("[aria-labelledby=photos-h] h3")).map((h) => h.textContent)
+    expect(heads).toEqual(["From Andrea", "Ours"])
+    expect(screen.getByText("Customer · Added when booked")).toBeInTheDocument()
+    const theirs = document.querySelector("[aria-labelledby=photos-h] [data-slot=photos]") as HTMLElement
+    expect(within(theirs).queryByRole("checkbox")).toBeNull()
+    expect(within(theirs).queryByRole("button", { name: "Remove" })).toBeNull()
+  })
+
+  it("names the job and the person in Past visits as chips that link", () => {
+    render(<JobPage job={jobPageOf("scheduled")} />)
+    const past = screen.getAllByText("Fall blowout").map((e) => e.closest("[data-slot=record-chip]")).find(Boolean) as HTMLElement
+    expect(past).toHaveAttribute("data-kind", "job")
+    expect(past).toHaveAttribute("href", expect.stringContaining("/admin/jobs/"))
+    expect(document.querySelectorAll("[data-slot=past-visit] [data-kind=person]").length).toBeGreaterThan(0)
   })
 
   it("says Mark done or Skip for a trip whose day passed", () => {

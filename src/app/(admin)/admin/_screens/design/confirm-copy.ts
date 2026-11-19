@@ -41,24 +41,44 @@ export interface ConfirmFacts {
   /** the open invoice is past its due day */
   pastDue?: boolean
   invoiceNumber?: string
+  /** an invoice is out on the job: a payment settles it and closes its pay link */
+  invoiceOpen?: boolean
 }
 
 const PAY_LINK = "trailheadirrigation.com/pay/1042"
 
-export const reminderText = (f: ConfirmFacts): string =>
-  `Trailhead: a reminder that your ${f.amount} invoice for the ${f.service} ${f.pastDue ? "was due" : "is due"} ${f.dueOn}. Pay here: ${PAY_LINK}`
+export const reminderText = (f: ConfirmFacts, line = ""): string =>
+  `Trailhead: a reminder that your ${f.amount} invoice for the ${f.service} ${f.pastDue ? "was due" : "is due"} ${f.dueOn}. Pay here: ${PAY_LINK}${line.trim() ? ` ${line.trim()}` : ""}`
+
+/** The most the office may add after the reminder's words. */
+export const REMINDER_LINE_MAX = 140
+
+/** What a payment does besides the money: the receipt, and the open invoice it settles. */
+const afterPaying = (f: ConfirmFacts) => `${f.first} gets a receipt by email${f.invoiceOpen ? ", the open invoice is settled and its pay link closes" : ""}.`
+
+/** The toast after the money has gone through or the invoice has gone out: the page already shows the new state in Billing. */
+export function doneToast(way: string, f: ConfirmFacts): string {
+  switch (way) {
+    case "card": return `Charged ${f.amount} to the ${f.cardWords ?? "card on file"}`
+    case "check": return `Recorded a ${f.amount} check`
+    case "venmo": return `Recorded a ${f.amount} Venmo payment`
+    case "cash": return `Recorded ${f.amount} in cash`
+    case "invoice": return `Invoice sent to ${f.first}`
+    default: return "Done"
+  }
+}
 
 export function collectConfirm(way: string, f: ConfirmFacts, reference = ""): ConfirmCopy | null {
   const ref = reference.trim()
   switch (way) {
     case "card":
-      return { title: `Charge ${f.amount}`, message: `Charge ${f.amount} to the ${f.cardWords ?? "card on file"}. ${f.first} gets a receipt by email.`, confirmLabel: `Charge ${f.amount}` }
+      return { title: `Charge ${f.amount}`, message: `Charge ${f.amount} to the ${f.cardWords ?? "card on file"}. ${afterPaying(f)}`, confirmLabel: `Charge ${f.amount}` }
     case "check":
-      return { title: "Record the check", message: `Record a ${f.amount} check${ref ? `, number ${ref}` : ""}. ${f.first} gets a receipt by email.`, confirmLabel: "Record the check" }
+      return { title: "Record the check", message: `Record a ${f.amount} check${ref ? `, number ${ref}` : ""}. ${afterPaying(f)}`, confirmLabel: "Record the payment" }
     case "venmo":
-      return { title: "Record the Venmo payment", message: `Record a ${f.amount} Venmo payment${ref ? ` from ${ref}` : ""}. ${f.first} gets a receipt by email.`, confirmLabel: "Record the Venmo payment" }
+      return { title: "Record the Venmo payment", message: `Record a ${f.amount} Venmo payment${ref ? ` from ${ref}` : ""}. ${afterPaying(f)}`, confirmLabel: "Record the payment" }
     case "cash":
-      return { title: "Record the cash", message: `Record ${f.amount} in cash. ${f.first} gets a receipt by email.`, confirmLabel: "Record the cash" }
+      return { title: "Record the cash", message: `Record ${f.amount} in cash. ${afterPaying(f)}`, confirmLabel: "Record the payment" }
     case "invoice":
       return { title: "Send the invoice", message: `Send the invoice for ${f.amount} ${f.channel === "email" ? `by email to ${f.email ?? "the customer"}` : `by text to ${f.phone}`}, due ${f.dueOn}.`, confirmLabel: "Send the invoice", reportOption: { label: "Include the visit report (the checklist and photos)", with: `Send the invoice for ${f.amount} ${f.channel === "email" ? `by email to ${f.email ?? "the customer"}` : `by text to ${f.phone}`}, due ${f.dueOn}, with the visit report.`, without: `Send the invoice for ${f.amount} ${f.channel === "email" ? `by email to ${f.email ?? "the customer"}` : `by text to ${f.phone}`}, due ${f.dueOn}.` } }
     default:
@@ -80,7 +100,6 @@ export function footerConfirms(f: ConfirmFacts): Record<string, ConfirmCopy> {
       body: reminderText(f),
       confirmLabel: "Send the reminder",
     },
-    "Record the payment": { title: "Record the payment", message: `Record that ${f.first} paid ${f.amount}. The open invoice is settled and ${f.first} gets a receipt by email.`, confirmLabel: "Record the payment" },
     "Refund $145": { title: "Refund $145", message: `Record a $145 refund. ${f.first} gets an email that it was refunded.`, confirmLabel: "Refund $145", destructive: true },
     "Send card link": { title: "Send the card link", message: `Text ${f.first} at ${f.phone} a link to add a card.`, confirmLabel: "Send the link" },
     "Cancel job": { title: "Cancel job", message: `Cancel this job. ${f.first} gets ${f.channel === "email" ? "an email" : "a text"} that the ${f.service} is canceled. Nothing is charged.`, confirmLabel: "Cancel job", destructive: true, quiet: "Cancel without notifying" },

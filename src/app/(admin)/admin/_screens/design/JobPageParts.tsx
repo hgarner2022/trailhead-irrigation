@@ -4,17 +4,17 @@ import Link from "next/link"
 import { useState, type ReactNode } from "react"
 import { Calendar, MapPin, Receipt, UserRound } from "lucide-react"
 import { AsideCard } from "@/components/blocks/AsideCard"
-import { BillingSection, type BillingRowData } from "@/components/blocks/BillingSection"
 import { CollectPayment } from "@/components/blocks/CollectPayment"
 import { dollars } from "@/lib/money/collect"
 import { MessageTable } from "@/components/blocks/MessageTable"
-import { MoneyCell } from "@/components/blocks/MoneyCell"
+import { RecordChip } from "@/components/blocks/RecordChip"
+import { useToast } from "@/components/blocks/Toast"
 import { NotesAndHistory } from "@/components/blocks/NotesAndHistory"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { FormRow } from "@/components/blocks/FormRow"
 import { SplitButton } from "@/components/blocks/SplitButton"
 import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
-import { collectConfirm, footerConfirms, type ConfirmCopy, type ConfirmFacts } from "./confirm-copy"
+import { collectConfirm, doneToast, footerConfirms, type ConfirmCopy, type ConfirmFacts } from "./confirm-copy"
 import { RecordFacts, type RecordFact } from "@/components/blocks/RecordPanel"
 import { SectionCard } from "@/components/blocks/SectionCard"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
@@ -41,16 +41,6 @@ export const EditLink = ({ label = "Edit" }: { label?: string }) => (
   </button>
 )
 
-/** A record's name as a link: orange with the hover underline, the kind read first by a screen reader. `RecordChip` replaces it when that block lands. */
-export function NameLink({ name, kind, href }: { name: string; kind: string; href: string }) {
-  return (
-    <Link href={href} className="rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
-      <span className="sr-only">{kind}: </span>
-      {name}
-    </Link>
-  )
-}
-
 /** The status badges beside the title, large, with a muted note after them ("day passed"). */
 export function Badges({ pills, note }: { pills: PillData[]; note?: string }) {
   return (
@@ -68,6 +58,15 @@ function moneyWord(pills: PillData[], statusText: string | undefined, canceled: 
   if (statusText) return { sub: statusText, alert }
   if (pill) return { sub: pill.label ?? statusLabel(pill.status), alert }
   return { sub: canceled ? "Canceled" : "Not billed yet", alert: false }
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+/** The Schedule's address for a day written "Tue, Nov 24" or "Oct 14, 2026" (2026 when no year); undefined for "None" or "No day yet". */
+export function dayHref(label: string): string | undefined {
+  const m = /([A-Z][a-z]{2}) (\d{1,2})(?:, (\d{4}))?\b/.exec(label)
+  const month = m ? MONTHS.indexOf(m[1]!) : -1
+  if (!m || month < 0) return undefined
+  return `/admin/schedule?day=${m[3] ?? "2026"}-${String(month + 1).padStart(2, "0")}-${m[2]!.padStart(2, "0")}`
 }
 
 const split = (address: string | undefined): [string, string | undefined] => {
@@ -90,9 +89,9 @@ export function bandItems(b: BandInput): SummaryItem[] {
   const [street, town] = split(b.address)
   const money = moneyWord(b.pills, b.statusText, b.canceled)
   return [
-    { label: b.when.label, value: b.when.value, sub: b.when.activeSince ? <><span className="block">{b.when.sub}</span><span className="block font-medium text-navy">{b.when.activeSince}</span></> : b.when.sub, icon: Calendar },
-    { label: "Who", value: /^No one/.test(b.who) ? b.who : <NameLink kind="Person" name={b.who} href="/admin/settings?tab=people" />, icon: UserRound },
-    { label: "Where", value: street, sub: town, icon: MapPin },
+    { label: b.when.label, value: dayHref(b.when.value) ? <RecordChip kind="day" name={b.when.value} href={dayHref(b.when.value)!} /> : b.when.value, sub: b.when.activeSince ? <><span className="block">{b.when.sub}</span><span className="block font-medium text-navy">{b.when.activeSince}</span></> : b.when.sub, icon: Calendar },
+    { label: "Who", value: /^No one/.test(b.who) ? b.who : <RecordChip kind="person" name={b.who} href="/admin/settings?tab=people" />, icon: UserRound },
+    { label: "Where", value: street === "No address" ? street : <RecordChip kind="property" name={street} href="/admin/customers" />, sub: town, icon: MapPin },
     { label: "Total", value: b.total, sub: money.sub, tone: money.alert ? "alert" : "plain", icon: Receipt },
   ]
 }
@@ -121,7 +120,13 @@ export function PastVisitsCard({ street, visits, total }: { street: string; visi
           <ul className="divide-y divide-border">
             {visits.slice(0, 3).map((v) => (
               <li key={v.id} data-slot="past-visit" className="py-3 first:pt-0 last:pb-0">
-                <p className="text-sm font-semibold text-foreground">{v.service} <span className="font-normal text-muted-foreground">· {v.date} · {v.who}</span></p>
+                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                  <RecordChip kind="job" name={v.service} href={`/admin/jobs/${v.jobId}`} />
+                  <span>·</span>
+                  <RecordChip kind="day" name={v.date} href={dayHref(v.date) ?? "/admin/schedule"} />
+                  <span>·</span>
+                  <RecordChip kind="person" name={v.who} href="/admin/settings?tab=people" />
+                </p>
                 {v.note && <p className="mt-1 text-sm text-foreground">{v.note}</p>}
               </li>
             ))}
@@ -162,27 +167,17 @@ export interface CollectHandlers {
   onInvoice?: (o?: { report: boolean }) => Promise<{ ok: true }>
   onClose?: () => void
   onLater?: () => void
+  /** the money or the invoice has gone through: the page is already in its new state and a toast has said so; a dialog closes here */
+  onDone?: (way: string) => void
 }
 
 /** How is this paid?, the same choice block in Billing and in the dialog that follows Mark done. */
 export function CollectBlock({ collect, facts, handlers, bare }: { collect: NonNullable<JobPageData["collect"]>; facts: ConfirmFacts; handlers?: CollectHandlers; bare?: boolean }) {
+  const toast = useToast()
   return (
     <div className={bare ? "" : "mb-4 rounded-lg bg-stone p-4"}>
-      <CollectPayment plan={collect.plan} summary={collect.summary} firstName="Andrea" onCharge={handlers?.onCharge ?? noteOk} onRecord={handlers?.onRecord ?? noteOk} onInvoice={handlers?.onInvoice ?? noteOk} onLater={handlers?.onLater ?? noop} onClose={handlers?.onClose ?? noop} notNow confirmFor={(o, ref) => collectConfirm(o.value, facts, ref)} buttonLabel={(o) => (o.value === "card" ? `Charge ${dollars(collect.plan.amount)} to the ${collect.plan.cardWords}` : PAY_WORDS[o.value] ?? o.button)} />
+      <CollectPayment plan={collect.plan} summary={collect.summary} firstName="Andrea" onCharge={handlers?.onCharge ?? noteOk} onRecord={handlers?.onRecord ?? noteOk} onInvoice={handlers?.onInvoice ?? noteOk} onLater={handlers?.onLater ?? noop} onClose={handlers?.onClose ?? noop} notNow onDone={(d) => (toast(doneToast(d.way, facts)), handlers?.onDone?.(d.way))} confirmFor={(o, ref) => collectConfirm(o.value, facts, ref)} buttonLabel={(o) => (o.value === "card" ? `Charge ${dollars(collect.plan.amount)} to the ${collect.plan.cardWords}` : PAY_WORDS[o.value] ?? o.button)} />
     </div>
-  )
-}
-
-export function BillingCard({ data, facts, handlers }: { data: Pick<JobPageData, "billing" | "collect">; facts: ConfirmFacts; handlers?: CollectHandlers }) {
-  const { billing, collect } = data
-  const summary = billing.summary.map(([k, v]) => [k, v] as [string, string])
-  const status = billing.status
-  return (
-    <SectionCard title="Billing" id="billing-h">
-      {collect && <CollectBlock collect={collect} facts={facts} handlers={handlers} />}
-      {status && <p className="mb-2 text-sm font-medium"><MoneyCell text={status.text} tone={status.tone} /></p>}
-      <BillingSection summary={summary} rows={billing.rows as BillingRowData[]} emptyLine={billing.emptyLine} />
-    </SectionCard>
   )
 }
 
@@ -216,18 +211,21 @@ export function factsOfJob(job: JobPageData): ConfirmFacts {
     cardWords: "Visa ending 4242",
     dueOn: due,
     pastDue: job.pills.some((p) => p.status === "overdue"),
+    invoiceOpen: Boolean(job.billing.invoices?.some((i) => i.status !== "paid")),
   }
 }
 
 /** The header's actions: the primary, up to two outlines, More with the destructive one last inside it. A button that reaches the customer or their money opens its confirmation first (a customer-facing action always confirms and states its effect). */
-export function Actions({ plan, facts, onDo, onMessage, intercept = [] }: { plan: FooterPlan; facts: ConfirmFacts; onDo?: (label: string, variant?: string) => void; onMessage?: (m: { channel: "text" | "email"; body: string }) => void; intercept?: string[] }) {
+export function Actions({ plan, facts, onDo, onMessage, intercept = [], collect, handlers }: { plan: FooterPlan; facts: ConfirmFacts; onDo?: (label: string, variant?: string) => void; onMessage?: (m: { channel: "text" | "email"; body: string }) => void; intercept?: string[]; collect?: JobPageData["collect"]; handlers?: CollectHandlers }) {
   const [composing, setComposing] = useState(false)
+  const [collecting, setCollecting] = useState(false)
   const [doneDay, setDoneDay] = useState<string>("")
   const [asking, setAsking] = useState<(ConfirmCopy & { label?: string }) | null>(null)
   const confirms = footerConfirms(facts)
   const wrap = (a: FooterAction): FooterAction => {
     if (a.disabled) return a
     if (a.label === "Send a message") return { ...a, onClick: () => setComposing(true) }
+    if (a.label === "Collect payment" && collect) return { ...a, onClick: () => setCollecting(true) }
     if (intercept.includes(a.label)) return { ...a, onClick: () => onDo?.(a.label) }
     if (confirms[a.label]) return { ...a, onClick: () => (setDoneDay(confirms[a.label]!.doneOn?.[0] ?? ""), setAsking({ ...confirms[a.label]!, label: a.label })) }
     return onDo ? { ...a, onClick: () => onDo(a.label) } : a
@@ -263,6 +261,11 @@ export function Actions({ plan, facts, onDo, onMessage, intercept = [] }: { plan
               <select value={doneDay} onChange={(e) => setDoneDay(e.target.value)} className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm">{asking.doneOn.map((d) => <option key={d}>{d}</option>)}</select>
             </FormRow>
           )}
+        </ConfirmDialog>
+      )}
+      {collecting && collect && (
+        <ConfirmDialog open onOpenChange={(o) => !o && setCollecting(false)} title="How is this paid?" actions="none" size="md" slot="collect-dialog">
+          <CollectBlock bare collect={collect} facts={facts} handlers={{ ...handlers, onClose: () => setCollecting(false), onLater: () => setCollecting(false), onDone: (way) => (setCollecting(false), handlers?.onDone?.(way)) }} />
         </ConfirmDialog>
       )}
       {composing && <MessageDialog facts={facts} onClose={() => setComposing(false)} onSend={(m) => onMessage?.(m)} />}

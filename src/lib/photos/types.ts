@@ -14,4 +14,6 @@ export interface PhotoItem {
   shownToCustomer: boolean
   canRemove: boolean
   createdAt: string
+  /** the customer attached it when they booked (the booking flow's optional Add photos): staff see "Added when booked" */
+  addedAtBooking?: boolean
 }
