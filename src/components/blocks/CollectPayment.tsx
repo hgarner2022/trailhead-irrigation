@@ -30,7 +30,7 @@ export interface CollectPaymentProps {
   /** the Record button: `payments.record` */
   onRecord: (input: { method: "check" | "venmo" | "cash"; reference?: string; amount?: number }) => Promise<Answer>
   /** Send the invoice: `invoices.send` */
-  onInvoice: () => Promise<Answer>
+  onInvoice: (options?: { report: boolean }) => Promise<Answer>
   /** Leave it unpaid: nothing is written */
   onLater: () => void
   onClose: () => void
@@ -108,7 +108,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
   const run = () => {
     start(async () => {
       if (picked.value === "card") settle(await onCharge(), { title: paidWords("card_on_file"), line: receiptLine(firstName) })
-      else if (picked.value === "invoice") settle(await onInvoice(), { title: "Invoice sent", line: `A pay link went to ${firstName}.` })
+      else if (picked.value === "invoice") settle(await onInvoice({ report }), { title: "Invoice sent", line: `A pay link went to ${firstName}.` })
       else if (handed) {
         const method = picked.value as "check" | "venmo" | "cash"
         settle(await onRecord({ method, ...(reference.trim() ? { reference: reference.trim() } : {}), ...(plan.needsAmount && amount ? { amount: Number(amount) } : {}) }), { title: paidWords(method), line: receiptLine(firstName) })

@@ -153,7 +153,14 @@ export function Aside({ customer, phone, where, notes, pastVisits, pastTotal }: 
   )
 }
 
-export function BillingCard({ data, facts }: { data: Pick<JobPageData, "billing" | "collect">; facts: ConfirmFacts }) {
+export interface CollectHandlers {
+  onCharge?: () => Promise<{ ok: true }>
+  onRecord?: (input: { method: string; reference?: string }) => Promise<{ ok: true }>
+  onInvoice?: (o?: { report: boolean }) => Promise<{ ok: true }>
+  onClose?: () => void
+}
+
+export function BillingCard({ data, facts, handlers }: { data: Pick<JobPageData, "billing" | "collect">; facts: ConfirmFacts; handlers?: CollectHandlers }) {
   const { billing, collect } = data
   const summary = billing.summary.map(([k, v]) => [k, v] as [string, string])
   const status = billing.status
@@ -161,7 +168,7 @@ export function BillingCard({ data, facts }: { data: Pick<JobPageData, "billing"
     <SectionCard title="Billing" id="billing-h">
       {collect && (
         <div className="mb-4 rounded-lg bg-stone p-4">
-          <CollectPayment plan={collect.plan} summary={collect.summary} firstName="Andrea" onCharge={noteOk} onRecord={noteOk} onInvoice={noteOk} onLater={noop} onClose={noop} notNow confirmFor={(o, ref) => collectConfirm(o.value, facts, ref)} buttonLabel={(o) => (o.value === "card" ? `Charge ${dollars(collect.plan.amount)} to the ${collect.plan.cardWords}` : PAY_WORDS[o.value] ?? o.button)} />
+          <CollectPayment plan={collect.plan} summary={collect.summary} firstName="Andrea" onCharge={handlers?.onCharge ?? noteOk} onRecord={handlers?.onRecord ?? noteOk} onInvoice={handlers?.onInvoice ?? noteOk} onLater={noop} onClose={handlers?.onClose ?? noop} notNow confirmFor={(o, ref) => collectConfirm(o.value, facts, ref)} buttonLabel={(o) => (o.value === "card" ? `Charge ${dollars(collect.plan.amount)} to the ${collect.plan.cardWords}` : PAY_WORDS[o.value] ?? o.button)} />
         </div>
       )}
       {status && <p className="mb-2 text-sm font-medium"><MoneyCell text={status.text} tone={status.tone} /></p>}
@@ -199,10 +206,15 @@ export function factsOfJob(job: JobPageData): ConfirmFacts {
 }
 
 /** The header's actions: the primary, up to two outlines, More with the destructive one last inside it. A button that reaches the customer or their money opens its confirmation first (a customer-facing action always confirms and states its effect). */
-export function Actions({ plan, facts }: { plan: FooterPlan; facts: ConfirmFacts }) {
-  const [asking, setAsking] = useState<ConfirmCopy | null>(null)
+export function Actions({ plan, facts, onDo, intercept = [] }: { plan: FooterPlan; facts: ConfirmFacts; onDo?: (label: string) => void; intercept?: string[] }) {
+  const [asking, setAsking] = useState<(ConfirmCopy & { label?: string }) | null>(null)
   const confirms = footerConfirms(facts)
-  const wrap = (a: FooterAction): FooterAction => (confirms[a.label] && !a.disabled ? { ...a, onClick: () => setAsking(confirms[a.label]!) } : a)
+  const wrap = (a: FooterAction): FooterAction => {
+    if (a.disabled) return a
+    if (intercept.includes(a.label)) return { ...a, onClick: () => onDo?.(a.label) }
+    if (confirms[a.label]) return { ...a, onClick: () => setAsking({ ...confirms[a.label]!, label: a.label }) }
+    return onDo ? { ...a, onClick: () => onDo(a.label) } : a
+  }
   return (
     <>
       <RecordFooter
@@ -214,7 +226,10 @@ export function Actions({ plan, facts }: { plan: FooterPlan; facts: ConfirmFacts
         slot={plan.slot}
       />
       {asking && (
-        <ConfirmDialog open onOpenChange={(o) => !o && setAsking(null)} title={asking.title} message={asking.message} confirmLabel={asking.confirmLabel} destructive={asking.destructive} slot="action-confirm" onConfirm={async () => ({ ok: true })}>
+        <ConfirmDialog open onOpenChange={(o) => !o && setAsking(null)} title={asking.title} message={asking.message} confirmLabel={asking.confirmLabel} destructive={asking.destructive} slot="action-confirm" onConfirm={async () => {
+          if (asking.label) onDo?.(asking.label)
+          return { ok: true }
+        }}>
           {asking.body && <p className="whitespace-pre-wrap rounded-lg bg-stone p-3 text-sm">{asking.body}</p>}
         </ConfirmDialog>
       )}
