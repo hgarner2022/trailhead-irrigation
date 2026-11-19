@@ -2,14 +2,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { GET } from "./route"
 
-const { expirePendingPasses, drain, refreshDeliveryAll } = vi.hoisted(() => ({ expirePendingPasses: vi.fn(), drain: vi.fn(), refreshDeliveryAll: vi.fn() }))
+const { expirePendingPasses, drain, refreshDeliveryAll, enqueueMissingGeocodes } = vi.hoisted(() => ({ expirePendingPasses: vi.fn(), drain: vi.fn(), refreshDeliveryAll: vi.fn(), enqueueMissingGeocodes: vi.fn() }))
 vi.mock("@/db", () => ({ db: () => ({}) }))
 vi.mock("@/lib/pass/server/create", () => ({ expirePendingPasses }))
+vi.mock("@/lib/geocode", () => ({ enqueueMissingGeocodes }))
 vi.mock("@/lib/queue", () => ({ drain }))
 vi.mock("@/lib/messaging/delivery-refresh", () => ({ refreshDeliveryAll }))
 vi.mock("@/lib/queue/handlers", () => ({ handlers: {} }))
 
-beforeEach(() => refreshDeliveryAll.mockResolvedValue(0))
+beforeEach(() => {
+  refreshDeliveryAll.mockResolvedValue(0)
+  enqueueMissingGeocodes.mockResolvedValue(0)
+})
 afterEach(() => {
   vi.unstubAllEnvs()
   vi.restoreAllMocks()
@@ -27,7 +31,7 @@ describe("GET /api/cron/drain", () => {
     drain.mockResolvedValue({ processed: 2 })
     const response = await call()
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ expired: 0, deliveryChecked: 0, processed: 2 })
+    expect(await response.json()).toEqual({ expired: 0, geocoding: 0, deliveryChecked: 0, processed: 2 })
     expect(drain).toHaveBeenCalledTimes(1)
     // The log line is a constant: the error's own text (which may carry customer data) is never printed.
     expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain("jane@example.com")
@@ -37,7 +41,7 @@ describe("GET /api/cron/drain", () => {
     vi.stubEnv("CRON_SECRET", "s3cret")
     expirePendingPasses.mockResolvedValue(3)
     drain.mockResolvedValue({ processed: 0 })
-    expect(await (await call()).json()).toEqual({ expired: 3, deliveryChecked: 0, processed: 0 })
+    expect(await (await call()).json()).toEqual({ expired: 3, geocoding: 0, deliveryChecked: 0, processed: 0 })
   })
 
   it("asks Twilio about texts with no delivery report once a run, and reports how many it checked", async () => {
@@ -46,7 +50,7 @@ describe("GET /api/cron/drain", () => {
     drain.mockResolvedValue({ processed: 1 })
     refreshDeliveryAll.mockClear()
     refreshDeliveryAll.mockResolvedValue(9)
-    expect(await (await call()).json()).toEqual({ expired: 0, deliveryChecked: 9, processed: 1 })
+    expect(await (await call()).json()).toEqual({ expired: 0, geocoding: 0, deliveryChecked: 9, processed: 1 })
     expect(refreshDeliveryAll).toHaveBeenCalledTimes(1)
   })
 

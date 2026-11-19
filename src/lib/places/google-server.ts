@@ -32,6 +32,7 @@ export interface PlaceDetails {
   id?: string
   formattedAddress?: string
   addressComponents?: AddressComponent[]
+  location?: { latitude?: number; longitude?: number }
 }
 
 /** "Erie, CO, USA" as the town and the two-letter state; "Erie, CO" the same; a bare "CO, USA" gives no town. */
@@ -66,7 +67,9 @@ export function suggestionFromDetails(place: PlaceDetails): PlaceSuggestion | nu
   const state = component(parts, "administrative_area_level_1", true)
   const zip = component(parts, "postal_code")
   const label = line1 && town ? `${line1}, ${town}, ${state}${zip ? ` ${zip}` : ""}` : (place.formattedAddress ?? line1)
-  return { id: place.id, label, line1: line1 || (place.formattedAddress ?? ""), town, state, zip }
+  const { latitude, longitude } = place.location ?? {}
+  const point = typeof latitude === "number" && typeof longitude === "number" ? { lat: latitude, lng: longitude } : {}
+  return { id: place.id, label, line1: line1 || (place.formattedAddress ?? ""), town, state, zip, ...point }
 }
 
 /** One warning, naming the call and the status only: never the key, never what the customer typed. */
@@ -110,7 +113,7 @@ export async function placeDetails(options: GoogleOptions, id: string): Promise<
   if (!PLACE_ID.test(id)) return null
   const fetchFn = options.fetchFn ?? fetch
   try {
-    const response = await fetchFn(`${DETAILS_URL}${id}`, { headers: headersFor(options, { "X-Goog-FieldMask": "id,formattedAddress,addressComponents" }) })
+    const response = await fetchFn(`${DETAILS_URL}${id}`, { headers: headersFor(options, { "X-Goog-FieldMask": "id,formattedAddress,addressComponents,location" }) })
     if (!response.ok) {
       if (response.status !== 404) warn("details", response.status)
       return null
@@ -120,4 +123,12 @@ export async function placeDetails(options: GoogleOptions, id: string): Promise<
     warn("details", error instanceof Error ? error.name : "an error")
     return null
   }
+}
+
+/** The point for an address a property row holds: the first autocomplete match's details. Null when nothing matches or a call fails. */
+export async function placePoint(options: GoogleOptions, query: string): Promise<{ lat: number; lng: number } | null> {
+  const [first] = await autocomplete(options, query)
+  if (!first) return null
+  const place = await placeDetails(options, first.id)
+  return place && place.lat !== undefined && place.lng !== undefined ? { lat: place.lat, lng: place.lng } : null
 }

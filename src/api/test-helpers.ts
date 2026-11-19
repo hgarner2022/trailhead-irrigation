@@ -1,6 +1,7 @@
 // Test helper (no server-only: tests import it): a seeded in-memory organization and the principals the handler tests call as.
 import { vi } from "vitest"
-import { and, asc, eq, isNotNull, or } from "drizzle-orm"
+import { readFileSync } from "node:fs"
+import { and, asc, eq, isNotNull, or, sql } from "drizzle-orm"
 import * as s from "@/db/schema"
 import { seed } from "@/db/seed"
 import { testDb, type TestDb } from "@/db/test-db"
@@ -21,6 +22,8 @@ export async function apiDb(): Promise<TestDb> {
   vi.stubEnv("API_KEY_PEPPER", "test-pepper")
   const db = await testDb()
   await seed(db, snapshot as AdminData, { organizationId: ORG, admins: [OWNER_EMAIL], passes: true, mirror: true })
+  // Production's services got their bookable dates from the windows in migration 0024; the seed inserts them after the migrations ran, so the fixture gets the same dates.
+  await db.execute(sql.raw(readFileSync(new URL("../../drizzle/0024_backfill_bookable_from_windows.sql", import.meta.url), "utf8")))
   return db
 }
 
