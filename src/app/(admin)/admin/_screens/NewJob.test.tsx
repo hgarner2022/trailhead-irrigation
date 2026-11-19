@@ -108,7 +108,7 @@ describe("New job", () => {
   it("choosing a per-zone service reads its price rule", async () => {
     open()
     await choose("blowout")
-    expect(screen.getByText("$95 up to 6 zones, +$10 a zone")).toBeInTheDocument()
+    expect(screen.getByText("$95 up to 6 zones, then $10 a zone")).toBeInTheDocument()
   })
 
   it("choosing a banded service shows a zones box and the price follows it, still editable", async () => {
@@ -187,7 +187,7 @@ describe("Pays by for a customer who has a card", () => {
 describe("servicePriceLine", () => {
   it("reads the rule: a flat price, a base with per-zone, free, or quote on site", () => {
     expect(servicePriceLine(SERVICES.repair!)).toBe("$145")
-    expect(servicePriceLine(SERVICES.blowout!)).toBe("$95 up to 6 zones, +$10 a zone")
+    expect(servicePriceLine(SERVICES.blowout!)).toBe("$95 up to 6 zones, then $10 a zone")
     expect(servicePriceLine(SERVICES.consult!)).toBe("Free")
     expect(servicePriceLine(SERVICES.install!)).toBe("Quote on site")
   })
@@ -222,5 +222,42 @@ describe("choiceReady for a pass (email required)", () => {
   })
   it("builds the API's newCustomer from what was typed, leaving out blank email and phone", () => {
     expect(newCustomerFrom({ ...EMPTY_PERSON, firstName: " Maya ", lastName: "Ortiz", address: "12 Elm St ", town: "Erie" })).toEqual({ firstName: "Maya", lastName: "Ortiz", property: { address: "12 Elm St", town: "Erie" } })
+  })
+})
+
+describe("one entry per service", () => {
+  it("lists Season Pass, then Repair, Spring turn-on, Fall blowout, the inspection, with no band in any name", () => {
+    open()
+    const labels = [...(screen.getByLabelText("What are we doing?") as HTMLSelectElement).options].filter((o) => o.value).map((o) => o.textContent ?? "")
+    expect(labels[0]).toBe("Season Pass")
+    expect(labels.slice(1, 5).map((l) => l.split(/[ ,&]/)[0])).toEqual(["Sprinkler", "Spring", "Fall", "Mid-season"])
+    expect(labels.some((l) => /zones$/.test(l))).toBe(false)
+    expect(labels).toHaveLength(11)
+  })
+
+  it("the zones box picks the band that is sent, and the price line is the same for every band", async () => {
+    const actions = open()
+    await choose("turn-on")
+    expect(screen.getByText("$145 up to 8 zones, then $10 a zone")).toBeInTheDocument()
+    const zones = screen.getByLabelText("Zones")
+    expect(zones).toHaveValue(8)
+    await userEvent.clear(zones)
+    await userEvent.type(zones, "10")
+    await userEvent.click(screen.getByText("More details"))
+    expect(screen.getByLabelText("Price")).toHaveValue("165")
+    expect(screen.getByLabelText("Minutes")).toHaveValue("90")
+    await userEvent.click(screen.getByRole("button", { name: "Add job" }))
+    await waitFor(() => expect(actions.createVisit).toHaveBeenCalledTimes(1))
+    expect(actions.createVisit).toHaveBeenCalledWith(expect.objectContaining({ serviceKey: "turn-on-12", price: 165, durationMinutes: 90 }))
+  })
+
+  it("keeps the day and notes while the zones move between bands", async () => {
+    open()
+    await choose("turn-on")
+    await userEvent.type(screen.getByLabelText("Day (optional)"), "2026-12-01")
+    const zones = screen.getByLabelText("Zones")
+    await userEvent.clear(zones)
+    await userEvent.type(zones, "14")
+    expect(screen.getByLabelText("Day (optional)")).toHaveValue("2026-12-01")
   })
 })
