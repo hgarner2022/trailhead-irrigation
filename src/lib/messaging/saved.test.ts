@@ -41,7 +41,7 @@ describe("the first text to a number", () => {
     expect(first.row!.body).toMatch(/Reply STOP to opt out\.$/)
     expect(await isFirstText(db, ORG, PHONE)).toBe(false)
     const second = await text("day-before", "t-second")
-    expect(second.row!.body).toMatch(/^Trailhead: Ryan is coming tomorrow, Wed, May 5, 8 to 10 am, for your .+\. Need to change it\? Text Ryan at \(970\) 692-7270\. See your visit: https:\/\/site\.test\/account\/visits\/[^ ]+\?t=\d+\.[A-Za-z0-9_-]+$/)
+    expect(second.row!.body).toMatch(/^Trailhead: Ryan is coming tomorrow at 8:00 am for your .+\. Need to change it\? Text Ryan at \(970\) 692-7270\. See your visit: https:\/\/site\.test\/account\/visits\/[^ ]+\?t=\d+\.[A-Za-z0-9_-]+$/)
     expect(second.row!.body).not.toContain("STOP")
   })
   it("is not spoiled by a text that never reached the phone", async () => {

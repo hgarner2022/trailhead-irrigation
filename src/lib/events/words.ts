@@ -4,7 +4,7 @@
 import { monthDay, monthShort, preferencePhrase } from "@/lib/admin/format"
 import { NOT_DONE_LABEL, type NotDoneReason } from "@/lib/admin/visit-defaults"
 import { METHOD_WORDS } from "@/lib/money/words"
-import { windowText } from "@/emails/format"
+import { timeText } from "@/emails/format"
 import { visitName } from "./names"
 
 /** What the words need of an event: its kind, what it recorded and who did it (the same fields as `EventOut`). */
@@ -46,10 +46,10 @@ function weekdayDay(v: unknown): string | undefined {
   return `${wd}, ${base}`
 }
 
-/** ", 9 to 11 am" when the event carries a time Ryan chose ("HH:MM"), else "". */
+/** " at 9:00 am" when the event carries a time Ryan chose ("HH:MM"), else "". */
 const timeTail = (v: unknown) => {
   const s = str(v)
-  return s && /^\d{2}:\d{2}$/.test(s) ? `, ${windowText(s)}` : ""
+  return s && /^\d{2}:\d{2}$/.test(s) ? ` at ${timeText(s)}` : ""
 }
 
 const methodWords = (v: unknown) => {

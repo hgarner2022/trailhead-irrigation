@@ -4,8 +4,8 @@ import { describe, expect, it, vi } from "vitest"
 import { AccountNav, placeOf } from "./AccountNav"
 
 describe("AccountNav", () => {
-  it("shows the four places for a pass holder and marks the current one; a visit page is under Visits and there is no Jobs place", () => {
-    render(<AccountNav firstName="Andrea" hasPass current="/account/visits/abc" />)
+  it("shows four tabs, Details once as a tab and not in the menu, and marks the current one; a visit page is under Visits and there is no Jobs place", () => {
+    render(<AccountNav firstName="Andrea" current="/account/visits/abc" />)
     const names = screen.getAllByRole("link").map((l) => l.textContent)
     for (const place of ["Home", "Visits", "Season Pass", "Details"]) expect(names).toContain(place)
     expect(names).not.toContain("Jobs")
@@ -13,9 +13,9 @@ describe("AccountNav", () => {
     expect(screen.getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current")
   })
 
-  it("hides Season Pass for someone who has never held one", () => {
+  it("shows Season Pass to everyone: a customer with no pass lands on the sell card", () => {
     render(<AccountNav firstName="Dana" current="/account" />)
-    expect(screen.queryByRole("link", { name: "Season Pass" })).toBeNull()
+    expect(screen.getByRole("link", { name: "Season Pass" })).toHaveAttribute("href", "/account/pass")
   })
 
   it("shows only a quiet Sign in when nobody is signed in", () => {
@@ -30,16 +30,16 @@ describe("AccountNav", () => {
     expect(placeOf("/account/visits/x")).toBe("/account/visits")
   })
 
-  it("makes the first name a menu with Details and Sign out, pinned to the far right of the header", async () => {
+  it("makes the first name a menu with Sign out, pinned to the far right of the header row", async () => {
     const onSignOut = vi.fn()
-    render(<AccountNav firstName="Andrea" hasPass current="/account" onSignOut={onSignOut} />)
+    render(<AccountNav firstName="Andrea" current="/account" onSignOut={onSignOut} />)
     const trigger = screen.getByRole("button", { name: "Andrea" })
     expect(trigger).toHaveAttribute("aria-haspopup", "menu")
-    // the menu is the last thing in the header's row and pushes itself to the right edge; the row is not held to a centred column
+    // the menu is the last thing in the header's row and pushes itself to the right edge of the same column the page content sits in
     expect(trigger.closest("[data-slot=account-menu]")).toHaveClass("ml-auto")
-    expect(document.querySelector("[data-slot=account-nav] > div")).not.toHaveClass("max-w-5xl")
+    expect(document.querySelector("[data-slot=account-nav] > div")).toHaveClass("max-w-5xl")
     await userEvent.click(trigger)
-    expect(screen.getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Details", "Sign out"])
+    expect(screen.getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Sign out"])
     await userEvent.click(screen.getByRole("menuitem", { name: "Sign out" }))
     expect(onSignOut).toHaveBeenCalledTimes(1)
   })

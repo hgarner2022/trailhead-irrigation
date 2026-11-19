@@ -5,7 +5,7 @@ import { TextRyan } from "./TextRyan"
 
 const booked: NextVisitProps = {
   heading: "Wednesday, April 28",
-  detail: "We'll text your window the day before.",
+  detail: "We'll text you the time the day before.",
   service: "Spring turn-on",
   where: "412 Briggs Street, Erie",
   label: "Season Pass 2027",
@@ -36,7 +36,7 @@ const laptop = { globals: { viewport: { value: "laptop", isRotated: false } } } 
 export const BookedPhone: Story = { ...phone }
 export const BookedLaptop: Story = { ...laptop }
 /** The day-before text went out: the window and who is coming. */
-export const WindowToldPhone: Story = { ...phone, args: { visit: { ...booked, detail: "Between 8 and 10 am, with Ryan." } } }
+export const WindowToldPhone: Story = { ...phone, args: { visit: { ...booked, detail: "Ryan is coming." } } }
 /** Inside 24 hours: Text Ryan and Call Ryan replace the two actions. */
 export const InsideCutoffPhone: Story = { ...phone, args: { visit: { ...booked, actions: <TextRyan textHref="sms:+19706927270" /> } } }
 export const InsideCutoffLaptop: Story = { ...laptop, args: { visit: { ...booked, actions: <TextRyan textHref="sms:+19706927270" /> } } }

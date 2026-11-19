@@ -76,7 +76,7 @@ export function PickDayButtons({ kind, days, onPick, foldedLabel, previousDay, f
             <s>{`${weekdayOf(previousDay)}, ${writtenDate(previousDay)}`}</s>
           </p>
         )}
-        <p>{previousDay ? `Moved to ${weekdayOf(picked)}, ${writtenDate(picked)}. We texted you the new date.` : `You're set for ${weekdayOf(picked)}, ${writtenDate(picked)}. We'll text you the window the day before.`}</p>
+        <p>{previousDay ? `Moved to ${weekdayOf(picked)}, ${writtenDate(picked)}. We texted you the new date.` : `You're set for ${weekdayOf(picked)}, ${writtenDate(picked)}. We'll text you the time the day before.`}</p>
       </div>
     )
   }

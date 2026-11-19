@@ -1,6 +1,7 @@
 import { CancelVisitSheet } from "@/components/blocks/CancelVisitSheet"
 import { RescheduleSheet, type SheetResult } from "@/components/blocks/RescheduleSheet"
 import { TextRyan } from "@/components/blocks/TextRyan"
+import type { DayTimeOffer } from "@/lib/booking/day-time"
 import type { PortalJobType, PortalVisitType } from "@/api/v1/portal/schemas"
 import { cancelConsequence, cancelFactsOf, timelineDay } from "@/lib/portal/words"
 import { visitDayWords } from "@/lib/portal/words"
@@ -13,6 +14,8 @@ import { visitDayWords } from "@/lib/portal/words"
 export interface VisitActions {
   /** moves the visit to one of the offered days (or gives a waiting visit its day) and texts the customer */
   onReschedule?: (visitId: string, day: string) => SheetResult | Promise<SheetResult>
+  /** with slots: moves the visit to a day and an exact start ("10:30") and texts the customer */
+  onRescheduleTime?: (visitId: string, pick: { day: string; start: string }) => SheetResult | Promise<SheetResult>
   /** cancels the visit with the customer's optional reason */
   onCancel?: (visitId: string, reason: string) => SheetResult | Promise<SheetResult>
 }
@@ -25,12 +28,15 @@ export interface VisitControlsProps extends VisitActions {
   days?: string[]
   /** the `sms:` link with the visit named */
   textHref: string
+  /** with slots: the open days with their start times (five at most), and the start the visit has now */
+  offers?: readonly DayTimeOffer[]
+  currentStart?: string | null
 }
 
 /** The Reschedule button for a visit, or null when the customer may not move it online. */
-export function RescheduleControl({ job, visit, days = [], textHref, onReschedule }: VisitControlsProps) {
+export function RescheduleControl({ job, visit, days = [], textHref, onReschedule, onRescheduleTime, offers, currentStart }: VisitControlsProps) {
   if (visit.reschedule !== "yes") return null
-  return <RescheduleSheet service={visit.name} address={job.address} currentDay={visit.status === "scheduled" ? visit.scheduledOn : null} days={days} textHref={textHref} onPick={onReschedule?.bind(null, visit.id)} />
+  return <RescheduleSheet service={visit.name} address={job.address} currentDay={visit.status === "scheduled" ? visit.scheduledOn : null} days={days} textHref={textHref} onPick={onReschedule?.bind(null, visit.id)} offers={offers} onPickTime={onRescheduleTime?.bind(null, visit.id)} currentStart={currentStart} />
 }
 
 /** The Cancel visit button for a visit, or null when the customer may not cancel it online. */

@@ -265,7 +265,7 @@ describe("the window is a message: shown only once the day-before message exists
     expect(JSON.stringify(await read())).not.toContain("08:00")
     const [row] = await db.select().from(s.visit).where(eq(s.visit.id, v.id))
     await db.insert(s.messageLog).values({ organizationId: row!.organizationId, customerId: dana, visitId: v.id, channel: "sms", kind: "day-before", key: `${v.id}-2027-05-18`, to: "970-555-0142", body: "x", status: "queued" })
-    expect(await read()).toMatchObject({ windowTold: true, window: "between 8 and 10 am", personFirstName: "Ryan" })
+    expect(await read()).toMatchObject({ windowTold: true, window: "8:00 am", personFirstName: "Ryan" })
     // a row for another day is not this day's: a moved visit reads as not told again
     await db.update(s.visit).set({ scheduledOn: "2027-05-19" }).where(eq(s.visit.id, v.id))
     expect(await read()).toMatchObject({ windowTold: false, window: null })

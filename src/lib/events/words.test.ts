@@ -32,8 +32,8 @@ describe("eventWords: one sentence per kind", () => {
     expect(words("visit.confirmed", { name: "Spring turn-on", day: "2027-04-22" }, "customer", null)).toBe("Spring turn-on confirmed by the customer")
     expect(words("visit.confirmed", { name: "Repair", day: "2027-04-22" }, "hannah@example.com", "Hannah Garner")).toBe("Customer confirmed, marked by Hannah Garner")
     expect(words("visit.confirmed", { name: "Repair", day: "2027-04-22" }, "hannah@example.com", null)).toBe("Customer confirmed, marked by the office")
-    expect(words("visit.moved", { name: "Repair", day: "2026-11-23", from: "2026-11-23", startTime: "09:00", sameDay: true })).toBe("Repair given a time, Mon, Nov 23, 9 to 11 am")
-    expect(words("visit.moved", { name: "Repair", day: "2026-11-24", from: "2026-11-23", startTime: "09:00" })).toBe("Repair moved from Nov 23 to Nov 24, 9 to 11 am")
+    expect(words("visit.moved", { name: "Repair", day: "2026-11-23", from: "2026-11-23", startTime: "09:00", sameDay: true })).toBe("Repair given a time, Mon, Nov 23 at 9:00 am")
+    expect(words("visit.moved", { name: "Repair", day: "2026-11-24", from: "2026-11-23", startTime: "09:00" })).toBe("Repair moved from Nov 23 to Nov 24 at 9:00 am")
   })
   it("visit.day-filled and visit.move-requested", () => {
     expect(words("visit.day-filled", { visit: "turn-on", from: "2027-04-20", to: "2027-04-22" })).toBe("Spring turn-on set for Apr 22, the next open day after Apr 20")

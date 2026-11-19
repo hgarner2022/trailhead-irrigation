@@ -8,11 +8,11 @@ const BOOKING_WHY = "You are getting this because you booked a visit with Trailh
 export function bookingConfirmationEmail(d: BookingConfirmationData): RenderedEmail {
   const v = d.visit
   const subject = `Your ${d.serviceName} is booked for ${longDay(v.day)}`
-  const intro = `${whoIsComing(v)} will be there ${whenText(v.day, v.startTime)}. We text you the day before.`
+  const intro = `${whoIsComing(v)} will be there ${whenText(v.day, v.startTime)}. We text you a reminder the day before.`
   return {
     subject,
     text: plainText([`Your ${v.name} is booked.`, "", ...greetingText(d.firstName), ...visitLines(d, v, intro)], SIGN_OFF, BOOKING_WHY),
-    html: emailLayout({ origin: d.origin, preheader: "We text you the day before. Add it to your calendar below.", title: `Your ${v.name} is booked`, greet: { firstName: d.firstName }, lead: intro, body: visitBody(d, v), why: BOOKING_WHY, signOff: SIGN_OFF }),
+    html: emailLayout({ origin: d.origin, preheader: "We text you a reminder the day before. Add it to your calendar below.", title: `Your ${v.name} is booked`, greet: { firstName: d.firstName }, lead: intro, body: visitBody(d, v), why: BOOKING_WHY, signOff: SIGN_OFF }),
   }
 }
 

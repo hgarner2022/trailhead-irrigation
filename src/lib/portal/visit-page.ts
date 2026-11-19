@@ -28,6 +28,8 @@ export interface VisitPageModel {
   /** the day as a card heading, and the line under it: the window promise, or the window with who is coming */
   dayHeading: string
   dayDetail: string | null
+  /** the first name of who is coming, once the customer has been told (with the time); null before */
+  who?: string | null
   /** "12 Elm St, Erie" */
   where: string
   mustBeHome: boolean
@@ -69,6 +71,7 @@ export function visitPageOf(job: PortalJobType, visit: PortalVisitType, customer
     dayLine: day.sentence,
     dayHeading: day.heading,
     dayDetail: day.detail,
+    who: visit.windowTold && visit.window ? visit.personFirstName : null,
     where: [job.address, job.town].filter(Boolean).join(", "),
     mustBeHome: visit.mustBeHome,
     included: descriptions.length ? descriptions.join(", ") : null,

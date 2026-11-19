@@ -22,7 +22,7 @@ describe("HomeScreen", () => {
   it("shows the next visit with Reschedule and Cancel visit, the pass card and the latest visits for a pass holder", () => {
     render(<HomeScreen customer={andrea} jobs={[passJob, repairJob]} today={TODAY} pass={pass} days={days} />)
     expect(screen.getByRole("heading", { name: "Wednesday, April 28" })).toBeInTheDocument()
-    expect(screen.getByText("We'll text your window the day before.")).toBeInTheDocument()
+    expect(screen.getByText("We'll text you the time the day before.")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Reschedule" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Cancel visit" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "See your pass" })).toHaveAttribute("href", "/account/pass")
@@ -33,7 +33,7 @@ describe("HomeScreen", () => {
 
   it("names the window and who is coming only once it was told", () => {
     render(<HomeScreen customer={andrea} jobs={[passJobWindowTold]} today={TODAY} days={days} />)
-    expect(screen.getByText("Between 8 and 10 am, with Ryan.")).toBeInTheDocument()
+    expect(screen.getByText("Ryan is coming.")).toBeInTheDocument()
   })
 
   it("inside 24 hours Text Ryan and Call Ryan replace the two buttons", () => {
@@ -46,10 +46,10 @@ describe("HomeScreen", () => {
 
   it("leads with the invoice to pay and names it past due once the day has gone", () => {
     const { rerender } = render(<HomeScreen customer={andrea} jobs={[invoicedJob]} today={TODAY} />)
-    expect(screen.getByText("Invoice sent: Repair, $115, due Dec 1")).toBeInTheDocument()
+    expect(screen.getByText("Repair: $115 unpaid, due Dec 1")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Pay now" })).toHaveAttribute("href", "/pay/inv_1?token=abc")
     rerender(<HomeScreen customer={andrea} jobs={[pastDueJob]} today={TODAY} />)
-    expect(screen.getByText("Past due since Apr 1: Repair, $115")).toBeInTheDocument()
+    expect(screen.getByText("Repair: $115 unpaid, past due since Apr 1")).toBeInTheDocument()
   })
 
   it("works for a customer with one-off visits and no pass: no pass card, nothing booked right now", () => {
@@ -149,7 +149,8 @@ describe("VisitScreen", () => {
   it("shows one visit with its day, the window promise, the price and the three things the customer may do", () => {
     render(<VisitScreen customer={andrea} job={passJob} visitId="v1" today={TODAY} days={days.v1} calendar={{ googleHref: "https://calendar.google.com/x", icsHref: "/api/visits/v1/calendar.ics?token=t" }} />)
     expect(screen.getByRole("heading", { level: 1, name: "Spring turn-on" })).toBeInTheDocument()
-    expect(screen.getByText("Wednesday, April 28. We'll text your window the day before.")).toBeInTheDocument()
+    expect(screen.getByText("Wednesday, April 28")).toBeInTheDocument()
+    expect(screen.getByText("We'll text you the time the day before.")).toBeInTheDocument()
     expect(screen.getByText("$120, charged to the Visa ending 4242 after the visit")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Reschedule" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Cancel visit" })).toBeInTheDocument()
@@ -198,7 +199,8 @@ describe("VisitScreen", () => {
 
   it("names the window and who is coming once it was told", () => {
     render(<VisitScreen customer={andrea} job={passJobWindowTold} visitId="v1" today={TODAY} days={days.v1} />)
-    expect(screen.getByText("Wednesday, April 28, between 8 and 10 am, with Ryan.")).toBeInTheDocument()
+    expect(screen.getByText("Wednesday, April 28 at 8:00 am")).toBeInTheDocument()
+    expect(screen.getByText("Ryan")).toBeInTheDocument()
   })
 
   it("inside 24 hours offers Text Ryan with the visit named, and no buttons that act", () => {
@@ -211,7 +213,7 @@ describe("VisitScreen", () => {
     render(<VisitScreen customer={andrea} job={repairJob} visitId="v3" today={TODAY} />)
     expect(screen.getByText("Paid Nov 3, card $145")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Receipt" })).toHaveAttribute("href", "/account/receipts/pay_1")
-    expect(screen.getByText("Done Tuesday, November 3, 2026.")).toBeInTheDocument()
+    expect(screen.getByText("Done Tuesday, November 3, 2026")).toBeInTheDocument()
   })
 
   it("a visit that is not in the job renders nothing", () => {

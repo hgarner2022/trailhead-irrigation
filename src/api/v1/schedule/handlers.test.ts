@@ -124,7 +124,7 @@ describe("schedule.offerDays", () => {
     expect(days.map((d) => d.day)).toEqual([...days.map((d) => d.day)].sort())
     for (const d of days) {
       expect(d.day >= "2027-04-26" && d.day <= "2027-05-31").toBe(true)
-      expect(d.window).toMatch(/^\d+ (am )?to \d+ (am|pm)$/)
+      expect(d.window).toMatch(/^\d+:\d{2} (am|pm)$/)
     }
     // soonest first: all three sit inside the first five working days that have room
     expect(days[2]!.day <= "2027-05-07").toBe(true)

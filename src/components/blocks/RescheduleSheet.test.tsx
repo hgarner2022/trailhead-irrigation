@@ -11,6 +11,8 @@ describe("RescheduleSheet", () => {
     render(<RescheduleSheet {...props} />)
     await userEvent.click(screen.getByRole("button", { name: "Reschedule" }))
     expect(screen.getByRole("heading", { name: "Pick a new day" })).toBeInTheDocument()
+    expect(screen.getAllByRole("radio")).toHaveLength(3)
+    await userEvent.click(screen.getByRole("button", { name: "Show more days" }))
     expect(screen.getAllByRole("radio")).toHaveLength(5)
     expect(screen.getAllByRole("radio")[0]).toBeChecked()
     expect(screen.getByRole("button", { name: "Move it to Thursday, Apr 29" })).toBeInTheDocument()

@@ -60,20 +60,12 @@ export const CANCEL_REFUSED = `This visit can't be canceled online. Text or call
 export const TEXT_RYAN_WHY = "Ryan plans his route the day before, so changes this close go through him."
 export const DAY_FAILED = "We couldn't save that day."
 
-function clock(minutes: number): { hour: number; minute: number; meridiem: "am" | "pm" } {
-  const m = ((minutes % 1440) + 1440) % 1440
-  const h = Math.floor(m / 60)
-  return { hour: h % 12 === 0 ? 12 : h % 12, minute: m % 60, meridiem: h < 12 ? "am" : "pm" }
-}
-const part = (c: ReturnType<typeof clock>) => (c.minute ? `${c.hour}:${String(c.minute).padStart(2, "0")}` : `${c.hour}`)
-
-/** "between 9 and 11 am" from a start "HH:MM": the two-hour window the day-before text tells (`windowText`), never the visit's length. Null before a start time is set. Shown only once that text exists. */
-export function windowPhrase(startTime: string | null | undefined): string | null {
+/** "10:30 am" from a start "HH:MM": the one exact time a customer reads, never a window or a span. Null before a start time is set. */
+export function timePhrase(startTime: string | null | undefined): string | null {
   const match = startTime?.match(/^(\d{2}):(\d{2})/)
   if (!match) return null
-  const start = clock(Number(match[1]) * 60 + Number(match[2]))
-  const end = clock(Number(match[1]) * 60 + Number(match[2]) + 120)
-  return start.meridiem === end.meridiem ? `between ${part(start)} and ${part(end)} ${end.meridiem}` : `between ${part(start)} ${start.meridiem} and ${part(end)} ${end.meridiem}`
+  const h = Number(match[1])
+  return `${h % 12 === 0 ? 12 : h % 12}:${match[2]} ${h < 12 ? "am" : "pm"}`
 }
 
 export type VisitPill = { status: "scheduled" | "done" | "needs-a-day" | "cancelled" | "skipped"; label: string }
@@ -126,12 +118,13 @@ export function paymentLine(p: { amount: number; method: string; paidOn: string 
   return p.amount < 0 ? `Refunded${on}, ${how} $${-p.amount}` : `Paid${on}, ${how} $${p.amount}`
 }
 
-/** The line that promises a window later: a day is a promise, a window is a message. */
-export const WINDOW_LATER = "We'll text your window the day before."
+/** The line for a visit that has a day and no time yet: the day-before text states the time. */
+export const TIME_LATER = "We'll text you the time the day before."
 
 export interface DayLineFacts extends VisitDayFacts {
   canceledOn?: string | null
   windowTold: boolean
+  /** the exact start, "10:30 am"; null while the visit has a day and no time we have told */
   window: string | null
   personFirstName: string | null
   /** days are on offer for a visit with no day */
@@ -139,8 +132,7 @@ export interface DayLineFacts extends VisitDayFacts {
 }
 
 /**
- * A visit's day in two parts (design section 5), for a card with a heading and a line under it and for the one sentence on the visit page. A booked visit is its day with
- * "We'll text your window the day before." until the day-before message told the window, then its day with the window and who is coming. Done and canceled visits say so
+ * A visit's day in two parts (design section 5), for a card with a heading and a line under it and for the one sentence on the visit page. A booked visit with a time is "Wednesday, April 28 at 10:30 am" and who is coming; one with a day and no time yet says the day-before text states it. Done and canceled visits say so
  * with their day; a visit with no day says it is coming. A customer with neither a mobile nor an email can never be texted a window, so the line says to call.
  */
 export function dayParts(v: DayLineFacts, today: string, reachable = true): { heading: string; detail: string | null; sentence: string } {
@@ -162,11 +154,12 @@ export function dayParts(v: DayLineFacts, today: string, reachable = true): { he
     const note = v.personFirstName ? `${v.personFirstName} will be there that day.` : "We'll be there that day."
     return { heading: day, detail: note, sentence: `${day}. ${note}` }
   }
-  if (v.windowTold && v.window) {
-    const window = `${v.window}${v.personFirstName ? `, with ${v.personFirstName}` : ""}`
-    return { heading: day, detail: `${window[0]!.toUpperCase()}${window.slice(1)}.`, sentence: `${day}, ${window}.` }
+  if (v.window) {
+    const heading = `${day} at ${v.window}`
+    const note = v.personFirstName ? `${v.personFirstName} is coming.` : null
+    return { heading, detail: note, sentence: note ? `${heading}. ${note}` : `${heading}.` }
   }
-  const note = reachable ? WINDOW_LATER : "Call Ryan for your window."
+  const note = reachable ? TIME_LATER : "Call Ryan for the time."
   return { heading: day, detail: note, sentence: `${day}. ${note}` }
 }
 

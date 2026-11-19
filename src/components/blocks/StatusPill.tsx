@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import type { PassStatus } from "@/lib/admin/types"
 import { JOB_WORDS, REASON_WORDS, WORK_WORDS, type Job, type JobState, type MoneyState, type WorkState } from "@/lib/admin/jobs"
 
-// The only status chip in the app (docs/DESIGN.md, "The recipe"), coloured by what the status
+// The only status chip in the app, a badge system of tint, dot and word (Mailchimp-style, in our tokens: docs/plans/2026-11-19-customer-side-polish-research.md, section 1e), (docs/DESIGN.md, "The recipe"), coloured by what the status
 // means for the business (docs/DESIGN.md, Copy): good outcomes green, a
 // booked visit orange, past due red, and the quiet states grey. The label is
 // the plain word in sentence case. It sits under a panel's subtitle or at a row's right, never in a grid cell.
@@ -78,7 +78,8 @@ export function StatusPill({ status, label, className, ...rest }: StatusPillProp
   // "not-yet" has no word: nothing is due yet, so nothing is drawn
   if (!word) return null
   return (
-    <Badge {...rest} data-slot="status-pill" data-status={status} variant="outline" className={cn("whitespace-nowrap", TONES[status], className)}>
+    <Badge {...rest} data-slot="status-pill" data-status={status} variant="outline" className={cn("gap-1.5 whitespace-nowrap", TONES[status], className)}>
+      <span aria-hidden data-slot="status-dot" className="size-1.5 shrink-0 rounded-full bg-current" />
       {word}
     </Badge>
   )
