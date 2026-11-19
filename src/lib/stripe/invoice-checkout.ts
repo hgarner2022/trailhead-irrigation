@@ -19,7 +19,8 @@ const NO_FORM = `We couldn't open the card form. Try again, or call Ryan at ${BU
 /**
  * The pay page's button: opens a Stripe Checkout Session in payment mode for the invoice's total and returns the address to send the
  * customer to. The token is checked here again (the action is reachable by anyone). An invoice that is paid or canceled, or whose job
- * was paid by check, Venmo or cash in the meantime, opens nothing. The session keeps the card for later (`setup_future_usage`), and
+ * was paid by check, Venmo or cash in the meantime, opens nothing. The card is kept only when the customer ticks Stripe's own "Save my payment method for future use" box (`saved_payment_method_options.payment_method_save`,
+ * unticked by default; it needs the Stripe `customer` the session already has, so a pass holder or a customer with a card gets the same box), and
  * both it and its payment intent carry the invoice id so the webhook finds the invoice. The session's id is stored on the invoice.
  */
 export async function startBillPayment(db: Database, stripe: Stripe, input: { invoiceId: string; token: string | null; origin: string; now?: Date }): Promise<StartBillPayment> {
@@ -50,10 +51,12 @@ export async function startBillPayment(db: Database, stripe: Stripe, input: { in
       {
         mode: "payment",
         customer,
-        // Only a card: the page says the card is kept for the visits after this one, and a bank debit could not be charged off-session.
+        // Only a card: a saved bank debit could not be charged off-session.
         allowed_payment_method_types: ["card"],
         line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: toCents(invoice.total), product_data: { name: `Trailhead invoice ${invoice.number}` } } }],
-        payment_intent_data: { setup_future_usage: "off_session", metadata },
+        // Stripe shows its own unticked save box; no setup_future_usage, so nothing is kept unless it is ticked.
+        saved_payment_method_options: { payment_method_save: "enabled" },
+        payment_intent_data: { metadata },
         metadata,
         success_url: `${input.origin}/pay/${invoice.id}/paid`,
         cancel_url: `${input.origin}/pay/${invoice.id}?token=${signToken("invoice-pay", invoice.id)}`,
