@@ -1,5 +1,5 @@
 {
-  "id": "f7761ba2-8ae8-4001-87cb-6dad12f6fc08",
+  "id": "952f6cd3-0181-4db4-b34d-b5c3a0bad9ae",
   "prevId": "e8be28c3-5582-4d8a-bb9d-2386ea80a7a9",
   "version": "7",
   "dialect": "postgresql",
@@ -3047,37 +3047,9 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "delivery_status": {
-          "name": "delivery_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "delivery_error": {
-          "name": "delivery_error",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         }
       },
-      "indexes": {
-        "message_log_provider_id_idx": {
-          "name": "message_log_provider_id_idx",
-          "columns": [
-            {
-              "expression": "provider_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "message_log_organization_id_organization_id_fk": {
           "name": "message_log_organization_id_organization_id_fk",
