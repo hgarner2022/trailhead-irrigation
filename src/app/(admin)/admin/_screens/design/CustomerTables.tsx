@@ -35,21 +35,21 @@ const Money = ({ row }: { row: CustomerJobRow }) => (
   </span>
 )
 
-const Who = ({ who, day }: { who?: string; day?: CustomerJobRow["day"] }) => (who ? <PersonChip name={who} stopsToday={day?.stops ?? 0} /> : <span className="text-muted-foreground">No one yet</span>)
+const Who = ({ who, day }: { who?: string; day?: CustomerJobRow["day"] }) => (who ? <PersonChip table name={who} stopsToday={day?.stops ?? 0} /> : <span className="text-muted-foreground">No one yet</span>)
 
 function JobDay({ row }: { row: CustomerJobRow }) {
   if (!row.day) return <span className="text-muted-foreground">No day yet</span>
   return (
     <span className="block">
-      <DayChip iso={row.day.iso} label={row.day.label} stops={row.day.stops} who={row.who ?? "No one yet"} />
-      <span className={`${QUIET} -mt-2.5 pl-8`}>{row.day.time}</span>
+      <DayChip table iso={row.day.iso} label={row.day.label} stops={row.day.stops} who={row.who ?? "No one yet"} />
+      <span className={`${QUIET} -mt-1 pl-8`}>{row.day.time}</span>
     </span>
   )
 }
 
 export function JobsTable({ rows, customer }: { rows: readonly CustomerJobRow[]; customer: string }) {
   const open = useRowOpen()
-  const job = (r: CustomerJobRow) => <JobChip id={r.id} name={r.name} customer={customer} status={r.status} next={r.day ? `${r.day.label}, ${r.day.time}` : undefined} />
+  const job = (r: CustomerJobRow) => <JobChip table id={r.id} name={r.name} customer={customer} status={r.status} next={r.day ? `${r.day.label}, ${r.day.time}` : undefined} />
   const columns: DataTableColumn<CustomerJobRow>[] = [
     { id: "job", header: "Job", cell: job },
     { id: "day", header: "Day", cell: (r) => <JobDay row={r} /> },
@@ -84,10 +84,10 @@ export function JobsTable({ rows, customer }: { rows: readonly CustomerJobRow[];
 
 export function InvoicesTable({ rows, customer }: { rows: readonly CustomerInvoiceRow[]; customer: string }) {
   const open = useRowOpen()
-  const invoice = (r: CustomerInvoiceRow) => <InvoiceChip id={r.id} number={r.number} customer={customer} status={r.status} statusLabel={r.statusLabel} total={r.amount} balance={r.status === "paid" ? "$0" : r.amount} due={r.due} />
+  const invoice = (r: CustomerInvoiceRow) => <InvoiceChip table id={r.id} number={r.number} customer={customer} status={r.status} statusLabel={r.statusLabel} total={r.amount} balance={r.status === "paid" ? "$0" : r.amount} due={r.due} />
   const columns: DataTableColumn<CustomerInvoiceRow>[] = [
     { id: "invoice", header: "Invoice", cell: invoice },
-    { id: "job", header: "Job", cell: (r) => <JobChip id={r.jobId} name={r.jobName} customer={customer} /> },
+    { id: "job", header: "Job", cell: (r) => <JobChip table id={r.jobId} name={r.jobName} customer={customer} /> },
     { id: "sent", header: "Sent", cell: (r) => r.sent },
     { id: "due", header: "Due", cell: (r) => r.due },
     { id: "amount", header: "Amount", align: "right", cell: (r) => r.amount },
@@ -107,7 +107,7 @@ export function InvoicesTable({ rows, customer }: { rows: readonly CustomerInvoi
             <StatusPill status={r.status} label={r.statusLabel} />
           </div>
           <div className="flex items-center justify-between gap-3 text-sm">
-            <JobChip id={r.jobId} name={r.jobName} customer={customer} />
+            <JobChip table id={r.jobId} name={r.jobName} customer={customer} />
             <span className="tabular-nums">{r.amount}</span>
           </div>
           <span className="text-sm text-muted-foreground">Sent {r.sent}, due {r.due}</span>
@@ -128,11 +128,11 @@ const StripeLink = ({ url }: { url?: string }) =>
 
 export function PaymentsTable({ rows, customer, omitJob }: { rows: readonly CustomerPaymentRow[]; customer: string; omitJob?: boolean }) {
   const open = useRowOpen()
-  const receipt = (r: CustomerPaymentRow) => <PaymentChip id={r.id} receipt={r.receipt} />
+  const receipt = (r: CustomerPaymentRow) => <PaymentChip table id={r.id} receipt={r.receipt} />
   const columns: DataTableColumn<CustomerPaymentRow>[] = [
     { id: "receipt", header: "Receipt", cell: receipt },
     { id: "date", header: "Date", cell: (r) => r.date },
-    ...(omitJob ? [] : [{ id: "job", header: "Job", cell: (r: CustomerPaymentRow) => <JobChip id={r.jobId} name={r.jobName} customer={customer} /> }]),
+    ...(omitJob ? [] : [{ id: "job", header: "Job", cell: (r: CustomerPaymentRow) => <JobChip table id={r.jobId} name={r.jobName} customer={customer} /> }]),
     { id: "how", header: "How", cell: (r) => r.how },
     { id: "amount", header: "Amount", align: "right", cell: (r) => r.amount },
     { id: "stripe", header: "Stripe", hideHeader: true, cell: (r) => <StripeLink url={r.stripeUrl} /> },
@@ -151,7 +151,7 @@ export function PaymentsTable({ rows, customer, omitJob }: { rows: readonly Cust
             <span className="font-medium tabular-nums">{r.amount}</span>
           </div>
           <div className="text-sm text-muted-foreground">{r.date}, {r.how}</div>
-          {!omitJob && <JobChip id={r.jobId} name={r.jobName} customer={customer} />}
+          {!omitJob && <JobChip table id={r.jobId} name={r.jobName} customer={customer} />}
           <StripeLink url={r.stripeUrl} />
         </div>
       )}

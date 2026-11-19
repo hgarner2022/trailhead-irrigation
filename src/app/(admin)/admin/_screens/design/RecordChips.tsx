@@ -15,30 +15,33 @@ export const paymentHref = (id: string) => `/admin/payments?payment=${q(id)}`
 export const propertyHref = (customerId: string) => `/admin/customers?customer=${q(customerId)}#property-h`
 
 type Size = "row" | "band"
+/** In a table row a chip is a line of text, not a headline: 14px medium, 32px tall from md (44px on a phone), and a day or a person never wraps. */
+const TABLE = "md:min-h-8 text-sm font-medium"
+const tableCls = (table?: boolean, nowrap?: boolean) => (table ? `${TABLE}${nowrap ? " whitespace-nowrap" : ""}` : undefined)
 
-export const CustomerChip = ({ id, name, phone, address, openJobs = 0, unpaid, size }: { id: string; name: string; phone?: string; address?: string; openJobs?: number; unpaid?: string; size?: Size }) => (
-  <RecordChip kind="customer" name={name} href={recordHref.customer(id)} size={size} preview={customerPreview({ id, name, phone, address, openJobs, unpaid })} />
+export const CustomerChip = ({ id, name, phone, address, openJobs = 0, unpaid, size, table }: { table?: boolean; id: string; name: string; phone?: string; address?: string; openJobs?: number; unpaid?: string; size?: Size }) => (
+  <RecordChip kind="customer" name={name} href={recordHref.customer(id)} size={size} className={tableCls(table, true)} preview={customerPreview({ id, name, phone, address, openJobs, unpaid })} />
 )
 
-export const JobChip = ({ id, name, customer, status = "scheduled", next, total = "$0", size }: { id: string; name: string; customer: string; status?: PillStatus; next?: string; total?: string; size?: Size }) => (
-  <RecordChip kind="job" name={name} href={recordHref.job(id)} size={size} preview={jobPreview({ id, name, customer, status, next, total })} />
+export const JobChip = ({ id, name, customer, status = "scheduled", next, total = "$0", size, table }: { table?: boolean; id: string; name: string; customer: string; status?: PillStatus; next?: string; total?: string; size?: Size }) => (
+  <RecordChip kind="job" name={name} href={recordHref.job(id)} size={size} className={tableCls(table)} preview={jobPreview({ id, name, customer, status, next, total })} />
 )
 
-export const InvoiceChip = ({ id, number, customer, status, statusLabel, total, balance, due, size }: { id: string; number: string; customer: string; status: PillStatus; statusLabel: string; total: string; balance: string; due: string; size?: Size }) => (
-  <RecordChip kind="invoice" name={number} href={recordHref.invoice(id)} size={size} preview={invoicePreview({ id, number, customer, status, statusLabel, total, balance, due })} />
+export const InvoiceChip = ({ id, number, customer, status, statusLabel, total, balance, due, size, table }: { table?: boolean; id: string; number: string; customer: string; status: PillStatus; statusLabel: string; total: string; balance: string; due: string; size?: Size }) => (
+  <RecordChip kind="invoice" name={number} href={recordHref.invoice(id)} size={size} className={tableCls(table, true)} preview={invoicePreview({ id, number, customer, status, statusLabel, total, balance, due })} />
 )
 
-export const PaymentChip = ({ id, receipt }: { id: string; receipt: string }) => <RecordChip kind="payment" name={`Receipt ${receipt}`} href={paymentHref(id)} />
+export const PaymentChip = ({ id, receipt, table }: { id: string; receipt: string; table?: boolean }) => <RecordChip kind="payment" name={`Receipt ${receipt}`} href={paymentHref(id)} className={tableCls(table, true)} />
 
-export const PersonChip = ({ name, role = "Technician", stopsToday = 0, size }: { name: string; role?: string; stopsToday?: number; size?: Size }) => (
-  <RecordChip kind="person" name={name} href={recordHref.person()} size={size} preview={personPreview({ name, role, stopsToday })} />
+export const PersonChip = ({ name, role = "Technician", stopsToday = 0, size, table }: { table?: boolean; name: string; role?: string; stopsToday?: number; size?: Size }) => (
+  <RecordChip kind="person" name={name} href={recordHref.person()} size={size} className={tableCls(table, true)} preview={personPreview({ name, role, stopsToday })} />
 )
 
-export const DayChip = ({ iso, label, stops, who }: { iso: string; label: string; stops: number; who: string }) => (
-  <RecordChip kind="day" name={label} href={recordHref.day(iso)} preview={dayPreview({ isoDay: iso, label, stops, who })} />
+export const DayChip = ({ iso, label, stops, who, table }: { table?: boolean; iso: string; label: string; stops: number; who: string }) => (
+  <RecordChip kind="day" name={label} href={recordHref.day(iso)} className={tableCls(table, true)} preview={dayPreview({ isoDay: iso, label, stops, who })} />
 )
 
-export const AddressChip = ({ customerId, street }: { customerId: string; street: string }) => <RecordChip kind="property" name={street} href={propertyHref(customerId)} />
+export const AddressChip = ({ customerId, street, table }: { customerId: string; street: string; table?: boolean }) => <RecordChip kind="property" name={street} href={propertyHref(customerId)} className={tableCls(table)} />
 
 /** What a click on a whole row does in a prototype: the record opens (here, a toast says which); in the app it is the record host. */
 export function useRowOpen(): (what: string) => void {

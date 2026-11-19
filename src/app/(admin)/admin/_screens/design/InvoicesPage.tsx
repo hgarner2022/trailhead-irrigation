@@ -60,7 +60,7 @@ export function InvoicesPage({ rows, initialStatus = STATUS_ALL, initialQuery = 
 
   const amount = (r: InvoiceListRow) => <span className="tabular-nums">{money(r.amount)}</span>
   const pill = (r: InvoiceListRow) => <StatusPill status={INVOICE_PILL[r.status].pill} label={INVOICE_PILL[r.status].label} />
-  const chip = (r: InvoiceListRow) => <InvoiceChip id={r.id} number={r.number} customer={r.customer} status={INVOICE_PILL[r.status].pill} statusLabel={INVOICE_PILL[r.status].label} total={money(r.amount)} balance={money(r.balance)} due={dayWords(r.dueOn)} />
+  const chip = (r: InvoiceListRow) => <InvoiceChip table id={r.id} number={r.number} customer={r.customer} status={INVOICE_PILL[r.status].pill} statusLabel={INVOICE_PILL[r.status].label} total={money(r.amount)} balance={money(r.balance)} due={dayWords(r.dueOn)} />
   const actions = (r: InvoiceListRow) => (
     <span className="flex flex-wrap items-center justify-end gap-1">
       {r.balance > 0 && (
@@ -80,8 +80,8 @@ export function InvoicesPage({ rows, initialStatus = STATUS_ALL, initialQuery = 
   )
   const columns: DataTableColumn<InvoiceListRow>[] = [
     { id: "number", header: "Invoice", cell: chip },
-    { id: "customer", header: "Customer", cell: (r) => <CustomerChip id={r.customerId} name={r.customer} address={r.street} unpaid={money(r.balance)} /> },
-    { id: "job", header: "Job", cell: (r) => <JobChip id={r.jobId} name={r.jobName} customer={r.customer} status="done" total={money(r.amount)} /> },
+    { id: "customer", header: "Customer", cell: (r) => <CustomerChip table id={r.customerId} name={r.customer} address={r.street} unpaid={money(r.balance)} /> },
+    { id: "job", header: "Job", cell: (r) => <JobChip table id={r.jobId} name={r.jobName} customer={r.customer} status="done" total={money(r.amount)} /> },
     { id: "amount", header: "Amount", align: "right", cell: amount },
     { id: "sent", header: "Sent", cell: (r) => dayWords(r.sentOn) },
     { id: "due", header: "Due", cell: (r) => dayWords(r.dueOn) },
@@ -129,10 +129,10 @@ export function InvoicesPage({ rows, initialStatus = STATUS_ALL, initialQuery = 
                   {pill(r)}
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <CustomerChip id={r.customerId} name={r.customer} address={r.street} unpaid={money(r.balance)} />
+                  <CustomerChip table id={r.customerId} name={r.customer} address={r.street} unpaid={money(r.balance)} />
                   {amount(r)}
                 </div>
-                <JobChip id={r.jobId} name={r.jobName} customer={r.customer} status="done" total={money(r.amount)} />
+                <JobChip table id={r.jobId} name={r.jobName} customer={r.customer} status="done" total={money(r.amount)} />
                 <span className="text-sm text-muted-foreground">Sent {dayWords(r.sentOn)}, due {dayWords(r.dueOn)}</span>
                 {actions(r)}
               </div>

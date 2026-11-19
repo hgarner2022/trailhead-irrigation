@@ -33,7 +33,7 @@ export function SummaryBand({ items, className }: { items: readonly SummaryItem[
   )
 }
 
-const CELL = "flex min-w-0 items-start gap-3 bg-card px-5 py-4"
+const CELL = "relative flex min-w-0 flex-col items-start gap-2 bg-card px-4 py-4 sm:flex-row sm:gap-3 sm:px-5"
 const TARGET = "group text-left transition-colors hover:bg-row-hover focus-visible:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
 
 function Cell({ item }: { item: SummaryItem }) {
@@ -47,10 +47,10 @@ function Cell({ item }: { item: SummaryItem }) {
       )}
       <div className="min-w-0 flex-1">
         <p className="text-sm text-muted-foreground">{item.label}</p>
-        <p className={cn("mt-1 break-words font-display text-2xl font-semibold leading-tight", item.tone === "alert" ? "text-destructive" : "text-navy", (href || onClick) && "group-hover:underline group-focus-visible:underline")}>{item.value}</p>
+        <p className={cn("mt-1 break-words font-display text-xl font-semibold leading-tight sm:text-2xl", item.tone === "alert" ? "text-destructive" : "text-navy", (href || onClick) && "group-hover:underline group-focus-visible:underline")}>{item.value}</p>
         {item.sub && <p className={cn("mt-0.5 break-words text-sm", item.tone === "alert" ? "font-medium text-destructive" : "text-muted-foreground")}>{item.sub}</p>}
       </div>
-      {(href || onClick) && <ChevronRight aria-hidden className="mt-1 size-4 shrink-0 text-muted-foreground opacity-40 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />}
+      {(href || onClick) && <ChevronRight aria-hidden className="absolute right-3 top-4 size-4 shrink-0 text-muted-foreground opacity-40 sm:static sm:mt-1 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />}
     </>
   )
   if (href) {
