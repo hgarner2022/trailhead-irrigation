@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 // A record named inside a line of text, as a link (Hannah, Nov 19 2026: in "Past visits" the service is that job and the person is a
 // person, and both should look like what they are). A small chip: the kind's icon, the name, a hairline and the cream hover of a row; the
 // name is the link and a screen reader hears the kind first ("Job: Fall blowout"). `kind` picks the icon and the words (job, person, customer, invoice, receipt, visit, property, day): every record name on any screen is one.
-// The name wraps between words and is never cut with an ellipsis or inside a word. Pure render, server component.
+// The label never wraps or ellipsises (wrapping is only between one chip and the next); a narrow place gives the short form. Pure render, server component.
 
 export type RecordChipKind = "job" | "person" | "customer" | "invoice" | "receipt" | "visit" | "property" | "day"
 
@@ -34,11 +34,11 @@ export function RecordChip({ kind, name, href, short, className }: RecordChipPro
       <span className="sr-only">{KIND_WORDS[kind]}: </span>
       {short ? (
         <>
-          <span className="min-w-0 whitespace-normal break-normal md:hidden">{short}</span>
-          <span className="hidden min-w-0 whitespace-normal break-normal md:inline">{name}</span>
+          <span className="min-w-0 whitespace-nowrap md:hidden">{short}</span>
+          <span className="hidden min-w-0 whitespace-nowrap md:inline">{name}</span>
         </>
       ) : (
-        <span className="min-w-0 whitespace-normal break-normal">{name}</span>
+        <span className="min-w-0 whitespace-nowrap">{name}</span>
       )}
     </Link>
   )
