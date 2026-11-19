@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { chargingWords, paidWords, receiptLine, type CollectPlan, type PayChoice, type PayOption } from "@/lib/money/collect"
 import { cn } from "@/lib/utils"
 import { FormRow } from "./FormRow"
+import { SplitButton } from "./SplitButton"
 import { useFooterSlot } from "./record-slot"
 
 // "How is this paid?": the second beat of a finished visit, in one block for the visit panel and the job panel. Pure props. The
@@ -26,11 +27,11 @@ export interface CollectPaymentProps {
   /** the customer's first name, for "Receipt emailed to Andrea." */
   firstName: string
   /** the Charge button: `payments.chargeCard` */
-  onCharge: () => Promise<Answer>
+  onCharge: (o?: { notify: boolean }) => Promise<Answer>
   /** the Record button: `payments.record` */
-  onRecord: (input: { method: "check" | "venmo" | "cash"; reference?: string; amount?: number }) => Promise<Answer>
+  onRecord: (input: { method: "check" | "venmo" | "cash"; reference?: string; amount?: number; notify?: boolean }) => Promise<Answer>
   /** Send the invoice: `invoices.send` */
-  onInvoice: (options?: { report: boolean }) => Promise<Answer>
+  onInvoice: (options?: { report: boolean; notify?: boolean }) => Promise<Answer>
   /** Leave it unpaid: nothing is written */
   onLater: () => void
   onClose: () => void
@@ -71,6 +72,8 @@ export interface AskCopy {
   message: string
   confirmLabel: string
   reportOption?: { label: string; with: string; without: string }
+  /** the quiet twin under the confirm's caret ("Record without notifying"): the confirm becomes a `SplitButton` and the handler gets `notify: false` */
+  quiet?: string
 }
 
 export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, onInvoice, onLater, onClose, buttonLabel, notNow, confirmFor, onSettled, className }: CollectPaymentProps) {
@@ -105,13 +108,14 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
     if (ask) return setAsking(ask)
     run()
   }
-  const run = () => {
+  const run = (notify?: boolean) => {
     start(async () => {
-      if (picked.value === "card") settle(await onCharge(), { title: paidWords("card_on_file"), line: receiptLine(firstName) })
-      else if (picked.value === "invoice") settle(await onInvoice({ report }), { title: "Invoice sent", line: `A pay link went to ${firstName}.` })
+      const quiet = notify === false
+      if (picked.value === "card") settle(await onCharge(quiet ? { notify: false } : undefined), { title: paidWords("card_on_file"), line: receiptLine(firstName) })
+      else if (picked.value === "invoice") settle(await onInvoice({ report, ...(quiet ? { notify: false } : {}) }), { title: "Invoice sent", line: `A pay link went to ${firstName}.` })
       else if (handed) {
         const method = picked.value as "check" | "venmo" | "cash"
-        settle(await onRecord({ method, ...(reference.trim() ? { reference: reference.trim() } : {}), ...(plan.needsAmount && amount ? { amount: Number(amount) } : {}) }), { title: paidWords(method), line: receiptLine(firstName) })
+        settle(await onRecord({ method, ...(reference.trim() ? { reference: reference.trim() } : {}), ...(plan.needsAmount && amount ? { amount: Number(amount) } : {}), ...(quiet ? { notify: false } : {}) }), { title: paidWords(method), line: receiptLine(firstName) })
       }
     })
   }
@@ -184,11 +188,12 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
           message={asking.reportOption ? (report ? asking.reportOption.with : asking.reportOption.without) : asking.message}
           confirmLabel={asking.confirmLabel}
           slot="collect-confirm"
-          onConfirm={async () => {
+          onConfirm={async (variant) => {
             setAsking(null)
-            run()
+            run(variant === "quiet" ? false : undefined)
             return { ok: true }
           }}
+          renderConfirm={asking.quiet ? ({ confirm, pending: busyNow }) => <SplitButton label={asking.confirmLabel} onClick={() => confirm("notify")} disabled={busyNow} menuLabel="More ways" menu={[{ label: asking.quiet!, onSelect: () => confirm("quiet") }]} /> : undefined}
         >
           {asking.reportOption && (
             <div className="flex min-h-11 items-center gap-3 text-sm font-medium">

@@ -1,40 +1,104 @@
 "use client"
 
-import { BillingSection, type BillingRowData } from "@/components/blocks/BillingSection"
-import { RecordFooter } from "@/components/blocks/RecordFooter"
-import { RecordPanel } from "@/components/blocks/RecordPanel"
+import { ChevronDown, ExternalLink } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MoneyCell } from "@/components/blocks/MoneyCell"
+import { RecordFacts } from "@/components/blocks/RecordPanel"
+import { SectionCard } from "@/components/blocks/SectionCard"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
-import { StatusPill } from "@/components/blocks/StatusPill"
-import { noop } from "./job-fixtures"
+import { InvoicesTable, PaymentsTable } from "./CustomerTables"
+import type { CustomerBillingData } from "./customer-fixtures"
 
-// The Billing section of the customer's page (docs/plans/2026-11-19-job-object-design.md), in the same words as a job's: Unpaid and Paid this
-// year in the facts, then every invoice and payment of the customer, newest first, an invoice row opening that invoice. Shown inside the one
-// RecordPanel the Customer opens in. Pure props over fixtures.
+// The Billing card of the customer's page, in the same state model as a job's (docs/plans/2026-11-19-job-object-design.md): one line that says
+// "Paid in full" or "$145 unpaid", the facts (Total, Paid, Unpaid, Card on file with Update card and Open in Stripe), then the Payments table and
+// the Invoices table on `DataTable`. A card on file is a Stripe customer's card: Update card sends the customer the card link (it confirms
+// first), Open in Stripe leaves the app. Refund is under More in the title bar. Nothing here shows a result: an action's result is a toast and
+// the table gains a row. Pure props.
 
-const invoice = (id: string, title: string, detail: string, status: "bill-sent" | "overdue" | "paid", label: string): BillingRowData => ({ id, kind: "invoice", title, detail, end: <StatusPill status={status} label={label} />, onOpen: noop })
+const LINK = "inline-flex min-h-11 items-center gap-1 rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
 
-export const CUSTOMER_ROWS: BillingRowData[] = [
-  invoice("i1", "Invoice 1042", "Repair, Nov 18 · due Dec 2 · $145", "bill-sent", "Sent"),
-  invoice("i0", "Invoice 1031", "Spring turn-on, Apr 14 · due Apr 28 · $145", "paid", "Paid"),
-  { id: "p0", kind: "payment", title: "Card", detail: "Invoice 1031 · Apr 20", amount: "$145" },
-  { id: "p1", kind: "payment", title: "Venmo", detail: "Fall blowout, Oct 12 · @andrea-d", amount: "$115" },
-]
+export interface CustomerBillingProps {
+  billing: CustomerBillingData
+  customerName: string
+  /** Update card: opens the card-link confirmation */
+  onUpdateCard: () => void
+  /** Refund: opens the refund confirmation */
+  onRefund: () => void
+}
 
-export function CustomerBilling({ rows = CUSTOMER_ROWS, open = true }: { rows?: BillingRowData[]; open?: boolean }) {
-  const unpaid = rows.some((r) => r.kind === "invoice" && r.id === "i1") ? "$145" : "$0"
+export function CustomerBilling({ billing, customerName, onUpdateCard, onRefund }: CustomerBillingProps) {
+  const { card } = billing
+  const paidInFull = billing.line === "Paid in full"
+  const facts = [
+    ["Total", billing.total],
+    ["Paid", billing.paid],
+    ["Unpaid", billing.unpaid],
+    [
+      "Card on file",
+      card ? (
+        <span id="card-row" className="flex flex-wrap items-center gap-x-4">
+          <span>
+            {card.brand} ending {card.last4}, expires {card.expires}
+          </span>
+          <button type="button" onClick={onUpdateCard} className={LINK}>
+            Update card
+          </button>
+          <a href={card.stripeUrl} target="_blank" rel="noreferrer" className={LINK}>
+            Open in Stripe
+            <ExternalLink className="size-3.5" aria-hidden />
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        </span>
+      ) : (
+        <span id="card-row" className="flex flex-wrap items-center gap-x-4">
+          <span className="text-muted-foreground">No card yet</span>
+          <button type="button" onClick={onUpdateCard} className={LINK}>
+            Send card link
+          </button>
+        </span>
+      ),
+    ],
+  ] as const
   return (
-    <RecordPanel
-      open={open}
-      onOpenChange={() => undefined}
-      title="Andrea Dalton"
-      subtitle="480 Briggs St, Erie"
-      facts={[["Phone", "(970) 555-0123"], ["Card", "Visa ending 4242"]]}
-      footer={<RecordFooter primary={{ label: "New job", onClick: noop }} secondary={[{ label: "Send a message", onClick: noop }]} more={[{ label: "Edit", onClick: noop }]} />}
+    <SectionCard
+      title="Billing"
+      id="billing-h"
+      flush
+      action={
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="ghost" className="min-h-11 gap-1 text-muted-foreground">
+              More
+              <ChevronDown className="size-4" aria-hidden />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="bottom" avoidCollisions={false}>
+            <DropdownMenuItem className="min-h-11" disabled={billing.payments.length === 0} onSelect={onRefund}>
+              Refund a payment
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
     >
-      <section aria-labelledby="cust-billing">
-        <SectionHeading id="cust-billing">Billing</SectionHeading>
-        <BillingSection summary={[["Unpaid", unpaid], ["Paid this year", rows.length ? "$405" : "$0"]]} rows={rows} emptyLine="No invoices or payments yet." />
+      <div className="px-5 py-4">
+        <p data-slot="billing-state" className="mb-2 text-base font-semibold">
+          {paidInFull ? <span className="text-positive-deep">Paid in full</span> : billing.unpaid === "$0" ? <span className="text-muted-foreground">{billing.line}</span> : <MoneyCell text={billing.line} tone={billing.tone} />}
+        </p>
+        <RecordFacts divided rows={facts.map(([k, v]) => [k, v])} />
+      </div>
+      <section aria-label={`${customerName}'s payments`} className="border-t border-border">
+        <div className="px-5 pt-3">
+          <SectionHeading level={3} id="payments-h">Payments</SectionHeading>
+        </div>
+        {billing.payments.length ? <PaymentsTable rows={billing.payments} customer={customerName} /> : <p className="px-5 py-4 text-sm text-muted-foreground">No payments yet. A payment shows here with its receipt.</p>}
       </section>
-    </RecordPanel>
+      <section aria-label={`${customerName}'s invoices`} className="border-t border-border">
+        <div className="px-5 pt-3">
+          <SectionHeading level={3} id="invoices-h">Invoices</SectionHeading>
+        </div>
+        {billing.invoices.length ? <InvoicesTable rows={billing.invoices} customer={customerName} /> : <p className="px-5 py-4 text-sm text-muted-foreground">No invoices yet. An invoice shows here when a done job is sent to be paid.</p>}
+      </section>
+    </SectionCard>
   )
 }

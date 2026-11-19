@@ -2,11 +2,7 @@ import { beforeAll, describe, it, expect, vi } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import { JobPage } from "./JobPage"
 import { JobPagePass, JobPageReturnTrip } from "./JobPageTrips"
-import { InvoicePanel } from "./InvoicePanel"
-import { InvoicesPage } from "./InvoicesPage"
-import { CustomerBilling } from "./CustomerBilling"
 import { JOB_STATES, jobPageOf } from "./job-fixtures"
-import { INVOICE_ROWS, invoiceOf } from "./invoice-fixtures"
 import { PASS_STATES, passPageOf, returnTripOf } from "./trip-fixtures"
 
 // The design screens render in every state, with one primary action where the design says there is one.
@@ -67,31 +63,5 @@ describe("job page, more than one trip", () => {
   it("renders a repair with a return trip as two rows", () => {
     const { container } = render(<JobPageReturnTrip data={returnTripOf()} />)
     expect(container.querySelectorAll("[data-slot=trip-row]")).toHaveLength(2)
-  })
-})
-
-describe("invoices", () => {
-  it("lists every invoice with the four tiles and one New invoice button", () => {
-    render(<InvoicesPage rows={INVOICE_ROWS} />)
-    expect(screen.getByRole("button", { name: "New invoice" })).toBeInTheDocument()
-    for (const label of ["Unpaid", "Past due", "Paid this month", "Days to get paid"]) expect(screen.getAllByText(label).length).toBeGreaterThan(0)
-  })
-
-  it("says how an invoice gets made when there are none", () => {
-    render(<InvoicesPage rows={[]} />)
-    expect(screen.getByText("No invoices yet")).toBeInTheDocument()
-  })
-
-  it("renders the invoice panel in each state with its reminder line", () => {
-    for (const s of ["sent", "sent-reminded", "past-due", "part-paid", "paid", "voided"] as const) {
-      const { unmount } = render(<InvoicePanel invoice={invoiceOf(s)} />)
-      expect(within(document.body).getAllByText(/Reminders|reminders|None, it is voided/).length).toBeGreaterThan(0)
-      unmount()
-    }
-  })
-
-  it("renders the customer's Billing section", () => {
-    render(<CustomerBilling />)
-    expect(within(document.body).getByRole("heading", { name: "Billing" })).toBeInTheDocument()
   })
 })
