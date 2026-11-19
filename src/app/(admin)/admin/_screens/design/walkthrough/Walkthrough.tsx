@@ -1,12 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react"
 import { Receipt } from "lucide-react"
 import { AdminShell, type AdminSection } from "@/components/blocks/AdminShell"
 import { MORE_ITEMS, NAV } from "@/components/blocks/admin-nav"
 import { useToast } from "@/components/blocks/Toast"
 import { Button } from "@/components/ui/button"
-import { nameOfRoute, ownerOf, resolveRoute, searchWorld } from "./data"
+import { allRows, nameOfRoute, ownerOf, resetExtras, resolveRoute, searchWorld } from "./data"
 import { NewJobSheet, RouteScreen } from "./WalkScreens"
 import { navigate, parseHref, routeTitle, type Route } from "./routes"
 
@@ -85,6 +85,10 @@ export function Walkthrough({ start = START }: { start?: Route }) {
   const [stack, setStack] = useState<Route[]>([start])
   const [epoch, setEpoch] = useState(0)
   const [sheet, setSheet] = useState(false)
+  const [made, setMade] = useState(0)
+  // the grid's rows: the world's, then the jobs made here
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rows = useMemo(() => allRows(), [made])
   const toastRef = useRef<(m: string) => void>(() => undefined)
   const top = stack[stack.length - 1]!
 
@@ -150,6 +154,8 @@ export function Walkthrough({ start = START }: { start?: Route }) {
 
   const startOver = () => {
     setSheet(false)
+    resetExtras()
+    setMade((n) => n + 1)
     setStack([START])
     setEpoch((n) => n + 1)
   }
@@ -161,9 +167,9 @@ export function Walkthrough({ start = START }: { start?: Route }) {
         <ToastBridge toastRef={toastRef} />
         <Strip stack={stack} onJump={jump} onStartOver={startOver} />
         <div key={`${epoch}-${top.screen}-${top.id ?? ""}`}>
-          <RouteScreen route={top} onOpenJob={(id) => go({ screen: "job", id })} onOpenCustomer={(id) => go({ screen: "customer", id })} onNew={() => go({ screen: "jobs", newJob: true })} />
+          <RouteScreen route={top} rows={rows} onOpenJob={(id) => go({ screen: "job", id })} onOpenCustomer={(id) => go({ screen: "customer", id })} onNew={() => go({ screen: "jobs", newJob: true })} />
         </div>
-        <NewJobSheet open={sheet} onClose={() => setSheet(false)} onAdd={() => go({ screen: "job", id: "andrea-repair" })} />
+        <NewJobSheet open={sheet} onClose={() => setSheet(false)} onMade={() => setMade((n) => n + 1)} onCreated={(id) => go({ screen: "job", id })} />
       </AdminShell>
     </div>
   )

@@ -1,8 +1,7 @@
 "use client"
 
-import { Fragment } from "react"
+import { useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
 import type { GridCardSlots } from "@/components/blocks/DataGridCard"
 import { MoneyCell } from "@/components/blocks/MoneyCell"
@@ -18,9 +17,17 @@ import { JobFlow } from "../JobFlow"
 import { JobPage } from "../JobPage"
 import { JobPagePass } from "../JobPageTrips"
 import { BILLING_WORDS, GRID_WORDS, SEASON_OPTIONS, SERVICE_OPTIONS, WHO_OPTIONS, jobGridCard, jobGridColumns, type BillingState, type GridJob, type GridStatus } from "../JobsGridDesign"
-import { CUSTOMER_ROWS, GRID_ROWS, customerIdOf, INVOICES, customerPage, invoicePage, jobView, otherCustomer, type CustomerListRow } from "./data"
+import { CUSTOMER_ROWS, customerIdOf, INVOICES, customerPage, invoicePage, jobView, otherCustomer, type CustomerListRow } from "./data"
+import snapshot from "@/lib/admin/fixtures/snapshot.json"
+import type { AdminData } from "@/lib/admin/types"
+import { HomeScreen } from "../../HomeScreen"
+import { NewJob } from "../../NewJob"
+import { ReportsScreen } from "../../ReportsScreen"
+import { ScheduleScreen } from "../../ScheduleScreen"
+import { SettingsScreen } from "../../SettingsScreen"
+import { makeNewJobActions, WALK_DATA, WALK_TODAY } from "./walk-new-job"
 import { Placeholder } from "./Placeholder"
-import { dayTitle, type Route } from "./routes"
+import { type Route } from "./routes"
 
 // The screens of the walkthrough, each one of the design pages over the walkthrough's data (docs/plans/2026-11-19-prototype-walkthrough-spec.md,
 // section 2). Records open through the links the pages already draw; the two grids pass the router to their `onOpen`. No page component is edited.
@@ -29,18 +36,21 @@ import { dayTitle, type Route } from "./routes"
 const jobsColumns: GridColumnDef<GridJob>[] = jobGridColumns.map((c) =>
   "id" in c && c.id === "property" ? { ...c, cell: ({ row }) => (row.original.property ? <RecordChip kind="property" name={row.original.property} href={`${recordHref.customer(customerIdOf(row.original.name))}#property-h`} className="text-sm font-medium md:min-h-8" /> : null) } : c,
 )
+// Home, Schedule, Reports and Settings are the live screens over the repo's own fixture (the catalogue stories use the same); they are not re-keyed to this world's customers.
+const LIVE = snapshot as AdminData
+const LIVE_TODAY = "2026-11-12T19:56:30Z"
 const money = (n: number) => `$${n.toLocaleString("en-US")}`
 
 /** The Jobs grid of the design with New job wired: it opens the sheet, and Add job opens the flow at Schedule. */
-export function WalkJobsGrid({ onOpen, onNew }: { onOpen: (id: string) => void; onNew: () => void }) {
-  const out = GRID_ROWS.filter((r) => r.billingState === "bill-sent" || r.billingState === "overdue").length
+export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen: (id: string) => void; onNew: () => void }) {
+  const out = rows.filter((r) => r.billingState === "bill-sent" || r.billingState === "overdue").length
   return (
     <div data-slot="jobs-grid-design">
-      <PageHeader title="Jobs" context={`${GRID_ROWS.length} jobs. ${out} invoices out.`} primary={<Button type="button" className="min-h-11" onClick={onNew}>New job</Button>} />
+      <PageHeader title="Jobs" context={`${rows.length} jobs. ${out} invoices out.`} primary={<Button type="button" className="min-h-11" onClick={onNew}>New job</Button>} />
       <DataGrid
         columns={jobsColumns}
         card={jobGridCard}
-        data={GRID_ROWS}
+        data={rows}
         getRowId={(r: GridJob) => r.id}
         search={{ column: "name", placeholder: "Search by name, street or pass number" }}
         filters={[
@@ -62,19 +72,10 @@ export function WalkJobsGrid({ onOpen, onNew }: { onOpen: (id: string) => void; 
   )
 }
 
-/** The New job sheet is a stand-in here: it says what the live sheet does, and Add job lands on a repair waiting for a day. */
-export function NewJobSheet({ open, onClose, onAdd }: { open: boolean; onClose: () => void; onAdd: () => void }) {
-  return (
-    <ConfirmDialog
-      open={open}
-      onOpenChange={(o) => !o && onClose()}
-      title="New job"
-      message="The live sheet asks who it is for, what we are doing (a Season Pass or one service), and an optional day. It adds the job with the lines and prices and, with a day, texts the customer. Here, Add job makes Andrea Dalton's repair, waiting for a day."
-      confirmLabel="Add job"
-      slot="walkthrough-new-job"
-      onConfirm={async () => (onAdd(), { ok: true })}
-    />
-  )
+/** The real New job sheet (`_screens/NewJob.tsx`) over the walkthrough's customers and catalogue; Add job makes a row and opens its page. */
+export function NewJobSheet({ open, onClose, onCreated, onMade }: { open: boolean; onClose: () => void; onCreated: (jobId: string) => void; onMade: () => void }) {
+  const actions = useMemo(() => makeNewJobActions(onMade), [onMade])
+  return <NewJob data={WALK_DATA} today={WALK_TODAY} open={open} onOpenChange={(o) => !o && onClose()} actions={actions} onCreated={(made) => onCreated(made.jobId)} />
 }
 
 const customerColumns: GridColumnDef<CustomerListRow>[] = [
@@ -120,10 +121,10 @@ const NotFound = ({ what }: { what: string }) => (
 )
 
 /** One route, rendered. Keyed by the caller so a record's state resets when another opens. */
-export function RouteScreen({ route, onOpenJob, onOpenCustomer, onNew }: { route: Route; onOpenJob: (id: string) => void; onOpenCustomer: (id: string) => void; onNew: () => void }) {
+export function RouteScreen({ route, rows, onOpenJob, onOpenCustomer, onNew }: { route: Route; rows: GridJob[]; onOpenJob: (id: string) => void; onOpenCustomer: (id: string) => void; onNew: () => void }) {
   switch (route.screen) {
     case "jobs":
-      return <WalkJobsGrid onOpen={onOpenJob} onNew={onNew} />
+      return <WalkJobsGrid rows={rows} onOpen={onOpenJob} onNew={onNew} />
     case "customers":
       return <CustomersList onOpen={onOpenCustomer} />
     case "invoices":
@@ -160,32 +161,12 @@ export function RouteScreen({ route, onOpenJob, onOpenCustomer, onNew }: { route
       return inv ? <InvoicePage invoice={inv} /> : <NotFound what="That invoice" />
     }
     case "home":
-      return (
-        <Placeholder title="Home" live="/admin" line="Home is Today: the day's stops, the money strip and what needs you. The live screen is /admin. Start from a job instead.">
-          <Fragment>
-            <RecordChip kind="job" name="Andrea Dalton, Sprinkler repair visit" href={recordHref.job("andrea-repair")} />
-            <RecordChip kind="customer" name="Andrea Dalton" href={recordHref.customer("andrea")} />
-          </Fragment>
-        </Placeholder>
-      )
+      return <HomeScreen data={LIVE} today={LIVE_TODAY} />
     case "schedule":
-      return (
-        <Placeholder title={route.id ? dayTitle(route.id) : "Schedule"} live="/admin/schedule" line={route.id ? `The Day view of ${dayTitle(route.id)}. The live screen is /admin/schedule.` : "Week, Day and List. The live screen is /admin/schedule."}>
-          <p className="text-muted-foreground">The job that day holds:</p>
-          <RecordChip kind="job" name="Andrea Dalton, Sprinkler repair visit" href={recordHref.job("andrea-repair")} />
-        </Placeholder>
-      )
+      return <ScheduleScreen data={LIVE} today={LIVE_TODAY} defaultDay={route.id} />
     case "reports":
-      return (
-        <Placeholder title="Reports" live="/admin/reports">
-          <RecordChip kind="invoice" name="Invoices" href="/admin/invoices" />
-        </Placeholder>
-      )
+      return <ReportsScreen data={LIVE} today={LIVE_TODAY} />
     case "settings":
-      return (
-        <Placeholder title="Settings" live="/admin/settings" line="People, Services, Billing, Messages and API keys. The live screen is /admin/settings.">
-          <RecordChip kind="job" name="Jobs" href="/admin/jobs" />
-        </Placeholder>
-      )
+      return <SettingsScreen data={LIVE} today={LIVE_TODAY} />
   }
 }

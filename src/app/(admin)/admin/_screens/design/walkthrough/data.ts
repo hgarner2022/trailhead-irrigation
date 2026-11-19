@@ -1,7 +1,7 @@
 import type { SearchHit } from "@/lib/admin/search-hit"
 import { type CustomerPageData, customerPageOf } from "../customer-fixtures"
 import { INVOICE_ROWS, dayWords, invoicePageOf, money, type InvoiceFixture, type InvoiceListRow, type InvoicePageData } from "../invoice-fixtures"
-import { GRID_ROWS, contactOf, customerIdOf, customerOfJob, isRealCustomer, rowOf } from "./jobs-data"
+import { allRows, GRID_ROWS, contactOf, customerIdOf, customerOfJob, isRealCustomer, rowOf } from "./jobs-data"
 import type { Route } from "./routes"
 
 export * from "./jobs-data"
@@ -55,7 +55,7 @@ export function customerPage(id: string): CustomerPageData | null {
 }
 
 export const otherCustomer = (id: string) => {
-  const row = GRID_ROWS.find((r) => customerIdOf(r.name) === id)
+  const row = allRows().find((r) => customerIdOf(r.name) === id)
   return row ? { name: row.name, street: row.property } : null
 }
 
@@ -204,13 +204,13 @@ export function searchWorld(query: string): SearchHit[] {
   if (q.length < 2) return []
   const qd = digits(q)
   const names = new Map<string, { id: string; name: string; street: string; phone: string }>()
-  for (const r of GRID_ROWS) {
+  for (const r of allRows()) {
     const id = customerIdOf(r.name)
     if (!names.has(id)) names.set(id, { id, name: r.name, street: r.property, phone: contactOf(r.name).text })
   }
   const customers: SearchHit[] = [...names.values()]
     .filter((c) => `${c.name} ${c.street}`.toLowerCase().includes(q) || (qd.length >= 3 && digits(c.phone).includes(qd)))
     .map((c) => ({ kind: "customer", id: c.id, title: c.name, detail: c.street, href: `/admin/customers?customer=${c.id}`, contact: c.phone }))
-  const jobs: SearchHit[] = GRID_ROWS.filter((r) => `${r.name} ${r.property} ${r.title}`.toLowerCase().includes(q)).map((r) => ({ kind: "job", id: r.id, title: r.title === r.service && r.service !== "Season Pass" ? `${r.name}, ${r.title}` : `${r.name}, ${r.title}`, detail: r.property, href: `/admin/jobs?job=${r.id}` }))
+  const jobs: SearchHit[] = allRows().filter((r) => `${r.name} ${r.property} ${r.title}`.toLowerCase().includes(q)).map((r) => ({ kind: "job", id: r.id, title: r.title === r.service && r.service !== "Season Pass" ? `${r.name}, ${r.title}` : `${r.name}, ${r.title}`, detail: r.property, href: `/admin/jobs?job=${r.id}` }))
   return [...customers, ...jobs]
 }

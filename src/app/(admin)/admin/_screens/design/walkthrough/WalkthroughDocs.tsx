@@ -11,9 +11,8 @@ const STEPS: [string, string][] = [
 ]
 
 const PLACEHOLDERS = [
-  "Home, Schedule, Reports and Settings: a labelled stand-in with a link back into the prototype.",
-  "Customers other than Andrea Dalton, Marcus Bell and Dale Whitaker, and Dale's two Season Pass job pages.",
-  "The New job sheet: a one-screen stand-in; the live sheet is NewJob.",
+  "Customer pages for anyone other than Andrea Dalton, Marcus Bell and Dale Whitaker, and Dale's two Season Pass job pages: a labelled stand-in with a link on.",
+  "Home, Schedule, Reports and Settings are the live screens over the repo's own fixture, so their customers are not Andrea, Marcus and Dale. New job is the live sheet: a job you add joins the Jobs grid until Start over.",
   "Links that leave the prototype (a phone number, an email, Stripe, the pay page, a receipt) show a toast: Outside the prototype.",
 ]
 

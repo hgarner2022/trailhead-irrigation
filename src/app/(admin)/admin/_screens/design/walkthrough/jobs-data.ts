@@ -54,7 +54,12 @@ export const INVOICE_OF_JOB: Record<string, { id: string; number: string }> = {
   "g-tom": { id: "inv-21", number: "INV-2026-0021" },
 }
 const OLD = "INV-2026-0001"
-export const rowOf = (id: string) => GRID_ROWS.find((r) => r.id === id)
+/** Jobs made in the prototype (New job, Sell pass): they join the grid until Start over. */
+const EXTRA: GridJob[] = []
+export const allRows = (): GridJob[] => [...GRID_ROWS, ...EXTRA]
+export const registerJob = (row: GridJob) => void EXTRA.push(row)
+export const resetExtras = () => void (EXTRA.length = 0)
+export const rowOf = (id: string) => allRows().find((r) => r.id === id)
 export const customerOfJob = (id: string) => customerIdOf(rowOf(id)?.name ?? "")
 
 export type JobView = { kind: "flow" } | { kind: "page"; data: JobPageData } | { kind: "trips"; data: MultiTripData } | { kind: "dale"; row: GridJob } | { kind: "none" }

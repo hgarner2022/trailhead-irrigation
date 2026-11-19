@@ -66,15 +66,14 @@ export const Laptop: Story = {
 /** The same path at 375: the tab bar and the record pages' phone layouts. */
 export const Phone: Story = { name: "Phone", globals: phone }
 
-/** Starts on the Home placeholder, so you see how a screen that is not part of the prototype reads and where it sends you. */
+/** Starts on Home, the live screen over the repo's own fixture: the day's stops, the money strip and what needs you. */
 export const FromHome: Story = {
   name: "From home",
   args: { start: { screen: "home" } },
   globals: laptop,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
-    await expect(await c.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument()
-    await expect(await c.findByText("Not part of this prototype")).toBeInTheDocument()
+    await expect(await c.findByRole("heading", { level: 1, name: "Today" })).toBeInTheDocument()
   },
 }
 
@@ -89,5 +88,16 @@ export const FromSearch: Story = {
     await userEvent.type(await dialog.findByPlaceholderText(/Search by name/), "Dalton")
     await userEvent.click(await dialog.findByRole("option", { name: /480 Briggs St/, selected: false }).catch(() => dialog.findAllByRole("option").then((o) => o[0]!)))
     await waitFor(() => expect(route(canvasElement)).toMatch(/^(customer:andrea|job:)/))
+  },
+}
+
+/** New job is the real sheet: pick a customer, a service, Add job, and the new job opens as Unscheduled. */
+export const NewJobSheet: Story = {
+  name: "New job",
+  globals: laptop,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await userEvent.click((await c.findAllByRole("button", { name: "New job" }))[0]!)
+    await expect(await within(document.body).findByLabelText("What are we doing?")).toBeInTheDocument()
   },
 }
