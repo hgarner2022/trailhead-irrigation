@@ -48,7 +48,7 @@ export const WithCustomerChanges: Story = {
   },
   render: (args) => narrow(<NeedsAttention {...args} />),
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getAllByRole("button", { name: /^Open visit:/ })).toHaveLength(3)
+    await expect(within(canvasElement).getAllByRole("button", { name: /^Open visit:/ })).toHaveLength(4)
   },
 }
 
