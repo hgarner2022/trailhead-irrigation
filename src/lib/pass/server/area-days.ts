@@ -1,15 +1,12 @@
 import "server-only"
 import type { Database } from "@/db/types"
-import { addDays } from "@/api/v1/shared"
-import { loadTaken, loadWorld } from "@/lib/scheduling/server/inputs"
-import { openSlots as openPersonSlots } from "@/lib/scheduling/slots"
-import { defaultMinutes, type Town } from "@/lib/scheduling/types"
+import { routePeople } from "@/api/v1/people/handlers"
+import { loadOpenDays } from "@/lib/scheduling/server/offers"
+import type { Town } from "@/lib/scheduling/types"
 
-/** The earliest a customer may pick: far enough ahead for the date-set text to be news and the person to be told. */
-export const PICK_LEAD_DAYS = 2
 /** How many days the pass page and the checkout offer. */
 export const OFFERED = 3
-/** The most a screen may ask for (the portal's Reschedule asks for this many); `visits.pick` accepts any day `offeredDays` would give at this count. */
+/** The most a screen may ask for (the portal's Reschedule asks for this many); `visits.pick` accepts any day the offer would give at this count. */
 export const MAX_OFFERED = 5
 
 export interface PickVisit {
@@ -23,65 +20,34 @@ export interface Slot {
   personId: string
   personName: string
   day: string
-  /** "HH:MM", the first open start on the half-hour grid; the two-hour arrival window opens then */
+  /** "HH:MM", the person's first open start that day */
   start: string
-  /** someone already works this customer's area group that day */
+  /** the person already has visits that day */
   areaDay: boolean
 }
 
 /**
- * Days this visit could take inside its window, earliest first, each with the person who would take it: the scheduler's `openSlots` (someone who works the
- * weekday, room in visits and minutes after the buffer, the visits already taken and the busy time on their Jobber
- * calendar, one area group a day). Area days that already have a neighbour come before empty days, so what the
- * customer is offered keeps the route dense.
+ * Open days for this visit, earliest first, one entry per person who has room: the offer rule's open days (docs/plans/2026-11-18-scheduling-engine-design.md,
+ * section 4: tomorrow at the earliest, the service's bookable dates, hours per person, a gap of the service's length after the drive
+ * cushion, under the person's cap, the visit itself leaving its present day). The person whose slot adds the least drive comes first on a
+ * day, so `personFor` takes them; `areaDay` marks a person who already has visits that day.
  */
 export async function openSlots(db: Database, visit: PickVisit, today: string, season?: number): Promise<Slot[]> {
-  const probe = await loadWorld(db, visit.organizationId, today, today)
-  const found = probe.settings.windows.find((w) => w.kind === visit.kind)
-  if (!found) return []
-  // The settings hold one season's windows; another season is the same windows a whole number of years on.
-  const shift = season ? season - Number(found.opensOn.slice(0, 4)) : 0
-  const year = (iso: string) => `${Number(iso.slice(0, 4)) + shift}${iso.slice(4)}`
-  const window = { ...found, opensOn: year(found.opensOn), closesOn: year(found.closesOn) }
-  const first = [window.opensOn.slice(0, 10), addDays(today, PICK_LEAD_DAYS)].sort().at(-1)!
-  const last = window.closesOn.slice(0, 10)
-  if (first > last) return []
-  const loaded = await loadWorld(db, visit.organizationId, first, last)
-  const world = shift ? { ...loaded, settings: { ...loaded.settings, windows: loaded.settings.windows.map((w) => ({ ...w, opensOn: year(w.opensOn), closesOn: year(w.closesOn) })) } } : loaded
-  const taken = await loadTaken(db, visit.organizationId, first, last, [visit.id])
-  const slots = openPersonSlots({ service: { kind: visit.kind, slotMinutes: defaultMinutes(visit.kind) }, town: visit.town as Town, ...world, from: first, to: last, taken, window })
-  const names = new Map(world.people.map((t) => [t.id, t.name]))
-  const seen = new Set<string>()
+  const { open, inputs } = await loadOpenDays(db, { organizationId: visit.organizationId, kind: visit.kind, town: visit.town as Town, visitId: visit.id || undefined, season, today })
+  const names = new Map((await routePeople({ db, organizationId: visit.organizationId })).map((p) => [p.id, p.name]))
   const out: Slot[] = []
-  for (const x of slots) {
-    const key = `${x.day}|${x.personId}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    out.push({ personId: x.personId, personName: names.get(x.personId) ?? "", day: x.day, start: x.start, areaDay: x.areaDay })
+  for (const o of open) {
+    const seen = new Set<string>()
+    // slots are ordered by least added drive: the first person met is the best for the day
+    for (const x of o.slots) {
+      if (seen.has(x.personId)) continue
+      seen.add(x.personId)
+      const mine = o.slots.filter((y) => y.personId === x.personId).map((y) => y.start).sort()
+      out.push({ personId: x.personId, personName: names.get(x.personId) ?? "", day: o.day, start: mine[0]!, areaDay: inputs.booked.some((b) => b.personId === x.personId && b.day === o.day) })
+    }
   }
   return out
 }
 
-/** The first `count` (default `OFFERED`) distinct days, area days before empty ones, in date order. */
-export function offeredDays(slots: Slot[], count = OFFERED): string[] {
-  const days = [...new Set(slots.filter((x) => x.areaDay).map((x) => x.day))]
-  for (const d of new Set(slots.map((x) => x.day))) if (days.length < count && !days.includes(d)) days.push(d)
-  return days.slice(0, count).sort()
-}
-
-/** The person for a picked day: one already working the area, else the first with room. */
+/** The person for a picked day: one already working that day, else the first with room (the one whose slot adds the least drive). */
 export const personFor = (slots: Slot[], day: string): Slot | undefined => slots.find((x) => x.day === day && x.areaDay) ?? slots.find((x) => x.day === day)
-
-/**
- * The days the checkout offers for one visit: the earliest open day, one near the middle of what is open and the last one,
- * each with the person `personFor` would pick. Fewer open days than three returns the days there are; none returns none.
- */
-export function spreadDays(slots: Slot[]): Slot[] {
-  const days = [...new Set(slots.map((x) => x.day))].sort()
-  const at = new Set([0, Math.round((days.length - 1) / 2), days.length - 1])
-  return [...at].filter((i) => i >= 0 && days[i]).map((i) => {
-    const mine = slots.filter((x) => x.day === days[i])
-    const pool = mine.some((x) => x.areaDay) ? mine.filter((x) => x.areaDay) : mine
-    return [...pool].sort((a, b) => a.start.localeCompare(b.start) || a.personId.localeCompare(b.personId))[0]!
-  })
-}

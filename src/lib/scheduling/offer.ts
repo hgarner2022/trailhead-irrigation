@@ -75,6 +75,8 @@ export interface OfferInputs {
   count?: number
   /** 0 is the soonest five days; 1 the next five, ranked the same way */
   page?: number
+  /** days never offered (a visit's present day when it is being moved) */
+  excludeDays?: string[]
 }
 
 export interface OfferSlot {
@@ -207,7 +209,7 @@ function daySlots(input: OfferInputs, day: string): OfferSlot[] {
   return [...byStart.values()].map((x) => x.slot).sort((a, b) => a.added - b.added || a.start.localeCompare(b.start))
 }
 
-interface Open {
+export interface Open {
   day: string
   slots: OfferSlot[]
   same: number
@@ -217,18 +219,11 @@ interface Open {
 
 const tierOf = (same: number, near: number | null): Tier => (same > 0 ? 0 : near !== null && near <= NEAR_MINUTES ? 1 : 2)
 
-/**
- * The offers for one booking: up to `count` days chosen from the soonest five open days, ranked by nearness inside them, sorted
- * by date, one marked `best`. A repair is always offered the earliest open day first. Nothing open returns nothing.
- */
-export function offerFor(input: OfferInputs): Offer[] {
-  const count = Math.max(1, input.count ?? SHOWN)
-  const page = Math.max(0, input.page ?? 0)
-  const soonSize = Math.max(SOON, count)
+/** Every open day from tomorrow, soonest first, until `need` are found; the days a screen or a check reads, before any ranking. */
+export function openDaysFor(input: OfferInputs, need: number): Open[] {
   const dated = Boolean(input.service.bookableFrom || input.service.bookableTo)
   const first = addDays(input.today, 1)
   const horizon = dated ? DATED_HORIZON_DAYS : HORIZON_DAYS
-  const need = soonSize * (page + 1)
   const open: Open[] = []
   // A service with dates is offered through its next run of dates and no further (LAST is `bookable_to`).
   let entered = false
@@ -239,6 +234,7 @@ export function offerFor(input: OfferInputs): Offer[] {
       continue
     }
     entered = true
+    if (input.excludeDays?.includes(day)) continue
     const slots = daySlots(input, day)
     if (!slots.length) continue
     const here = input.booked.filter((v) => v.day === day)
@@ -246,6 +242,19 @@ export function offerFor(input: OfferInputs): Offer[] {
     const near = here.length ? Math.min(...here.map((v) => driveMinutes(v, input.property))) : null
     open.push({ day, slots, same, near, tier: tierOf(same, near) })
   }
+  return open
+}
+
+/**
+ * The offers for one booking: up to `count` days chosen from the soonest five open days, ranked by nearness inside them, sorted
+ * by date, one marked `best`. A repair is always offered the earliest open day first. Nothing open returns nothing.
+ */
+export function offerFor(input: OfferInputs): Offer[] {
+  const count = Math.max(1, input.count ?? SHOWN)
+  const page = Math.max(0, input.page ?? 0)
+  const soonSize = Math.max(SOON, count)
+  const need = soonSize * (page + 1)
+  const open = openDaysFor(input, need)
   const soon = open.slice(page * soonSize, (page + 1) * soonSize)
   const rank = [...soon].sort((a, b) => {
     if (a.tier !== b.tier) return a.tier - b.tier
