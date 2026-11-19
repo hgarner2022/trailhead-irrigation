@@ -97,7 +97,17 @@ const CHECKLIST: Record<JobState, number | null> = { unscheduled: 0, scheduled: 
 
 export function jobPageOf(state: JobState): JobPageData {
   const n = CHECKLIST[state]
-  return { ...buildJob(state), checklist: n === null ? undefined : repairChecklist(n) }
+  return { ...withDelete(buildJob(state)), checklist: n === null ? undefined : repairChecklist(n) }
+}
+
+export const NO_DELETE = "A job with a payment or a sent message can't be deleted, only canceled."
+
+/** Delete job is under More only while nothing has happened (no message sent, no payment, no invoice, no visit done); after that More says why it is not offered. */
+function withDelete(job: JobPageData): JobPageData {
+  if (!job.footer.more) return job
+  const untouched = job.messages.length === 0 && job.pills.length === 1 && job.pills[0].status === "needs-a-day"
+  const item: FooterAction = untouched ? { label: "Delete job", onClick: noop } : { label: NO_DELETE, disabled: true }
+  return { ...job, footer: { ...job.footer, more: [...job.footer.more, item] } }
 }
 
 function buildJob(state: JobState): JobPageData {

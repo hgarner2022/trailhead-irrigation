@@ -17,6 +17,8 @@ export interface ConfirmCopy {
 
 export interface ConfirmFacts {
   first: string
+  /** the customer's full name */
+  customer?: string
   service: string
   amount: string
   phone: string
@@ -68,6 +70,7 @@ export function footerConfirms(f: ConfirmFacts): Record<string, ConfirmCopy> {
     "Refund $145": { title: "Refund $145", message: `Record a $145 refund. ${f.first} gets an email that it was refunded.`, confirmLabel: "Refund $145", destructive: true },
     "Send card link": { title: "Send the card link", message: `Text ${f.first} at ${f.phone} a link to add a card.`, confirmLabel: "Send the link" },
     "Cancel job": { title: "Cancel job", message: `Cancel this job. ${f.first} gets a text that the ${f.service} is canceled. Nothing is charged.`, confirmLabel: "Cancel job", destructive: true },
+    "Delete job": { title: "Delete job", message: `Delete this job for ${f.customer ?? f.first}? It was added by mistake and nothing was sent or charged. This cannot be undone.`, confirmLabel: "Delete", destructive: true },
     "Cancel pass": { title: "Cancel pass", message: `Cancel the Season Pass. ${f.first} gets an email that it is canceled and the visits ahead are removed. Nothing more is charged.`, confirmLabel: "Cancel pass", destructive: true },
   }
 }

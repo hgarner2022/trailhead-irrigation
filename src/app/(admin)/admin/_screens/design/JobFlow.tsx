@@ -111,6 +111,7 @@ export function JobFlow() {
     else if (label === "Record the payment") setAsk("record")
     else if (label === "On my way") dispatch({ type: "active", text: true })
     else if (label === "Start without texting") dispatch({ type: "active", text: false })
+    else if (label === "Delete job") dispatch({ type: "reset" })
     else if (label === "Cancel job") dispatch({ type: "cancel" })
     else if (label === "Send a payment reminder") dispatch({ type: "message", message: say("sms", "invoice-reminder", "Trailhead: a reminder that your $145 invoice for the repair is due Dec 2. Pay here: trailheadirrigation.com/pay/1042") })
   }

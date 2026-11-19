@@ -195,6 +195,7 @@ export function factsOfJob(job: JobPageData): ConfirmFacts {
   const due = /(?:due|since) ([A-Z][a-z]{2} \d+)/.exec(text)?.[1] ?? "Dec 2"
   return {
     first: job.customer.split(" ")[0]!,
+    customer: job.customer,
     service: "repair",
     amount: job.billing.summary.find(([k]) => k === "Total")?.[1] ?? "$145",
     phone: CONTACT.sms,

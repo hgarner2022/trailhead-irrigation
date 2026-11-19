@@ -64,6 +64,14 @@ export const InvoiceSentPhone: Story = story("invoice-sent", phone)
 export const PastDue: Story = story("past-due", laptop)
 export const PastDuePhone: Story = story("past-due", phone)
 
+/** Nothing has happened on the job: More has Cancel job and Delete job (a red Delete, "added by mistake, nothing was sent or charged"). */
+export const Deletable: Story = story("unscheduled", laptop)
+export const DeletablePhone: Story = story("unscheduled", phone)
+
+/** A message has gone out: More has Cancel job only and says "A job with a payment or a sent message can't be deleted, only canceled." */
+export const NotDeletable: Story = story("scheduled", laptop)
+export const NotDeletablePhone: Story = story("scheduled", phone)
+
 /** Ryan sees a canceled job with nothing owed. There are no buttons. */
 export const Canceled: Story = story("canceled", laptop)
 export const CanceledPhone: Story = story("canceled", phone)
