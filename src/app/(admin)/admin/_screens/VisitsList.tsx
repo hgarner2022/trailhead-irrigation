@@ -7,7 +7,7 @@ import { DataGrid } from "@/components/blocks/DataGrid"
 import { routePeople } from "@/lib/admin/people"
 import type { AdminData } from "@/lib/admin/types"
 import { useOpenVisit } from "./RecordHost"
-import { visitColumns } from "./visits-columns"
+import { visitColumns, visitCard } from "./visits-columns"
 import { KIND_OPTIONS, MONEY_OPTIONS, WORK_OPTIONS, visitRows, visitsContext, type VisitRow } from "./visits-model"
 
 // The Schedule's third view, List (docs/plans/2026-11-18-admin-holistic-design.md, 4 and 5.2): every visit of the season on the one data grid,
@@ -59,6 +59,7 @@ export function VisitsList({ data, today, forJob, defaultFilters }: VisitsListPr
       </div>
       <DataGrid
         columns={visitColumns}
+      card={visitCard}
         data={rows}
         getRowId={(r) => r.id}
         search={{ column: "name", placeholder: "Search by name or street" }}

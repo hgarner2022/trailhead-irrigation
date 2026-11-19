@@ -165,3 +165,6 @@ export const PanelNotesAndHistoryTech: Story = {
   },
 }
 export const PanelNotesAndHistoryPhone: Story = { args: { data: withStory(passJobId, PASS_EVENTS, []), defaultJobId: passJobId }, globals: phone }
+
+/** No jobs yet, on a phone: the card list's empty state. */
+export const EmptyPhone: Story = { args: { data: { ...jobsData, jobs: [], visits: [], passes: [] } }, globals: phone }
