@@ -603,4 +603,6 @@ export interface AdminData {
   services?: ServiceItem[]
   /** `TEXTS_PAUSED` is on: every text goes by email until the number is registered with the carriers (Twilio error 30034); absent in the fixtures */
   textsPaused?: boolean
+  /** the latest delivery reports say the sending number is blocked (Twilio 30034 or 30032), switch or no switch; absent in the fixtures */
+  numberBlocked?: boolean
 }

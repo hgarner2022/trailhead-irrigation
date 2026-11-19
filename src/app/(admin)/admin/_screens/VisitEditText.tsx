@@ -10,7 +10,7 @@ import { visitPaid } from "@/lib/admin/jobs"
 import type { AdminData, Client, Pass, Visit } from "@/lib/admin/types"
 import { FIELD } from "./CustomerPicker"
 import type { VisitActions } from "./visit-actions-types"
-import { pausedLine, useTextsPaused } from "./texts-paused"
+import { BLOCKED_LINE, pausedLine, useNumberBlocked, useTextsPaused } from "./texts-paused"
 import { dayLabel, dayOfVisit, kindLabel, priceWords } from "./visit-panel-model"
 
 // Edit (minutes, who, access note: notes are added in the Notes and history block, never rewritten here), Send a text and Cancel visit:
@@ -76,6 +76,7 @@ export function textConsentLine(client: Pick<Client, "phone"> | undefined): stri
 export function TextDialog({ client, visitId, actions, open, onOpenChange }: { client: Pick<Client, "id" | "phone" | "email"> | undefined; visitId?: string; actions?: VisitActions } & Shown) {
   const [text, setText] = useState("")
   const paused = useTextsPaused()
+  const blocked = useNumberBlocked() && !paused
   // While texts are paused the words go by email, so what matters is the address, not the mobile.
   const canSend = paused ? Boolean(client?.email) : Boolean(client?.phone)
   const send = async () => {
@@ -86,7 +87,7 @@ export function TextDialog({ client, visitId, actions, open, onOpenChange }: { c
     return out
   }
   return (
-    <ConfirmDialog slot="visit-text" title="Send a text" message={paused ? pausedLine(client) : textConsentLine(client)} confirmLabel={paused ? "Send email" : "Send text"} confirmDisabled={!text.trim() || !canSend} open={open} onOpenChange={onOpenChange} onConfirm={send}>
+    <ConfirmDialog slot="visit-text" title="Send a text" message={paused ? pausedLine(client) : blocked ? `${BLOCKED_LINE} ${textConsentLine(client)}` : textConsentLine(client)} confirmLabel={paused ? "Send email" : "Send text"} confirmDisabled={!text.trim() || !canSend} open={open} onOpenChange={onOpenChange} onConfirm={send}>
       <FormRow label="Text to send" hideLabel hint={`${text.length}/${TEXT_MAX}`}>
         <Textarea value={text} maxLength={TEXT_MAX} rows={3} onChange={(e) => setText(e.target.value)} placeholder="Running 20 minutes late." />
       </FormRow>

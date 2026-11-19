@@ -87,3 +87,19 @@ export const WithTextsPaused: Story = {
     await expect(within(canvasElement).getByRole("button", { name: /^Open Settings:/ })).toBeInTheDocument()
   },
 }
+
+/** Twenty texts refused because the number is not registered: one row, aged from the newest text, Open Settings. A customer's own refusal keeps its own row. */
+export const WithNumberNotRegistered: Story = {
+  args: {
+    items: [
+      { kind: "text-undelivered", key: "number-not-registered", message: "20 texts not delivered since Nov 18: the number is not registered for business texting yet", since: "2026-11-19T01:00:00Z", members: [{ kind: "text-undelivered", key: "v1:c1:m1", message: "m", since: "2026-11-19T01:00:00Z" }] },
+      { kind: "text-undelivered", key: "v2:c2:m2", visitId: "v2", message: "Text not delivered: Dana, day before. The customer replied STOP.", since: "2026-11-18T22:00:00Z" },
+    ],
+    now: "2026-11-19T01:30:00Z",
+  },
+  render: (args) => narrow(<NeedsAttention {...args} />),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole("button", { name: /^Open Settings:/ })).toBeInTheDocument()
+    await expect(within(canvasElement).getAllByRole("listitem")).toHaveLength(2)
+  },
+}

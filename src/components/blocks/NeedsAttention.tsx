@@ -47,7 +47,8 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Jobs not marked done" },
   "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass canceled" },
   "customer-changed": { icon: UserRound, tone: "bg-warning/10 text-warning", name: "Customer change" },
-  "text-undelivered": { icon: MessageSquare, MessageSquareOff, tone: "bg-warning/10 text-warning", name: "Text problem" },
+  "text-undelivered": { icon: MessageSquare, tone: "bg-warning/10 text-warning", name: "Text problem" },
+  "texts-paused": { icon: MessageSquareOff, tone: "bg-warning/10 text-warning", name: "Texts paused" },
   scheduled: { icon: CalendarCheck, tone: "bg-success/10 text-success", name: "Schedule run" },
   unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Unscheduled" },
 }

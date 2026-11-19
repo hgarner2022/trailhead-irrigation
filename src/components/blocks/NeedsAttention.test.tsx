@@ -167,3 +167,21 @@ describe("the paused texts row", () => {
     expect(screen.getByRole("button", { name: /^Dismiss:/ })).toBeInTheDocument()
   })
 })
+
+describe("the one row about the sending number", () => {
+  const member = { kind: "text-undelivered" as const, key: "v1:c1:m1", message: "m", since: "2026-11-12T17:30:00Z" }
+  const summary = { kind: "text-undelivered" as const, key: "number-not-registered", message: "20 texts not delivered since Nov 18: the number is not registered for business texting yet", since: "2026-11-12T17:30:00Z", members: [member, { ...member, key: "v2:c2:m2" }] }
+  it("opens Settings, and Dismiss clears every text it stands for", async () => {
+    const onDismiss = vi.fn(async () => ({ ok: true as const }))
+    render(<NeedsAttention items={[summary]} now={now} onAction={async () => undefined} onDismiss={onDismiss} />)
+    expect(attentionLabel(summary)).toBe("Open Settings")
+    expect(screen.getByText(summary.message)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: /^Dismiss:/ }))
+    expect(onDismiss).toHaveBeenCalledTimes(2)
+    expect(onDismiss).toHaveBeenCalledWith(expect.objectContaining({ key: "v1:c1:m1" }), false)
+    expect(onDismiss).toHaveBeenCalledWith(expect.objectContaining({ key: "v2:c2:m2" }), false)
+  })
+  it("leaves a single text's own row as Open", () => {
+    expect(attentionLabel({ ...member, visitId: "v1" })).toBe("Open visit")
+  })
+})

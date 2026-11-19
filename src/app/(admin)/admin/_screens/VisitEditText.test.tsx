@@ -3,7 +3,7 @@ import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import type { Visit } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
-import { TextsPausedProvider } from "./texts-paused"
+import { NumberBlockedProvider, TextsPausedProvider } from "./texts-paused"
 import { TextDialog } from "./VisitEditText"
 import { OnMyWay } from "./VisitOnMyWay"
 
@@ -48,5 +48,27 @@ describe("Send a text while texts are paused", () => {
   it("says on my way goes by email", () => {
     paused(<OnMyWay visit={{ id: "v1" } as Visit} open onOpenChange={() => {}} />)
     expect(screen.getByText(/Texts are paused\. This goes by email/)).toBeInTheDocument()
+  })
+})
+
+describe("Send a text while the latest reports say the number is blocked", () => {
+  it("says so first, with the switch off, and still lets the office send", () => {
+    render(
+      <NumberBlockedProvider value>
+        <TextDialog client={both} open onOpenChange={() => {}} />
+      </NumberBlockedProvider>,
+    )
+    expect(screen.getByText(/^Texts are not being delivered right now \(the number is not registered yet\)\. Goes by text to/)).toBeInTheDocument()
+  })
+  it("gives way to the pause words when texts are paused too", () => {
+    render(
+      <TextsPausedProvider value>
+        <NumberBlockedProvider value>
+          <TextDialog client={both} open onOpenChange={() => {}} />
+        </NumberBlockedProvider>
+      </TextsPausedProvider>,
+    )
+    expect(screen.getByText("Texts are paused. This goes by email to andrea@example.com.")).toBeInTheDocument()
+    expect(screen.queryByText(/not being delivered/)).toBeNull()
   })
 })

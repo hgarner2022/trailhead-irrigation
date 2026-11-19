@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import type { Attention } from "@/lib/admin/types"
+import { NUMBER_ROW_KEY } from "@/lib/admin/undelivered"
 import { useUndoToast } from "./UndoToast"
 
 // The two buttons on a Needs action row: the kind's one action, and Dismiss (docs/UX_PATTERNS.md: Home is an
@@ -42,6 +43,8 @@ export interface AttentionActionProps {
 
 /** The row's button: a Card not charged row names the amount it will charge; a failed card on a job with no pass can only be opened. */
 export const attentionLabel = (item: Attention): string => {
+  // The one row about the sending number (many texts, one cause) opens Settings, where Messages explains it.
+  if (item.kind === "text-undelivered" && item.key === NUMBER_ROW_KEY) return "Open Settings"
   if (item.kind === "charge-not-pressed" && item.amount) return `Charge $${item.amount.toLocaleString("en-US")}`
   const base = item.kind === "charge-failed" && !item.passId ? "Open" : ACTION_LABELS[item.kind]
   // a button names what it opens: the visit, the job or the customer the row is about (the choice `attentionRecord` makes in NeedsAttention.tsx)

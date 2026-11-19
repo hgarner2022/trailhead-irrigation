@@ -72,6 +72,6 @@ describe("GET /api/cron/drain", () => {
     expect((await call()).status).toBe(200)
     expect(syncTextsPausedAlert).toHaveBeenCalledTimes(1)
     syncTextsPausedAlert.mockRejectedValueOnce(new Error("db down"))
-    expect(await (await call()).json()).toEqual({ expired: 0, processed: 1 })
+    expect(await (await call()).json()).toEqual({ expired: 0, deliveryChecked: 0, processed: 1 })
   })
 })
