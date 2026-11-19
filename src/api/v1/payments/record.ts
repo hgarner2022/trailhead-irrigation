@@ -75,6 +75,17 @@ export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
     if (!visit) throw notFound("Visit")
     if (visit.jobId !== job.id) throw new ApiError("invalid", "That visit is not on this job", [{ path: "visitId", message: "Choose a visit of the job" }])
   }
+  if (input.paidOn && input.paidOn > paidDay(ctx.now)) throw new ApiError("unprocessable", "Paid on can't be in the future.", [{ path: "paidOn", message: "Choose today or an earlier day" }])
+  if (!visit) {
+    // A payment on the job as a whole follows the same rule as one on a visit: nothing on a canceled job, and never more than the job still has unpaid.
+    if (job.cancelledAt) throw new ApiError("unprocessable", "This job is canceled.")
+    const [lines, payments] = await Promise.all([
+      ctx.db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, job.id), eq(s.lineItem.organizationId, ctx.organizationId))),
+      ctx.db.select().from(s.charge).where(and(eq(s.charge.jobId, job.id), eq(s.charge.organizationId, ctx.organizationId))),
+    ])
+    const owed = jobOwed(lines.filter((l) => !l.cancelledAt), payments, await loadTaxRule(ctx.db, ctx.organizationId))
+    if (input.amount > owed) throw new ApiError("unprocessable", `Only $${owed} is still unpaid on this job`, [{ path: "amount", message: `At most $${owed}` }])
+  }
   let unpriced = false
   if (visit) {
     await assertNoCardChargeInFlight(ctx, visit.id)

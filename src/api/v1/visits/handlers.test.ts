@@ -78,7 +78,7 @@ describe("visits.move after the write", () => {
     await db.update(s.customer).set({ phone: "303-555-0111" }).where(eq(s.customer.id, v!.customerId))
     await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "unplaced", key: "p11-turn-on", message: "x" })
     const first = await move({ id: "p11-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-17" })
-    expect(first).toMatchObject({ status: "scheduled", stopOrder: 1, startTime: "08:00" })
+    expect(first).toMatchObject({ status: "scheduled", stopOrder: 1, startTime: "09:00" })
     expect((await db.select().from(s.adminAlert).where(eq(s.adminAlert.key, "p11-turn-on")))[0]!.resolvedAt).not.toBeNull()
     await move({ id: "p11-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-18" })
     const texts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === "p11-turn-on")
@@ -251,15 +251,15 @@ describe("visits.move texts, Ryan's line and Waiting on customer (step 4)", () =
     await place("p8-turn-on", "2027-05-24")
     const before = (await textsOf("p8-turn-on")).length
     // refused silently: a chosen time is always told
-    await expect(move({ id: "p8-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-24", startTime: "09:00", notify: false })).rejects.toThrow(/always told/)
-    await move({ id: "p8-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-24", startTime: "09:00" })
+    await expect(move({ id: "p8-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-24", startTime: "10:00", notify: false })).rejects.toThrow(/always told/)
+    await move({ id: "p8-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-24", startTime: "10:00" })
     const texts = await textsOf("p8-turn-on")
     expect(texts).toHaveLength(before + 1)
-    expect(texts.at(-1)!.body).toMatch(/^Trailhead: your spring turn-on is still Mon, May 24, now 9 to 11 am\. /)
+    expect(texts.at(-1)!.body).toMatch(/^Trailhead: your spring turn-on is still Mon, May 24, now 10 am to 12 pm\. /)
     const evs = await eventsOf(db, { kind: "visit.moved", aboutId: "p8-turn-on" })
-    expect(evs.at(-1)!.detail).toMatchObject({ texted: true, sameDay: true, startTime: "09:00", day: "2027-05-24" })
+    expect(evs.at(-1)!.detail).toMatchObject({ texted: true, sameDay: true, startTime: "10:00", day: "2027-05-24" })
     // the same time again is nothing new: no second text
-    await move({ id: "p8-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-24", startTime: "09:00" })
+    await move({ id: "p8-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-24", startTime: "10:00" })
     expect(await textsOf("p8-turn-on")).toHaveLength(before + 1)
   })
 

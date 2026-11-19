@@ -18,6 +18,7 @@ import { passesSell } from "./passes/sell"
 import { paymentsList, paymentsRecord, paymentsRefund } from "./payments/handlers"
 import { paymentsChargeCard } from "./payments/charge"
 import { peopleList, peopleCreate, peopleUpdate, peopleDeactivate } from "./people/handlers"
+import { photosAdd, photosList, photosListForJob, photosRemove, photosUpdate } from "./photos/handlers"
 import { propertiesUpdate } from "./properties/handlers"
 import { visitsCancelSelf } from "./portal/cancel"
 import { jobsGet, jobsList } from "./portal/jobs"
@@ -48,6 +49,7 @@ export const handlers: AnyHandler[] = [
   passesList, passesGet, passesCreate, passesSell, passesActivate, passesConsent, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesStartCardUpdate, passesUpdatePreference, passesAddInspection, passesSkipVisit,
   paymentsList, paymentsRecord, paymentsRefund, paymentsChargeCard, paymentsReceipt,
   peopleList, peopleCreate, peopleUpdate, peopleDeactivate,
+  photosAdd, photosList, photosListForJob, photosUpdate, photosRemove,
   propertiesUpdate, propertiesUpdateSelf,
   scheduleRun, scheduleWeek, scheduleDay, scheduleSlots, scheduleOfferDays,
   servicesList, servicesCreate, servicesUpdate, servicesDeactivate,

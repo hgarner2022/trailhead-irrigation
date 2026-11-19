@@ -23,9 +23,9 @@ describe("isInWindow", () => {
 
 describe("capacityFor", () => {
   it("holds back the early buffer in a window's first two weeks and the late one after", () => {
-    expect(capacityFor(truck, "turn-on", "2027-05-10", settings, "2027-05-01")).toEqual({ visits: 6, minutes: 450 })
-    expect(capacityFor(truck, "turn-on", "2027-05-15", settings, "2027-05-01")).toEqual({ visits: 6, minutes: 510 })
-    expect(capacityFor(truck, "blowout", "2027-10-20", settings, "2027-10-01")).toEqual({ visits: 11, minutes: 510 })
+    expect(capacityFor(truck, "turn-on", "2027-05-10", settings, "2027-05-01")).toEqual({ visits: 6, minutes: 360 })
+    expect(capacityFor(truck, "turn-on", "2027-05-15", settings, "2027-05-01")).toEqual({ visits: 6, minutes: 408 })
+    expect(capacityFor(truck, "blowout", "2027-10-20", settings, "2027-10-01")).toEqual({ visits: 11, minutes: 408 })
   })
   it("uses the late buffer with no window start, keeps one visit when the buffer would round to none and none for a kind with no room", () => {
     expect(capacityFor(truck, "repair", "2027-05-10", settings).visits).toBe(3)

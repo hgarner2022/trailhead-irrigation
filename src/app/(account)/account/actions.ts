@@ -7,6 +7,9 @@ import { callApi } from "@/api/core/call"
 import { ApiError } from "@/api/core/errors"
 import { customersStartCardUpdate, customersUpdateSelf, propertiesUpdateSelf } from "@/api/v1/portal/me"
 import { visitsCancelSelf } from "@/api/v1/portal/cancel"
+import { photosAdd, photosRemove } from "@/api/v1/photos/handlers"
+import { PHOTO_WORDS } from "@/lib/photos/rules"
+import type { PhotoItem } from "@/lib/photos/types"
 import { visitsPick } from "@/api/v1/visits/handlers"
 import { ctxFromAccount } from "@/lib/admin/api-ctx"
 import { visitLinkCtx } from "./account-data"
@@ -68,6 +71,43 @@ export async function cancelMyVisitByLink(token: string, visitId: string, reason
     return failure(error, "We couldn't cancel that.")
   }
   drainAfter()
+  return { ok: true }
+}
+
+type PhotoResult = { ok: true; photo: PhotoItem } | { ok: false; message: string }
+
+/**
+ * Records a photo the customer's browser just sent to the private store (`photos.add`): their own visit only, always theirs to see, one `visit.photo_added`
+ * event by the customer and nothing queued (photos are quiet: no text, no email, no Home row). The file never passes through here.
+ */
+export async function addMyPhoto(visitId: string, blobKey: string): Promise<PhotoResult> {
+  try {
+    return { ok: true, photo: await callApi(await ctxFromAccount(), photosAdd, { id: visitId, blobKey }) }
+  } catch (error) {
+    return failure(error, PHOTO_WORDS.uploadFailed) as PhotoResult
+  }
+}
+
+/** The same from a text's link: the customer held to that one visit; the token rides bound into the action, never read from the page. */
+export async function addMyPhotoByLink(token: string, visitId: string, blobKey: string): Promise<PhotoResult> {
+  const ctx = await visitLinkCtx(visitId, token)
+  if (!ctx) return { ok: false, message: "This link didn't work. Use the link in your text." }
+  try {
+    const photo = await callApi(ctx, photosAdd, { id: visitId, blobKey })
+    // the picture's address carries the link's token, as the page's own list does, so it shows without a session
+    return { ok: true, photo: { ...photo, url: `${photo.url}?t=${encodeURIComponent(token)}` } }
+  } catch (error) {
+    return failure(error, PHOTO_WORDS.uploadFailed) as PhotoResult
+  }
+}
+
+/** Removes one of the customer's own photos (`photos.remove`: another customer's, or Ryan's, is refused). */
+export async function removeMyPhoto(photoId: string): Promise<Result> {
+  try {
+    await callApi(await ctxFromAccount(), photosRemove, { id: photoId })
+  } catch (error) {
+    return failure(error, "We couldn't remove that photo.")
+  }
   return { ok: true }
 }
 

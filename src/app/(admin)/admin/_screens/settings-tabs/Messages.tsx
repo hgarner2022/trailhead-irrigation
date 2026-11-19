@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { FormRow } from "@/components/blocks/FormRow"
 import { SettingsList } from "@/components/blocks/SettingsList"
 import { PLACEHOLDERS, templateProblem } from "@/emails/editable"
+import { TEXTS_PAUSED_ROW } from "@/lib/messaging/paused-words"
 import type { AdminData, MessageTemplate } from "@/lib/admin/types"
 import { channelWord, editableRows, lockedWords, messageName, previewMessage, setMessage } from "../settings-messages"
 import type { SettingsState } from "../settings-model"
@@ -75,9 +76,20 @@ function Words({ message, apply }: { message: MessageTemplate; apply: Apply }) {
   )
 }
 
+/** Shown at the top while `TEXTS_PAUSED` is on: the words the office edits here still go, but by email. */
+export function TextsPausedBanner() {
+  return (
+    <p role="status" data-slot="texts-paused-banner" className="rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-foreground">
+      {TEXTS_PAUSED_ROW}
+    </p>
+  )
+}
+
 export function Messages({ state, apply, data }: { state: SettingsState; apply: Apply; data: AdminData }) {
   return (
-    <SettingsList
+    <div className="space-y-4">
+      {data.textsPaused && <TextsPausedBanner />}
+      <SettingsList
       title="Messages"
       description={`The words customers read for the day of a visit, and the invoice reminder text. Placeholders: ${PLACEHOLDERS.map((p) => `{${p.name}} ${p.about}`).join("; ")}.`}
       changes={state.changes}
@@ -94,5 +106,6 @@ export function Messages({ state, apply, data }: { state: SettingsState; apply: 
         children: <Words message={m} apply={apply} />,
       }))}
     />
+    </div>
   )
 }

@@ -1,7 +1,9 @@
 import { AddToCalendarLinks } from "@/components/blocks/AddToCalendarLinks"
 import { VisitPage } from "@/components/blocks/VisitPage"
 import type { PortalCustomerType, PortalJobType } from "@/api/v1/portal/schemas"
+import type { PhotoItem } from "@/lib/photos/types"
 import { visitPageOf } from "@/lib/portal/visit-page"
+import { VisitPhotos, type VisitPhotosProps } from "./VisitPhotos"
 import { CancelControl, RescheduleControl, type VisitActions } from "./VisitControls"
 
 // One visit's page (design section 4): the model from `visitPageOf` in `VisitPage`, with the buttons that carry the server actions as its slots, and Add to
@@ -16,12 +18,16 @@ export interface VisitScreenProps extends VisitActions {
   days?: string[]
   /** Google's add-event link and the app's signed .ics link, for a booked visit */
   calendar?: { googleHref: string; icsHref: string }
+  /** this visit's photos as this customer may see them (their own, and Ryan's marked ones once it is Done); left out where photos are not offered */
+  photos?: { items: PhotoItem[]; configured: boolean; link?: string; onAdd: VisitPhotosProps["onAdd"]; onRemove?: VisitPhotosProps["onRemove"] }
 }
 
-export function VisitScreen({ customer, job, visitId, today, days, calendar, onReschedule, onCancel }: VisitScreenProps) {
+export function VisitScreen({ customer, job, visitId, today, days, calendar, photos, onReschedule, onCancel }: VisitScreenProps) {
   const visit = job.visits.find((v) => v.id === visitId)
   if (!visit) return null
   const model = visitPageOf(job, visit, customer, today)
   const props = { job, visit, today, days, textHref: model.textHref, onReschedule, onCancel }
-  return <VisitPage model={model} rescheduleSlot={<RescheduleControl {...props} />} cancelSlot={<CancelControl {...props} />} calendarSlot={calendar ? <AddToCalendarLinks googleHref={calendar.googleHref} icsHref={calendar.icsHref} /> : null} />
+  const gone = visit.status === "cancelled" || visit.status === "skipped"
+  const photosSlot = photos ? <VisitPhotos visitId={visitId} photos={photos.items} configured={photos.configured} canAdd={!gone} link={photos.link} onAdd={photos.onAdd} onRemove={photos.onRemove} /> : null
+  return <VisitPage model={model} rescheduleSlot={<RescheduleControl {...props} />} cancelSlot={<CancelControl {...props} />} calendarSlot={calendar ? <AddToCalendarLinks googleHref={calendar.googleHref} icsHref={calendar.icsHref} /> : null} photosSlot={photosSlot} />
 }

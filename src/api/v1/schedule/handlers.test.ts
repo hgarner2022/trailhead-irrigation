@@ -34,7 +34,7 @@ describe("schedule.day", () => {
   it("orders a person's stops and carries the points", async () => {
     const out = await callApi(ctxFor(db, readKey), scheduleDay, { day: "2027-05-05", personId: "person_truck-1" })
     expect(out.stops.map((s2) => [s2.visitId, s2.order])).toEqual([["p3-turn-on", 1], ["p4-turn-on", 2]])
-    expect(out.stops[0]).toMatchObject({ town: "Broomfield", startTime: "08:00" })
+    expect(out.stops[0]).toMatchObject({ town: "Broomfield", startTime: "09:00" })
     expect((await callApi(ctxFor(db, readKey), scheduleDay, { day: "2027-05-06" })).stops).toEqual([])
   })
   it("takes `truckId` as the legacy truck id for one season", async () => {
@@ -46,18 +46,24 @@ describe("schedule.day", () => {
 })
 
 describe("schedule.slots", () => {
-  it("offers days with room in the town's area and skips another area's days", async () => {
+  it("offers each person's open starts for a day: a booked hour is not offered, and `remaining` counts the starts", async () => {
     const out = await callApi(ctxFor(db, readKey), scheduleSlots, { service: "turn-on-8", town: "Erie", from: "2027-05-05", days: 3 })
-    // Wed May 5: Ryan is on the south area, so only the second truck is open for Erie.
-    expect(out.data.filter((d) => d.day === "2027-05-05").map((d) => d.personId)).toEqual(["person_truck-2"])
-    const south = await callApi(ctxFor(db, readKey), scheduleSlots, { service: "turn-on-8", town: "Lafayette", from: "2027-05-05", days: 1 })
-    expect(south.data.find((d) => d.personId === "person_truck-1")).toMatchObject({ remaining: 4, slotMinutes: 60 })
-  })
+    // Wed May 5: Ryan has two pass visits there (their 8:00 and 9:00 are only the stack the day was ordered in: busy time with no place), so he is still offered starts.
+    const ryan = out.data.find((d) => d.day === "2027-05-05" && d.personId === "person_truck-1")
+    expect(ryan?.starts.length ?? 0).toBeGreaterThan(0)
+    expect(ryan?.remaining).toBe(ryan?.starts.length)
+    expect(ryan).toMatchObject({ slotMinutes: 60 })
+    expect(ryan!.starts[0]).toBe("09:00")
+    expect(ryan!.starts).toEqual([...ryan!.starts].sort())
+    // One person per start, the one already working that day: the second truck has the same starts but is not listed beside him on May 5.
+    expect(out.data.some((d) => d.day === "2027-05-05" && d.personId === "person_truck-2")).toBe(false)  })
   it("starts tomorrow by default, skips Saturdays for a person who does not work them, and rejects bad input", async () => {
+    // The service opens Apr 26 (its dates), so that is the first day offered from tomorrow's start; May 1 is a Saturday.
     const out = await callApi(ctxFor(db, readKey), scheduleSlots, { service: "turn-on-8", town: "Erie", days: 7 })
-    expect(out.data.map((d) => d.day).sort()[0]).toBe("2027-04-21")
-    expect(out.data.some((d) => d.day === "2027-04-24" && d.personId === "person_truck-1")).toBe(false)
-    expect(out.data.some((d) => d.day === "2027-04-24" && d.personId === "person_truck-2")).toBe(true)
+    expect(out.data.map((d) => d.day).sort()[0]).toBe("2027-04-26")
+    const saturday = await callApi(ctxFor(db, readKey), scheduleSlots, { service: "turn-on-8", town: "Erie", from: "2027-05-01", days: 1 })
+    expect(saturday.data.some((d) => d.personId === "person_truck-1")).toBe(false)
+    expect(saturday.data.some((d) => d.personId === "person_truck-2")).toBe(true)
     await expect(callApi(ctxFor(db, readKey), scheduleSlots, { service: "nope", town: "Erie" })).rejects.toMatchObject({ code: "not_found" })
     await expect(callApi(ctxFor(db, readKey), scheduleSlots, { service: "turn-on-8", town: "Denver" })).rejects.toMatchObject({ code: "invalid" })
     await expect(callApi(ctxFor(db, readKey), scheduleSlots, { service: "turn-on-8", town: "Erie", zones: 12 })).rejects.toMatchObject({ code: "unprocessable" })
@@ -112,16 +118,20 @@ describe("schedule.offerDays", () => {
   const offer = (over: Partial<{ town: "Erie" | "Longmont" | "Lafayette"; kind: "turn-on" | "blowout" | "inspection" }> = {}) =>
     callApi(ctxFor(db, readKey), scheduleOfferDays, { town: "Erie", kind: "turn-on", season: 2027, zones: 8, ...over })
 
-  it("offers up to three days inside the window, spread from the first open day to the last, each with a two-hour window", async () => {
-    const { days } = await offer()
+  it("offers the three best of the soonest five open days inside the dates, each with a two-hour window, and the offers carry the labels and open starts", async () => {
+    const { days, offers } = await offer()
     expect(days).toHaveLength(3)
     expect(days.map((d) => d.day)).toEqual([...days.map((d) => d.day)].sort())
     for (const d of days) {
       expect(d.day >= "2027-04-26" && d.day <= "2027-05-31").toBe(true)
       expect(d.window).toMatch(/^\d+ (am )?to \d+ (am|pm)$/)
     }
-    expect(days[0]!.day <= "2027-04-30").toBe(true)
-    expect(days[2]!.day >= "2027-05-24").toBe(true)
+    // soonest first: all three sit inside the first five working days that have room
+    expect(days[2]!.day <= "2027-05-07").toBe(true)
+    expect(offers.map((o) => o.day)).toEqual(days.map((d) => d.day))
+    expect(offers.filter((o) => o.best)).toHaveLength(1)
+    expect(offers.every((o) => o.slots.length > 0 && o.slots[0]!.personName !== "")).toBe(true)
+    expect(days.map((d) => d.start)).toEqual(offers.map((o) => o.slots[0]!.start))
   })
 
   it("puts the visit on a person who works the weekday and the town's area", async () => {
@@ -159,14 +169,16 @@ describe("schedule.offerDays", () => {
   })
 
   it("returns what exists when the window has fewer open days, and nothing when nothing fits", async () => {
-    const [saved] = await db.select({ settings: s.organization.settings }).from(s.organization)
-    const set = async (opensOn: string, closesOn: string) =>
-      db.update(s.organization).set({ settings: { ...saved!.settings, windows: saved!.settings.windows.map((w) => (w.kind === "inspection" ? { ...w, opensOn, closesOn } : w)) } })
-    await set("2027-07-07", "2027-07-08")
-    expect((await offer({ kind: "inspection" })).days.map((d) => d.day)).toEqual(["2027-07-07", "2027-07-08"])
-    await set("2027-07-11", "2027-07-11")
-    expect((await offer({ kind: "inspection" })).days).toEqual([])
-    await db.update(s.organization).set({ settings: saved!.settings })
+    const set = async (from: string | null, to: string | null) => db.update(s.service).set({ bookableFrom: from, bookableTo: to }).where(eq(s.service.kind, "inspection"))
+    try {
+      await set("07-07", "07-08")
+      expect((await offer({ kind: "inspection" })).days.map((d) => d.day)).toEqual(["2027-07-07", "2027-07-08"])
+      // July 11 2027 is a Sunday: the one day of the dates has nobody working it, and the next year is not searched.
+      await set("07-11", "07-11")
+      expect((await offer({ kind: "inspection" })).days).toEqual([])
+    } finally {
+      await set(null, null)
+    }
   })
 
   it("is open to the checkout visitor", async () => {

@@ -62,6 +62,32 @@ describe("timelineOf", () => {
   })
 })
 
+describe("photo runs", () => {
+  const photo = (id: string, at: string, who = "ryan@example.com", visitId = "v1", kind = "visit.photo_added") => ({ ...event(id, at, kind, { name: "Repair" }, who), visitId })
+  it("folds one person's photos added within ten minutes of each other into one line with the count", () => {
+    const lines = timelineOf([photo("p1", "2027-04-20T15:00:00Z"), photo("p2", "2027-04-20T15:04:00Z"), photo("p3", "2027-04-20T15:12:00Z")], [])
+    expect(lines).toHaveLength(1)
+    expect(lines[0]).toMatchObject({ id: "p3", actor: "Ryan", what: "added 3 photos" })
+  })
+  it("starts a new line after a gap over ten minutes, and for another person, another visit or a removal", () => {
+    const lines = timelineOf(
+      [
+        photo("p1", "2027-04-20T15:00:00Z"),
+        photo("p2", "2027-04-20T15:20:00Z"),
+        photo("p3", "2027-04-20T15:21:00Z", "hannah@example.com"),
+        photo("p4", "2027-04-20T15:22:00Z", "ryan@example.com", "v2"),
+        photo("p5", "2027-04-20T15:23:00Z", "ryan@example.com", "v1", "visit.photo_removed"),
+      ],
+      [],
+    )
+    expect(lines.map((l) => l.what).sort()).toEqual(["added a photo", "added a photo", "added a photo", "added a photo", "removed a photo"])
+  })
+  it("leaves every other event where it is", () => {
+    const lines = timelineOf([photo("p1", "2027-04-20T15:00:00Z"), photo("p2", "2027-04-20T15:01:00Z"), event("e1", "2027-04-20T15:30:00Z", "note", { text: "hi" })], [])
+    expect(lines.map((l) => l.what)).toEqual(["hi", "added 2 photos"])
+  })
+})
+
 describe("message words", () => {
   it("reads a canceled visit's text as \"visit canceled\", in US spelling", () => {
     expect(MESSAGE_KIND_WORDS["visit-cancelled"]).toBe("visit canceled")

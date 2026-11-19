@@ -16,7 +16,9 @@ import type { AdminData } from "@/lib/admin/types"
 import { formatPhone } from "@/lib/format/contact"
 import { dollars, type CollectPlan } from "@/lib/money/collect"
 import { propertyLines, yardFromPass } from "./customers-model"
+import { photosAddedWords } from "@/components/blocks/Photos"
 import { PanelNotes } from "./PanelNotes"
+import { VisitPhotos } from "./PanelPhotos"
 import { RecordLink } from "./RecordHost"
 import { BillBlock } from "./VisitBill"
 import { VisitFooter } from "./VisitFooter"
@@ -24,6 +26,7 @@ import { Included, JobLines } from "./VisitLines"
 import type { VisitActions } from "./visit-actions-types"
 import { visitBar } from "./visit-bar-model"
 import { visitFooter } from "./visit-collect-model"
+import { wasScheduledDay } from "@/lib/admin/visit-day"
 import { dayLabel, dayOfVisit, kindLabel, priceWords, timeWords, visitFacts, whenCanceled, type VisitFacts } from "./visit-panel-model"
 
 // The visit panel, a `RecordPanel` (docs/plans/2026-11-18-admin-holistic-design.md, section 7): from Visits, Home, Schedule, the pass panel and
@@ -50,8 +53,9 @@ function factsOf(facts: VisitFacts): RecordFact[] {
   const { client, visit } = facts
   const day = dayOfVisit(visit)
   const when = visit.status === "cancelled" ? whenCanceled(visit) : day ? `${dayLabel(day)}, ${timeWords(visit).replace(/^Any time/, "any time")}` : "Unscheduled"
+  const was = wasScheduledDay(visit)
   return [
-    ["When", when],
+    ["When", was ? <span key="when">{when}<span className="block text-muted-foreground">{`Was scheduled ${dayLabel(was)}`}</span></span> : when],
     ["Who", visit.personName ?? ""],
     ["Minutes", String(visit.minutes ?? 60)],
     ["Price", facts.priceCancelled ? "Canceled" : priceWords({ price: facts.price })],
@@ -160,6 +164,8 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
     setSettled(false)
     setCollectPlan(plan.plan ?? null)
   }
+  // beat two says how many photos staff added on the visit ("2 photos added"), when any
+  const staffPhotos = (data.photos ?? []).filter((p) => p.visitId === visit.id && !p.byCustomer).length
   const log = (what: string) => async () => (console.info(what, visit.id), { ok: true as const })
   const notes = [facts.customerChange, states.dayPassed && visitDay ? `The day passed on ${dayLabel(visitDay)}. Mark it done or move it.` : ""].filter(Boolean)
   return (
@@ -204,6 +210,11 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
       {collectPlan ? (
         <div data-slot="collect-dialog">
           <SectionHeading id="visit-collect">How is this paid?</SectionHeading>
+          {photosAddedWords(staffPhotos) && (
+            <p data-slot="photos-added" className="mt-1 text-sm text-muted-foreground">
+              {photosAddedWords(staffPhotos)}
+            </p>
+          )}
           <CollectPayment
             className="mt-3"
             plan={collectPlan}
@@ -221,6 +232,7 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
         <>
           <AtTheProperty facts={facts} readOnly={readOnly} />
           {facts.line?.description ? <Included text={facts.line.description} /> : null}
+          <VisitPhotos data={data} visitId={visit.id} visitDone={visit.status === "completed"} readOnly={readOnly} actions={actions?.photos} />
           <PanelNotes about="visit" aboutId={visit.id} timeline={visit.timeline} addNote={actions?.addNote} />
           {/* The plain row stays for a visit whose story is missing (the catalog's fixtures) or empty, so a note a person typed never disappears. */}
           {visit.notes && !visit.timeline?.length ? <RecordFacts rows={[["Notes", visit.notes]]} /> : null}

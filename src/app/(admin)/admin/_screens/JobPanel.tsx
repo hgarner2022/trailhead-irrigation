@@ -21,6 +21,7 @@ import { JobMoneySection } from "./JobMoneySection"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { MoneyPill, StagePill } from "./JobPills"
 import { PanelNotes } from "./PanelNotes"
+import { JobPhotos } from "./PanelPhotos"
 import { CancelDialog, ChangePassDialog, PassSeasonView } from "./PassPanel"
 import { propertyLines } from "./customers-model"
 import { useRunner } from "./use-runner"
@@ -189,6 +190,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
           <Visits visits={facts.visits} facts={facts} today={today} />
         </>
       )}
+      <JobPhotos data={data} visits={facts.visits} readOnly={readOnly} actions={actions?.photos} />
       <JobMoneySection row={row} payments={facts.payments} bill={bill} actions={canAct ? visitActions : undefined} />
       {/* Notes are in the Notes and history block; the plain row stays for a job whose story is missing (the catalog's fixtures), so a note typed at the sale never disappears. */}
       {job.notes && !job.timeline && (

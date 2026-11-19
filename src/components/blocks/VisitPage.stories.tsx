@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import type { VisitPageModel } from "@/lib/portal/visit-page"
 import { AddToCalendarLinks } from "./AddToCalendarLinks"
 import { CancelVisitSheet } from "./CancelVisitSheet"
+import type { PhotoItem } from "@/lib/photos/types"
+import { Photos, type PendingPhoto } from "./Photos"
 import { RescheduleSheet } from "./RescheduleSheet"
 import { VisitPage } from "./VisitPage"
 
@@ -78,3 +80,14 @@ export const PastDueLaptop: Story = {
   args: { model: { ...base, ...done, service: "Repair", dayLine: "Done Saturday, March 20.", money: { tone: "past-due", label: "Past due since Apr 1" }, invoice: { id: "inv_2", total: 115, dueOn: "2027-04-01", status: "overdue", payHref: "/pay/inv_2?token=def" } } },
 }
 export const CanceledPhone: Story = { ...phone, args: { model: { ...base, ...done, pill: { status: "skipped", label: "Canceled" }, dayLine: "Canceled Fri, Apr 2." } } }
+
+// The Photos section on the visit page: the customer's own uploads and the ones Ryan marked, an upload that failed, a photo over 10 MB, and none yet.
+const pic = (hue: number) => `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="hsl(${hue} 35% 62%)"/><rect y="290" width="400" height="110" fill="hsl(${hue} 30% 40%)"/></svg>`)}`
+const shot = (n: number, mine: boolean): PhotoItem => ({ id: `photo_${n}`, visitId: "v1", jobId: "j1", customerId: "c1", url: pic(90 + n * 50), contentType: "image/jpeg", bytes: 1_500_000, addedBy: mine ? "customer" : "staff", addedByName: null, byCustomer: mine, shownToCustomer: true, canRemove: mine, createdAt: "2027-04-28T17:00:00Z" })
+const addOk = async () => ({ ok: true as const, photo: shot(9, true) })
+const withPhotos = (photos: PhotoItem[], pending: PendingPhoto[] = []) => ({ model: base, ...slots, photosSlot: <Photos audience="customer" photos={photos} onAdd={addOk} onRemove={async () => ({ ok: true as const })} initialPending={pending} /> })
+export const PhotosPhone: Story = { ...phone, args: withPhotos([shot(1, true), shot(2, false), shot(3, true)]) }
+export const PhotosLaptop: Story = { ...laptop, args: withPhotos([shot(1, true), shot(2, false), shot(3, true)]) }
+export const PhotosEmptyPhone: Story = { ...phone, args: withPhotos([]) }
+export const PhotoUploadFailedPhone: Story = { ...phone, args: withPhotos([shot(1, true)], [{ key: "f", name: "IMG_1.jpg", state: "problem", message: "Upload failed. Try again.", file: new File(["x"], "IMG_1.jpg", { type: "image/jpeg" }) }]) }
+export const PhotoTooBigLaptop: Story = { ...laptop, args: withPhotos([shot(1, true)], [{ key: "b", name: "IMG_2.jpg", state: "problem", message: "That photo is over 10 MB." }]) }

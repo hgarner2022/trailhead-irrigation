@@ -190,6 +190,9 @@ function whatOf(e: EventForWords, whoName?: string | null): string {
     case "visit.cancelled": return `${name} canceled${e.who === "customer" ? " from the account" : ""}${str(d.reason) ? `, ${d.reason}` : ""}`
     case "visit.skipped": return `${name} skipped`
     case "visit.edited": return editWords(d)
+    // "added a photo", "added 2 photos" (the timeline folds one person's run into one line and sets `count`); the line shows the actor beside it
+    case "visit.photo_added": return `added ${(num(d.count) ?? 1) > 1 ? `${num(d.count)} photos` : "a photo"}`
+    case "visit.photo_removed": return `removed ${(num(d.count) ?? 1) > 1 ? `${num(d.count)} photos` : "a photo"}`
     case "pass.cancelled": {
       const number = str(d.passNumber)
       const reason = str(d.reason)

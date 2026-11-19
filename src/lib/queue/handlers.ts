@@ -1,6 +1,7 @@
 import "server-only"
 import { personByAnyId } from "@/api/v1/people/handlers"
-import { readAppUrl } from "@/lib/env"
+import { readAppUrl, readOptionalEnv } from "@/lib/env"
+import { placePoint } from "@/lib/places/google-server"
 import { cancelPassTask } from "@/lib/pass/server/cancel"
 import { onboardPass } from "@/lib/pass/server/onboard"
 import { chargeVisit } from "@/lib/pass/server/charge-visit"
@@ -26,7 +27,9 @@ export const jobberFeedSync: QueueHandler = async (db, item) => {
 /** `geocode`: payload `{ propertyId }`; one Nominatim lookup, cached on the property. */
 export const geocode: QueueHandler = async (db, item) => {
   const { propertyId } = item.payload as { propertyId: string }
-  await geocodeProperty(db, propertyId)
+  const key = readOptionalEnv("GOOGLE_PLACES_KEY")
+  const google = key ? { key, referer: readOptionalEnv("APP_URL") ?? "https://www.trailheadirrigation.com" } : null
+  await geocodeProperty(db, propertyId, google ? { places: (query) => placePoint(google, query) } : {})
 }
 
 /** `pass-charge`: payload `{ visitId, afterCardUpdate?, retry? }`; the retries of a failed charge (after a card update, and the one three days on). A charge is never queued by Done: it starts only from a button. */
