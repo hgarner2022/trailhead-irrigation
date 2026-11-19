@@ -9,7 +9,7 @@ import type { Database } from "./types"
 export async function atomically(db: Database, build: (d: Database) => PromiseLike<unknown>[]): Promise<void> {
   const batch = (db as unknown as { batch?: (queries: unknown[]) => Promise<unknown> }).batch
   if (typeof batch === "function") {
-    await batch.call(db, build(db) as BatchItem<"pg">[])
+    await batch.call(db, build(db) as unknown as BatchItem<"pg">[])
     return
   }
   await db.transaction(async (tx) => {
