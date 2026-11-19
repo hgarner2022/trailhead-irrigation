@@ -160,6 +160,8 @@ describe("Move's two facts on a visit (step 4)", () => {
     const ctx = ctxFor(db, owner)
     const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p9-blowout"))
     await db.update(s.property).set({ mustBeHome: true }).where(eq(s.property.id, v!.propertyId))
+    // the snapshot keeps no contact details, so this customer could not be reached and Waiting on customer (only when the ask went out) would never show: give them a mobile
+    await db.update(s.customer).set({ phone: "+13035550142" }).where(eq(s.customer.id, v!.customerId))
     // each action at its own minute: the story is ordered by time
     const at = (minute: number) => ctxFor(db, owner, `2027-04-20T16:${String(minute).padStart(2, "0")}:00Z`)
     await callApi(at(1), visitsMove, { id: "p9-blowout", personId: "person_truck-1", scheduledOn: "2027-10-05" })
