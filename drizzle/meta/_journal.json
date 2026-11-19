@@ -187,8 +187,15 @@
     {
       "idx": 26,
       "version": "7",
-      "when": 1795058024202,
-      "tag": "0026_photo",
+      "when": 1795053617241,
+      "tag": "0026_message_delivery",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1795053797241,
+      "tag": "0028_photo",
       "breakpoints": true
     }
   ]

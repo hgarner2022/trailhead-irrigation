@@ -1,6 +1,6 @@
 import "server-only"
 import { createHmac, timingSafeEqual } from "node:crypto"
-import { readOptionalEnv } from "@/lib/env"
+import { readAppUrl, readOptionalEnv } from "@/lib/env"
 
 export interface OutgoingText {
   to: string
@@ -34,6 +34,9 @@ export function readTwilioEnv(): TwilioEnv | null {
   return accountSid && authToken && from ? { accountSid, authToken, from } : null
 }
 
+/** Where Twilio reports each text's delivery (the status route), on the public origin like every absolute link; null when the origin is unset, so a send never fails for want of it. */
+export const statusCallbackUrl = (): string | null => (readOptionalEnv("APP_URL") ? `${readAppUrl()}/api/webhooks/twilio/status` : null)
+
 /** One text through Twilio's REST API (basic auth, form body): no SDK. */
 export const sendTextNow: TextSender = async ({ to, body }) => {
   const env = readTwilioEnv()
@@ -41,12 +44,26 @@ export const sendTextNow: TextSender = async ({ to, body }) => {
   const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${env.accountSid}/Messages.json`, {
     method: "POST",
     headers: { authorization: `Basic ${Buffer.from(`${env.accountSid}:${env.authToken}`).toString("base64")}`, "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ To: to, From: env.from, Body: body }),
+    body: new URLSearchParams({ To: to, From: env.from, Body: body, ...(statusCallbackUrl() ? { StatusCallback: statusCallbackUrl()! } : {}) }),
   })
   const json = (await response.json().catch(() => ({}))) as { sid?: string; message?: string; code?: number }
   if (isTwilioRejection(response.status, json)) throw new TwilioRejectedError(`${response.status}${json.code ? ` ${json.code}` : ""}`)
   if (!response.ok || !json.sid) throw new Error(`Twilio failed: ${json.message ?? response.status}`)
   return { id: json.sid }
+}
+
+export type TextStatusFetcher = (sid: string) => Promise<{ status: string; errorCode: string | null }>
+
+/** What Twilio now says about one text it accepted (a GET on the message, same basic auth as the send): its status and, when it did not arrive, the error code. */
+export const fetchTextStatus: TextStatusFetcher = async (sid) => {
+  const env = readTwilioEnv()
+  if (!env) throw new Error("Twilio is not configured")
+  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${env.accountSid}/Messages/${encodeURIComponent(sid)}.json`, {
+    headers: { authorization: `Basic ${Buffer.from(`${env.accountSid}:${env.authToken}`).toString("base64")}` },
+  })
+  const json = (await response.json().catch(() => ({}))) as { status?: string; error_code?: number | string | null; message?: string }
+  if (!response.ok || !json.status) throw new Error(`Twilio failed: ${json.message ?? response.status}`)
+  return { status: json.status, errorCode: json.error_code == null ? null : String(json.error_code) }
 }
 
 /** Twilio's `X-Twilio-Signature`: base64 HMAC-SHA1 of the full URL plus every form field, name then value, sorted by name. */

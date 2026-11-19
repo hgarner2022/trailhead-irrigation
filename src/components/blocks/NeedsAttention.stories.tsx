@@ -43,11 +43,12 @@ export const WithCustomerChanges: Story = {
       { kind: "customer-changed", key: "v1:cancelled:2027-04-10T15:00:00.000Z", visitId: "v1", message: "Andrea Smith canceled Spring turn-on, Wed, Apr 28, Erie. The day is free.", since: "2026-11-12T17:30:00Z" },
       { kind: "customer-changed", key: "v2:cancelled:2027-04-10T16:00:00.000Z", visitId: "v2", message: "Dana Quill canceled Repair, Fri, May 7, Erie. The day is free. The job has a payment.", since: "2026-11-12T17:10:00Z" },
       { kind: "customer-changed", key: "v3:moved:2027-04-10T16:30:00.000Z", visitId: "v3", message: "Andrea Smith moved Fall blowout from Tue, Oct 5 to Thu, Oct 7, Erie, Ryan.", since: "2026-11-12T16:30:00Z" },
+      { kind: "text-undelivered", key: "v3:c3:m3", visitId: "v3", message: "Text not delivered: Hannah, date set. Filtered by the carrier.", since: "2026-11-12T16:40:00Z" },
     ],
   },
   render: (args) => narrow(<NeedsAttention {...args} />),
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getAllByRole("button", { name: /^Open visit:/ })).toHaveLength(3)
+    await expect(within(canvasElement).getAllByRole("button", { name: /^Open visit:/ })).toHaveLength(4)
   },
 }
 

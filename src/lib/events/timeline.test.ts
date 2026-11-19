@@ -16,6 +16,15 @@ describe("timelineOf", () => {
     const at = "2027-04-20T15:00:00Z"
     expect(timelineOf([event("e1", at, "visit.skipped"), event("e3", at, "visit.skipped")], [message("e2", "receipt", "email", { createdAt: at })]).map((l) => l.id)).toEqual(["e3", "e2", "e1"])
   })
+  it("reads a text as sent until its delivery report, then delivered, or not delivered with the reason; an email never changes", () => {
+    const lines = timelineOf([], [
+      message("m1", "date-set", "sms", { createdAt: "2027-04-20T10:00:00Z" }),
+      message("m2", "date-set", "sms", { createdAt: "2027-04-20T11:00:00Z", deliveryStatus: "delivered" }),
+      message("m3", "date-set", "sms", { createdAt: "2027-04-20T12:00:00Z", deliveryStatus: "undelivered", deliveryError: "30007" }),
+      message("m4", "receipt", "email", { createdAt: "2027-04-20T13:00:00Z", deliveryStatus: "delivered" }),
+    ])
+    expect(lines.map((l) => l.what)).toEqual(["Email sent: receipt", "Text not delivered: date set. Filtered by the carrier.", "Text delivered: date set", "Text sent: date set"])
+  })
   it("turns an event into its actor and words", () => {
     const [line] = timelineOf([event("e1", "2027-04-20T15:00:00Z", "visit.done", { name: "Spring turn-on", paidBy: "venmo" })], [])
     expect(line).toEqual({ id: "e1", at: "2027-04-20T15:00:00.000Z", actor: "Ryan", what: "Spring turn-on marked done, paid by Venmo", kind: "event" })

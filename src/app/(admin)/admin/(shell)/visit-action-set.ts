@@ -1,6 +1,6 @@
 import "server-only"
 import type { VisitActions } from "@/app/(admin)/admin/_screens/visit-actions-types"
-import { addNote, resendConfirmation, sendCardUpdateLink, updateProperty } from "./actions"
+import { addNote, checkDelivery, resendConfirmation, sendCardUpdateLink, updateProperty } from "./actions"
 import { addPhoto, removePhoto, showPhoto } from "./photo-actions"
 import { cancelVisit, confirmDay, createVisit, editVisit, chargeCard, markDone, markNotDone, moveVisitTo, putBack, recordPayment, refundPayment, remindBill, sellPass, sendBill, sendOnTheWay, sendText, undoDone } from "./visit-actions"
 
@@ -23,6 +23,7 @@ export const visitActions: VisitActions = {
   cancel: cancelVisit,
   updateProperty,
   sendText,
+  checkDelivery,
   sendOnTheWay,
   resendConfirmation,
   sendCardUpdateLink,
