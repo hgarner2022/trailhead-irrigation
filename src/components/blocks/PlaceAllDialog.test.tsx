@@ -15,7 +15,9 @@ describe("PlaceAllDialog", () => {
     const dialog = within(screen.getByRole("dialog"))
     expect(dialog.getByRole("heading", { name: "Schedule all 2" })).toBeInTheDocument()
     expect(dialog.getByText("Andrea Reyes, Erie · Repair")).toBeInTheDocument()
-    expect(dialog.getByText("Tue Nov 24, Ryan Garner")).toBeInTheDocument()
+    expect(dialog.getByText("Tue Nov 24, Ryan Garner · Any time")).toBeInTheDocument()
+    // each row says when in the day and that the customer is texted, with Undo
+    expect(dialog.getAllByText("Texted in 60 s, with Undo")).toHaveLength(2)
     expect(dialog.getByText(/a minute after you confirm/)).toBeInTheDocument()
     await userEvent.click(dialog.getByRole("button", { name: "Schedule all 2" }))
     expect(onConfirm).toHaveBeenCalledOnce()
