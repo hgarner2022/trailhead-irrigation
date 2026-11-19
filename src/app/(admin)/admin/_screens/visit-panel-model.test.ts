@@ -48,6 +48,15 @@ describe("visitFacts money", () => {
   })
 })
 
+describe("visitFacts messages", () => {
+  it("lists only the messages about that visit, not every message the customer has", () => {
+    const v = { id: "a", clientId: "c", clientName: "Dana Reed", town: "Erie", kind: "repair", status: "scheduled", isPass: false, jobberUrl: "", price: 145 } as unknown as Visit
+    const msg = (id: string, visitId?: string) => ({ id, clientId: "c", ...(visitId ? { visitId } : {}), channel: "sms", kind: "date-set", body: id, at: "2026-11-10T10:00:00Z", status: "sent" })
+    const d = { clients: [], passes: [], visits: [v], jobs: [], messages: [msg("m1", "a"), msg("m2", "other"), msg("m3")] } as unknown as AdminData
+    expect(visitFacts(d, "a", "2026-11-12T19:56:30Z")!.messages.map((m) => m.id)).toEqual(["m1"])
+  })
+})
+
 describe("customerChangeLine (the 24-hour rule as the office reads it)", () => {
   const booked = { scheduledOn: "2027-04-28" } as Visit
   it("says what the customer's account allows until the last minute, then Closed, texts only", () => {
