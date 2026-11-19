@@ -524,11 +524,15 @@ export const messageLog = pgTable(
     status: messageStatusEnum("status").notNull().default("queued"),
     providerId: text("provider_id"),
     error: text("error"),
+    /** Twilio's last delivery report for a text (queued, sending, sent, delivered, undelivered, failed); null until one arrives, and always null for an email */
+    deliveryStatus: text("delivery_status"),
+    /** Twilio's error code on an undelivered or failed report ("30007"), null otherwise */
+    deliveryError: text("delivery_error"),
     sentAt: ts("sent_at"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [unique("message_log_kind_customer_key_unique").on(t.kind, t.customerId, t.key)],
+  (t) => [unique("message_log_kind_customer_key_unique").on(t.kind, t.customerId, t.key), index("message_log_provider_id_idx").on(t.providerId)],
 )
 
 export const apiKey = pgTable(
