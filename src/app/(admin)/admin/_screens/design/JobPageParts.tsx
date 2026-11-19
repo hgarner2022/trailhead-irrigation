@@ -3,6 +3,8 @@ import { AsideCard } from "@/components/blocks/AsideCard"
 import { BillingSection, type BillingRowData } from "@/components/blocks/BillingSection"
 import { CollectPayment } from "@/components/blocks/CollectPayment"
 import { MessageThread } from "@/components/blocks/MessageThread"
+import { RecordChip } from "@/components/blocks/RecordChip"
+import { dayPreview, customerPreview, personPreview, recordHref } from "@/components/blocks/record-preview-model"
 import { MoneyCell } from "@/components/blocks/MoneyCell"
 import { NotesAndHistory } from "@/components/blocks/NotesAndHistory"
 import { RecordFooter } from "@/components/blocks/RecordFooter"
@@ -47,6 +49,35 @@ function moneyWord(pills: PillData[], statusText: string | undefined, canceled: 
   return { sub: canceled ? "Canceled" : "Not billed yet", alert: false }
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+const EXACT = /^\d{1,2}:\d{2} [ap]m$/
+
+/** "Tue, Nov 24" or "Today, Wed Nov 18" as the Schedule's day, 2026-11-24; nothing for "No day yet" or "None". */
+export function isoDayOf(label: string): string | undefined {
+  const m = /([A-Z][a-z]{2}) (\d{1,2})\b/.exec(label)
+  const month = m ? MONTHS.indexOf(m[1]!) : -1
+  return m && month >= 0 ? `2026-${String(month + 1).padStart(2, "0")}-${m[2]!.padStart(2, "0")}` : undefined
+}
+
+/**
+ * The When cell: a scheduled day is a chip that opens the Schedule on that day ("Tue, Nov 24 at 9:00 am"), with the day's stops and who in its
+ * card; a visit with no day reads "No day yet" as plain text (the Schedule button is its link). A window or a done time stays the muted line.
+ */
+function whenCell(value: string, sub: string | undefined, who: string): { value: ReactNode; sub?: string } {
+  const iso = isoDayOf(value)
+  if (!iso) return { value, sub }
+  const exact = sub !== undefined && EXACT.test(sub)
+  const name = exact ? `${value} at ${sub}` : value
+  const person = who.startsWith("No one") ? "No one yet" : who
+  return { value: <RecordChip kind="day" size="band" name={name} href={recordHref.day(iso)} preview={dayPreview({ isoDay: iso, label: name, stops: 3, who: person })} />, sub: exact ? undefined : sub }
+}
+
+/** The Who cell: the person is a record, "No one" is not. */
+function whoChip(who: string): ReactNode {
+  if (who.startsWith("No one")) return who
+  return <RecordChip kind="person" size="band" name={who} href={recordHref.person()} preview={personPreview({ name: who, role: "Owner", stopsToday: 3 })} />
+}
+
 const split = (address: string | undefined): [string, string | undefined] => {
   const [street, ...rest] = (address ?? "").split(", ")
   return [street || "No address", rest.join(", ") || undefined]
@@ -66,9 +97,10 @@ export interface BandInput {
 export function bandItems(b: BandInput): SummaryItem[] {
   const [street, town] = split(b.address)
   const money = moneyWord(b.pills, b.statusText, b.canceled)
+  const day = whenCell(b.when.value, b.when.sub, b.who)
   return [
-    { label: b.when.label, value: b.when.value, sub: b.when.sub },
-    { label: "Who", value: b.who },
+    { label: b.when.label, value: day.value, sub: day.sub },
+    { label: "Who", value: whoChip(b.who) },
     { label: "Where", value: street, sub: town },
     { label: "Total", value: b.total, sub: money.sub, tone: money.alert ? "alert" : "plain" },
   ]
@@ -92,7 +124,7 @@ export function Aside({ customer, phone, where, notes }: { customer: string; pho
   const facts = where.filter(([k]) => k !== "Address")
   return (
     <>
-      <AsideCard name={customer} href="/admin/customers" phone={phone} address={[street, town ? `${town}, CO` : ""].filter(Boolean)} />
+      <AsideCard name={customer} href={recordHref.customer("c-" + customer)} preview={customerPreview({ id: "c-" + customer, name: customer, phone: phone.text, address: [street, town ? `${town}, CO` : ""].filter(Boolean).join(", "), openJobs: 1, unpaid: "$0" })} phone={phone} address={[street, town ? `${town}, CO` : ""].filter(Boolean)} />
       {facts.length > 0 && (
         <SectionCard title="Property" id="property-h" action={<EditLink />}>
           <RecordFacts divided rows={facts} />

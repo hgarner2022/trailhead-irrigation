@@ -3,6 +3,8 @@
 import { BillingSection } from "@/components/blocks/BillingSection"
 import { LineItemList } from "@/components/blocks/LineItemList"
 import { MessageThread } from "@/components/blocks/MessageThread"
+import { RecordChip } from "@/components/blocks/RecordChip"
+import { customerPreview, jobPreview, recordHref } from "@/components/blocks/record-preview-model"
 import { RecordFooter } from "@/components/blocks/RecordFooter"
 import { RecordFacts, RecordPanel } from "@/components/blocks/RecordPanel"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
@@ -16,12 +18,6 @@ import { INVOICE_WORDS, type InvoiceDetail, type InvoiceStatus } from "./invoice
 // link, Open job, Open customer) and Cancel invoice. A paid or voided invoice has only More. Pure props, in the one RecordPanel.
 
 const TONE: Record<InvoiceStatus, PillStatus> = { sent: "bill-sent", "past-due": "overdue", "part-paid": "owed", paid: "paid", voided: "cancelled" }
-
-const link = (text: string) => (
-  <a href="#" onClick={(e) => e.preventDefault()} className="rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
-    {text}
-  </a>
-)
 
 export interface InvoicePanelProps {
   invoice: InvoiceDetail
@@ -51,8 +47,8 @@ export function InvoicePanel({ invoice, open = true }: InvoicePanelProps) {
       <RecordFacts
         divided
         rows={[
-          ["Customer", link(invoice.customer)],
-          ["Job", link(invoice.job)],
+          ["Customer", <RecordChip key="c" kind="customer" name={invoice.customer} href={recordHref.customer("c-" + invoice.customer)} preview={customerPreview({ id: "c-" + invoice.customer, name: invoice.customer, openJobs: 1, unpaid: invoice.totals.find(([k]) => k === "Balance" || k === "Unpaid")?.[1] })} />],
+          ["Job", <RecordChip key="j" kind="job" name={invoice.job} href={recordHref.job("j-" + invoice.number)} preview={jobPreview({ id: "j-" + invoice.number, name: invoice.job, customer: invoice.customer, status: "done", total: invoice.totals.find(([k]) => k === "Total")?.[1] ?? "$0" })} />],
           ["Sent", invoice.sent],
           ["Terms", invoice.terms],
           ["Reminders", invoice.reminders],

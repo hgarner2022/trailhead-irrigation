@@ -5,6 +5,7 @@ import { RecordPage } from "@/components/blocks/RecordPage"
 import { SectionCard } from "@/components/blocks/SectionCard"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { SummaryBand } from "@/components/blocks/SummaryBand"
+import { recordHref, visitPreview } from "@/components/blocks/record-preview-model"
 import { TripRow } from "@/components/blocks/TripRow"
 import type { MultiTripData, TripData } from "./trip-fixtures"
 import { PHONE_LINK } from "./trip-fixtures"
@@ -49,7 +50,7 @@ function TripsPage({ data }: { data: MultiTripData }) {
       <SectionCard title={data.tripsHeading} id="trips-h" flush>
         <RecordList className="mt-0 px-5">
           {data.trips.map((t) => (
-            <TripRow key={t.id} title={t.title} detail={t.detail} pills={t.pills.map((p) => <StatusPill key={p.status} status={p.status} label={p.label} />)} money={t.money} actions={t.actions} />
+            <TripRow key={t.id} title={t.title} href={recordHref.visit(t.id)} preview={visitPreview({ id: t.id, name: t.title, customer: "Andrea Dalton", status: t.pills[0]!.status, when: (t.detail ?? "").split(" · ")[0] ?? "", who: "Ryan Garner", money: t.money ?? undefined })} detail={t.detail} pills={t.pills.map((p) => <StatusPill key={p.status} status={p.status} label={p.label} />)} money={t.money} actions={t.actions} />
           ))}
         </RecordList>
       </SectionCard>

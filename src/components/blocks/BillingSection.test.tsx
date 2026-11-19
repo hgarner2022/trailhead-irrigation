@@ -15,9 +15,9 @@ describe("BillingSection", () => {
         ]}
       />,
     )
-    await userEvent.click(screen.getByRole("button", { name: /Invoice TH-1042/ }))
+    await userEvent.click(screen.getByRole("link", { name: /Invoice TH-1042/ }))
     expect(open).toHaveBeenCalledOnce()
-    expect(screen.getAllByRole("button")).toHaveLength(1)
+    expect(screen.queryAllByRole("button")).toHaveLength(0)
     expect(screen.getByText("$145", { selector: "[data-slot=money-cell]" })).toBeInTheDocument()
   })
 

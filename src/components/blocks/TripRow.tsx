@@ -2,6 +2,8 @@ import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { MoneyCell, type MoneyTone } from "./MoneyCell"
+import { RecordChip } from "./RecordChip"
+import type { RecordPreviewData } from "./record-preview-model"
 import { RECORD_ROW, RecordRowEnd, RecordRowText } from "./RecordPanel"
 import type { FooterAction } from "./RecordFooter"
 
@@ -12,6 +14,10 @@ import type { FooterAction } from "./RecordFooter"
 
 export interface TripRowProps {
   title: string
+  /** the visit's own page: the title is then a `RecordChip` (kind visit) */
+  href?: string
+  preview?: RecordPreviewData
+  onOpen?: () => void
   detail?: string
   /** `StatusPill`s */
   pills?: ReactNode
@@ -23,11 +29,18 @@ export interface TripRowProps {
   className?: string
 }
 
-export function TripRow({ title, detail, pills, money, moneyTone, actions = [], className }: TripRowProps) {
+export function TripRow({ title, href, preview, onOpen, detail, pills, money, moneyTone, actions = [], className }: TripRowProps) {
   return (
     <li data-slot="trip-row" className={cn("flex flex-col py-2", className)}>
       <div className={cn("flex items-start", RECORD_ROW)}>
-        <RecordRowText title={title} detail={detail} strong />
+        {href ? (
+          <span className="flex min-w-0 flex-1 flex-col">
+            <RecordChip kind="visit" name={title} href={href} preview={preview} onOpen={onOpen} />
+            {detail && <span className="text-sm text-muted-foreground">{detail}</span>}
+          </span>
+        ) : (
+          <RecordRowText title={title} detail={detail} strong />
+        )}
         <RecordRowEnd>
           <span className="flex flex-col items-end gap-1">
             {pills}

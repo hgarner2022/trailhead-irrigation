@@ -1,5 +1,6 @@
-import Link from "next/link"
 import { MapPin, Phone } from "lucide-react"
+import { RecordChip } from "./RecordChip"
+import type { RecordPreviewData } from "./record-preview-model"
 import { SectionCard } from "./SectionCard"
 
 // The customer card at the top of a record page's aside (docs/plans/2026-11-19-admin-page-layout-research.md, rule 4): initials in a tinted
@@ -8,39 +9,23 @@ import { SectionCard } from "./SectionCard"
 
 export interface AsideCardProps {
   name: string
-  /** where the name goes: the customer */
+  /** where the name goes: the customer. The name is always a `RecordChip` (docs/DESIGN.md) */
   href?: string
+  /** the hover card, from `customerPreview` */
+  preview?: RecordPreviewData
+  onOpen?: () => void
   phone?: { text: string; href: string }
   /** one or two lines: street, then town */
   address?: readonly string[]
   title?: string
 }
 
-const initialsOf = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join("")
-
 const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
 
-export function AsideCard({ name, href, phone, address, title = "Customer" }: AsideCardProps) {
+export function AsideCard({ name, href, preview, onOpen, phone, address, title = "Customer" }: AsideCardProps) {
   return (
     <SectionCard title={title} id="aside-customer">
-      <div className="flex items-center gap-3">
-        <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-lg font-semibold text-primary-deep">
-          {initialsOf(name)}
-        </span>
-        {href ? (
-          <Link href={href} className={`${LINK} min-h-11 content-center text-base font-semibold`}>
-            {name}
-          </Link>
-        ) : (
-          <span className="text-base font-semibold">{name}</span>
-        )}
-      </div>
+      <RecordChip kind="customer" name={name} href={href} preview={preview} onOpen={onOpen} />
       <ul className="mt-3 flex flex-col gap-1 text-sm">
         {phone && (
           <li>

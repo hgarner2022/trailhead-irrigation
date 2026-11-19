@@ -1,3 +1,4 @@
+import { invoicePreview } from "@/components/blocks/record-preview-model"
 import type { FooterAction } from "@/components/blocks/RecordFooter"
 import type { LineItem, LineTotal } from "@/components/blocks/LineItemList"
 import type { BillingRowData } from "@/components/blocks/BillingSection"
@@ -68,7 +69,7 @@ const visa = { brand: "visa", last4: "4242" }
 const input = { amount: 145, isPass: false, invoiceOpen: false, canInvoice: true, declined: false, charging: false }
 
 const PAID_NOTES: TimelineLine[] = [{ id: "n3", at: "2026-11-18T17:50:00Z", actor: "Ryan", what: "Marked done and recorded $145, Venmo", kind: "event" }]
-const invoice = (sent: string, due: string, id = "i1"): BillingRowData => ({ id, kind: "invoice", title: "Invoice 1042", detail: `Sent ${sent} · due ${due} · $145`, onOpen: noop })
+const invoice = (sent: string, due: string, id = "i1"): BillingRowData => ({ id, kind: "invoice", title: "Invoice 1042", detail: `Sent ${sent} · due ${due} · $145`, href: "#", preview: invoicePreview({ id, number: "1042", customer: "Marcus Bell", status: "bill-sent", statusLabel: "Sent", total: "$145", balance: "$145", due }) })
 
 export function jobPageOf(state: JobState): JobPageData {
   const scheduledMsgs = [msg("m1", "2026-11-18T16:30:00Z", "sms", "date-set", "Trailhead: your repair is Tue, Nov 24. We'll text your window the day before.")]
@@ -76,7 +77,7 @@ export function jobPageOf(state: JobState): JobPageData {
     case "unscheduled":
       return { ...base, pills: [{ status: "needs-a-day" }], when: day("No day yet", "Any time").map((r) => (r[0] === "Who" ? ["Who", "No one yet"] : r)), billing: waiting, totals: openTotals, notes: [ADDED("n1")], messages: [], footer: { primary: act("Schedule"), secondary: [act("Mark done"), act("Send a text")], more: more("Edit", "Add a note"), destructive: act("Cancel job") } }
     case "scheduled":
-      return { ...base, pills: [{ status: "scheduled" }], when: day("Tue, Nov 24", "Any time"), billing: waiting, totals: openTotals, notes: [ADDED("n1"), { id: "n2", at: "2026-11-18T16:30:00Z", actor: "Ryan", what: "Set the day to Tue, Nov 24", kind: "event" }], messages: scheduledMsgs, footer: { primary: act("Move"), secondary: [act("Mark done"), act("Send a text")], more: more("Edit", "Add a note"), destructive: act("Cancel job") } }
+      return { ...base, pills: [{ status: "scheduled" }], when: day("Tue, Nov 24", "9:00 am"), billing: waiting, totals: openTotals, notes: [ADDED("n1"), { id: "n2", at: "2026-11-18T16:30:00Z", actor: "Ryan", what: "Set the day to Tue, Nov 24", kind: "event" }], messages: scheduledMsgs, footer: { primary: act("Move"), secondary: [act("Mark done"), act("Send a text")], more: more("Edit", "Add a note"), destructive: act("Cancel job") } }
     case "today":
       return { ...base, pills: [{ status: "scheduled" }], when: day("Today, Wed Nov 18", "Between 8 and 10 am"), billing: waiting, totals: openTotals, notes: [ADDED("n1")], messages: [...scheduledMsgs, msg("m2", "2026-11-17T23:00:00Z", "sms", "day-before", "Trailhead: Ryan is coming tomorrow, between 8 and 10 am.")], footer: { primary: act("On my way"), secondary: [act("Mark done"), act("Send a text")], more: more("Move", "Edit", "Add a note"), destructive: act("Cancel job") } }
     case "late":
@@ -96,7 +97,7 @@ export function jobPageOf(state: JobState): JobPageData {
 
 export const STATE_NOTES: Record<JobState, string> = {
   unscheduled: "Ryan sees a repair with no day. The one primary action is Schedule.",
-  scheduled: "Ryan sees the day, who and Any time. The one primary action is Move; Mark done is one tap beside it.",
+  scheduled: "Ryan sees the day with its exact time and who; the day is a link to the Schedule. The one primary action is Move; Mark done is one tap beside it.",
   today: "Ryan sees today with the window the customer was told. The one primary action is On my way, then Mark done.",
   late: "Ryan sees a trip whose day passed with no Mark done. The one primary action is Mark done, with Skip beside it.",
   "done-unpaid": "Ryan sees How is this paid? right on the page, card selected. The one primary action is Charge $145, in the footer.",

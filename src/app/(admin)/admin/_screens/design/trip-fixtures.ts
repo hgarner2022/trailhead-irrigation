@@ -52,8 +52,8 @@ const WHERE: [string, string][] = [["Address", "480 Briggs St, Erie"], ["Gate co
 const msg = (id: string, at: string, channel: "email" | "sms", kind: Message["kind"], body: string): Message => ({ id, clientId: "c-1", channel, kind, body, at, status: "delivered" })
 const event = (id: string, at: string, what: string): TimelineLine => ({ id, at, actor: "Ryan", what, kind: "event" })
 
-const SPRING = { title: "Spring turn-on", ahead: "Mon, May 3 · Ryan · Any time", done: "Mon, May 3 · Ryan · Done at 9:15 am" }
-const FALL = { title: "Fall blowout", ahead: "Tue, Oct 12 · Ryan · Any time", done: "Tue, Oct 12 · Ryan · Done at 10:05 am" }
+const SPRING = { title: "Spring turn-on", ahead: "Mon, May 3 · Ryan · 9:00 am", done: "Mon, May 3 · Ryan · Done at 9:15 am" }
+const FALL = { title: "Fall blowout", ahead: "Tue, Oct 12 · Ryan · 9:00 am", done: "Tue, Oct 12 · Ryan · Done at 10:05 am" }
 const ahead = (t: typeof SPRING, price: string, id: string): TripData => ({ id, title: t.title, detail: t.ahead, pills: [{ status: "scheduled" }], money: `${price}, charged after the visit`, actions: [act("Move"), act("Mark done")] })
 const done = (t: typeof SPRING, id: string): TripData => ({ id, title: t.title, detail: t.done, pills: [{ status: "done" }], money: "Paid, card", actions: [] })
 const gone = (t: typeof SPRING, id: string): TripData => ({ id, title: t.title, detail: "Canceled with the pass", pills: [{ status: "cancelled" }], money: null, actions: [] })
@@ -101,7 +101,7 @@ export function returnTripOf(): MultiTripData {
     tripsHeading: "Visits",
     trips: [
       { id: "t1", title: "Sprinkler repair visit", detail: "Thu, Nov 12 · Ryan · Done at 2:30 pm", pills: [{ status: "done" }], money: "Paid, card", actions: [] },
-      { id: "t2", title: "Return trip: new valve", detail: "Thu, Nov 19 · Ryan · Any time", pills: [{ status: "scheduled" }], money: null, actions: [act("Move"), act("Mark done")] },
+      { id: "t2", title: "Return trip: new valve", detail: "Thu, Nov 19 · Ryan · 9:00 am", pills: [{ status: "scheduled" }], money: null, actions: [act("Move"), act("Mark done")] },
     ],
     lines: [{ name: "Repair", description: "A visit to find the problem and fix what we can that day.", amount: "$145" }, { name: "Valve replacement", description: "A new zone valve for the front lawn, installed on the return trip.", amount: "$85" }],
     totals: [["Total", "$230", "strong"], ["Paid", "$145"], ["Unpaid", "$85", "alert"]],

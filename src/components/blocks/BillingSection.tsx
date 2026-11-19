@@ -1,6 +1,8 @@
 import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"
 import { MoneyCell, type MoneyTone } from "./MoneyCell"
+import { RecordChip } from "./RecordChip"
+import type { RecordPreviewData } from "./record-preview-model"
 import { RECORD_ROW, RecordFacts, RecordList, RecordRowEnd, RecordRowText, type RecordFact } from "./RecordPanel"
 
 // The body of a Billing section on a job or a customer (docs/DESIGN.md, "The recipe"): what is owed in the facts (Total, Paid, Unpaid),
@@ -19,8 +21,10 @@ export interface BillingRowData {
   /** the amount of a payment row: "$145" */
   amount?: string
   tone?: MoneyTone
-  /** an invoice row opens its panel */
+  /** an invoice row's title is a `RecordChip` that opens the invoice */
   onOpen?: () => void
+  href?: string
+  preview?: RecordPreviewData
 }
 
 export interface BillingSectionProps {
@@ -46,15 +50,20 @@ export function BillingSection({ summary, rows, emptyLine = "Nothing to bill yet
                 <RecordRowEnd>{r.end ?? (r.amount ? <MoneyCell text={r.amount} tone={r.tone} /> : null)}</RecordRowEnd>
               </>
             )
+            if (r.kind === "invoice") {
+              return (
+                <li key={r.id} data-kind={r.kind} className={cn("flex items-center", RECORD_ROW)}>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <RecordChip kind="invoice" name={r.title} href={r.href ?? `/admin/invoices?invoice=${encodeURIComponent(r.id)}`} preview={r.preview} onOpen={r.onOpen} />
+                    {r.detail && <span className="text-sm text-muted-foreground">{r.detail}</span>}
+                  </span>
+                  <RecordRowEnd>{r.end ?? (r.amount ? <MoneyCell text={r.amount} tone={r.tone} /> : null)}</RecordRowEnd>
+                </li>
+              )
+            }
             return (
               <li key={r.id} data-kind={r.kind}>
-                {r.kind === "invoice" && r.onOpen ? (
-                  <button type="button" onClick={r.onOpen} className={cn("flex w-full items-center rounded-sm text-left hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", RECORD_ROW)}>
-                    {inner}
-                  </button>
-                ) : (
-                  <div className={cn("flex items-center", RECORD_ROW)}>{inner}</div>
-                )}
+                <div className={cn("flex items-center", RECORD_ROW)}>{inner}</div>
               </li>
             )
           })}
