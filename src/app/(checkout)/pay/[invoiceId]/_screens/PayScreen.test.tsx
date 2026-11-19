@@ -24,7 +24,7 @@ describe("PayScreen", () => {
     expect(screen.getByText("Repair")).toBeInTheDocument()
     expect(screen.getByText("One hour on site.")).toBeInTheDocument()
     expect(screen.getByText("Due Dec 1")).toBeInTheDocument()
-    expect(screen.getByText("We keep the card for the visits after this one.")).toBeInTheDocument()
+    expect(screen.getByText("You can keep the card for future visits on the next page.")).toBeInTheDocument()
     expect(screen.getByText("Paid by check, Venmo or cash already? Nothing to do.")).toBeInTheDocument()
     expect(screen.getAllByRole("button")).toHaveLength(1)
     expect(screen.getByRole("button", { name: "Pay $145 by card" })).toBeInTheDocument()
@@ -77,7 +77,7 @@ describe("PayScreen", () => {
     expect(screen.getByText("Paid Nov 20, thank you")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "View the receipt" })).toHaveAttribute("href", "https://pay.stripe.test/r/1")
     expect(screen.queryByRole("button")).toBeNull()
-    expect(screen.queryByText(/We keep the card/)).toBeNull()
+    expect(screen.queryByText(/keep the card/)).toBeNull()
   })
 
   it("a paid invoice always offers the receipt and the account, even before Stripe has a card receipt", () => {

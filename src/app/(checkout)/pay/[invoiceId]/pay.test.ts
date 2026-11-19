@@ -128,7 +128,7 @@ describe("startBillPayment", () => {
     expect(calls.customersCreate).not.toHaveBeenCalled()
   })
 
-  it("opens a payment-mode session for the total that keeps the card, carries the invoice on both objects, and stores the session on the invoice", async () => {
+  it("opens a payment-mode session for the total that offers Stripe's unticked save box, carries the invoice on both objects, and stores the session on the invoice", async () => {
     const { invoice } = await sentBill()
     const { stripe, calls } = stubStripe()
     const token = signToken("invoice-pay", invoice.id)
@@ -138,10 +138,12 @@ describe("startBillPayment", () => {
     expect(params).toMatchObject({
       mode: "payment", customer: "cus_new_1", allowed_payment_method_types: ["card"],
       line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: 14500, product_data: { name: `Trailhead invoice ${invoice.number}` } } }],
-      payment_intent_data: { setup_future_usage: "off_session", metadata: { purpose: "invoice", invoiceId: invoice.id } },
+      saved_payment_method_options: { payment_method_save: "enabled" },
+      payment_intent_data: { metadata: { purpose: "invoice", invoiceId: invoice.id } },
       metadata: { purpose: "invoice", invoiceId: invoice.id },
       success_url: `${origin}/pay/${invoice.id}/paid`, cancel_url: `${origin}/pay/${invoice.id}?token=${token}`,
     })
+    expect((params.payment_intent_data as Record<string, unknown>)).not.toHaveProperty("setup_future_usage")
     expect(options.idempotencyKey).toMatch(new RegExp(`^bill-${invoice.id}-`))
     expect((await db.select().from(s.invoice).where(eq(s.invoice.id, invoice.id)))[0]!.stripeCheckoutSessionId).toBe("cs_1")
     expect((await db.select().from(s.customer).where(eq(s.customer.id, "c100")))[0]!.stripeCustomerId).toBe("cus_new_1")

@@ -57,7 +57,7 @@ function Open({ bill, payAction }: PayScreenProps) {
       <p data-slot="pay-due" className={bill.status === "overdue" ? "mt-1 text-right text-sm font-medium text-warning" : "mt-1 text-right text-sm text-muted-foreground"}>
         {dueWords(bill)}
       </p>
-      <p className="mt-6 text-sm text-foreground">We keep the card for the visits after this one.</p>
+      <p className="mt-6 text-sm text-foreground">You can keep the card for future visits on the next page.</p>
       <div className="mt-3">
         <PayForm label={payLabel(bill)} action={payAction} />
       </div>

@@ -39,6 +39,11 @@ export async function applyInvoicePayment(db: Database, stripe: Stripe, organiza
   const charge = typeof intent.latest_charge === "object" ? intent.latest_charge : null
   const method = typeof intent.payment_method === "object" ? intent.payment_method : null
   const receiptUrl = charge?.receipt_url ?? null
+  // The customer's choice at Stripe's "Save my payment method for future use" box, which the invoice session offers unticked. Two signals, either one
+  // means ticked: the payment intent carries `setup_future_usage` (Stripe sets it when the box is ticked), or the payment method is attached to the Stripe
+  // customer (an unticked one-time payment leaves it unattached). A card the customer kept before also reads as kept, which changes nothing below.
+  const methodCustomer = method && (typeof method.customer === "string" ? method.customer : method.customer?.id ?? null)
+  const cardKept = Boolean(method?.card) && (Boolean(intent.setup_future_usage) || Boolean(methodCustomer))
 
   const inserted = await recordPaymentRow(db, {
     organizationId, jobId: invoice.jobId, visitId: null, customerId: invoice.customerId, amount: invoice.total, method: "card_now", status: "succeeded",
@@ -48,12 +53,12 @@ export async function applyInvoicePayment(db: Database, stripe: Stripe, organiza
   if (!row) return "ignored"
   if (inserted) await emitEvent(db, organizationId, "payment.succeeded", { paymentId: row.id, jobId: invoice.jobId, invoiceId: invoice.id, amount: row.amount, method: "card_now" }, {
       about: "payment", aboutId: row.id, customerId: invoice.customerId, jobId: invoice.jobId, who: "system", at: now,
-      detail: { amount: row.amount, method: "card_now", invoiceNumber: invoice.number },
+      detail: { amount: row.amount, method: "card_now", invoiceNumber: invoice.number, cardKept },
     })
 
   const [customer] = await db.select().from(s.customer).where(and(eq(s.customer.id, invoice.customerId), eq(s.customer.organizationId, organizationId)))
-  // Keep the card: the customer's one card is the one just paid with (the pay page says so).
-  if (customer && method?.card && customer.stripePaymentMethodId !== method.id) {
+  // Keep the card only when the customer ticked Stripe's box; a customer who declined keeps whatever card they had, and it is never cleared here.
+  if (customer && method?.card && cardKept && customer.stripePaymentMethodId !== method.id) {
     const columns = cardColumns({ paymentMethodId: method.id, brand: method.card.brand, last4: method.card.last4, expires: `${method.card.exp_year}-${String(method.card.exp_month).padStart(2, "0")}` })
     const stripeCustomerId = customer.stripeCustomerId ?? (typeof session.customer === "string" ? session.customer : session.customer?.id ?? null)
     await db.update(s.customer).set({ ...(stripeCustomerId ? { stripeCustomerId } : {}), ...columns, updatedAt: now }).where(and(eq(s.customer.id, customer.id), eq(s.customer.organizationId, organizationId)))
