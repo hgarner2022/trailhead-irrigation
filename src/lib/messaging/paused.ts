@@ -3,11 +3,12 @@ import { and, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { readOptionalEnv } from "@/lib/env"
+import { TEXTS_PAUSED_ROW } from "./paused-words"
 
 /** The Home row's kind and its one key: the switch is organization wide, so there is one row at a time. */
 export const TEXTS_PAUSED_KIND = "texts-paused"
 export const TEXTS_PAUSED_KEY = "paused"
-export const TEXTS_PAUSED_ROW = "Texts are paused until the number is registered with the carriers (Twilio error 30034). Every text goes by email instead."
+export { TEXTS_PAUSED_ROW }
 /** The reason a text kept as not sent carries when it was paused and the customer has no email to take its place. */
 export const PAUSED_NO_EMAIL = "texts paused, no email"
 

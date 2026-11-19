@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { BadgeCheck, Ban, Banknote, CalendarCheck, CalendarX, CircleDashed, Clock, CreditCard, ReceiptText, UserRound, type LucideIcon } from "lucide-react"
+import { BadgeCheck, Ban, Banknote, CalendarCheck, CalendarX, CircleDashed, Clock, CreditCard, MessageSquareOff, ReceiptText, UserRound, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Attention } from "@/lib/admin/types"
 import { jobUrl } from "@/lib/admin/links"
@@ -47,6 +47,7 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Jobs not marked done" },
   "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass canceled" },
   "customer-changed": { icon: UserRound, tone: "bg-warning/10 text-warning", name: "Customer change" },
+  "texts-paused": { icon: MessageSquareOff, tone: "bg-warning/10 text-warning", name: "Texts paused" },
   scheduled: { icon: CalendarCheck, tone: "bg-success/10 text-success", name: "Schedule run" },
   unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Unscheduled" },
 }

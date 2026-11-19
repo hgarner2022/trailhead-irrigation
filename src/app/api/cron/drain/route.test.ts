@@ -2,9 +2,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { GET } from "./route"
 
-const { expirePendingPasses, drain } = vi.hoisted(() => ({ expirePendingPasses: vi.fn(), drain: vi.fn() }))
+const { expirePendingPasses, drain, syncTextsPausedAlert } = vi.hoisted(() => ({ expirePendingPasses: vi.fn(), drain: vi.fn(), syncTextsPausedAlert: vi.fn() }))
 vi.mock("@/db", () => ({ db: () => ({}) }))
 vi.mock("@/lib/pass/server/create", () => ({ expirePendingPasses }))
+vi.mock("@/lib/messaging/paused", () => ({ syncTextsPausedAlert }))
 vi.mock("@/lib/queue", () => ({ drain }))
 vi.mock("@/lib/queue/handlers", () => ({ handlers: {} }))
 
@@ -13,6 +14,7 @@ afterEach(() => {
   vi.restoreAllMocks()
   expirePendingPasses.mockReset()
   drain.mockReset()
+  syncTextsPausedAlert.mockReset()
 })
 const call = () => GET(new Request("https://x.test/api/cron/drain", { headers: { authorization: "Bearer s3cret" } }))
 
@@ -35,5 +37,17 @@ describe("GET /api/cron/drain", () => {
     expirePendingPasses.mockResolvedValue(3)
     drain.mockResolvedValue({ processed: 0 })
     expect(await (await call()).json()).toEqual({ expired: 3, processed: 0 })
+  })
+
+  it("keeps Home's texts-paused row in step with the switch, and drains even when that fails", async () => {
+    vi.stubEnv("CRON_SECRET", "s3cret")
+    vi.spyOn(console, "error").mockImplementation(() => {})
+    expirePendingPasses.mockResolvedValue(0)
+    drain.mockResolvedValue({ processed: 1 })
+    syncTextsPausedAlert.mockResolvedValueOnce("raised")
+    expect((await call()).status).toBe(200)
+    expect(syncTextsPausedAlert).toHaveBeenCalledTimes(1)
+    syncTextsPausedAlert.mockRejectedValueOnce(new Error("db down"))
+    expect(await (await call()).json()).toEqual({ expired: 0, processed: 1 })
   })
 })

@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto"
 import { db } from "@/db"
 import { readCronSecret } from "@/lib/env"
 import { expirePendingPasses } from "@/lib/pass/server/create"
+import { syncTextsPausedAlert } from "@/lib/messaging/paused"
 import { drain } from "@/lib/queue"
 import { handlers } from "@/lib/queue/handlers"
 
@@ -26,6 +27,12 @@ export async function GET(request: Request) {
     expired = await expirePendingPasses(database, new Date())
   } catch {
     console.error("cron: purge of unpaid checkouts failed")
+  }
+  // Home's row about paused texts follows the switch: raised while it is on, removed when it is off. Never stops the drain.
+  try {
+    await syncTextsPausedAlert(database, new Date())
+  } catch {
+    console.error("cron: texts-paused row failed")
   }
   const result = await drain(database, handlers)
   return Response.json({ expired, ...result })

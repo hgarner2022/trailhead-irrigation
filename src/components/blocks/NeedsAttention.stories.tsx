@@ -77,3 +77,12 @@ export const Phone: Story = {
     </div>
   ),
 }
+
+/** Texts are paused until the number is registered with the carriers: one row above the rest, Open Settings and Dismiss. */
+export const WithTextsPaused: Story = {
+  args: { items: [{ kind: "texts-paused", key: "paused", message: "Texts are paused until the number is registered with the carriers (Twilio error 30034). Every text goes by email instead.", since: "2026-11-12T18:30:00Z" }, ...items] },
+  render: (args) => narrow(<NeedsAttention {...args} />),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole("button", { name: /^Open Settings:/ })).toBeInTheDocument()
+  },
+}

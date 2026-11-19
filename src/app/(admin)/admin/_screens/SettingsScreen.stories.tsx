@@ -148,3 +148,12 @@ export const WindowLines: Story = {
   },
   globals: { viewport: { value: "laptop", isRotated: false } },
 }
+
+/** Texts are paused: the banner sits above the message list. */
+export const MessagesPaused: Story = {
+  args: { defaultTab: "messages", data: { ...data, textsPaused: true } },
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("status")).toHaveTextContent("Texts are paused until the number is registered with the carriers (Twilio error 30034). Every text goes by email instead.")
+  },
+}

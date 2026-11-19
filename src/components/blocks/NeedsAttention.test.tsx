@@ -146,3 +146,14 @@ describe("NeedsAttention", () => {
     expect(attentionLabel({ kind: "new-pass", passId: "p1", jobId: "j1", message: "m", since: "2026-11-12T17:30:00Z" })).toBe("Open job")
   })
 })
+
+describe("the paused texts row", () => {
+  const item = { kind: "texts-paused" as const, key: "paused", message: "Texts are paused until the number is registered with the carriers (Twilio error 30034). Every text goes by email instead.", since: "2026-11-12T17:30:00Z" }
+  it("says the whole sentence, names itself, opens Settings and can be dismissed", () => {
+    render(<NeedsAttention items={[item]} now={now} onAction={async () => undefined} />)
+    expect(screen.getByText(item.message)).toBeInTheDocument()
+    expect(screen.getByText("Texts paused:")).toBeInTheDocument()
+    expect(attentionLabel(item)).toBe("Open Settings")
+    expect(screen.getByRole("button", { name: /^Dismiss:/ })).toBeInTheDocument()
+  })
+})

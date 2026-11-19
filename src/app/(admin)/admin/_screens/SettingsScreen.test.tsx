@@ -440,3 +440,13 @@ describe("SettingsScreen services", () => {
     expect(screen.getByRole("checkbox", { name: "Sprinkler repair visit active" })).toBeDisabled()
   })
 })
+
+describe("SettingsScreen messages while texts are paused", () => {
+  it("shows the banner above the messages only when the switch is on", () => {
+    const { unmount } = render(<SettingsScreen data={data} today={TODAY} defaultTab="messages" />)
+    expect(screen.queryByText(/Texts are paused until the number is registered/)).toBeNull()
+    unmount()
+    render(<SettingsScreen data={{ ...data, textsPaused: true }} today={TODAY} defaultTab="messages" />)
+    expect(screen.getByRole("status")).toHaveTextContent("Texts are paused until the number is registered with the carriers (Twilio error 30034). Every text goes by email instead.")
+  })
+})

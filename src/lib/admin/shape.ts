@@ -471,7 +471,7 @@ export function attention(i: ShapeInput, passes: Pass[], visitRows: Attention[] 
       out.push({ key: a.key, kind: "customer-changed", visitId: (a.key ?? "").split(":")[0]!, message: a.message, since: iso(a.createdAt) })
       continue
     }
-    out.push({ key: a.key, kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" || a.kind === "no-card" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...((a.kind === "unplaced" || a.kind === "no-card") && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })
+    out.push({ key: a.key, kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" || a.kind === "no-card" || a.kind === "texts-paused" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...((a.kind === "unplaced" || a.kind === "no-card") && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })
   }
   for (const q of i.queueProblems) {
     const row: QueueAttention = { kind: "jobs-failed", key: `${q.kind}@${iso(q.updatedAt)}`, message: `A ${q.kind} task ${q.status === "failed" ? "gave up" : "is retrying"}: ${q.lastError ?? "no error recorded"}`, since: iso(q.updatedAt), queueKind: q.kind, ...(q.id ? { queueIds: [q.id] } : {}), cause: causeOf(q.lastError) }
