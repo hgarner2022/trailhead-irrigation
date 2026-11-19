@@ -42,6 +42,7 @@ export function RecordPage({ title, subtitle, badges, crumb, notice, band, aside
         <header data-slot="record-page-header" className="flex min-w-0 flex-col gap-1 lg:col-start-1 lg:row-start-1">
           {crumb && (
             <Link href={crumb.href} className="-ml-1 flex min-h-11 w-fit items-center rounded-sm px-1 text-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+              <span aria-hidden>‹&nbsp;</span>
               {crumb.label}
             </Link>
           )}
