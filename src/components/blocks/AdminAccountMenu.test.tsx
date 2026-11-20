@@ -28,4 +28,18 @@ describe("AdminAccountMenu", () => {
     await userEvent.click(await screen.findByRole("menuitem", { name: "Sign out" }))
     expect(onSignOut).toHaveBeenCalledTimes(1)
   })
+
+  it("in the rail shows the first name, opens upward from the footer, and Escape closes it and returns focus", async () => {
+    render(<AdminAccountMenu placement="rail" user={user} profileHref="/p" />)
+    const trigger = screen.getByRole("button", { name: "Account, Hannah" })
+    expect(trigger).toHaveAttribute("aria-haspopup", "menu")
+    expect(trigger).toHaveTextContent("Hannah")
+    trigger.focus()
+    await userEvent.keyboard("{Enter}")
+    const menu = await screen.findByRole("menu")
+    expect(menu).toHaveAttribute("data-side", "top")
+    await userEvent.keyboard("{Escape}")
+    expect(screen.queryByRole("menu")).toBeNull()
+    expect(trigger).toHaveFocus()
+  })
 })

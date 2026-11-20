@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
@@ -40,7 +41,7 @@ import { TopBar } from "./TopBar"
 // the tab bar come and go with the breakpoint but the inset around the
 // children stays mounted, so a resize never resets the screen. The links are
 // next/link (plain anchors in the catalog). The switcher slot above
-// the items stays empty until a second branch exists. The top bar is `TopBar`: Search then the account menu (`AdminAccountMenu`) at the far right; Sign out is there and not in the rail or More. `onSignOut` is a server action in the
+// the items stays empty until a second branch exists. The top bar is `TopBar`: Search, and on a phone the account's initials; on a laptop the account menu (`AdminAccountMenu`) is the rail's footer, bottom left, opening upward; Sign out is in that menu and not in More. `onSignOut` is a server action in the
 // layout, and does nothing in the catalog. The bottom bar (`AdminTabBar`) is Home, Schedule, Jobs, Customers and More, and pads for
 // `env(safe-area-inset-bottom)`, which the admin root layout enables with `viewport.viewportFit = "cover"`. Cmd or Ctrl+K and the Search
 // button open `CommandSearch` when `onSearch` is given; a hit opens in place on a screen with a record host and on its own page elsewhere.
@@ -67,10 +68,10 @@ export interface AdminShellProps {
 }
 
 // 15rem rail (240px); the bar and the content share the 16px phone and 24px laptop gutters.
-const RAIL_WIDTH = { "--sidebar-width": "15rem" } as CSSProperties
+const RAIL_WIDTH = { "--sidebar-width": "15rem", "--sidebar-width-icon": "3.5rem" } as CSSProperties
 const GUTTER = "px-4 md:px-6"
-// The badge is 813 by 573; the width props keep its shape so next/image never squashes it.
-const LOGO = "/images/logo-badge.png"
+// The rail's mark: the badge trimmed of its transparent margin (240 by 179), shown at 40px on a cream tile so it keeps its colours on the navy.
+const MARK = "/images/logo-badge-trim.png"
 
 /** The quiet Search button in the top bar: the same box Cmd or Ctrl+K opens, for anyone without the keys. */
 function SearchButton({ onClick, className, iconOnly = false }: { onClick: () => void; className?: string; iconOnly?: boolean }) {
@@ -87,13 +88,22 @@ function SearchButton({ onClick, className, iconOnly = false }: { onClick: () =>
   )
 }
 
-function Rail({ current, switcher }: Pick<AdminShellProps, "current" | "switcher">) {
+type RailAccount = Pick<AdminShellProps, "user" | "profileHref" | "helpHref" | "customerHref" | "onSignOut">
+
+function Rail({ current, switcher, user, profileHref, helpHref, customerHref, onSignOut }: Pick<AdminShellProps, "current" | "switcher"> & RailAccount) {
   return (
     <Sidebar collapsible="icon" className="motion-reduce:transition-none">
-      <SidebarHeader>
-        <div className="flex h-10 items-center gap-2 px-1 group-data-[collapsible=icon]:px-0">
-          <Image src={LOGO} alt="Trailhead" width={57} height={40} className="h-10 w-auto shrink-0 group-data-[collapsible=icon]:h-7" />
-          <span className="truncate font-display text-lg text-sidebar-foreground group-data-[collapsible=icon]:hidden">Trailhead</span>
+      {/* The brand lockup (Hannah, Nov 20 2026): the 40px mark and two lines, on the nav icons' inset (measured: the icons sit 16px from the rail's edge, the header's 8px plus 8px), 20px above and
+          below, a hairline under it; collapsed, the mark alone, centred. */}
+      <SidebarHeader className="border-b border-sidebar-border py-5">
+        <div className="flex h-10 items-center gap-3 px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-cream">
+            <Image src={MARK} alt="Trailhead Lawn & Irrigation" width={240} height={179} className="h-auto w-8" />
+          </span>
+          <span className="flex min-w-0 flex-col gap-0.5 group-data-[collapsible=icon]:hidden">
+            <span className="truncate font-display text-lg leading-none font-semibold text-sidebar-foreground">Trailhead</span>
+            <span className="truncate text-xs leading-none text-sidebar-muted">Lawn &amp; Irrigation</span>
+          </span>
         </div>
         {switcher !== undefined && (
           <div data-slot="admin-switcher" className="pt-1 group-data-[collapsible=icon]:hidden">
@@ -104,7 +114,7 @@ function Rail({ current, switcher }: Pick<AdminShellProps, "current" | "switcher
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="group-data-[collapsible=icon]:items-center">
               {NAV.map(({ id, label, href, icon: Icon }) => (
                 <SidebarMenuItem key={id}>
                   <SidebarMenuButton asChild isActive={id === current} tooltip={label}>
@@ -119,6 +129,10 @@ function Rail({ current, switcher }: Pick<AdminShellProps, "current" | "switcher
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      {/* the account menu, bottom left of the rail (Hannah, Nov 20 2026): avatar and name, the avatar alone when collapsed, the menu opening upward */}
+      <SidebarFooter className="border-t border-sidebar-border">
+        <AdminAccountMenu placement="rail" user={user} profileHref={profileHref} helpHref={helpHref} customerHref={customerHref} onSignOut={onSignOut} />
+      </SidebarFooter>
     </Sidebar>
   )
 }
@@ -164,7 +178,7 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, onSear
   const bar = useMemo(() => ({ mode: phone ? ("inline" as const) : ("bar" as const), title: titleSlot, actions: actionsSlot, primary: primarySlot }), [phone, titleSlot, actionsSlot, primarySlot])
   return (
     <SidebarProvider data-slot="admin-shell" data-phone={phone || undefined} open={open} onOpenChange={setChoice} style={RAIL_WIDTH}>
-      {phone ? null : <Rail current={current} switcher={switcher} />}
+      {phone ? null : <Rail current={current} switcher={switcher} user={user} profileHref={profileHref} helpHref={helpHref} customerHref={customerHref} onSignOut={onSignOut} />}
       <SidebarInset className="min-h-svh min-w-0 bg-cream">
         <TopBar
           phone={phone}
@@ -174,7 +188,7 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, onSear
           primaryRef={setPrimarySlot}
           switcher={switcher}
           search={onSearch ? <SearchButton onClick={() => setSearching(true)} iconOnly={phone} /> : undefined}
-          account={<AdminAccountMenu user={user} compact={phone} profileHref={profileHref} helpHref={helpHref} customerHref={customerHref} onSignOut={onSignOut} />}
+          account={phone ? <AdminAccountMenu user={user} compact profileHref={profileHref} helpHref={helpHref} customerHref={customerHref} onSignOut={onSignOut} /> : undefined}
         />
         <div className={cn(GUTTER, "w-full max-w-7xl pt-4 md:pt-6", phone ? "pb-[calc(5rem+env(safe-area-inset-bottom))]" : "pb-8")}>
           <AdminBarContext.Provider value={bar}>

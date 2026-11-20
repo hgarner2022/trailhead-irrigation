@@ -2,7 +2,7 @@ import type { SearchHit } from "@/lib/admin/search-hit"
 import { CUSTOMER_STATUS_WORDS } from "@/lib/customers/status"
 import { type CustomerPageData, customerPageOf, withStatus } from "../customer-fixtures"
 import { INVOICE_ROWS, dayWords, invoicePageOf, money, type InvoiceFixture, type InvoiceListRow, type InvoicePageData } from "../invoice-fixtures"
-import { allRows, GRID_ROWS, contactOf, customerIdOf, customerOfJob, isRealCustomer, rowOf } from "./jobs-data"
+import { allRows, GRID_ROWS, contactOf, customerIdOf, customerOfJob, isActiveAgain, isRealCustomer, rowOf } from "./jobs-data"
 import type { Route } from "./routes"
 import { readChoice } from "@/app/_flows/walkthrough/marketing-choice"
 
@@ -37,7 +37,10 @@ function withChoice(page: CustomerPageData): CustomerPageData {
 export function customerPage(id: string): CustomerPageData | null {
   const page = customerPageBase(id)
   // the status is read from the jobs by `customerStatusOf`, never typed here
-  return page ? withChoice(withStatus({ ...page, jobs: [...madeHere(id), ...page.jobs] })) : null
+  if (!page) return null
+  // an archived customer for whom a job was made here is back: no archive date, so the function reads Active from the new open job
+  const statusFacts = isActiveAgain(id) ? { ...page.statusFacts, archivedAt: null } : page.statusFacts
+  return withChoice(withStatus({ ...page, statusFacts, jobs: [...madeHere(id), ...page.jobs] }))
 }
 
 function customerPageBase(id: string): CustomerPageData | null {
@@ -73,6 +76,11 @@ function customerPageBase(id: string): CustomerPageData | null {
     })
   }
   if (id === "dale") return swapContact(customerPageOf("two-seasons"), { id: "dale" })
+  // the four of the customer-status design, as built in `customerPageOf`: their status is read from their jobs, never typed here
+  if (id === "priya") return swapContact(customerPageOf("nothing-yet"), { id })
+  if (id === "hal") return swapContact(customerPageOf("active-recent"), { id })
+  if (id === "ivy") return swapContact(customerPageOf("past-customer"), { id })
+  if (id === "gus") return swapContact(customerPageOf("archived"), { id })
   return null
 }
 
@@ -93,6 +101,10 @@ export const CUSTOMER_ROWS: CustomerListRow[] = [
   { id: "andrea", name: "Andrea Dalton", street: "480 Briggs St, Erie", next: "Mon, May 3", unpaid: 145, pass: "Season Pass 2027" },
   { id: "marcus", name: "Marcus Bell", street: "91 Main St, Longmont", next: "None", unpaid: 145, pass: "" },
   { id: "dale", name: "Dale Whitaker", street: "212 Main St, Lafayette", next: "Mon, May 3", unpaid: 0, pass: "Season Pass 2027" },
+  { id: "priya", name: "Priya Nair", street: "77 Aspen Way, Firestone", next: "None", unpaid: 0, pass: "" },
+  { id: "hal", name: "Hal Reed", street: "41 Cottonwood Dr, Erie", next: "None", unpaid: 145, pass: "" },
+  { id: "ivy", name: "Ivy Lund", street: "9 Meadow Ln, Louisville", next: "None", unpaid: 0, pass: "" },
+  { id: "gus", name: "Gus Pratt", street: "70 Ridge Rd, Lafayette", next: "None", unpaid: 0, pass: "" },
 ]
 
 // -------------------------------------------------------------------------------------------------------------------- invoices
@@ -105,6 +117,7 @@ export const INVOICES: InvoiceListRow[] = [
   row("inv-31", "0031", "Andrea Dalton", "480 Briggs St", "Spring turn-on", 145, "2026-04-14", "2026-04-28", "paid", RYAN, { jobId: "pass-2026", paidOn: "2026-04-20" }),
   row("inv-35", "0035", "Marcus Bell", "91 Main St", "Sprinkler repair", 145, "2026-10-29", "2026-11-12", "past-due", RYAN, { jobId: "marcus-repair" }),
   ...INVOICE_ROWS.filter((r) => !["i42", "i35"].includes(r.id)).map((r) => ({ ...r, id: `inv-${r.number.slice(-2)}`, customerId: customerIdOf(r.customer), jobId: OTHER_JOB[r.id] ?? "" })),
+  row("inv-hal", "0003", "Hal Reed", "41 Cottonwood Dr", "Spring turn-on", 145, "2025-03-20", "2025-04-03", "past-due", RYAN, { jobId: "hal-turn-on" }),
   { ...INVOICE_ROWS.find((r) => r.id === "i35")!, id: "inv-35-joe", number: "INV-2026-0036", customerId: "other-joe-alvarez", jobId: "g-joe", dueOn: "2026-11-12", sentOn: "2026-10-29" },
 ]
 
@@ -166,6 +179,9 @@ const OWNER_JOB: Record<string, Record<string, string>> = {
   andrea: { p2027: "pass-2027", j1: "andrea-repair", j3: "andrea-repair", j2: "pass-2026", j0: "pass-2026" },
   dale: { p2027: "dale-pass-2027", p2026: "dale-pass-2026" },
   marcus: { j1: "marcus-repair" },
+  hal: { j1: "hal-turn-on" },
+  ivy: { j1: "ivy-repair" },
+  gus: { j1: "gus-blowout" },
 }
 const OWNER_INVOICE: Record<string, Record<string, string>> = { andrea: { i0: "inv-31", i1: "inv-42" } }
 
@@ -230,6 +246,8 @@ export function searchWorld(query: string): SearchHit[] {
   if (q.length < 2) return []
   const qd = digits(q)
   const names = new Map<string, { id: string; name: string; street: string; phone: string }>()
+  // every customer of the list, whether or not they have a row in the Jobs grid (Priya has no job yet; Gus is archived and still found)
+  for (const c of CUSTOMER_ROWS) names.set(c.id, { id: c.id, name: c.name, street: c.street, phone: contactOf(c.name).text })
   for (const r of allRows()) {
     const id = customerIdOf(r.name)
     if (!names.has(id)) names.set(id, { id, name: r.name, street: r.property, phone: contactOf(r.name).text })

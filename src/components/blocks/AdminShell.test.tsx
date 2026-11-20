@@ -59,9 +59,12 @@ describe("AdminShell", () => {
     expect(nav.queryByRole("link", { name: "Visits" })).toBeNull()
     expect(nav.getByRole("link", { name: "Schedule" })).toHaveAttribute("aria-current", "page")
     expect(nav.getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current")
-    // Sign out left the rail: it is in the account menu at the far right of the top bar
-    expect(nav.queryByRole("button", { name: /Sign out/ })).toBeNull()
-    expect(screen.getByRole("button", { name: "Account, Hannah" })).toBeInTheDocument()
+    // the account menu is the rail's footer, bottom left; the top bar no longer holds it
+    const account = screen.getByRole("button", { name: "Account, Hannah" })
+    expect(rail()?.contains(account)).toBe(true)
+    expect(account.closest("[data-slot=sidebar-footer]")).not.toBeNull()
+    expect(document.querySelector("[data-slot=admin-bar]")?.contains(account)).toBe(false)
+    expect(account).toHaveTextContent("Hannah")
     expect(screen.getByText("Screen body")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /toggle sidebar/i })).toBeInTheDocument()
     expect(tabbar()).toBeNull()
@@ -121,7 +124,8 @@ describe("AdminShell", () => {
     expect(menu.getByRole("menuitem", { name: "Reports" })).toHaveAttribute("href", "/admin/reports")
     expect(menu.getByRole("menuitem", { name: "Settings" })).toHaveAttribute("href", "/admin/settings")
     await userEvent.keyboard("{Escape}")
-    // Sign out is in the account menu, on a phone too
+    // Sign out is in the account menu, on a phone too (the initials in the top bar, no rail)
+    expect(document.querySelector("[data-slot=admin-bar]")?.contains(screen.getByRole("button", { name: "Account, Hannah" }))).toBe(true)
     await userEvent.click(screen.getByRole("button", { name: "Account, Hannah" }))
     expect(await screen.findByRole("menuitem", { name: "Sign out" })).toBeInTheDocument()
   })

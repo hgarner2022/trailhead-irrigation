@@ -20,7 +20,7 @@ import { JobFlow } from "../JobFlow"
 import { JobPage } from "../JobPage"
 import { JobPagePass } from "../JobPageTrips"
 import { BILLING_WORDS, GRID_WORDS, SERVICE_OPTIONS, WHO_OPTIONS, jobGridCard, jobGridColumns, type BillingState, type GridJob, type GridStatus } from "../JobsGridDesign"
-import { CUSTOMER_ROWS, customerIdOf, INVOICES, customerPage, invoicePage, jobView, otherCustomer, type CustomerListRow } from "./data"
+import { allRows, CUSTOMER_ROWS, customerIdOf, INVOICES, customerPage, invoicePage, jobView, otherCustomer, type CustomerListRow } from "./data"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import { HomeScreen } from "../../HomeScreen"
@@ -78,8 +78,8 @@ export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen:
 }
 
 /** The real New job sheet (`_screens/NewJob.tsx`) over the walkthrough's customers and catalogue; Add job makes a row and opens its page. */
-export function NewJobSheet({ sheet, onClose, onCreated, onMade }: { sheet: { customer?: string; key: number } | null; onClose: () => void; onCreated: (jobId: string) => void; onMade: () => void }) {
-  const actions = useMemo(() => makeNewJobActions(onMade), [onMade])
+export function NewJobSheet({ sheet, onClose, onCreated, onMade, onActiveAgain }: { sheet: { customer?: string; key: number } | null; onClose: () => void; onCreated: (jobId: string) => void; onMade: () => void; onActiveAgain?: (name: string) => void }) {
+  const actions = useMemo(() => makeNewJobActions(onMade, onActiveAgain), [onMade, onActiveAgain])
   if (!sheet) return null
   // Started from a customer: the customer is already chosen (with Change), as if picked from the list. Opened empty from the Jobs grid, the header or search.
   const initial = sheet.customer ? { customer: { chosen: sheet.customer, isNew: false, person: EMPTY_PERSON, query: "", email: "" } } : undefined
@@ -107,10 +107,11 @@ const customerCard: GridCardSlots = { title: "name", line: ["street"], state: "s
 const STATUS_OPTIONS = (["active", "new", "past", "archived"] as const).map((value) => ({ value, label: CUSTOMER_STATUS_WORDS[value] }))
 const SHOWN_BY_DEFAULT = ["active", "new", "past"]
 
-/** The three customers of the prototype, on the embedded DataGrid recipe: name, status, street, next visit, unpaid, pass. Archived customers are hidden until "Show archived" is pressed; Cmd+K still finds them. */
+/** The seven customers of the prototype (Andrea, Marcus and Dale with full histories, then Priya, Hal, Ivy and Gus for the four statuses), on the embedded DataGrid recipe: name, status, street, next visit, unpaid, pass. Archived customers are hidden until "Show archived" is pressed; Cmd+K still finds them. */
 export function CustomersList({ onOpen }: { onOpen: (id: string) => void }) {
   const [showArchived, setShowArchived] = useState(false)
-  const data = useMemo<ListRow[]>(() => CUSTOMER_ROWS.map((r) => { const p = customerPage(r.id); return { ...r, status: p?.status ?? "active", dns: p?.doNotService } }), [])
+  // the next visit reads a job made here ("Unscheduled") before the row's own words
+  const data = useMemo<ListRow[]>(() => CUSTOMER_ROWS.map((r) => { const p = customerPage(r.id); const made = allRows().find((j) => j.id.startsWith("new-") && customerIdOf(j.name) === r.id); return { ...r, next: made?.next ?? r.next, status: p?.status ?? "active", dns: p?.doNotService } }), [])
   return (
     <div data-slot="walkthrough-customers">
       <PageHeader title="Customers" context={`${data.filter((r) => showArchived || r.status !== "archived").length} customers`} actions={<Button type="button" variant={showArchived ? "default" : "outline"} aria-pressed={showArchived} className="min-h-11" onClick={() => setShowArchived((v) => !v)}>Show archived</Button>} />
@@ -167,7 +168,7 @@ export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, on
       const other = otherCustomer(route.id ?? "")
       if (other)
         return (
-          <Placeholder title={other.name} line={`${other.street}. Only Andrea Dalton, Marcus Bell and Dale Whitaker have customer pages in this prototype.`}>
+          <Placeholder title={other.name} line={`${other.street}. Only the seven customers of the Customers list have pages in this prototype.`}>
             <RecordChip kind="customer" name="Andrea Dalton" href={recordHref.customer("andrea")} />
             <RecordChip kind="customer" name="Customers list" href="/admin/customers" />
           </Placeholder>

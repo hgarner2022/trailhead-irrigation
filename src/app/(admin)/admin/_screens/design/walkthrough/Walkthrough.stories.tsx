@@ -139,3 +139,42 @@ export const NewJobSheet: Story = {
     await expect(await within(document.body).findByLabelText("What are we doing?")).toBeInTheDocument()
   },
 }
+
+/** Starts on Customers: Andrea, Marcus, Dale, Hal (Active), Priya (New) and Ivy (Past customer, Do not service). Show archived adds Gus; each name opens its page. */
+export const CustomersByStatus: Story = {
+  name: "Customers by status",
+  globals: laptop,
+  args: { start: { screen: "customers" } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await expect(await c.findByRole("heading", { level: 1, name: "Customers" })).toBeInTheDocument()
+    for (const name of ["Priya Nair", "Hal Reed", "Ivy Lund"]) await expect(await c.findByText(name)).toBeInTheDocument()
+    await expect(c.queryByText("Gus Pratt")).toBeNull()
+    await userEvent.click(c.getByRole("button", { name: "Show archived" }))
+    await expect(await c.findByText("Gus Pratt")).toBeInTheDocument()
+    await userEvent.click(c.getByText("Priya Nair"))
+    await waitFor(() => expect(route(canvasElement)).toBe("customer:priya"))
+    await expect(await c.findByRole("heading", { level: 1, name: "Priya Nair" })).toBeInTheDocument()
+  },
+}
+
+/** Gus Pratt is archived, so his page has the banner. New job for him brings him back: a toast says so on the job that opens, and his page reads Active with no banner. */
+export const NewJobUnarchives: Story = {
+  name: "New job for an archived customer",
+  globals: laptop,
+  args: { start: { screen: "customer", id: "gus" } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await expect(await c.findByText(/Archived Nov 20/)).toBeInTheDocument()
+    await userEvent.click(await c.findByRole("link", { name: "New job" }))
+    await userEvent.selectOptions(await body.findByLabelText("What are we doing?"), "repair")
+    await userEvent.click(await body.findByRole("button", { name: "Add job" }))
+    await waitFor(() => expect(route(canvasElement)).toMatch(/^job:new-/))
+    await expect(await body.findByText("Gus Pratt is active again.")).toBeInTheDocument()
+    await userEvent.click((await c.findAllByRole("link", { name: /Gus Pratt/ }))[0]!)
+    await waitFor(() => expect(route(canvasElement)).toBe("customer:gus"))
+    await expect(await c.findByText("Active", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
+    await expect(canvasElement.querySelector("[data-slot=archived-banner]")).toBeNull()
+  },
+}
