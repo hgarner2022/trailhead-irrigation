@@ -1,8 +1,7 @@
 // The words of the crew options in the Schedule and Move dialogs (Hannah, Nov 19 2026: assigned people are texted only when the box is on,
-// the morning reminder is None or 7:00 am, and one optional line goes into the assigned text and shows on the trip). Pure strings.
+// and one optional line goes into the assigned text and shows on the trip). Pure strings.
 
 export const CREW_LINE_MAX = 140
-export type Remind = "none" | "7am"
 
 /** What the assigned person reads: "Trailhead: you're on 480 Briggs St, Tue Nov 24 at 12:00 pm, Sprinkler repair. Gate code in the note." */
 export const crewText = (o: { day: string; time: string; address: string; service: string; instructions?: string }): string => {

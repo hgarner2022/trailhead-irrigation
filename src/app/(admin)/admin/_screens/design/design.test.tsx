@@ -263,7 +263,7 @@ describe("Schedule dialog crew options", () => {
     fireEvent.change(screen.getByLabelText(/Instructions for the crew/), { target: { value: "Gate code is 4417." } })
     expect(document.querySelector("[data-slot=crew-text]")).toHaveTextContent("Sprinkler repair. Gate code is 4417.")
     expect(screen.getByLabelText(/Instructions for the crew/)).toHaveAttribute("maxlength", "140")
-    expect(screen.getByLabelText("Remind the crew the morning of")).toHaveValue("none")
+    expect(screen.queryByLabelText("Remind the crew the morning of")).toBeNull()
   })
 
   it("lets Who take two people and tells the customer about the first", () => {

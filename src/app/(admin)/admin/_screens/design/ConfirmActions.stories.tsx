@@ -70,7 +70,7 @@ export const ReminderNoMobile: Story = { name: "Reminder dialog, no mobile", ren
 export const ReminderEmailPhone: Story = { name: "Reminder dialog, email, phone", render: () => reminder({ channel: "email" }), globals: phone }
 
 // The Schedule and Move dialog with its crew options (Hannah, Nov 19 2026): Who allows more than one person (the customer hears the first one's first name); when the chosen person is not the
-// signed-in user there is a box "Text Tech Two that it's assigned" over a quiet line of the exact text; "Remind the crew the morning of"; "Instructions for the crew", 140 characters.
+// signed-in user there is a box "Text Tech Two that it's assigned" over a quiet line of the exact text; "Instructions for the crew", 140 characters. No morning-of reminder (Hannah, Nov 20 2026: the crew already gets that).
 const SCHEDULE = { verb: "Schedule" as const, first: "Andrea", channel: "text" as const, address: "480 Briggs St", service: "Sprinkler repair", signedIn: "Ryan Garner", onClose: () => undefined, onConfirm: () => undefined }
 
 /** Ryan assigns himself: there is no crew-text box, and the sentence names only the customer's text. */

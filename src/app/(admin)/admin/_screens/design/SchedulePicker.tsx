@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { FormRow } from "@/components/blocks/FormRow"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { CREW_LINE_MAX, crewText, notices, type Remind } from "./crew-copy"
+import { CREW_LINE_MAX, crewText, notices } from "./crew-copy"
 
 // The Schedule and Move dialog's body (docs/plans/2026-11-18-scheduling-engine-design.md section 4, the offer rule, and the customer's
 // day-and-time choice): three day cards, the soonest open days, each labelled with what is already booked ("Tue, Nov 24 · 3 stops ·
@@ -57,8 +57,6 @@ export interface Pick {
   people: string[]
   /** text the assigned people (not the signed-in user) that it is assigned */
   crewText: boolean
-  /** remind the crew the morning of */
-  remind: Remind
   /** one optional line for the crew: in the assigned text and on the trip */
   instructions: string
 }
@@ -83,7 +81,6 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
   const [dayKey, setDayKey] = useState("d24")
   const [people, setPeople] = useState<string[]>(initialPeople)
   const [crew, setCrew] = useState(initialCrewText)
-  const [remind, setRemind] = useState<Remind>("none")
   const [instructions, setInstructions] = useState("")
   const person = people[0]!
   const [at, setAt] = useState<number | "any">("any")
@@ -92,7 +89,7 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
   const { starts, best, stops } = slotsOf(day, person, minutes)
   const others = people.filter((p) => p !== signedIn)
   const emit = (d: Day, ps: string[], t: number | "any", extra: Partial<Pick> = {}) =>
-    onChange({ day: d.label, time: t === "any" ? "Any time" : time(t), person: ps[0]!, people: ps, crewText: crew && ps.some((p) => p !== signedIn), remind, instructions, ...extra })
+    onChange({ day: d.label, time: t === "any" ? "Any time" : time(t), person: ps[0]!, people: ps, crewText: crew && ps.some((p) => p !== signedIn), instructions, ...extra })
   const pickDay = (d: Day) => (setDayKey(d.key), setAt("any"), emit(d, people, "any"))
   const pickCustom = (iso: string) => {
     if (!iso) return
@@ -129,12 +126,6 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
             <p data-slot="crew-text" className="pl-8 text-muted-foreground">{crewText({ day: day.label, time: at === "any" ? "Any time" : time(at), address, service, instructions })}</p>
           </div>
         )}
-        <FormRow label="Remind the crew the morning of">
-          <select value={remind} onChange={(e) => (setRemind(e.target.value as Remind), emit(day, people, at, { remind: e.target.value as Remind }))} className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm">
-            <option value="none">None</option>
-            <option value="7am">7:00 am</option>
-          </select>
-        </FormRow>
         <FormRow label="Instructions for the crew (optional)" hint={`${instructions.length} of ${CREW_LINE_MAX}. In the text to the crew and on the trip.`}>
           <Input value={instructions} maxLength={CREW_LINE_MAX} onChange={(e) => (setInstructions(e.target.value), emit(day, people, at, { instructions: e.target.value }))} className="min-h-11" />
         </FormRow>

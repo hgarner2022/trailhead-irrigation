@@ -7,7 +7,7 @@ import type { ConfirmFacts } from "./confirm-copy"
 import { SchedulePicker, type Pick } from "./SchedulePicker"
 
 // The one Schedule and Move dialog (Hannah, Nov 19 2026), for the job page, a Season Pass trip and the clickable flows: the day cards, the
-// person or people, the start time and the crew options (a text that it is assigned, a morning reminder, one line of instructions), with
+// person or people, the start time and the crew options (a text that it is assigned, one line of instructions), with
 // "Schedule and notify the customer" as the confirm and "without notifying" under the caret. `onConfirm` gets the pick and whether the
 // customer is to be told. Pure props, client state.
 
@@ -30,7 +30,7 @@ export interface ScheduleDialogProps {
 }
 
 export function ScheduleDialog({ verb, first, channel = "text", address, service, signedIn = "Ryan Garner", onClose, onConfirm, initialPeople = ["Ryan Garner"], initialCrewText = false }: ScheduleDialogProps) {
-  const [pick, setPick] = useState<Pick>({ day: "Tue, Nov 24", time: "Any time", person: initialPeople[0]!, people: initialPeople, crewText: initialCrewText && initialPeople.some((p) => p !== signedIn), remind: "none", instructions: "" })
+  const [pick, setPick] = useState<Pick>({ day: "Tue, Nov 24", time: "Any time", person: initialPeople[0]!, people: initialPeople, crewText: initialCrewText && initialPeople.some((p) => p !== signedIn), instructions: "" })
   return (
     <ConfirmDialog
       open
