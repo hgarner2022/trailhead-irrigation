@@ -5,12 +5,12 @@ import { readSent, type SentRequest } from "@/app/_flows/walkthrough/request-bri
 import { FROM_ANDREA, photo } from "../job-fixtures"
 import { REQUESTS_NOW, REQUEST_FIXTURES, type ArchiveReason, type RequestData } from "./request-model"
 
-// The Requests the admin walkthrough holds: the fixtures, what Ryan did to them this session (opened, accepted, archived) and the requests the customer
+// The Requests the admin walkthrough holds: the fixtures, what Ryan did to them this session (opened, made into a job, archived) and the requests the customer
 // walkthrough sent from the booking form (read from the same browser storage the marketing choice uses). Module state read through
 // `useSyncExternalStore`, so the list, the page, the rail's badge and Home's row all change together; `reset` is what Start over calls. Nothing is sent
 // anywhere.
 
-type Change = { seen?: boolean; accepted?: RequestData["accepted"]; archived?: RequestData["archived"] }
+type Change = { seen?: boolean; becameJob?: RequestData["becameJob"]; archived?: RequestData["archived"] }
 
 let changes: Record<string, Change> = {}
 let sent: SentRequest[] = []
@@ -49,7 +49,7 @@ function snapshot(): RequestData[] {
   if (cache && cache.version === version) return cache.list
   const list = [...sent.map(fromSent), ...REQUEST_FIXTURES].map((r) => {
     const c = changes[r.id]
-    return c ? { ...r, seen: r.seen || Boolean(c.seen), accepted: c.accepted ?? r.accepted, archived: c.archived ?? r.archived } : r
+    return c ? { ...r, seen: r.seen || Boolean(c.seen), becameJob: c.becameJob ?? r.becameJob, archived: c.archived ?? r.archived } : r
   })
   cache = { version, list }
   return list
@@ -72,8 +72,9 @@ export const requestStore = {
     changes = { ...changes, [id]: { ...changes[id], seen: true } }
     bump()
   },
-  accept(id: string, accepted: NonNullable<RequestData["accepted"]>) {
-    changes = { ...changes, [id]: { ...changes[id], seen: true, accepted } }
+  /** Create job or Send a quote: the request moves into the job and leaves the list. */
+  becomeJob(id: string, becameJob: NonNullable<RequestData["becameJob"]>) {
+    changes = { ...changes, [id]: { ...changes[id], seen: true, becameJob } }
     bump()
   },
   archive(id: string, reason: ArchiveReason, at: string) {

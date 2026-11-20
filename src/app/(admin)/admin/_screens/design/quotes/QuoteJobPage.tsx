@@ -5,7 +5,6 @@ import { AsideCard } from "@/components/blocks/AsideCard"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { NotesAndHistory } from "@/components/blocks/NotesAndHistory"
 import { Photos } from "@/components/blocks/Photos"
-import { RecordChip } from "@/components/blocks/RecordChip"
 import { recordHref } from "@/components/blocks/record-preview-model"
 import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
 import { RecordPage } from "@/components/blocks/RecordPage"
@@ -16,7 +15,7 @@ import { useToast } from "@/components/blocks/Toast"
 import type { PhotoItem } from "@/lib/photos/types"
 import { NOW, noteOk } from "../job-fixtures"
 import { ApproveByHandDialog, LineDialog, QuoteReminderDialog, ReviseDialog, SendQuoteDialog } from "./QuoteDialogs"
-import { HOW_WORDS, LinesCard, QuoteBilling, QuoteCard, historyLines, quoteBand } from "./QuoteJobParts"
+import { HOW_WORDS, LinesCard, QuoteBilling, QuoteCard, VisitCard, historyLines, quoteBand } from "./QuoteJobParts"
 import { canSend, liveQuote, money, nextNumber, QUOTES_NOW, STAGE_PILL, stageOf, VIA_WORDS } from "./quote-model"
 import { useQuoteJob, useQuoteJobs, type QuoteStore } from "./quote-store"
 
@@ -33,7 +32,7 @@ export interface QuoteJobPageProps {
   store: QuoteStore
   jobId: string
   now?: string
-  /** the photos the person sent with the request, shown on the job after Accept */
+  /** the photos the person sent with the request: they come along to the job */
   photos?: PhotoItem[]
   /** a dialog a story opens at once; a line is `{ line: "new" }` or a line's id */
   initialDialog?: Dialog
@@ -74,7 +73,7 @@ export function QuoteJobPage({ store, jobId, now = QUOTES_NOW, photos, initialDi
       <RecordPage
         crumb={{ label: "Jobs", href: "/admin/jobs" }}
         title={job.customer}
-        subtitle={`${job.service} · ${job.requestId ? "Accepted from a request" : "Added by the office"}`}
+        subtitle={`${job.service} · ${job.requestId ? "Created from a request" : job.visit ? "Booked online" : "Added by the office"}`}
         badges={<StatusPill status={pill.status} label={pill.label} size="lg" />}
         notice={stage === "canceled" ? <p role="status" className="rounded-lg border border-border bg-card px-5 py-3 text-sm font-medium shadow-sm">{q?.state === "declined" ? `${job.first} declined quote ${q.id}. The job is canceled.` : "This job is canceled."}</p> : undefined}
         band={<SummaryBand items={quoteBand(job)} />}
@@ -83,25 +82,20 @@ export function QuoteJobPage({ store, jobId, now = QUOTES_NOW, photos, initialDi
         aside={
           <>
             <AsideCard name={job.customer} href={recordHref.customer(job.customerId)} phone={{ text: job.phone, href: `tel:${job.phone.replace(/[^\d+]/g, "")}` }} address={[job.street, `${job.town}, CO`]} />
-            {job.requestId && (
-              <SectionCard title="From the request" id="from-request-h">
-                <div className="flex flex-col gap-2">
-                  <RecordChip kind="request" name={`${job.first}'s request`} href={recordHref.request(job.requestId)} />
-                  {job.words && <p className="text-sm text-muted-foreground">{job.words}</p>}
-                </div>
-              </SectionCard>
-            )}
             <SectionCard title="Notes and history" id="notes-h">
               <NotesAndHistory bare lines={historyLines(job)} onAddNote={noteOk} now={NOW} />
             </SectionCard>
           </>
         }
       >
+        {/* a job that needs a quote leads with the Quote section: pricing and sending is what its page is for */}
+        {stage === "needs-a-quote" && <QuoteCard job={job} now={now} />}
+        {job.visit && <VisitCard visit={job.visit} />}
         <LinesCard job={job} onAdd={() => setDialog({ line: "new" })} onEdit={(id) => setDialog({ line: id })} />
-        <QuoteCard job={job} now={now} />
+        {stage !== "needs-a-quote" && <QuoteCard job={job} now={now} />}
         <QuoteBilling job={job} onRefund={() => setDialog("refund")} />
         {photos && photos.length > 0 && (
-          <SectionCard title="Photos from the request" id="photos-h">
+          <SectionCard title="Photos" id="photos-h">
             <Photos bare heading={`From ${job.first}`} customerName={job.first} photos={photos} audience="staff" className="[&_ul]:mt-0" />
           </SectionCard>
         )}

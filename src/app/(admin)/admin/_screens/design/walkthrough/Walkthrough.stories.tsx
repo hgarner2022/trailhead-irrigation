@@ -197,7 +197,7 @@ export const NewJobUnarchivesTest: Story = {
   },
 }
 
-/** Starts on Requests: two are New (the rail says 2), one matches Andrea Dalton. Open Rosa Delgado, Accept (a customer and a job that needs a quote), price the line, Send a quote with a deposit, and the job reads Quote sent in Jobs. */
+/** Starts on Requests: two are New (the rail says 2), one matches Andrea Dalton. Open Rosa Delgado (Christmas lights, no catalogue price, so Send a quote leads), Send a quote: the request moves into a job that needs a quote and the job page opens on its line; price it, Send a quote with a deposit, and the job reads Quote sent in Jobs. The other way out, Create job, is on Tom Ellis (a priced repair): the request becomes an Unscheduled job. */
 export const FromRequests: Story = { name: "From requests", args: { start: { screen: "requests" } }, globals: laptop }
 export const FromRequestsPhone: Story = { name: "From requests, phone", args: { start: { screen: "requests" } }, globals: phone }
 export const RequestToQuoteTest: Story = {
@@ -214,14 +214,15 @@ export const RequestToQuoteTest: Story = {
     await userEvent.click(await c.findByRole("button", { name: "Rosa Delgado" }))
     await waitFor(() => expect(route(canvasElement)).toBe("request:rq-rosa"))
     await expect(await c.findByText("Seen", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
-    // Accept: a customer and a job that needs a quote
-    await userEvent.click(await c.findByRole("button", { name: "Accept" }))
-    await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Accept" }))
-    await userEvent.click(await c.findByRole("link", { name: "Open job" }))
+    // Send a quote: the request moves into a job that needs a quote, and its page opens on the line to price
+    await userEvent.click(await c.findByRole("button", { name: "Send a quote" }))
+    await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Send a quote" }))
     await waitFor(() => expect(route(canvasElement)).toBe("job:q-rosa"))
+    await expect(await body.findByText("Job created for Rosa Delgado")).toBeInTheDocument()
     await expect((await c.findAllByText("Needs a quote")).length).toBeGreaterThan(0)
-    // price the line, then send the quote with a $300 deposit
-    await userEvent.click(await c.findByRole("button", { name: /Edit Christmas lights/ }))
+    // the request has left the list: one New request is left
+    await expect(canvasElement.querySelector("[data-slot=nav-count]")?.textContent).toContain("1")
+    // price the line (its dialog is already open), then send the quote with a $300 deposit
     await userEvent.type(await within(await body.findByRole("dialog")).findByRole("textbox", { name: "Price in dollars" }), "1200")
     await userEvent.click(within(await body.findByRole("dialog")).getByRole("button", { name: "Save the line" }))
     await userEvent.click(await c.findByRole("button", { name: "Send a quote" }))
@@ -233,6 +234,37 @@ export const RequestToQuoteTest: Story = {
     await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/jobs"]')!)
     await expect((await c.findAllByText("Quote sent")).length).toBeGreaterThan(0)
     await expect(canvasElement.querySelector("[data-slot=nav-count]")?.textContent).toContain("1")
+  },
+}
+
+/** The other way out: Tom Ellis asked for a sprinkler repair, which has a catalogue price, so Create job leads. The request becomes an Unscheduled job and leaves the list. */
+export const RequestToJobTest: Story = {
+  name: "Request to job (test)",
+  args: { start: { screen: "requests" } },
+  globals: laptop,
+  tags: HIDDEN,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await userEvent.click(await c.findByRole("button", { name: "Tom Ellis" }))
+    await waitFor(() => expect(route(canvasElement)).toBe("request:rq-tom"))
+    // a priced service: Create job is the primary
+    const footer = canvasElement.querySelector("[data-slot=record-footer]")!
+    await expect(footer.querySelector("button")?.textContent).toBe("Create job")
+    await userEvent.click(await c.findByRole("button", { name: "Create job" }))
+    await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Create job" }))
+    await waitFor(() => expect(route(canvasElement)).toBe("job:q-tom"))
+    await expect(await body.findByText("Job created for Tom Ellis")).toBeInTheDocument()
+    await expect(await c.findAllByText("Unscheduled")).not.toHaveLength(0)
+    // the customer's words are the first note, and the history says where the job came from
+    await expect(await c.findByText(/Two heads in the side yard are spraying the fence/)).toBeInTheDocument()
+    await expect(await c.findByText(/Created from a request on Nov 18/)).toBeInTheDocument()
+    // Jobs lists it; Requests no longer lists Tom
+    await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/jobs"]')!)
+    await expect((await c.findAllByText("Tom Ellis")).length).toBeGreaterThan(0)
+    await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/requests"]')!)
+    await expect(await c.findByRole("heading", { level: 1, name: "Requests" })).toBeInTheDocument()
+    await expect(c.queryByRole("button", { name: "Tom Ellis" })).toBeNull()
   },
 }
 

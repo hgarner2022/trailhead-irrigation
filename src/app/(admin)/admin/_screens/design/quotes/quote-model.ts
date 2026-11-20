@@ -62,15 +62,19 @@ export interface QuoteJob {
   town: string
   /** the request it came from, when it came from one */
   requestId?: string
-  /** the customer's own words, from the request, shown on the job */
+  /** the customer's own words, from the request: the first note on the job */
   words?: string
+  /** a job made ready to schedule without a quote (Create job on a priced service): it reads Unscheduled, not Needs a quote */
+  direct?: boolean
+  /** a visit already on the job, the design visit of an installation booked online: the price is set at the visit and the quote follows it */
+  visit?: { name: string; day: string; done: boolean; who: string }
   /** the job's live lines: editable until a quote is sent */
   lines: QuoteLine[]
   /** every quote made on the job, oldest first */
   quotes: QuoteData[]
   canceled?: boolean
   /** an event line or two for Notes and history, oldest first */
-  history: { at: string; actor: string; what: string }[]
+  history: { at: string; actor: string; what: string; /** a note's full text (the customer's words on a job made from a request) */ note?: string }[]
 }
 
 export type JobStageKey = "needs-a-quote" | "quote-sent" | "open" | "canceled"
@@ -78,11 +82,11 @@ export type JobStageKey = "needs-a-quote" | "quote-sent" | "open" | "canceled"
 /** The quote that is out and undecided, or the one that was decided: the newest that is not Replaced. */
 export const liveQuote = (job: QuoteJob): QuoteData | undefined => [...job.quotes].reverse().find((q) => q.state !== "replaced")
 
-/** The job's stage, read from its quotes: Needs a quote, Quote sent, Open (approved) or Canceled (declined, or canceled by hand). */
+/** The job's stage, read from its quotes: Needs a quote, Quote sent, Open (approved, or made ready without a quote) or Canceled (declined, or canceled by hand). */
 export function stageOf(job: QuoteJob): JobStageKey {
   if (job.canceled) return "canceled"
   const q = liveQuote(job)
-  if (!q) return "needs-a-quote"
+  if (!q) return job.direct ? "open" : "needs-a-quote"
   if (q.state === "approved") return "open"
   if (q.state === "declined") return "canceled"
   return "quote-sent"
@@ -189,8 +193,8 @@ export const QUOTE_JOB_FIXTURES: QuoteJob[] = [
     lines: [ln("d1", "Larger sprinkler repair", 0, "Zone 3 has a geyser by the driveway after the blowout. I would like a price to redo that line.")],
     quotes: [],
     history: [
-      { at: "2026-11-13T15:20:00Z", actor: "Dana", what: "Sent a request for Larger sprinkler repair from the contact form" },
-      { at: "2026-11-13T17:00:00Z", actor: "Ryan", what: "Accepted the request and created a job" },
+      { at: "2026-11-13T15:20:00Z", actor: "Dana", what: "Zone 3 has a geyser by the driveway after the blowout. I would like a price to redo that line.", note: "Zone 3 has a geyser by the driveway after the blowout. I would like a price to redo that line." },
+      { at: "2026-11-13T17:00:00Z", actor: "Ryan", what: "Created from a request on Nov 13" },
     ],
   },
   {
@@ -209,8 +213,8 @@ export const QUOTE_JOB_FIXTURES: QuoteJob[] = [
     lines: BETH_LINES,
     quotes: [{ id: "Q-2026-0007", jobId: "q-beth", lines: BETH_LINES, total: 1200, deposit: { amount: 300, percent: 25 }, sentOn: "2026-11-09T21:00:00Z", sentVia: "email", state: "sent", reminders: [] }],
     history: [
-      { at: "2026-11-09T19:45:00Z", actor: "Beth", what: "Sent a request for Christmas lights from the booking form" },
-      { at: "2026-11-10T15:00:00Z", actor: "Ryan", what: "Accepted the request and created a job" },
+      { at: "2026-11-09T19:45:00Z", actor: "Beth", what: "Front of the house and the porch columns, please. We are away until the 20th of December.", note: "Front of the house and the porch columns, please. We are away until the 20th of December." },
+      { at: "2026-11-10T15:00:00Z", actor: "Ryan", what: "Created from a request on Nov 10" },
       { at: "2026-11-09T21:00:00Z", actor: "Ryan", what: "Sent quote Q-2026-0007 by email" },
     ],
   },
@@ -236,8 +240,36 @@ export const QUOTE_JOB_FIXTURES: QuoteJob[] = [
 
 export const fixtureJob = (id: string): QuoteJob => structuredClone(QUOTE_JOB_FIXTURES.find((j) => j.jobId === id)!)
 
-/** A job of a request just accepted: one unpriced line that holds the customer's words (the research, 4.4). */
-export function jobFromRequest(o: { jobId: string; requestId: string; customerId: string; customer: string; first: string; phone: string; email: string; contact: Channel; service: string; street: string; town: string; words: string; at: string }): QuoteJob {
+/** Priya Nair's new system: booked online as a design visit, which Ryan did on Nov 12. The price is set at the visit and the job reads Needs a quote; he sends the quote from the job. */
+const INSTALL_LINES = [ln("i1", "New sprinkler system installation", 0, "Priced from the design visit: zone layout, heads and the backflow assembly.")]
+export const DESIGN_VISIT_JOB: QuoteJob = {
+  jobId: "q-priya",
+  customerId: "priya",
+  customer: "Priya Nair",
+  first: "Priya",
+  phone: "(970) 555-0123",
+  email: "priya.nair@example.com",
+  contact: "text",
+  service: "New sprinkler system installation",
+  street: "77 Aspen Way",
+  town: "Firestone",
+  visit: { name: "Design visit", day: "2026-11-12T17:00:00Z", done: true, who: "Ryan Garner" },
+  lines: INSTALL_LINES,
+  quotes: [],
+  history: [
+    { at: "2026-11-05T16:00:00Z", actor: "Priya", what: "Booked a design visit for a new sprinkler system online" },
+    { at: "2026-11-12T19:00:00Z", actor: "Ryan", what: "Design visit marked done" },
+  ],
+}
+
+/**
+ * A job made from a request (Hannah, Nov 20 2026: the request moves into the job; nobody accepts anything). The customer's words are the first note on the
+ * job, its photos come along, and Notes and history reads "Created from a request on Nov 20". The line is the service's catalogue line: priced when the
+ * catalogue has a price, else unpriced, and an unpriced line reads Needs a quote. "Create job" on a priced service is ready to schedule (`direct`);
+ * "Send a quote" always leaves the job in Needs a quote.
+ */
+export function jobFromRequest(o: { jobId: string; requestId: string; customerId: string; customer: string; first: string; phone: string; email: string; contact: Channel; service: string; street: string; town: string; words: string; receivedAt: string; at: string; price?: number; quote: boolean }): QuoteJob {
+  const priced = o.price !== undefined
   return {
     jobId: o.jobId,
     customerId: o.customerId,
@@ -251,8 +283,12 @@ export function jobFromRequest(o: { jobId: string; requestId: string; customerId
     town: o.town,
     requestId: o.requestId,
     words: o.words,
-    lines: [{ id: "l1", name: o.service || "Job", amount: 0, ...(o.words ? { description: o.words } : {}) }],
+    ...(priced && !o.quote ? { direct: true } : {}),
+    lines: [{ id: "l1", name: o.service || "Job", amount: o.price ?? 0 }],
     quotes: [],
-    history: [{ at: o.at, actor: "Ryan", what: "Accepted the request and created a job" }],
+    history: [
+      ...(o.words ? [{ at: o.receivedAt, actor: o.first, what: o.words, note: o.words }] : []),
+      { at: o.at, actor: "Ryan", what: `Created from a request on ${dayOf(o.at)}` },
+    ],
   }
 }

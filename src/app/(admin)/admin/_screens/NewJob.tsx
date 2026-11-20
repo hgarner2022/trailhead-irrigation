@@ -42,8 +42,10 @@ export interface NewJobProps {
   actions?: VisitActions
   /** what the sheet opens with; the catalog's filled-in stories */
   initial?: NewJobInitial
-  /** after Add job: the screen opens the record it shows; without it the new job's panel opens in place of the sheet */
-  onCreated?: (made: { visitId: string; jobId: string }) => void
+  /** after Add job: the screen opens the record it shows; without it the new job's panel opens in place of the sheet. `quote` is "Add and send a quote": the job opens as Needs a quote */
+  onCreated?: (made: { visitId: string; jobId: string; quote?: boolean }) => void
+  /** offers "Add and send a quote" beside "Add job" (Hannah, Nov 20 2026); the live admin has no quotes yet and leaves it off */
+  quotes?: boolean
   /** opened from a day on the Schedule (yyyy-mm-dd): the sheet says "Tuesday, Nov 24" at the top and the day is set */
   day?: string
 }
@@ -54,7 +56,7 @@ export const sheetDay = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDa
 /** The active services the sheet offers: the screen's own, else the site's catalogue. */
 const offered = (data: AdminData): readonly ServiceItem[] => (data.services ?? (SERVICE_LIST as readonly ServiceItem[])).filter((s) => s.active !== false)
 
-export function NewJob({ data, today, open, onOpenChange, customerId, actions, initial = {}, onCreated, day }: NewJobProps) {
+export function NewJob({ data, today, open, onOpenChange, customerId, actions, initial = {}, onCreated, day, quotes }: NewJobProps) {
   const host = useOpenRecord()
   const [choice, setChoice] = useState<CustomerChoice>(initial.customer ?? emptyChoice(customerId))
   const startWith = initial.choice === SEASON_PASS ? SEASON_PASS : initial.choice ? serviceGroupId(initial.choice) : ""
@@ -134,9 +136,10 @@ export function NewJob({ data, today, open, onOpenChange, customerId, actions, i
               service={service}
               actions={actions}
               initialDay={day}
-              onDone={(made) => {
+              quotes={quotes}
+              onDone={(made, quote) => {
                 done()
-                if (onCreated) onCreated({ visitId: made.id, jobId: made.jobId })
+                if (onCreated) onCreated({ visitId: made.id, jobId: made.jobId, ...(quote ? { quote: true } : {}) })
                 else host?.open("job", made.jobId)
               }}
             />

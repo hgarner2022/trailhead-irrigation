@@ -82,6 +82,8 @@ Research only. No code is written and nothing is wired. Hannah asked: "Where do 
 
 ## 4. Recommendation
 
+> Hannah, Nov 20 2026: the word Accept is replaced by Create job; a request has no accepted state, it becomes the job. A request is New, Seen or Archived. Making the job moves the request into it: it leaves the Requests list, its customer's words become the job's first note, its photos come along, and the old address opens a page that says "This request became a job". There are two ways out, **Create job** (ready to schedule when the service has a catalogue price, else it reads Needs a quote) and **Send a quote** (the job in Needs a quote, with the next step open), and the New job sheet gets the same pair as "Add job" and "Add and send a quote". A service with no catalogue price (an installation, Christmas lights, the larger repair) leads with Send a quote. Below, read "Accept" as Create job and "Accepted" as "became a job".
+
 ### 4.1 The objects
 
 - **Request.** New. A held record about someone who is not yet a customer. It holds the person's own words and contact on its own row. It never touches `customer`, `property` or `job` until Ryan accepts it.

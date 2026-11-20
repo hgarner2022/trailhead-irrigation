@@ -254,7 +254,7 @@ Seven messages added to the Messages section (`Messages / Requests and quotes`, 
 | Quote reminder | none | text or email | the customer, only when Ryan presses Remind | transactional |
 | Quote approved | none | text or email | the customer, after the link's Approve (or Ryan's Mark approved, if he chooses to tell them) | transactional |
 | Quote declined | none | text or email | the customer, after the link's Decline | transactional |
-| A new request | none | email and text | owner and admins, every request | to the crew |
+| A new request | none | email and text | owner and admins, every request. The email's preheader reads "Open it in the admin to make a job of it or archive it." (Hannah, Nov 20 2026: nobody accepts a request, it becomes the job; no message anywhere says "accept".) | to the crew |
 | A quote was decided | none | email and text | owner and admins | to the crew |
 
 **Claims check.** Every claim, and its source. A sentence with no source was not written.

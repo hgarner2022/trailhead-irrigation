@@ -6,7 +6,7 @@ import { RequestRows, requestRowsOf, type RequestRow } from "@/components/blocks
 import { SectionCard } from "@/components/blocks/SectionCard"
 import { useToast } from "@/components/blocks/Toast"
 import type { Attention } from "@/lib/admin/types"
-import { stateOf, type RequestData } from "./request-model"
+import { openRequests, stateOf, type RequestData } from "./request-model"
 
 // Home's Needs action card with the request and quote rows above the rows Home already has (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.7). The
 // live HomeScreen is not edited: this is the same card, the same row anatomy, with `RequestRows` in front. Pure props.
@@ -26,7 +26,7 @@ export interface RequestsHomeProps {
 
 export function RequestsHome({ requests, quotes, now, onRemind, readOnly }: RequestsHomeProps) {
   const toast = useToast()
-  const rows = requestRowsOf({ requests: requests.map((r) => ({ receivedAt: r.receivedAt, isNew: stateOf(r) === "new" })), quotes })
+  const rows = requestRowsOf({ requests: openRequests(requests).map((r) => ({ receivedAt: r.receivedAt, isNew: stateOf(r) === "new" })), quotes })
   return (
     <div data-slot="requests-home">
       <PageHeader title="Today" context="Wednesday, November 18" />

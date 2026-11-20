@@ -10,24 +10,38 @@ import { ARCHIVE_REASONS, fullName, type ArchiveReason, type Match, type Request
 
 const SELECT = "min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
 
-/** How an Accept is worded: a new customer, or a job under the customer the request matches. */
-export function acceptWords(r: Pick<RequestData, "first" | "last">, match: Match | null, asNew: boolean): string {
+/** The two ways out of a request: a job (ready to schedule when its service is priced, else it reads Needs a quote) or a quote to price and send. */
+export type CreateMode = "job" | "quote"
+
+/** How Create job and Send a quote are worded: a new customer, or a job under the customer the request matches. Both state the exact effect and say nothing is sent. */
+export function createWords(r: Pick<RequestData, "first" | "last">, match: Match | null, asNew: boolean, mode: CreateMode, quoteFirst = false): string {
   const name = fullName(r)
-  return match && !asNew ? `Create a job that needs a quote for ${match.customer.name}, who is already a customer. Nothing is sent to ${r.first}.` : `Add ${name} as a customer and create a job that needs a quote. Nothing is sent to ${r.first}.`
+  const known = match && !asNew ? match.customer.name : null
+  if (mode === "quote") {
+    return known
+      ? `Open a quote to price and send for ${known}, who is already a customer. Nothing is sent to ${r.first} yet.`
+      : `Add ${name} as a customer and open a quote to price and send. Nothing is sent to ${r.first} yet.`
+  }
+  const tail = quoteFirst ? " It reads Needs a quote until its line has a price." : ""
+  return known ? `Create a job for ${known}, who is already a customer. Nothing is sent to ${r.first}.${tail}` : `Add ${name} as a customer and create a job. Nothing is sent to ${r.first}.${tail}`
 }
 
-export interface AcceptDialogProps {
+export interface CreateJobDialogProps {
   request: RequestData
   match: Match | null
+  mode: CreateMode
+  /** the service is quoted first (its catalogue price is not set) */
+  quoteFirst: boolean
   onClose: () => void
   /** `asNew`: Ryan chose to add a new customer although one matches */
-  onAccept: (o: { asNew: boolean }) => void
+  onCreate: (o: { asNew: boolean; mode: CreateMode }) => void
 }
 
-export function AcceptDialog({ request, match, onClose, onAccept }: AcceptDialogProps) {
+export function CreateJobDialog({ request, match, mode, quoteFirst, onClose, onCreate }: CreateJobDialogProps) {
   const [asNew, setAsNew] = useState(false)
+  const label = mode === "quote" ? "Send a quote" : "Create job"
   return (
-    <ConfirmDialog open onOpenChange={(o) => !o && onClose()} title="Accept this request?" message={acceptWords(request, match, asNew)} confirmLabel="Accept" slot="accept-request-dialog" onConfirm={async () => (onAccept({ asNew }), { ok: true })}>
+    <ConfirmDialog open onOpenChange={(o) => !o && onClose()} title={label} message={createWords(request, match, asNew, mode, quoteFirst)} confirmLabel={label} slot="create-job-dialog" onConfirm={async () => (onCreate({ asNew, mode }), { ok: true })}>
       {match && (
         <FormRow label="Customer">
           <select value={asNew ? "new" : "match"} onChange={(e) => setAsNew(e.target.value === "new")} className={SELECT}>

@@ -125,7 +125,7 @@ export interface NewRequestStaffData {
 export function newRequestStaffEmail(d: NewRequestStaffData): RenderedEmail {
   const out = compose({
     origin: d.origin,
-    preheader: "Open it in the admin to accept it or archive it.",
+    preheader: "Open it in the admin to make a job of it or archive it.",
     title: "New request",
     lead: `${d.name}${d.town ? ` in ${d.town}` : ""} asked${d.service ? ` about ${d.service}` : " a question"}.`,
     parts: [summary({ facts: [["Phone", d.phone || "None given"], ["Email", d.email || "None given"], ...(d.words ? [["They wrote", d.words] as [string, string]] : [])] }), button(`${d.origin}/admin/requests?request=${d.requestId}`, "Open it in the admin")],

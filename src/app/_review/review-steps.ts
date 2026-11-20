@@ -70,10 +70,16 @@ export const REVIEW_PARTS: ReviewPart[] = [
     title: "Part 4: requests and quotes",
     intro: "Someone who is not a customer asks for work that cannot be booked online. Start with the walkthroughs, then check these in order.",
     steps: [
-      { id: "admin-walkthrough-clickable--from-requests", label: "Walk Requests to a quote", look: "Open Rosa Delgado, Accept, price the line and Send a quote with a deposit; the job reads Quote sent in Jobs." },
+      { id: "admin-walkthrough-clickable--from-requests", label: "Walk Requests to a quote", look: "Open Rosa Delgado (Christmas lights has no price, so Send a quote leads), Send a quote, price the line and send it with a deposit; the request leaves the list and the job reads Quote sent in Jobs. Open Tom Ellis and Create job for the other way out: an Unscheduled job." },
       { id: "admin-requests--list", label: "The Requests list", look: "Requests sits after Schedule in the rail with a count; New comes first, with the customer match, what they asked for and the town." },
-      { id: "admin-requests--new-matches", label: "A request that matches a customer", look: "The match panel names Andrea Dalton; the request still waits for you to press Accept." },
-      { id: "admin-requests--accept-match", label: "Accept", look: "The dialog states the exact effect and says nothing is sent to the person." },
+      { id: "admin-requests--new-matches", label: "A request that matches a customer", look: "The match panel names Andrea Dalton; the request still waits for you to make a job of it." },
+      { id: "admin-requests--seen-priced", label: "A priced service", look: "A sprinkler repair has a catalogue price, so Create job leads and Send a quote is the outline beside it." },
+      { id: "admin-requests--create-job-no-match", label: "Create job", look: "The dialog states the exact effect and says nothing is sent to the person. There is no Accepted status anywhere." },
+      { id: "admin-requests--send-quote-dialog", label: "Send a quote from a request", look: "The request moves into a job that needs a quote and you land on it to price and send." },
+      { id: "admin-requests--became-job", label: "This request became a job", look: "An old link opens a plain page with the job and its stage, never a dead end." },
+      { id: "screens-newjob--lights-quote-first", label: "New job: a service with no price", look: "Add and send a quote leads, Add job is the outline, and the line says it needs a price before it can be scheduled." },
+      { id: "screens-newjob--repair-both-buttons", label: "New job: a priced service", look: "Add job leads and Add and send a quote is the outline." },
+      { id: "admin-quotes--install-after-design-visit", label: "An installation after its design visit", look: "The visit is done, the price reads Set at the visit, the job needs a quote and you send it from the job." },
       { id: "admin-requests--home-rows", label: "Home rows", look: "New requests, each quote waiting with its age and Remind, and a decided quote." },
       { id: "admin-quotes--needs-a-quote", label: "A job that needs a quote", look: "One unpriced line holds the customer's words; Send a quote is off until a line has a price." },
       { id: "admin-quotes--send-percent", label: "Send a quote with a deposit", look: "None by default, dollars or percent, the dollars it comes to, never above the total, and Send without telling under the caret." },
@@ -92,7 +98,7 @@ export const REVIEW_PARTS: ReviewPart[] = [
 ]
 
 export const CHANGED_SINCE_LAST_REVIEW: string[] = [
-  "Requests: a new Requests item in the left menu. A website request waits there until Ryan accepts it, and only then becomes a customer and a job.",
+  "Requests: a new Requests item in the left menu. A website request waits there as New or Seen until Ryan makes a job of it with Create job or Send a quote. The request moves into the job and leaves the list; nothing is accepted, and a request has no Accepted status.",
   "Quotes: sent from the job, approved from a link with Approve and Decline. A deposit is optional, paid at Approve, and Ryan can mark a quote approved by hand.",
   "Booking form: no Call Ryan in the header, a Close button and a Back button on every step, and Rachio, water efficiency and installation are bookable. Only Christmas lights and the larger repair are requests.",
   "Messages: every email and text the customer can get is in one section, with a redesigned layout shown next to the current one.",

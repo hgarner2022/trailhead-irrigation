@@ -114,3 +114,28 @@ export const PassForCustomerWithoutEmail: Story = {
     await expect(await screen.findByText("Joe has no email on file. The confirmation goes by email.")).toBeInTheDocument()
   },
 }
+
+/** A priced service with quotes on: Add job leads, Add and send a quote is the outline beside it. */
+export const RepairBothButtons: Story = {
+  args: { customerId: "c-dana", initial: { choice: "repair" }, quotes: true },
+  globals: wide,
+  play: async () => {
+    const add = await screen.findByRole("button", { name: "Add job" })
+    await expect(add).toBeEnabled()
+    await expect(await screen.findByRole("button", { name: "Add and send a quote" })).toBeEnabled()
+    await expect(add.compareDocumentPosition(screen.getByRole("button", { name: "Add and send a quote" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  },
+}
+export const RepairBothButtonsPhone: Story = { args: { customerId: "c-dana", initial: { choice: "repair" }, quotes: true }, globals: phone }
+
+/** A service with no catalogue price (Christmas lights): Add and send a quote leads and the line says it needs a price before it can be scheduled. */
+export const LightsQuoteFirst: Story = {
+  args: { customerId: "c-dana", initial: { choice: "lights" }, quotes: true },
+  globals: wide,
+  play: async () => {
+    await expect(await screen.findByText(/Needs a price before it can be scheduled\./)).toBeInTheDocument()
+    await expect(await screen.findByRole("button", { name: "Add and send a quote" })).toBeEnabled()
+    await expect(await screen.findByRole("button", { name: "Add job" })).toBeEnabled()
+  },
+}
+export const LightsQuoteFirstPhone: Story = { args: { customerId: "c-dana", initial: { choice: "lights" }, quotes: true }, globals: phone }

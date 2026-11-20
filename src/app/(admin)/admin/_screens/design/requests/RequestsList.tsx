@@ -7,15 +7,15 @@ import { PageHeader } from "@/components/blocks/PageHeader"
 import { RecordChip } from "@/components/blocks/RecordChip"
 import { recordHref } from "@/components/blocks/record-preview-model"
 import { StatusPill } from "@/components/blocks/StatusPill"
-import { REQUEST_PILL, REQUEST_STATES, SERVICE_FILTER, cameIn, fullName, listOrder, matchOf, newCount, serviceWords, stateOf, type RequestData, type RequestState } from "./request-model"
+import { REQUEST_PILL, REQUEST_STATES, SERVICE_FILTER, cameIn, fullName, listOrder, matchOf, newCount, openRequests, serviceWords, stateOf, type RequestData, type RequestState } from "./request-model"
 
 // The Requests list (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.2; Hannah's answers 1 and 2 of Nov 20 2026): one DataGrid shaped like Jobs,
 // New first. A request is a held record of someone who is not a customer yet, so the row says who asked, which customer they match (a chip, or "No
-// match"), what they asked for, the town, when it came in and a status pill: New, Seen, Accepted or Archived. Search is by name, street, phone or
+// match"), what they asked for, the town, when it came in and a status pill: New, Seen or Archived. A request that became a job has left the list (Hannah, Nov 20 2026: it moves into the job). Search is by name, street, phone or
 // service; Status and Service are the filters. The name opens the request. Pure props.
 
 const CHIP = "text-sm font-medium md:min-h-8"
-const STATE_WORDS: Record<RequestState, string> = { new: "New", seen: "Seen", accepted: "Accepted", archived: "Archived" }
+const STATE_WORDS: Record<RequestState, string> = { new: "New", seen: "Seen", archived: "Archived" }
 
 interface Row extends RequestData {
   state: RequestState
@@ -54,16 +54,17 @@ export interface RequestsListProps {
 export function RequestsList({ requests, now, onOpen, defaultFilters }: RequestsListProps) {
   const rows = useMemo<Row[]>(
     () =>
-      listOrder(requests).map((r) => {
-        const m = r.accepted ? { customer: { id: r.accepted.customerId, name: fullName(r) } } : matchOf(r)
+      listOrder(openRequests(requests)).map((r) => {
+        const m = matchOf(r)
         return { ...r, state: stateOf(r), matchId: m?.customer.id ?? "", matchName: m?.customer.name ?? "", cameInWords: cameIn(r, now) }
       }),
     [requests, now],
   )
+  const open = openRequests(requests)
   const fresh = newCount(requests)
   return (
     <div data-slot="requests-list">
-      <PageHeader title="Requests" context={requests.length === 0 ? "No requests yet." : `${requests.length} requests. ${fresh} new.`} />
+      <PageHeader title="Requests" context={open.length === 0 ? "No requests yet." : `${open.length} requests. ${fresh} new.`} />
       <DataGrid
         columns={columns}
         card={card}
@@ -80,7 +81,7 @@ export function RequestsList({ requests, now, onOpen, defaultFilters }: Requests
         pageSize={25}
         noMatchTitle="No requests match."
         emptyTitle="No requests yet"
-        emptyLine="A request from the website shows here until you accept it or archive it."
+        emptyLine="A request from the website shows here until you make a job of it or archive it."
       />
     </div>
   )

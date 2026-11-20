@@ -204,7 +204,7 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
         <ToastBridge toastRef={toastRef} later={laterToast} />
         <Strip stack={stack} onJump={jump} onStartOver={startOver} />
         <div key={`${epoch}-${top.screen}-${top.id ?? ""}`}>
-          <RouteScreen route={top} rows={rows} onBack={() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))} onOpenJob={(id) => go({ screen: "job", id })} onOpenCustomer={(id) => go({ screen: "customer", id })} onOpenRequest={(id) => go({ screen: "request", id })} onNew={() => go({ screen: "jobs", newJob: true })} />
+          <RouteScreen route={top} rows={rows} onBack={() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))} onOpenJob={(id) => go({ screen: "job", id })} onOpenCustomer={(id) => go({ screen: "customer", id })} onOpenRequest={(id) => go({ screen: "request", id })} onNew={() => go({ screen: "jobs", newJob: true })} onJobCreated={(id, message) => ((laterToast.current = message), go({ screen: "job", id }))} />
         </div>
         <NewJobSheet sheet={sheet} onClose={() => setSheet(null)} onMade={() => setMade((n) => n + 1)} onCreated={(id) => go({ screen: "job", id })} onActiveAgain={onActiveAgain} />
       </AdminShell>

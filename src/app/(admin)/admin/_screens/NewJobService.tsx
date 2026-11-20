@@ -40,10 +40,13 @@ interface Props {
   actions?: VisitActions
   /** the day the sheet was opened from, on the Schedule */
   initialDay?: string
-  onDone: (made: { id: string; jobId: string }) => void
+  /** offers "Add and send a quote" beside "Add job" */
+  quotes?: boolean
+  /** `quote`: the job was made with "Add and send a quote" */
+  onDone: (made: { id: string; jobId: string }, quote?: boolean) => void
 }
 
-export function NewJobService({ data, today, choice, group, service, zones, onZones, actions, initialDay, onDone }: Props) {
+export function NewJobService({ data, today, choice, group, service, zones, onZones, actions, initialDay, quotes, onDone }: Props) {
   const todayDay = today.slice(0, 10)
   // No day until one is chosen: a job taken by phone can be given its day later, and a day filled in by default booked today by accident.
   const [day, setDay] = useState(initialDay ?? "")
@@ -62,15 +65,19 @@ export function NewJobService({ data, today, choice, group, service, zones, onZo
   const shownMinutes = minutes ?? String(service.slotMinutes)
   const people = routePeople(data.settings.people)
   const ready = choiceReady(choice, data.clients)
+  // The catalogue decides (Hannah, Nov 20 2026): a service with no price is quoted first, so "Add and send a quote" leads and "Add job" makes a job that reads
+  // Needs a quote; a priced service leads with Add job.
+  const quoteFirst = Boolean(quotes) && service.price === undefined
 
-  const submit = () => {
+  const submit = (quote = false) => {
     const accessLine = choice.isNew && choice.person.access.trim() ? `Access: ${choice.person.access.trim()}` : ""
     const text = [notes.trim(), accessLine].filter(Boolean).join("\n")
     const input: NewVisitInput = {
       ...(choice.isNew ? { newCustomer: newCustomerFrom(choice.person) } : { customerId: choice.chosen }),
       serviceKey: service.key,
-      ...(day ? { scheduledOn: day } : {}),
-      ...(day && time ? { startTime: time } : {}),
+      ...(day && !quote ? { scheduledOn: day } : {}),
+      ...(day && time && !quote ? { startTime: time } : {}),
+      ...(quote ? { sendQuote: true } : {}),
       durationMinutes: Number(shownMinutes),
       ...(personId ? { personId } : {}),
       ...(shownPrice ? { price: Number(shownPrice) } : {}),
@@ -79,7 +86,7 @@ export function NewJobService({ data, today, choice, group, service, zones, onZo
     if (!actions) return console.info("new job", input)
     run(
       () => actions.createVisit(input),
-      (made) => onDone(made),
+      (made) => onDone(made, quote),
     )
   }
 
@@ -152,14 +159,30 @@ export function NewJobService({ data, today, choice, group, service, zones, onZo
       </details>
 
       <div>
-        <Button type="button" className="min-h-11" disabled={pending || !ready} onClick={submit}>
-          Add job
-        </Button>
+        <div data-slot="new-job-actions" className="flex flex-wrap gap-2">
+          {quoteFirst && (
+            <Button type="button" className="min-h-11" disabled={pending || !ready} onClick={() => submit(true)}>
+              Add and send a quote
+            </Button>
+          )}
+          <Button type="button" variant={quoteFirst ? "outline" : "default"} className="min-h-11" disabled={pending || !ready} onClick={() => submit()}>
+            Add job
+          </Button>
+          {quotes && !quoteFirst && (
+            <Button type="button" variant="outline" className="min-h-11" disabled={pending || !ready} onClick={() => submit(true)}>
+              Add and send a quote
+            </Button>
+          )}
+        </div>
         <p role="alert" className={`${FORM_STATUS} mt-2 text-destructive`}>
           {error}
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
-          {day ? "With a day, the customer is told the date by text, or by email with no mobile number." : "No day yet, nothing is sent. The job waits on the Schedule's Unscheduled list."}
+          {quoteFirst
+            ? "Needs a price before it can be scheduled. The job opens as Needs a quote with no day, and nothing is sent until you send the quote."
+            : day
+              ? `With a day, the customer is told the date by text, or by email with no mobile number.${quotes ? " A quote opens with no day." : ""}`
+              : "No day yet, nothing is sent. The job waits on the Schedule's Unscheduled list."}
         </p>
       </div>
     </>

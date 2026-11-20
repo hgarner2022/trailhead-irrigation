@@ -15,15 +15,19 @@ import { SummaryBand, type SummaryItem } from "@/components/blocks/SummaryBand"
 import { useToast } from "@/components/blocks/Toast"
 import type { TimelineLine } from "@/lib/events/timeline"
 import { NOW, noteOk } from "../job-fixtures"
-import { AcceptDialog, ArchiveDialog } from "./RequestDialogs"
+import { ArchiveDialog, CreateJobDialog, type CreateMode } from "./RequestDialogs"
+import { isQuoteFirst } from "./request-catalogue"
 import { REQUEST_PILL, SOURCE_WORDS, cameIn, cameInOn, fullName, matchOf, matchWords, serviceWords, stateOf, type ArchiveReason, type Match, type RequestData } from "./request-model"
 
 // A request as a page of its own (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.2 to 4.5; Hannah's answers 2 and 3 of Nov 20 2026), on the
 // record page frame: the person's name with its status, the band (when it came in, what they asked for, where, which customer they match), the customer's
-// words and photos, the contact and a match panel in the aside. A request waits here until Ryan presses Accept, even when its email matches a customer
-// (the panel shows the match), so spam never becomes a customer. The header's actions: Accept (primary), Archive (asks why) and, under More, Mark as seen.
-// Accept opens a dialog that states the exact effect; afterwards the page shows the job as a chip with its stage. Nothing here reaches the customer. A
-// result is a toast and the page changes state, never a message in a section. Pure props: `onSeen`, `onAccept` and `onArchive` let a host keep state.
+// words and photos, the contact and a match panel in the aside. A request waits here until Ryan makes a job of it, even when its email matches a customer
+// (the panel shows the match), so spam never becomes a customer. There are two ways out and the header has both: "Create job" and "Send a quote", plus
+// Archive (asks why) and, under More, Mark as seen. The catalogue decides which is primary (`isQuoteFirst`): a service with no price (an installation,
+// Christmas lights, the larger repair) leads with Send a quote, a priced one with Create job. Each opens a dialog that states the exact effect. Hannah, Nov
+// 20 2026: nobody accepts anything, the request MOVES into the job, so there is no accepted state; a stale link to a request that became a job opens a plain
+// page that says so with the job as a chip. Nothing here reaches the customer. A result is a toast and the page changes, never a message in a section.
+// Pure props: `onSeen`, `onCreateJob`, `onJobCreated` and `onArchive` let a host keep state and take Ryan to the job.
 
 const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
 const NEEDS_A_QUOTE = { status: "needs-a-day" as PillStatus, label: "Needs a quote" }
@@ -35,21 +39,23 @@ export interface RequestPageProps {
   now?: string
   /** the customers the match is read against; the fixtures' by default */
   match?: Match | null
-  /** the job's stage once accepted, read from the job: Needs a quote, Quote sent, Open, Canceled */
+  /** the job's stage once made, read from the job: Needs a quote, Quote sent, Unscheduled, Canceled */
   jobStage?: { status: PillStatus; label: string }
   /** opening a New request writes Seen once; a catalogue story that shows New turns it off */
   markSeenOnOpen?: boolean
   onSeen?: (request: RequestData) => void
-  /** Accept: answers the job it made and the customer it was added to */
-  onAccept?: (request: RequestData, o: { asNew: boolean }) => { jobId: string; customerId: string }
+  /** Create job or Send a quote: answers the job it made and the customer it was added to */
+  onCreateJob?: (request: RequestData, o: { asNew: boolean; mode: CreateMode }) => { jobId: string; customerId: string }
+  /** the host takes Ryan to the new job (the request has left the list) and shows the toast there; without it the page shows "This request became a job" in place */
+  onJobCreated?: (jobId: string, message: string, mode: CreateMode) => void
   onArchive?: (request: RequestData, reason: ArchiveReason) => void
   /** the dialog a story opens at once */
-  initialDialog?: "accept" | "archive" | null
+  initialDialog?: "job" | "quote" | "archive" | null
 }
 
 interface Overlay {
   seen?: boolean
-  accepted?: RequestData["accepted"]
+  becameJob?: RequestData["becameJob"]
   archived?: RequestData["archived"]
 }
 
@@ -57,21 +63,21 @@ function history(r: RequestData, now: string): TimelineLine[] {
   const first = r.first
   const lines: TimelineLine[] = []
   if (r.archived) lines.push({ id: "archived", at: r.archived.at, actor: "Ryan", what: `Archived the request: ${r.archived.reason}`, kind: "event" })
-  if (r.accepted) lines.push({ id: "accepted", at: r.accepted.at, actor: "Ryan", what: "Accepted the request and created a job", kind: "event" })
-  if (r.seen && !r.accepted && !r.archived) lines.push({ id: "seen", at: now, actor: "Ryan", what: "Looked at the request", kind: "event" })
+  if (r.becameJob) lines.push({ id: "job", at: r.becameJob.at, actor: "Ryan", what: `${fullName(r)}'s request became a job`, kind: "event" })
+  if (r.seen && !r.becameJob && !r.archived) lines.push({ id: "seen", at: now, actor: "Ryan", what: "Looked at the request", kind: "event" })
   lines.push({ id: "came", at: r.receivedAt, actor: first, what: `Sent a request${r.service ? ` for ${r.service}` : ""} from the ${SOURCE_WORDS[r.source].toLowerCase()}`, kind: "event" })
   return lines
 }
 
-export function RequestPage({ request, now = NOW.toISOString(), match: matchProp, jobStage = NEEDS_A_QUOTE, markSeenOnOpen = true, onSeen, onAccept, onArchive, initialDialog = null }: RequestPageProps) {
+export function RequestPage({ request, now = NOW.toISOString(), match: matchProp, jobStage = NEEDS_A_QUOTE, markSeenOnOpen = true, onSeen, onCreateJob, onJobCreated, onArchive, initialDialog = null }: RequestPageProps) {
   const toast = useToast()
   const [overlay, setOverlay] = useState<Overlay>({})
-  const [dialog, setDialog] = useState<"accept" | "archive" | null>(initialDialog)
-  const r: RequestData = useMemo(() => ({ ...request, seen: request.seen || Boolean(overlay.seen), accepted: overlay.accepted ?? request.accepted, archived: overlay.archived ?? request.archived }), [request, overlay])
+  const [dialog, setDialog] = useState<"job" | "quote" | "archive" | null>(initialDialog)
+  const r: RequestData = useMemo(() => ({ ...request, seen: request.seen || Boolean(overlay.seen), becameJob: overlay.becameJob ?? request.becameJob, archived: overlay.archived ?? request.archived }), [request, overlay])
   const state = stateOf(r)
   const name = fullName(r)
   const match = matchProp === undefined ? matchOf(r) : matchProp
-  const acceptedCustomer = r.accepted?.customerId
+  const quoteFirst = isQuoteFirst(r.service)
 
   // Seen is written once, when a person first opens it
   useEffect(() => {
@@ -88,10 +94,12 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
     onSeen?.(request)
     toast("Marked as seen")
   }
-  const accept = (o: { asNew: boolean }) => {
-    const made = onAccept?.(r, o) ?? { jobId: `q-${r.id.replace(/^rq-/, "")}`, customerId: match && !o.asNew ? match.customer.id : `other-${r.first}-${r.last}`.toLowerCase() }
-    setOverlay((v) => ({ ...v, seen: true, accepted: { ...made, at: now } }))
-    toast(match && !o.asNew ? `Created a job for ${match.customer.name}` : `Added ${name} as a customer and created a job`)
+  const create = (o: { asNew: boolean; mode: CreateMode }) => {
+    const made = onCreateJob?.(r, o) ?? { jobId: `q-${r.id.replace(/^rq-/, "")}`, customerId: match && !o.asNew ? match.customer.id : `other-${r.first}-${r.last}`.toLowerCase() }
+    const message = `Job created for ${match && !o.asNew ? match.customer.name : name}`
+    setOverlay((v) => ({ ...v, seen: true, becameJob: { ...made, at: now } }))
+    if (onJobCreated) onJobCreated(made.jobId, message, o.mode)
+    else toast(message)
   }
   const archive = (reason: ArchiveReason) => {
     setOverlay((v) => ({ ...v, seen: true, archived: { reason, at: now } }))
@@ -100,20 +108,21 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
   }
 
   const act = (label: string, onClick: () => void): FooterAction => ({ label, onClick })
-  const actions =
-    state === "new" || state === "seen" ? (
-      <RecordFooter primary={act("Accept", () => setDialog("accept"))} secondary={[act("Archive", () => setDialog("archive"))]} more={state === "new" ? [act("Mark as seen", markSeen)] : undefined} />
-    ) : state === "accepted" ? (
-      <RecordFooter primary={{ label: "Open job", href: recordHref.job(r.accepted!.jobId) }} />
-    ) : undefined
+  const jobAction = act("Create job", () => setDialog("job"))
+  const quoteAction = act("Send a quote", () => setDialog("quote"))
+  const archiveAction = act("Archive", () => setDialog("archive"))
+  const [primary, other] = quoteFirst ? [quoteAction, jobAction] : [jobAction, quoteAction]
+  const actions = state === "new" || state === "seen" ? <RecordFooter primary={primary} secondary={[other, archiveAction]} more={state === "new" ? [act("Mark as seen", markSeen)] : undefined} /> : undefined
 
-  const customerValue = state === "accepted" ? name : match ? match.customer.name : "No match"
-  const customerHref = state === "accepted" ? recordHref.customer(acceptedCustomer!) : match ? recordHref.customer(match.customer.id) : undefined
+  if (r.becameJob) return <BecameJobPage request={r} stage={jobStage} now={now} />
+
+  const customerValue = match ? match.customer.name : "No match"
+  const customerHref = match ? recordHref.customer(match.customer.id) : undefined
   const band: SummaryItem[] = [
     { label: "Came in", value: cameIn(r, now), sub: cameInOn(r.receivedAt), icon: Clock },
     { label: "Asked for", value: serviceWords(r), sub: SOURCE_WORDS[r.source], icon: ClipboardList },
     { label: "Where", value: r.street || "No address", sub: r.town ? `${r.town}, CO` : undefined, icon: MapPin },
-    { label: "Customer", value: customerValue, sub: state === "accepted" ? "Added when accepted" : match ? matchWords(match) : r.email ? "No customer has this email or phone" : undefined, icon: UserRound, ...(customerHref ? { href: customerHref } : {}) },
+    { label: "Customer", value: customerValue, sub: match ? matchWords(match) : r.email ? "No customer has this email or phone" : undefined, icon: UserRound, ...(customerHref ? { href: customerHref } : {}) },
   ]
 
   const archivedNote = r.archived ? `Archived as ${r.archived.reason}. No customer was added and nothing was sent.` : undefined
@@ -127,7 +136,6 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
         badges={
           <>
             <StatusPill status={REQUEST_PILL[state].status} label={REQUEST_PILL[state].label} size="lg" />
-            {state === "accepted" && <StatusPill status={jobStage.status} label={jobStage.label} size="lg" />}
           </>
         }
         notice={archivedNote ? <p role="status" className="rounded-lg border border-border bg-card px-5 py-3 text-sm font-medium shadow-sm">{archivedNote}</p> : undefined}
@@ -136,18 +144,8 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
         actions={actions}
         aside={
           <>
-            {state === "accepted" && (
-              <SectionCard title="Job" id="request-job-h">
-                <div className="flex flex-col gap-2">
-                  <RecordChip kind="job" name={serviceWords(r) === "Not said" ? "Job" : serviceWords(r)} href={recordHref.job(r.accepted!.jobId)} />
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <StatusPill status={jobStage.status} label={jobStage.label} />
-                  </div>
-                </div>
-              </SectionCard>
-            )}
             <SectionCard title="Customer match" id="match-h">
-              <MatchPanel state={state} match={match} request={r} />
+              <MatchPanel match={match} request={r} />
             </SectionCard>
             <SectionCard title="Contact" id="contact-h">
               <RecordFacts
@@ -175,27 +173,42 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
           </SectionCard>
         )}
       </RecordPage>
-      {dialog === "accept" && <AcceptDialog request={r} match={match} onClose={() => setDialog(null)} onAccept={accept} />}
+      {(dialog === "job" || dialog === "quote") && <CreateJobDialog request={r} match={match} mode={dialog} quoteFirst={quoteFirst} onClose={() => setDialog(null)} onCreate={create} />}
       {dialog === "archive" && <ArchiveDialog request={r} onClose={() => setDialog(null)} onArchive={archive} />}
     </>
   )
 }
 
-/** "Matches Andrea Dalton" with the customer as a chip, or "No match". It is a hint to Ryan: Accept is his decision. */
-export function MatchPanel({ state, match, request }: { state: ReturnType<typeof stateOf>; match: Match | null; request: RequestData }) {
-  if (state === "accepted") {
-    return (
-      <div data-slot="match-panel" data-match={match ? "yes" : "no"} className="flex flex-col gap-1 text-sm">
-        <p className="font-semibold">{match ? "Matched a customer" : "Added as a customer"}</p>
-        <RecordChip kind="customer" name={fullName(request)} href={recordHref.customer(request.accepted!.customerId)} />
-      </div>
-    )
-  }
+/** The plain page a request opens to once it became a job (a stale link, or the moment after Create job): it says so and offers the job as a chip. Never a dead end. */
+export function BecameJobPage({ request, stage, now }: { request: RequestData; stage: { status: PillStatus; label: string }; now: string }) {
+  const job = request.becameJob!
+  const service = serviceWords(request)
+  return (
+    <RecordPage
+      crumb={{ label: "Requests", href: "/admin/requests" }}
+      title="This request became a job"
+      subtitle={`${fullName(request)}'s request${service === "Not said" ? "" : ` for ${service}`} · Came in ${cameInOn(request.receivedAt)}`}
+      actions={<RecordFooter primary={{ label: "Open job", href: recordHref.job(job.jobId) }} />}
+    >
+      <SectionCard title="Job" id="request-job-h">
+        <div data-slot="became-job" className="flex flex-wrap items-center gap-2 text-sm">
+          <RecordChip kind="job" name={service === "Not said" ? "Job" : service} href={recordHref.job(job.jobId)} />
+          <StatusPill status={stage.status} label={stage.label} />
+          <span className="text-muted-foreground">Made {cameIn({ ...request, receivedAt: job.at }, now)}</span>
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">{request.first}&apos;s words and photos are on the job. The request is no longer in Requests.</p>
+      </SectionCard>
+    </RecordPage>
+  )
+}
+
+/** "Matches Andrea Dalton" with the customer as a chip, or "No match". It is a hint to Ryan: making the job is his decision. */
+export function MatchPanel({ match, request }: { match: Match | null; request: RequestData }) {
   if (!match) {
     return (
       <div data-slot="match-panel" data-match="no" className="flex flex-col gap-1 text-sm">
         <p className="font-semibold">No match</p>
-        <p className="text-muted-foreground">No customer has this email or phone. Accept adds {fullName(request)} as a customer.</p>
+        <p className="text-muted-foreground">No customer has this email or phone. Creating the job adds {fullName(request)} as a customer.</p>
       </div>
     )
   }
@@ -208,7 +221,7 @@ export function MatchPanel({ state, match, request }: { state: ReturnType<typeof
       <p className="text-muted-foreground">
         {matchWords(match)}. {match.customer.street}.
       </p>
-      <p className="text-muted-foreground">A match is a hint. The request waits until you accept it.</p>
+      <p className="text-muted-foreground">A match is a hint. The request waits until you make a job of it.</p>
     </div>
   )
 }

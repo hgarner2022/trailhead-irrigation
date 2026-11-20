@@ -87,7 +87,7 @@ export function NewJobSheet({ sheet, onClose, onCreated, onMade, onActiveAgain }
   const initial = sheet.customer ? { customer: { chosen: sheet.customer, isNew: false, person: EMPTY_PERSON, query: "", email: "" } } : undefined
   return (
     <>
-      <NewJob key={sheet.key} data={WALK_DATA} today={WALK_TODAY} open onOpenChange={(o) => !o && onClose()} actions={actions} initial={initial} onCreated={(made) => onCreated(made.jobId)} />
+      <NewJob key={sheet.key} data={WALK_DATA} today={WALK_TODAY} open onOpenChange={(o) => !o && onClose()} actions={actions} initial={initial} quotes onCreated={(made) => onCreated(made.jobId)} />
       <NewJobContext focusWhat={Boolean(sheet.customer)} />
     </>
   )
@@ -149,12 +149,12 @@ const NotFound = ({ what }: { what: string }) => (
 )
 
 /** One route, rendered. Keyed by the caller so a record's state resets when another opens. */
-export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, onOpenRequest, onNew }: { route: Route; rows: GridJob[]; onBack: () => void; onOpenJob: (id: string) => void; onOpenCustomer: (id: string) => void; onOpenRequest: (id: string) => void; onNew: () => void }) {
+export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, onOpenRequest, onNew, onJobCreated }: { route: Route; rows: GridJob[]; onBack: () => void; onOpenJob: (id: string) => void; onOpenCustomer: (id: string) => void; onOpenRequest: (id: string) => void; onNew: () => void; onJobCreated?: (jobId: string, message: string) => void }) {
   switch (route.screen) {
     case "requests":
       return <RequestsRoute filter={route.filter} onOpen={onOpenRequest} />
     case "request":
-      return <RequestRoute id={route.id ?? ""} />
+      return <RequestRoute id={route.id ?? ""} onJobCreated={onJobCreated} />
     case "jobs":
       return <WalkJobsGrid rows={rows} onOpen={onOpenJob} onNew={onNew} />
     case "customers":
