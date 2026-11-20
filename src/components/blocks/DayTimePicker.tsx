@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { FormRow } from "@/components/blocks/FormRow"
 import { DAYS_FULL, NONE_FIT, clock12, type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
+import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { longDay } from "@/lib/portal/words"
 import { cn } from "@/lib/utils"
 
@@ -47,6 +48,18 @@ export function DayTimePicker({ offers, value, onChange, legend, helper, length,
       <div data-slot="day-time-picker" data-state="full" className={cn("space-y-3", className)}>
         <p role="status" className="text-base text-foreground">
           {DAYS_FULL}
+        </p>
+        {onNote && (
+          <FormRow label="When would suit you?" hint="Optional. Ryan reads this and calls you.">
+            <Textarea value={note} onChange={(e) => onNote(e.target.value)} placeholder="Any weekday morning in May" className="min-h-24 text-base" />
+          </FormRow>
+        )}
+        <p className="text-base text-muted-foreground">
+          {"Or call Ryan at "}
+          <a href={PHONE_TEL} className={LINK}>
+            {PHONE_DISPLAY}
+          </a>
+          .
         </p>
       </div>
     )

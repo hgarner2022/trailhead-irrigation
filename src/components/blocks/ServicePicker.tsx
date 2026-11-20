@@ -1,6 +1,7 @@
 "use client"
 
 import { useId } from "react"
+import { Clock } from "lucide-react"
 import { REQUEST_QUOTE, OUT_OF_SEASON_NOTE, type ServiceEntry } from "@/lib/booking/services"
 import { cn } from "@/lib/utils"
 
@@ -33,7 +34,12 @@ function Entry({ entry, name, checked, onChange }: { entry: ServiceEntry; name: 
             {!quote && <span className="shrink-0 text-base font-semibold tabular-nums">{off ? `Opens ${entry.opens}` : entry.price}</span>}
           </span>
           <span className={cn("text-base", checked ? "text-white/90" : "text-foreground")}>{entry.line}</span>
-          {entry.length && <span className={cn("text-sm", checked ? "text-white/85" : "text-muted-foreground")}>{entry.length}</span>}
+          {entry.length && (
+            <span data-slot="service-length" className={cn("mt-1 flex items-center gap-1.5 text-sm", checked ? "text-white/85" : "text-muted-foreground")}>
+              <Clock aria-hidden className="size-4 shrink-0" />
+              {entry.length}
+            </span>
+          )}
         </span>
       </label>
       {entry.included && (

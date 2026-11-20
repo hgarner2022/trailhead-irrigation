@@ -34,6 +34,8 @@ export interface AddressStepProps {
   places?: PlaceProvider
   /** the whole address behind a suggestion without a zip; the live route by default */
   details?: (id: string) => Promise<PlaceSuggestion | null>
+  /** the access question under the address; the booking form asks it on its details step instead, so it passes false */
+  showAccess?: boolean
 }
 
 const ACCESS_PROBLEM_ID = "checkout-access-problem"
@@ -46,7 +48,7 @@ const ACCESS = [
   { value: "no", name: "No, I need to be there", detail: "We'll offer you days to pick from" },
 ] as const
 
-export function AddressStep({ state, attempted, onType, onPick, set, places = fixturePlaces, details = googlePlaceDetails }: AddressStepProps) {
+export function AddressStep({ state, attempted, onType, onPick, set, places = fixturePlaces, details = googlePlaceDetails, showAccess = true }: AddressStepProps) {
   // Opens on the typed fields when the step comes back to a typed address; `opened` says the customer opened them here, so they take focus.
   const [typed, setTyped] = useState<{ open: boolean; line1: string; opened: boolean }>(() => ({ open: !!state.place && isTypedPlace(state.place.id), line1: "", opened: false }))
   const latestPick = useRef<string | null>(null)
@@ -104,7 +106,7 @@ export function AddressStep({ state, attempted, onType, onPick, set, places = fi
         {SERVICE_AREA_SENTENCE}
         {!typed.open && " Pick your address from the list so we have it right."}
       </Helper>
-      {picked && (
+      {picked && showAccess && (
         <div data-slot="checkout-access" className="mt-8">
           <p id="access-question" className="font-display text-2xl leading-tight text-navy">Can we reach the controller and the water shut-off without you?</p>
           <div role="group" aria-labelledby="access-question" aria-describedby={accessMissing ? ACCESS_PROBLEM_ID : undefined} className="mt-4 grid gap-3 sm:grid-cols-2">

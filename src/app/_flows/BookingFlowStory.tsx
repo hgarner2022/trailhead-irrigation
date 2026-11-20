@@ -2,14 +2,14 @@
 
 import { useCallback, useState } from "react"
 import { dateSetText } from "@/sms/texts"
-import { BookingFlow, type BookingProgress } from "@/app/(booking)/booking/_screens/BookingFlow"
-import type { BookingStep } from "@/app/(booking)/booking/_screens/booking-model"
+import { BookingForm, type BookingProgress } from "@/app/(booking)/booking/_screens/BookingForm"
+import type { FormStep } from "@/app/(booking)/booking/_screens/booking-form-model"
 import { FlowFrame, type FlowText } from "./FlowFrame"
 
-// The booking flow as one clickable story: the real BookingFlow, a Flow strip over it and the date-set text at the right once a day is booked. A service we quote ends with no day and no text:
+// The booking flow as one clickable story: the real BookingForm, a Flow strip over it and the date-set text at the right once a day is booked. A service we quote ends with no day and no text:
 // Ryan calls. Start over remounts the flow.
 const ORIGIN = "https://www.trailheadirrigation.com"
-const LABEL: Record<BookingStep, string> = { service: "Service", "quote-service": "Quote service", details: "Details", zones: "Zones", address: "Address", day: "Day and time", contact: "Contact", card: "Card", done: "Done" }
+const LABEL: Record<FormStep, string> = { zip: "Zip code", service: "Service", "quote-service": "Quote service", contact: "Contact", address: "Address", details: "Details", day: "Day and time", confirm: "Confirm", done: "Done" }
 
 export function BookingFlowStory() {
   const [run, setRun] = useState(0)
@@ -24,15 +24,15 @@ export function BookingFlowStory() {
       setTexts([{ id: "date-set", channel: "text", body }])
     }
   }, [])
-  const steps = (progress?.steps ?? ["service", "address", "day", "contact", "card", "done"]).map((k) => ({ key: k, label: LABEL[k] }))
+  const steps = (progress?.steps ?? ["zip", "service", "contact", "address", "details", "day", "confirm", "done"] as FormStep[]).map((k) => ({ key: k, label: LABEL[k] }))
   const reset = () => {
     setRun((n) => n + 1)
     setProgress(null)
     setTexts([])
   }
   return (
-    <FlowFrame steps={steps} current={progress?.step ?? "service"} onStartOver={reset} texts={texts}>
-      <BookingFlow key={run} onStep={onStep} />
+    <FlowFrame steps={steps} current={progress?.step ?? "zip"} onStartOver={reset} texts={texts}>
+      <BookingForm key={run} onStep={onStep} />
     </FlowFrame>
   )
 }

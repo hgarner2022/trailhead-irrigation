@@ -25,7 +25,7 @@ import { allMessages, DEFAULT_FACTS, type TextFacts } from "./walk-texts"
 import { PhoneInbox } from "./PhoneInbox"
 import { MarketingSwitches } from "./MarketingSwitches"
 import { MARKETING_MAIL, readChoice, writeChoice } from "./marketing-choice"
-import { WalkBooking, type Booked } from "./WalkBooking"
+import { BookingForm, type Booked } from "@/app/(booking)/booking/_screens/BookingForm"
 import { WAYS, type Way } from "./receipt-data"
 import { ReceiptSet } from "./ReceiptViews"
 
@@ -173,7 +173,7 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   let body: ReactNode
   switch (where) {
     case "book":
-      body = <WalkBooking key={bookRun} onBooked={(b) => (setBooked(b), b.marketing && (setMarketing((m) => ({ ...m, email: true })), writeChoice({ ...readChoice(), email: true })))} onOpenAccount={() => open("/account")} />
+      body = <BookingForm key={bookRun} onBooked={(b) => (setBooked(b), b.marketing && (setMarketing((m) => ({ ...m, email: true })), writeChoice({ ...readChoice(), email: true })))} onOpenAccount={() => open("/account")} />
       break
     case "texts":
       body = <PhoneInbox texts={[...allMessages(facts, pref), ...(marketing.email ? [MARKETING_MAIL] : [])]} onLink={open} onUnsubscribe={() => choose("email", false)} />

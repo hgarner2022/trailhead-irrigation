@@ -25,7 +25,7 @@ export function BookingSummary({ parts, className }: { parts: readonly SummaryPa
               Change
             </button>
           )}
-          {i < parts.length - 1 && <span aria-hidden>,</span>}
+          {i < parts.length - 1 && <span aria-hidden className="-ml-1">,</span>}
         </span>
       ))}
     </p>

@@ -27,12 +27,14 @@ export interface FlowShellProps {
   wide?: boolean
   /** the last screen: no button bar, the question as a small eyebrow */
   done?: boolean
+  /** the way out on the first step, where there is no Back: a quiet link to the site ("Back to the website") */
+  leave?: { href: string; label: string }
   className?: string
 }
 
 const COLUMN = "mx-auto w-full max-w-2xl container-padding-x"
 
-export function FlowShell({ question, step, total, children, summary, onBack, onNext, nextLabel = "Continue", nextDisabled, hint, busy, wide, done, className }: FlowShellProps) {
+export function FlowShell({ question, step, total, children, summary, onBack, onNext, nextLabel = "Continue", nextDisabled, hint, busy, wide, done, leave, className }: FlowShellProps) {
   return (
     <div data-slot="flow-shell" data-step={step} className={cn("relative isolate min-h-svh bg-stone text-foreground", className)}>
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
@@ -41,10 +43,9 @@ export function FlowShell({ question, step, total, children, summary, onBack, on
       <div role="progressbar" aria-label="Booking progress" aria-valuemin={1} aria-valuemax={total} aria-valuenow={step} aria-valuetext={`Step ${step} of ${total}`} className="fixed inset-x-0 top-0 z-20 h-1 bg-border/60">
         <div className="h-full bg-primary transition-[width] duration-300 ease-out motion-reduce:transition-none" style={{ width: `${(step / total) * 100}%` }} />
       </div>
-      <header className="fixed inset-x-0 top-1 z-10 flex items-center justify-between container-padding-x py-3">
+      <header className="fixed inset-x-0 top-1 z-10 flex items-center justify-between bg-stone/95 container-padding-x py-3 backdrop-blur-sm">
         <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={102} height={72} priority className="h-14 w-auto sm:h-[4.5rem]" />
         <div className="flex items-center gap-4">
-          <span aria-hidden className="text-xs text-muted-foreground tabular-nums">{`${step} of ${total}`}</span>
           <a href={PHONE_TEL} className="inline-flex min-h-11 items-center text-sm font-semibold text-primary-deep underline underline-offset-2">
             {`Call Ryan ${PHONE_DISPLAY}`}
           </a>
@@ -54,6 +55,11 @@ export function FlowShell({ question, step, total, children, summary, onBack, on
         <div className={cn(COLUMN, "flex flex-1 flex-col justify-center pt-24 pb-8", wide && "lg:max-w-3xl")}>
           {summary && <div className="mb-4">{summary}</div>}
           <div data-slot="flow-surface" className="rounded-lg border border-border bg-background p-4 shadow-sm sm:p-8">
+          {!done && (
+            <p data-slot="flow-step" className="mb-3 text-sm font-semibold text-primary-deep tabular-nums">
+              {`Step ${step} of ${total}`}
+            </p>
+          )}
           <h1 className={done ? "text-xs font-semibold uppercase tracking-wide text-primary-dark" : "font-display text-4xl leading-[1.05] text-navy lg:text-5xl"}>{question}</h1>
           <div className={done ? "mt-4" : "mt-8"}>{children}</div>
           </div>
@@ -65,6 +71,10 @@ export function FlowShell({ question, step, total, children, summary, onBack, on
                 <Button variant="ghost" size="lg" onClick={onBack}>
                   Back
                 </Button>
+              ) : leave ? (
+                <a href={leave.href} className="inline-flex min-h-11 items-center px-2 text-base font-medium text-primary-deep underline underline-offset-2">
+                  {leave.label}
+                </a>
               ) : (
                 <span />
               )}

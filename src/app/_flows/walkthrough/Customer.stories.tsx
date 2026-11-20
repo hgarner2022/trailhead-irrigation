@@ -44,7 +44,7 @@ export const PhoneSteps: StoryObj<typeof CustomerPhone> = {
   render: () => <CustomerPhone />,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
-    await expect(await c.findByText("What can we do for you?")).toBeInTheDocument()
+    await expect(await c.findByText("What's your zip code?")).toBeInTheDocument()
     const order = [["texts", "texts"], ["account", "home"], ["visits", "visit"], ["pay", "pay"], ["receipts", null], ["pass", null], ["details", "details"]] as const
     for (const [lit, shown] of order) {
       tell("next")
@@ -60,7 +60,7 @@ export const PhoneSteps: StoryObj<typeof CustomerPhone> = {
   },
 }
 
-/** Book online end to end: service, address, a day and an exact time, contact with how we reach you, two photos, Confirm and book, and the holographic card. */
+/** Book online end to end: zip, service, contact with how we reach you, address, details with two photos, a day and an exact time, Confirm and book, and the holographic card. */
 export const BookingPath: StoryObj<typeof CustomerPhone> = {
   name: "Booking path",
   tags: ["!dev", "!autodocs"],
@@ -68,14 +68,9 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
     const next = async (name: string | RegExp = "Continue") => userEvent.click(await c.findByRole("button", { name }))
+    await userEvent.type(await c.findByLabelText("Zip code"), "80516")
+    await next()
     await userEvent.click(await c.findByRole("radio", { name: /Sprinkler repair/ }))
-    await next()
-    await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
-    await userEvent.click((await c.findAllByRole("option"))[0]!)
-    await userEvent.click((await c.findAllByRole("button", { name: /^Yes/ }))[0]!)
-    await next()
-    // an exact start time, never a window
-    await userEvent.click((await c.findAllByRole("radio", { name: /\d:\d\d [ap]m/ }))[0]!)
     await next()
     await userEvent.type(await c.findByLabelText("First name"), "Andrea")
     await userEvent.type(await c.findByLabelText("Last name"), "Dalton")
@@ -85,7 +80,14 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     for (const box of await c.findAllByRole("checkbox")) await userEvent.click(box)
     await userEvent.click(await c.findByRole("radio", { name: /Text and email/ }))
     await next()
+    await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
+    await userEvent.click((await c.findAllByRole("option"))[0]!)
+    await next()
+    // access, then two photos, then an exact start time, never a window
+    await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
     await userEvent.click(await c.findByRole("button", { name: "Add 2 sample photos" }))
+    await next()
+    await userEvent.click((await c.findAllByRole("radio", { name: /\d:\d\d [ap]m/ }))[0]!)
     await next()
     await next("Confirm and book")
     await expect(await c.findByText("You added 2 photos. Ryan sees them before the visit.")).toBeInTheDocument()

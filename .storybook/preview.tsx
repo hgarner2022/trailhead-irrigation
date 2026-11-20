@@ -31,6 +31,7 @@ const preview: Preview = {
             ["Docs", "Laptop", "Phone", "From home", "From search"],
             "Start here: the customer, clickable",
             ["Docs", "Phone", "Laptop"],
+            "Booking form",
             "Job flow (clickable)",
             "Job page, one trip",
             "Job page, Season Pass and return trip",
