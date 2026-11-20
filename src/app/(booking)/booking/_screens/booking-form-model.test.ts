@@ -10,9 +10,9 @@ const base = (over = {}) => ({ zip: "80516", service: svc("repair"), fields: ini
 const person = { firstName: "Andrea", lastName: "Dalton", email: "andrea@example.com", phone: "(970) 555-0123", termsAccepted: true }
 
 describe("the booking form's steps", () => {
-  it("follows Jobber's order for a day service and gives a request the same first screens and no day", () => {
-    expect(stepsFor(svc("repair"))).toEqual(["zip", "service", "contact", "address", "details", "day", "confirm", "done"])
-    expect(stepsFor(null, true)).toEqual(["zip", "quote-service", "contact", "address", "details", "confirm", "done"])
+  it("puts the day before contact, and gives a request the same first screens, contact last and no day", () => {
+    expect(stepsFor(svc("repair"))).toEqual(["zip", "service", "address", "details", "day", "contact", "confirm", "done"])
+    expect(stepsFor(null, true)).toEqual(["zip", "quote-service", "address", "details", "contact", "done"])
     expect(stepTotal(stepsFor(svc("repair")))).toBe(7)
   })
   it("passes the zip step only for a zip we serve", () => {
