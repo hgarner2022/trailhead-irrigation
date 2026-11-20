@@ -36,11 +36,11 @@ export function classifyHref(href: string): Target {
 
 export const STEPS = [
   { key: "book", label: "Book online" },
-  { key: "texts", label: "Texts and emails" },
-  { key: "account", label: "Account" },
-  { key: "visits", label: "Visits" },
+  { key: "texts", label: "The texts and emails" },
+  { key: "account", label: "Your account" },
+  { key: "visits", label: "A visit" },
   { key: "pay", label: "Pay an invoice" },
-  { key: "receipts", label: "Receipts" },
+  { key: "receipts", label: "Your receipt" },
   { key: "pass", label: "Season Pass" },
   { key: "details", label: "Details" },
 ] as const
