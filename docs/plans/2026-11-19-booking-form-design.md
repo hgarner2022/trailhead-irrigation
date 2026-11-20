@@ -1,6 +1,6 @@
 # Design in Storybook: the customer booking form
 
-Nov 19 2026. Design only, as stories over fixtures; nothing is wired. Hannah, twice: "I want the booking form designed in here too." Open `npm run storybook` and look under **Customer / Booking form** (every step at 375 and 1280), **Blocks / ZipCheck, ZoneChips, AccessChoice, PhotoPicker, BookingReview, ContactPreference**, and step 1 of **Design / Start here: the customer, clickable**, which now runs this same form. It builds on `2026-11-18-online-booking-design.md` (the flow and its rules), `docs/research/jobber-booking-2026-11-18/` (Hannah's live Jobber form, the content reference) and `2026-11-19-customer-side-design.md` (the day-and-time picker, the holographic card).
+Nov 19 2026. Design only, as stories over fixtures; nothing is wired. Hannah, twice: "I want the booking form designed in here too." Open `npm run storybook` and look under **Customer / Booking form** (every step at 375 and 1280), **Blocks / ZoneChips, AccessChoice, PhotoPicker, BookingReview, ContactPreference**, and step 1 of **Design / Start here: the customer, clickable**, which now runs this same form. It builds on `2026-11-18-online-booking-design.md` (the flow and its rules), `docs/research/jobber-booking-2026-11-18/` (Hannah's live Jobber form, the content reference) and `2026-11-19-customer-side-design.md` (the day-and-time picker, the holographic card).
 
 ## The job to be done
 
@@ -8,35 +8,36 @@ Nov 19 2026. Design only, as stories over fixtures; nothing is wired. Hannah, tw
 
 ## What the Jobber form teaches, and what we change
 
-Jobber's order is zip code, services with their lengths, contact, address, service details, then a calendar with exact slots (the screenshots). We keep Jobber's first screens (zip, services) and then ask the address, the details and the day before the contact, which Hannah decided on Nov 20 so that an abandoned booking leaves nothing. We change four things: the zip step answers at once (a zip we serve says so; one we do not gets the six towns, the phone number and the way out); the contact preference (text, email or both) is asked once with the contact fields; photos and a note are optional, not buried; and the last screen before booking says exactly what happens.
+Jobber's order is zip code, services with their lengths, contact, address, service details, then a calendar with exact slots (the screenshots). We keep Jobber's services screen but not its zip code: **Hannah, Nov 20 2026: no zip step, the address qualifies the yard.** ("It's lame that they enter their zip code and then their address. Can you just qualify their location by their yard?") The first screen is the address, with the Season Pass checkout's type-ahead and its typed fallback; the town and zip come from the address chosen, and the area is decided by `serviceability` in `src/lib/places` (the six towns by name, then zip). The services come after it, then the details and the day before the contact, which Hannah decided on Nov 20 so that an abandoned booking leaves nothing. We change four things: the address answers at once (an address outside the six towns gets the six towns, the phone number and the way out under the box, and Continue stays off); the contact preference (text, email or both) is asked once with the contact fields; photos and a note are optional, not buried; and the last screen before booking says exactly what happens.
 
 ## The steps
 
 Nov 20 2026, Hannah: **day first, contact after, so an abandoned booking leaves nothing.** Nothing is kept until the contact step is submitted; the open-day search needs only the address and the zones, which come before the day.
 
-A service with a day has seven counted steps, then the booked screen. "Step 3 of 7" sits over every question; the primary button is fixed at the bottom on a phone; every step but the first has Back, and every step has Close (see "Navigation and close").
+A service with a day has six counted steps, then the booked screen (it had seven with the zip step). "Step 3 of 6" sits over every question; the primary button is fixed at the bottom on a phone; every step but the first has Back, and every step has Close (see "Navigation and close").
 
 | # | Step | What it asks | Continue is off until |
 |---|---|---|---|
-| 1 | Zip code | Five digits; the answer appears under the box | the zip is one we serve (a half-typed zip says what to add when Continue is pressed) |
-| 2 | Services | One radio card per service we book online with its price and length; a closed service shows "Opens Apr 25"; "Need a quote? Request one" under the list | a service is picked |
-| 3 | Address | The type-ahead, "Can't find it? Type your address" | never off, except an address outside the six towns (the out-of-area line) |
-| 4 | Service details | Zones with the price under them ("About $145, charged after the visit."), whether we can reach the controller and shut-off, a note for the crew, photos (a real file input; "Add 2 sample photos" is the prototype's shortcut) | never off: access unanswered is named as help |
-| 5 | Day and time | Three day cards, the best selected, "Show more days" to five, then only that day's exact start times; "None of these work? Tell us when" | a start time is tapped, or no day is open, or the customer said when |
-| 6 | Contact | First and last name, email, phone; how we reach you (Text, Email, Text and email); the terms line; the separate, unticked "Send me tips and offers from Trailhead by email" | never off: a press names each missing field as help |
-| 7 | Confirm | Every answer with its Change link and one sentence of what happens | |
+| 1 | Address | The type-ahead, "Can't find it? Type your address" (street, town, optional zip). The six towns are listed under the box. An address outside them shows the out-of-area line and Ryan's number under the box at once. A typed address, or a pick, with no town we can read asks for the town | never off, except an address outside the six towns (the out-of-area line); a press with no address, or no town, names what is missing as help |
+| 2 | Services | Shown only after the area is qualified, with the address and its town in the line above ("480 Briggs St, Erie"). One radio card per service we book online with its price and length; a closed service shows "Opens Apr 25"; "Need a quote? Request one" under the list | a service is picked |
+| 3 | Service details | Zones with the price under them ("About $145, charged after the visit."), whether we can reach the controller and shut-off, a note for the crew, photos (a real file input; "Add 2 sample photos" is the prototype's shortcut) | never off: access unanswered is named as help |
+| 4 | Day and time | Three day cards, the best selected, "Show more days" to five, then only that day's exact start times; "None of these work? Tell us when" | a start time is tapped, or no day is open, or the customer said when |
+| 5 | Contact | First and last name, email, phone; how we reach you (Text, Email, Text and email); the terms line; the separate, unticked "Send me tips and offers from Trailhead by email" | never off: a press names each missing field as help |
+| 6 | Confirm | Every answer with its Change link and one sentence of what happens | |
 | | Booked | The holographic card with the exact time, "You added 2 photos", what happens next, Add to calendar, "your Trailhead account" | |
 
 When no day is open, or the customer says when instead, the day step passes and the contact step asks how we reach them; Confirm then reads "We'll use (970) 555-0123 to get back to you about a day." and the button is "Send to Ryan".
 
-A request for a quote is zip, services (what we quote, with no prices), address, "Tell Ryan about it" (words and photos) and contact ("How can Ryan reach you?", no terms line, the button "Send to Ryan"), then "Thanks. We've got your request." Five counted steps: no day, no confirm, no card. It lists only what is not booked online: Christmas lights and Larger sprinkler repair. The Season Pass keeps its place first in the list and asks a day and time for each of its two visits.
+A request for a quote is the address, services (what we quote, with no prices), "Tell Ryan about it" (words and photos) and contact ("How can Ryan reach you?", no terms line, the button "Send to Ryan"), then "Thanks. We've got your request." Four counted steps (it had five): no day, no confirm, no card. It lists only what is not booked online: Christmas lights and Larger sprinkler repair. The Season Pass keeps its place first in the list and asks a day and time for each of its two visits.
 
 ## The words
 
 | Where | Words |
 |---|---|
-| Zip served | We work in Erie. |
-| Zip not served | We don't serve 80302 yet. We work in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield. Not sure? Call Ryan. (with the number) |
+| Address outside the six towns | We don't serve Boulder yet. We work in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield. Not sure? Call Ryan at (970) 692-7270. (the number is a link) |
+| Address with no town | Pick your town so we know which route you are on. (beside the Town field and in the summary) |
+| Typed address too short | We need your street address, with the house number. |
+| Address not picked | Pick your address from the list so we have it right. |
 | Missing phone | Add a phone number so we can text you the day. |
 | Missing terms | Tick the box to accept the terms. |
 | Missing access | Tell us whether we can get to the system without you. |
@@ -66,7 +67,7 @@ The time rule holds everywhere: an exact start time, never a window. A customer 
 | Larger sprinkler repair, Christmas lights | quote | | none |
 | Core aeration | off | | |
 
-The three newly bookable services take the normal path (zip, service, address, details, day and exact time, contact, confirm) with their own questions on the details step: the Rachio install asks the controller there now (Hunter, Rain Bird, Rachio, Toro, Orbit, Irritrol, Other, Not sure) and Wi-Fi at the controller, besides zones; water efficiency asks what to improve (a high water bill, dry spots, a garden bed to put on drip); the installation visit asks a new lawn or replacing a system, the rough area in square feet, and says photos are strongly suggested. Every one of these is optional; access is still the one required answer. A price the catalogue does not have is never invented.
+The three newly bookable services take the normal path (address, service, details, day and exact time, contact, confirm) with their own questions on the details step: the Rachio install asks the controller there now (Hunter, Rain Bird, Rachio, Toro, Orbit, Irritrol, Other, Not sure) and Wi-Fi at the controller, besides zones; water efficiency asks what to improve (a high water bill, dry spots, a garden bed to put on drip); the installation visit asks a new lawn or replacing a system, the rough area in square feet, and says photos are strongly suggested. Every one of these is optional; access is still the one required answer. A price the catalogue does not have is never invented.
 
 ## Navigation and close
 
@@ -74,7 +75,7 @@ Research, Nov 20 2026. Fetched pages are cited; anything I could not fetch is ma
 
 - **NN/g, [progress indicators](https://www.nngroup.com/articles/progress-indicators/)** (fetched): show the number of steps rather than only a percentage, pair it with words, give it enough prominence, and for longer processes let people stop.
 - **NN/g, [wizards](https://www.nngroup.com/articles/wizards/)** (fetched): include explicit buttons for the next and the previous step; show the steps and which one is current; a wizard is not gracefully interruptible, so quitting midway can lose work, and saving progress matters for long or central processes, not for simple ones. NN/g's multi-step forms article returned 404 and is not cited.
-- **Jobber, [online booking](https://help.getjobber.com/en/articles/online-booking/)** (fetched): zip check first, then services with price and duration, contact and address, a calendar and a time, then Confirm Booking; a Back button returns to the previous screen; the page describes no exit or cancel control; a confirmation screen and an email follow.
+- **Jobber, [online booking](https://help.getjobber.com/en/articles/online-booking/)** (fetched; their form checks a zip first, ours checks the address): zip check first, then services with price and duration, contact and address, a calendar and a time, then Confirm Booking; a Back button returns to the previous screen; the page describes no exit or cancel control; a confirmation screen and an email follow.
 - **GOV.UK Design System, [back link](https://design-system.service.gov.uk/components/back-link/)** and **[error summary](https://design-system.service.gov.uk/components/error-summary/)** (fetched): the back link takes people to the previous page in the state they last saw it, because the browser's Back button can break journeys; the error summary sits at the top, above the h1, moves focus to itself, links each message to its field (the first one when several) and uses the same words as beside the field.
 - **WCAG 2.2, [page titled](https://www.w3.org/WAI/WCAG22/Understanding/page-titled.html)** and **[focus order](https://www.w3.org/WAI/WCAG22/Understanding/focus-order.html)** (fetched): a single-page app should change its title with the view, and changed content must keep a meaningful focus order.
 - **MDN, [pushState](https://developer.mozilla.org/en-US/docs/Web/API/History/pushState)** (fetched): each pushState is a history entry, and Back fires `popstate` with that entry's state.
@@ -86,9 +87,9 @@ The rules adopted:
 2. **Close asks only once something is entered.** Before that it just leaves. After, it opens "Leave without booking? Your answers aren't saved." with Keep booking and Leave. Nothing is saved before the contact step, and the dialog says so truthfully.
 3. **Back is a visible secondary button beside Continue, and always works.** It is never a small link at the far edge; it is 48px, outlined, left of Continue, and absent only on step 1 (where the logo and Close are the way out). NN/g asks for explicit previous and next buttons.
 4. **Back and the browser's Back are the same thing.** Every step is a browser-history entry (`pushState` with the step as state; `popstate` restores it), so a phone's Back button goes to the previous step and never out of the form, with the answers kept; Forward works; the Back button calls `history.back()`. After booking, Back is ignored so Confirm cannot book twice. (GOV.UK: take people back to the state they last saw.)
-5. **The progress is a real bar with words: "Step 3 of 7".** In the card, above the question, not fixed to the top of the screen. The count is the steps the path has, so a request for a quote reads "of 5". (NN/g: step counts, with prominence.)
+5. **The progress is a real bar with words: "Step 3 of 6".** In the card, above the question, not fixed to the top of the screen. The count is the steps the path has, so a request for a quote reads "of 4". (NN/g: step counts, with prominence.)
 6. **Enter submits a step** from a one-line field or a chosen card (not from a textarea, a button, a box or the address list, where Enter already means something).
-7. **Focus moves to the step's heading on every change, and the page title follows** ("Pick your day and time, Step 5 of 7 | Book online | Trailhead Lawn & Irrigation"), so a screen reader hears the new question. (WCAG page titled and focus order.)
+7. **Focus moves to the step's heading on every change, and the page title follows** ("Pick your day and time, Step 4 of 6 | Book online | Trailhead Lawn & Irrigation"), so a screen reader hears the new question. (WCAG page titled and focus order.)
 8. **Continue stays reachable.** On a phone Back and Continue are one bar fixed to the bottom of the screen, 48px tall, with the safe-area inset; on a laptop they are the pair at the card's foot. Continue is off only for a choice not made or a dead end, with a line saying why; otherwise a press names what is missing.
 9. **Errors are summarised at the top of the step and the first bad field gets focus.** The summary lists each message in the same words as beside its field, each a button that focuses that field. (GOV.UK error summary; it focuses the summary, we focus the first field, because the field is where the fix is.)
 10. **The booked screen has no Back and no Continue:** the card, what happens next, Add to calendar, "your Trailhead account" and "Back to the website". Nothing is left to go back to.
@@ -111,12 +112,12 @@ Nothing here is wired and `src/lib/services.ts` is not edited. For the build ste
 
 - **Address and details before the day.** The open-day search needs the town and the zone count (which sizes the price and later the visit's length). Access asked on the details step replaces the access question that sat under the address.
 - **One marketing box, email, unticked, in its own group under a hairline;** the terms line is a required box above it. The text opt-in is in Details in the account (switches), as before.
-- **Continue stays on where a press can name the problem.** It is off only for a choice not yet made (service, a start time) or a dead end (a zip or address we do not serve), each with a line saying why. This also fixes the old "Contact Problems Phone" story, which pressed a disabled button.
+- **Continue stays on where a press can name the problem.** It is off only for a choice not yet made (service, a start time) or a dead end (an address we do not serve), each with a line saying why. This also fixes the old "Contact Problems Phone" story, which pressed a disabled button.
 - **No card step in this form.** The visit is charged after Ryan finishes and he asks how the customer wants to pay (card, check, Venmo or cash); the confirm step and the booked screen say so. This leaves question 1 of the online booking design (a card for a one-off, offered or required) as it was: offered, later, from the account. The old card step and its stories are gone with `BookingFlow`.
 
 ## What is a stand-in
 
-Nothing is sent or saved; offers come from `fixtureDayTimes`; the address list is the fixture provider; "Add 2 sample photos" stands in for an upload; Add to calendar links are placeholders; the zip list is `SERVICE_ZIPS` (Ryan confirms it before go-live).
+Nothing is sent or saved; offers come from `fixtureDayTimes`; the address list is the fixture provider; "Add 2 sample photos" stands in for an upload; Add to calendar links are placeholders; the zip list behind the address check is `SERVICE_ZIPS` (Ryan confirms it before go-live).
 
 ## Questions for Hannah
 
@@ -130,6 +131,6 @@ Nothing is sent or saved; offers come from `fixtureDayTimes`; the address list i
 
 ## For Hannah's review
 
-1. Seven steps is one more than the "Step 3 of 6" in the brief: the confirm step is new. Merge the zip into the services screen if you want fewer.
+1. Six steps, as in the brief's "Step 3 of 6": the zip step is gone (Hannah, Nov 20 2026), and the confirm step is the one new step.
 2. Settled Nov 20: the day comes before contact, so nothing is kept until the contact step is submitted.
 3. The sweep of invented promises (Nov 20, Hannah: "never add extra crap like this you don't know") is listed in the pull request.

@@ -57,7 +57,7 @@ export interface BookingFormProps {
   entries?: readonly ServiceEntry[]
   today?: string
   /** open on a step with earlier answers filled in; stories use it */
-  initial?: { step?: FormStep; zip?: string; service?: string; quote?: boolean; fields?: Partial<CheckoutState>; picks?: Record<string, DayTimePick>; when?: string; channel?: ContactChannel; photos?: PickedPhoto[]; extras?: Partial<Extras>; attempted?: boolean; leaving?: boolean }
+  initial?: { step?: FormStep; service?: string; quote?: boolean; fields?: Partial<CheckoutState>; picks?: Record<string, DayTimePick>; when?: string; channel?: ContactChannel; photos?: PickedPhoto[]; extras?: Partial<Extras>; attempted?: boolean; leaving?: boolean }
   /** the open days for a visit; the fixture days by default, `[]` for a full calendar */
   offersFor?: (key: string, minutes: number, town: string | null) => DayTimeOffer[]
   /** the pass the booked step shows for a Season Pass */

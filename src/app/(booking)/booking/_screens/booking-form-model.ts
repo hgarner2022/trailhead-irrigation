@@ -1,10 +1,11 @@
 // The booking form's rules, pure and with no React (docs/plans/2026-11-19-booking-form-design.md): which steps a service has, the question each asks, what lets Continue pass, the price and its
-// words, and the words of the confirm step. Jobber's order for the first screens (zip code, then services with their lengths), then contact with how we reach you, the address, the service
-// details, the day and an exact start time, and a confirm step that says what happens. A request for a quote has the same first five screens and no day. Nothing here knows about the server.
+// words, and the words of the confirm step. The first screen is the address (Hannah, Nov 20 2026: no zip step, the address qualifies the yard: its town and zip decide the service area), then the
+// services with their lengths, the service details, the day and an exact start time, contact with how we reach you, and a confirm step that says what happens. A request for a quote is the address,
+// what we quote, "Tell Ryan about it" and contact, with no day. Nothing here knows about the server.
 import { SEASON_PASS_VISITS, seasonPassPrice, visitPrice } from "@/lib/season-pass"
 import { emailProblem } from "@/lib/email-check"
-import { serviceability } from "@/lib/places"
-import { ZIP_HELP, zipCheck } from "@/lib/booking/zip"
+import { SERVICE_ZIPS, serviceability, type PlaceSuggestion } from "@/lib/places"
+import { STREET_PROBLEM, TOWN_PROBLEM } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-address-typed"
 import { dayAtTime, type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
 import { PRICE_AT_VISIT, type ServiceEntry } from "@/lib/booking/services"
 import { pickComplete } from "@/components/blocks/DayTimePicker"
@@ -12,13 +13,12 @@ import type { ContactChannel } from "@/components/blocks/ContactPreference"
 import type { ReviewRow } from "@/components/blocks/BookingReview"
 import type { CheckoutFields } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
 
-export type FormStep = "zip" | "service" | "quote-service" | "address" | "details" | "day" | "contact" | "confirm" | "done"
+export type FormStep = "address" | "service" | "quote-service" | "details" | "day" | "contact" | "confirm" | "done"
 
 export const QUESTIONS: Record<FormStep, string> = {
-  zip: "What's your zip code?",
+  address: "Where is the yard?",
   service: "What can we do for you?",
   "quote-service": "What do you need a quote for?",
-  address: "Where is the yard?",
   details: "A few details about the visit",
   day: "Pick your day and time",
   contact: "Who should we reach?",
@@ -28,20 +28,19 @@ export const QUESTIONS: Record<FormStep, string> = {
 /** The details step of a request is a different question: there is nothing to size, only something to tell Ryan. */
 export const QUOTE_QUESTIONS: Partial<Record<FormStep, string>> = { details: "Tell Ryan about it", contact: "How can Ryan reach you?" }
 
-/** The steps a service goes through, in order; the last is the confirmation, which is not counted ("Step 3 of 7"). */
+/** The steps a service goes through, in order; the last is the confirmation, which is not counted ("Step 3 of 6"). The address is first and qualifies the area, so nothing after it is offered outside the six towns. */
 export function stepsFor(entry: ServiceEntry | null, quote = false): FormStep[] {
-  if (quote || entry?.kind === "quote") return ["zip", "quote-service", "address", "details", "contact", "done"]
-  return ["zip", "service", "address", "details", "day", "contact", "confirm", "done"]
+  if (quote || entry?.kind === "quote") return ["address", "quote-service", "details", "contact", "done"]
+  return ["address", "service", "details", "day", "contact", "confirm", "done"]
 }
 export const stepTotal = (steps: readonly FormStep[]) => steps.length - 1
 
 export const SEND_REQUEST = "Send to Ryan"
 export const CONFIRM_BOOK = "Confirm and book"
-export const ACTIONS: Partial<Record<FormStep, string>> = { zip: "Continue", service: "Continue", "quote-service": "Continue", address: "Continue", details: "Continue", day: "Continue", contact: "Continue", confirm: CONFIRM_BOOK }
+export const ACTIONS: Partial<Record<FormStep, string>> = { address: "Continue", service: "Continue", "quote-service": "Continue", details: "Continue", day: "Continue", contact: "Continue", confirm: CONFIRM_BOOK }
 
 export const DAY_HINT = "Tap a start time to continue."
 export const SERVICE_HINT = "Pick a service to continue."
-export const ZIP_HINT = "Add a zip code we serve to continue."
 
 export const money = (n: number) => `$${n.toLocaleString("en-US")}`
 
@@ -117,13 +116,13 @@ const CONTACT_FIELDS = ["firstName", "lastName", "email", "phone"] as const
 export const TERMS_PROBLEM = "Tick the box to accept the terms."
 export const ACCESS_PROBLEM = "Tell us whether we can get to the system without you."
 
-/** The words under the zip box once five digits are in, so a screen can name the problem by its field. */
 const contactOk = (f: CheckoutFields, terms: boolean) => CONTACT_FIELDS.every((k) => contactProblem(k, f[k]) === null) && (!terms || f.termsAccepted)
 
 export interface FormAnswers {
-  zip: string
   service: ServiceEntry | null
   fields: CheckoutFields
+  /** the typed fields are open under the address box, so a missing town is asked for by name */
+  addressTyped?: boolean
   /** one pick per visit: "visit" for a day service, "turn-on" and "blowout" for a pass */
   picks: Record<string, DayTimePick>
   offers: Record<string, DayTimeOffer[]>
@@ -142,15 +141,13 @@ export function callbackMode(a: Pick<FormAnswers, "picks" | "offers" | "when">):
 /** Whether the step on screen has what it needs: Continue is off until it does. */
 export function canContinue(step: FormStep, a: FormAnswers): boolean {
   switch (step) {
-    case "zip":
-      return zipCheck(a.zip).state === "ok"
     case "service":
     case "quote-service":
       return a.service !== null && !a.service.opens
     case "contact":
       return contactOk(a.fields, a.service?.kind !== "quote")
     case "address":
-      return a.fields.place !== null && serviceability(a.fields.place).ok
+      return areaState(a.fields.place) === "ok"
     case "details":
       return a.service?.kind === "quote" || a.fields.access !== null
     case "day":
@@ -172,6 +169,14 @@ export function problemsFor(step: FormStep, a: FormAnswers): string[] {
     default:
       return canContinue(step, a) ? [] : ["Your choice"]
   }
+}
+
+/** What the picked address says about the service area: not picked yet, in the six towns (by town name, then zip), outside them, or with no town we can read (no town and no zip we serve), which asks for the town instead of turning the customer away. */
+export type AreaState = "none" | "ok" | "outside" | "needs-town"
+export function areaState(place: PlaceSuggestion | null): AreaState {
+  if (!place) return "none"
+  if (serviceability(place).ok) return "ok"
+  return place.town.trim() === "" && !SERVICE_ZIPS[place.zip] ? "needs-town" : "outside"
 }
 
 export const townOf = (f: CheckoutFields) => f.town ?? f.place?.town ?? null
@@ -198,7 +203,6 @@ export interface ReviewInput {
   service: ServiceEntry
   fields: CheckoutFields
   town: string | null
-  zip: string
   pick: DayTimePick | undefined
   when: string
   callback: boolean
@@ -223,7 +227,7 @@ export function reviewRows(i: ReviewInput): ReviewRow[] {
         : null
   const rows: (ReviewRow | null)[] = [
     { label: "Service", value: [serviceLine, ...(i.service.length ? [i.service.length] : [])], onChange: () => i.go(i.quote ? "quote-service" : "service") },
-    { label: "Where", value: [street, `${i.town ?? ""}${i.town ? ", CO " : ""}${i.zip}`.trim()], onChange: () => i.go("address") },
+    { label: "Where", value: [street, `${i.town ?? ""}${i.town ? ", CO " : ""}${f.place?.zip ?? ""}`.trim()], onChange: () => i.go("address") },
     when ? { label: "When", value: when, onChange: () => i.go("day") } : null,
     { label: "You", value: [`${f.firstName} ${f.lastName}`.trim(), phoneWords(f.phone), f.email], onChange: () => i.go("contact") },
     { label: "We reach you", value: channelLine(i.channel), onChange: () => i.go("contact") },
@@ -237,9 +241,9 @@ export function reviewRows(i: ReviewInput): ReviewRow[] {
 }
 
 /** Whether the customer has entered anything yet: leaving then asks first ("Leave without booking?"); before that it just leaves. */
-export function hasEntries(a: { zip: string; service: ServiceEntry | null; fields: CheckoutFields; when: string; photos: number }): boolean {
+export function hasEntries(a: { service: ServiceEntry | null; fields: CheckoutFields; when: string; photos: number }): boolean {
   const f = a.fields
-  return a.zip !== "" || a.service !== null || f.address.trim() !== "" || f.place !== null || [f.firstName, f.lastName, f.email, f.phone, f.accessNote].some((t) => t.trim() !== "") || a.when.trim() !== "" || a.photos > 0
+  return a.service !== null || f.address.trim() !== "" || f.place !== null || [f.firstName, f.lastName, f.email, f.phone, f.accessNote].some((t) => t.trim() !== "") || a.when.trim() !== "" || a.photos > 0
 }
 
 export const PICK_ADDRESS_PROBLEM = "Pick your address from the list so we have it right."
@@ -254,10 +258,13 @@ export interface Problem {
 /** What stops Continue on the step, in the words beside each field, for the summary at the top and the first field to focus. */
 export function problemList(step: FormStep, a: FormAnswers): Problem[] {
   switch (step) {
-    case "zip":
-      return canContinue("zip", a) || zipCheck(a.zip).state === "outside" ? [] : [{ message: ZIP_HELP, field: "[name=zip]" }]
-    case "address":
-      return canContinue("address", a) ? [] : [{ message: PICK_ADDRESS_PROBLEM, field: "[role=combobox], [name=line1]" }]
+    case "address": {
+      const area = areaState(a.fields.place)
+      // An address outside the six towns is a dead end with its own line beside the box; a missing town is asked for by name.
+      if (area === "ok" || area === "outside") return []
+      if (area === "needs-town" || a.addressTyped) return a.fields.place === null && a.fields.address.trim().length < 3 ? [{ message: STREET_PROBLEM, field: "[name=address]" }] : [{ message: TOWN_PROBLEM, field: "[name=town]" }]
+      return [{ message: PICK_ADDRESS_PROBLEM, field: "[role=combobox]" }]
+    }
     case "details":
       return a.service?.kind === "quote" || a.fields.access !== null ? [] : [{ message: ACCESS_PROBLEM, field: "[data-slot=access-choice] input" }]
     case "contact": {

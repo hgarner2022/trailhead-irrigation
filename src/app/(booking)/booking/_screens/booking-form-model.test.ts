@@ -1,24 +1,40 @@
 import { describe, expect, it } from "vitest"
 import { fixtureDayTimes } from "@/lib/booking/day-time"
 import { QUOTE_SERVICES, SERVICES } from "@/lib/booking/services"
-import { FIXTURE_HOME } from "@/lib/places/fixture"
+import type { PlaceSuggestion } from "@/lib/places"
+import { FIXTURE_HOME, FIXTURE_PLACES } from "@/lib/places/fixture"
 import { initialState } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
-import { NO_EXTRAS, callbackMode, canContinue, contactProblem, hasEntries, happensWords, phoneWords, priceFor, priceWords, problemList, problemsFor, reviewRows, stepsFor, stepTotal } from "./booking-form-model"
+import { NO_EXTRAS, areaState, callbackMode, canContinue, contactProblem, hasEntries, happensWords, phoneWords, priceFor, priceWords, problemList, problemsFor, reviewRows, stepsFor, stepTotal } from "./booking-form-model"
 
 const svc = (key: string) => [...SERVICES, ...QUOTE_SERVICES].find((s) => s.key === key)!
-const base = (over = {}) => ({ zip: "80516", service: svc("repair"), fields: initialState(), picks: {}, offers: {}, when: "", ...over })
+const base = (over = {}) => ({ service: svc("repair"), fields: initialState(), picks: {}, offers: {}, when: "", ...over })
 const person = { firstName: "Andrea", lastName: "Dalton", email: "andrea@example.com", phone: "(970) 555-0123", termsAccepted: true }
 
 describe("the booking form's steps", () => {
-  it("puts the day before contact, and gives a request the same first screens, contact last and no day", () => {
-    expect(stepsFor(svc("repair"))).toEqual(["zip", "service", "address", "details", "day", "contact", "confirm", "done"])
-    expect(stepsFor(null, true)).toEqual(["zip", "quote-service", "address", "details", "contact", "done"])
-    expect(stepTotal(stepsFor(svc("repair")))).toBe(7)
+  it("starts on the address, puts the day before contact, and gives a request the address first, contact last and no day", () => {
+    expect(stepsFor(svc("repair"))).toEqual(["address", "service", "details", "day", "contact", "confirm", "done"])
+    expect(stepsFor(null, true)).toEqual(["address", "quote-service", "details", "contact", "done"])
+    expect(stepTotal(stepsFor(svc("repair")))).toBe(6)
+    expect(stepTotal(stepsFor(null, true))).toBe(4)
   })
-  it("passes the zip step only for a zip we serve", () => {
-    expect(canContinue("zip", base({ zip: "80302" }))).toBe(false)
-    expect(canContinue("zip", base({ zip: "8051" }))).toBe(false)
-    expect(canContinue("zip", base())).toBe(true)
+  it("qualifies the area from the address: the town by name, then the zip, and asks for a town it cannot read", () => {
+    const at = (place: PlaceSuggestion | null) => ({ ...initialState(), place })
+    expect(areaState(null)).toBe("none")
+    expect(areaState(FIXTURE_HOME)).toBe("ok")
+    expect(areaState({ ...FIXTURE_HOME, town: "Unincorporated Weld", zip: "80516" })).toBe("ok")
+    expect(areaState(FIXTURE_PLACES[9]!)).toBe("outside")
+    expect(areaState({ ...FIXTURE_HOME, town: "", zip: "" })).toBe("needs-town")
+    expect(canContinue("address", base({ fields: at(FIXTURE_HOME) }))).toBe(true)
+    expect(canContinue("address", base({ fields: at(FIXTURE_PLACES[9]!) }))).toBe(false)
+    expect(canContinue("address", base({ fields: at({ ...FIXTURE_HOME, town: "", zip: "" }) }))).toBe(false)
+  })
+  it("names what is missing on the address step: the pick, the street or the town, and nothing for a dead end", () => {
+    const fields = initialState()
+    expect(problemList("address", base({ fields }))[0]!.message).toBe("Pick your address from the list so we have it right.")
+    expect(problemList("address", base({ fields, addressTyped: true }))[0]).toMatchObject({ message: "We need your street address, with the house number.", field: "[name=address]" })
+    expect(problemList("address", base({ fields: { ...fields, address: "9 Cottonwood Ln" }, addressTyped: true }))[0]).toMatchObject({ message: "Pick your town so we know which route you are on.", field: "[name=town]" })
+    expect(problemList("address", base({ fields: { ...fields, place: { ...FIXTURE_HOME, town: "", zip: "" } } }))[0]!.field).toBe("[name=town]")
+    expect(problemList("address", base({ fields: { ...fields, place: FIXTURE_PLACES[9]! } }))).toEqual([])
   })
   it("keeps the service step off for a closed service", () => {
     expect(canContinue("service", base({ service: svc("spring-turn-on") }))).toBe(false)
@@ -70,7 +86,7 @@ describe("the price and the confirm words", () => {
   })
   it("lists only what the customer gave, each with a Change", () => {
     const fields = { ...initialState(), ...person, place: FIXTURE_HOME, town: "Erie" as const, access: "yes" as const, accessNote: "Gate code 4471" }
-    const rows = reviewRows({ service: svc("repair"), fields, town: "Erie", zip: "80516", pick: { day: "2027-04-20", start: "10:30" }, when: "", callback: false, channel: "text", photos: 0, quote: false, go: () => {} })
+    const rows = reviewRows({ service: svc("repair"), fields, town: "Erie", pick: { day: "2027-04-20", start: "10:30" }, when: "", callback: false, channel: "text", photos: 0, quote: false, go: () => {} })
     expect(rows.map((r) => r.label)).toEqual(["Service", "Where", "When", "You", "We reach you", "Access", "Note for the crew", "Price"])
     expect(rows.find((r) => r.label === "When")?.value).toEqual(["Tuesday, April 20 at 10:30 am"])
     expect(rows.find((r) => r.label === "Price")?.onChange).toBeUndefined()
@@ -90,15 +106,14 @@ describe("the price and the confirm words", () => {
   })
   it("lists the service-specific answers as rows and asks to confirm leaving only once something is entered", () => {
     const fields = { ...initialState(), ...person, place: FIXTURE_HOME, town: "Erie" as const, access: "yes" as const }
-    const rows = reviewRows({ service: svc("water-efficiency"), fields, town: "Erie", zip: "80516", pick: { day: "2027-04-20", start: "10:30" }, when: "", callback: false, channel: "text", photos: 0, quote: false, extras: { ...NO_EXTRAS, goals: ["Dry spots"] }, go: () => {} })
+    const rows = reviewRows({ service: svc("water-efficiency"), fields, town: "Erie", pick: { day: "2027-04-20", start: "10:30" }, when: "", callback: false, channel: "text", photos: 0, quote: false, extras: { ...NO_EXTRAS, goals: ["Dry spots"] }, go: () => {} })
     expect(rows.find((r) => r.label === "To improve")?.value).toEqual(["Dry spots"])
-    expect(hasEntries({ zip: "", service: null, fields: initialState(), when: "", photos: 0 })).toBe(false)
-    expect(hasEntries({ zip: "8", service: null, fields: initialState(), when: "", photos: 0 })).toBe(true)
+    expect(hasEntries({ service: null, fields: initialState(), when: "", photos: 0 })).toBe(false)
+    expect(hasEntries({ service: null, fields: { ...initialState(), address: "48" }, when: "", photos: 0 })).toBe(true)
   })
   it("lists each problem with the field it is about, in the order of the form", () => {
     const fields = { ...initialState(), firstName: "Andrea", lastName: "Dalton", email: "andrea@example.com" }
     expect(problemList("contact", base({ fields })).map((p) => p.field)).toEqual(["[name=phone]", "[data-slot=booking-terms] [role=checkbox]"])
-    expect(problemList("zip", base({ zip: "" }))[0]!.message).toBe("Add your five-digit zip code so we can check we come to you.")
     expect(problemList("details", base({ fields }))[0]!.field).toContain("access-choice")
   })
 })
