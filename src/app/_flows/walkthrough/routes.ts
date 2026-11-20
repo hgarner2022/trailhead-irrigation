@@ -2,16 +2,19 @@
 // screens draw (`/account`, `/account/visits/<id>`, `/pay/<id>`, `/booking`, `/season-pass/checkout`, and the absolute ones the texts carry) into where
 // the prototype goes: one of its screens, an account page the account reducer opens, a labelled placeholder, or nowhere (tel:, mailto:, other sites).
 
-export type Where = "book" | "texts" | "account" | "receipts" | "pass" | "renew" | "quote" | "placeholder"
-export type Target = { where: "book" } | { where: "texts" } | { where: "quote" } | { where: "receipts" } | { where: "account"; href: string } | { where: "pass" } | { where: "renew" } | { where: "placeholder"; title: string; path: string } | { where: "outside" }
+export type Where = "book" | "texts" | "account" | "receipts" | "pass" | "renew" | "quote" | "sign-in" | "card-updated" | "season-pass-page" | "placeholder"
+export type Target = { where: "sign-in" } | { where: "card-updated" } | { where: "season-pass-page" } | { where: "book" } | { where: "texts" } | { where: "quote" } | { where: "receipts" } | { where: "account"; href: string } | { where: "pass" } | { where: "renew" } | { where: "placeholder"; title: string; path: string } | { where: "outside" }
 
 const HOSTS = ["www.trailheadirrigation.com", "trailheadirrigation.com"]
 
-const TITLES: [RegExp, string][] = [
-  [/^\/account\/sign-in/, "Sign in"],
-  [/^\/account\/pass\/card-updated/, "Card updated"],
-  [/^\/season-pass\/?$/, "Season Pass (the marketing page)"],
-  [/^\/contact/, "Contact"],
+// What is still a stand-in: the screens of the live app the prototype does not draw
+const TITLES: [RegExp, string][] = [[/^\/contact/, "Contact"]]
+
+// The live screens that render in the phone (`LiveScreens.tsx`): sign in, the card-saved page Stripe returns to, and the Season Pass marketing page
+const LIVE: [RegExp, Target][] = [
+  [/^\/account\/sign-in(\/sent)?$/, { where: "sign-in" }],
+  [/^\/account\/pass\/card-updated$/, { where: "card-updated" }],
+  [/^\/season-pass$/, { where: "season-pass-page" }],
 ]
 
 export function classifyHref(href: string): Target {
@@ -28,6 +31,8 @@ export function classifyHref(href: string): Target {
   if (path === "/account/pass") return { where: "pass" }
   if (path === "/season-pass/checkout") return { where: "renew" }
   if (/^\/quote\/[^/]+$/.test(path)) return { where: "quote" }
+  const live = LIVE.find(([re]) => re.test(path))
+  if (live) return live[1]
   const hit = TITLES.find(([re]) => re.test(path))
   if (hit) return { where: "placeholder", title: hit[1], path }
   if (path === "/account" || /^\/account\/(visits|details|receipts)(\/|$)/.test(path) || /^\/pay\/[^/]+(\/paid)?$/.test(path)) return { where: "account", href: `${path}${url.search}` }
@@ -55,7 +60,7 @@ export function stepOf(where: Where, accountPage?: string): StepKey | null {
   if (where === "quote") return "quote"
   if (where === "receipts") return "receipts"
   if (where === "pass" || where === "renew") return "pass"
-  if (where === "placeholder") return null
+  if (where === "placeholder" || where === "sign-in" || where === "card-updated" || where === "season-pass-page") return null
   if (accountPage === "details") return "details"
   if (accountPage === "visits" || accountPage === "visit") return "visits"
   if (accountPage === "pay" || accountPage === "paid" || accountPage === "receipt") return "pay"
