@@ -14,6 +14,8 @@ export interface AdminTabBarProps {
   current: AdminSection
   /** a screen that has Requests: More holds it, with the count on the button */
   requests?: { count: number }
+  /** a screen that has Quotes: More holds it too, with the count on its own row */
+  quotes?: { count: number }
 }
 
 const TAB = "flex w-full flex-col items-center gap-0.5 pb-1.5 pt-1.5 text-xs font-medium leading-tight outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring"
@@ -27,7 +29,7 @@ function Tab({ active, children, icon }: { active: boolean; children: React.Reac
   )
 }
 
-export function AdminTabBar({ current, requests }: AdminTabBarProps) {
+export function AdminTabBar({ current, requests, quotes }: AdminTabBarProps) {
   const tone = (active: boolean) => (active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/80")
   return (
     <nav aria-label="Main" data-slot="admin-tabbar" className="fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] text-sidebar-foreground md:hidden">
@@ -45,7 +47,7 @@ export function AdminTabBar({ current, requests }: AdminTabBarProps) {
           )
         })}
         <li>
-          <MoreMenu current={current} requests={requests} />
+          <MoreMenu current={current} requests={requests} quotes={quotes} />
         </li>
       </ul>
     </nav>

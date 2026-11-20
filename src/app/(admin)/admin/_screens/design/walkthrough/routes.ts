@@ -2,21 +2,23 @@
 // `parseHref` turns the hrefs the record chips and the nav emit (`recordHref.*`, `/admin/...`) into a route, so the walkthrough never edits a
 // page component: it listens for the links the pages already draw. An href that is not in the prototype parses to null.
 
-export type Screen = "home" | "schedule" | "requests" | "jobs" | "customers" | "invoices" | "reports" | "settings" | "request" | "job" | "customer" | "invoice" | "receipt"
+export type Screen = "home" | "schedule" | "requests" | "jobs" | "quotes" | "customers" | "invoices" | "reports" | "settings" | "request" | "job" | "customer" | "invoice" | "receipt"
 export interface Route {
   screen: Screen
   id?: string
   /** the New job sheet is open on the Jobs screen; `id` is the customer it was started from */
   newJob?: boolean
-  /** the Requests list opened with its Status chip set (Home's "2 new requests" row: new) */
-  filter?: "new"
+  /** the Requests list opened with its Status chip set (Home's "2 new requests" row: new), or the Quotes list on the quotes still waiting (Home's Quote waiting row: sent) */
+  filter?: "new" | "sent"
+  /** a job opened at its Quote section (a quote chip, a Quotes row, a Cmd+K quote hit) */
+  anchor?: "quote"
 }
 
-export const ROOTS: readonly Screen[] = ["home", "schedule", "requests", "jobs", "customers", "invoices", "reports", "settings"]
+export const ROOTS: readonly Screen[] = ["home", "schedule", "requests", "jobs", "quotes", "customers", "invoices", "reports", "settings"]
 export const isRoot = (r: Route) => ROOTS.includes(r.screen) && !r.id && !r.newJob
 export const sameRoute = (a: Route, b: Route) => a.screen === b.screen && a.id === b.id && Boolean(a.newJob) === Boolean(b.newJob) && a.filter === b.filter
 
-const SECTION: Record<string, Screen> = { "": "home", schedule: "schedule", requests: "requests", jobs: "jobs", customers: "customers", invoices: "invoices", reports: "reports", settings: "settings" }
+const SECTION: Record<string, Screen> = { "": "home", schedule: "schedule", requests: "requests", jobs: "jobs", quotes: "quotes", customers: "customers", invoices: "invoices", reports: "reports", settings: "settings" }
 const RECORD: Partial<Record<string, Screen>> = { requests: "request", jobs: "job", customers: "customer", invoices: "invoice" }
 const KEY: Record<string, string> = { requests: "request", jobs: "job", customers: "customer", invoices: "invoice" }
 
@@ -37,12 +39,13 @@ export function parseHref(href: string): Route | null {
   if (!screen) return null
   const id = KEY[section] ? url.searchParams.get(KEY[section]!) : null
   const record = RECORD[section]
-  if (record && id) return { screen: record, id }
+  if (record && id) return record === "job" && url.hash === "#quote-h" ? { screen: record, id, anchor: "quote" } : { screen: record, id }
   if (section === "jobs" && url.searchParams.get("new") === "1") {
     const customer = url.searchParams.get("customer")
     return customer ? { screen: "jobs", newJob: true, id: customer } : { screen: "jobs", newJob: true }
   }
   if (section === "requests" && url.searchParams.get("status") === "new") return { screen: "requests", filter: "new" }
+  if (section === "quotes" && url.searchParams.get("status") === "sent") return { screen: "quotes", filter: "sent" }
   if (section === "schedule") {
     const day = url.searchParams.get("day")
     return day ? { screen: "schedule", id: day } : { screen }
@@ -57,11 +60,12 @@ export const dayTitle = (iso: string) => {
   return Number.isNaN(d.getTime()) ? iso : DAY.format(d)
 }
 
-export const SCREEN_TITLE: Record<"home" | "schedule" | "requests" | "jobs" | "customers" | "invoices" | "reports" | "settings", string> = {
+export const SCREEN_TITLE: Record<"home" | "schedule" | "requests" | "jobs" | "quotes" | "customers" | "invoices" | "reports" | "settings", string> = {
   home: "Home",
   schedule: "Schedule",
   requests: "Requests",
   jobs: "Jobs",
+  quotes: "Quotes",
   customers: "Customers",
   invoices: "Invoices",
   reports: "Reports",

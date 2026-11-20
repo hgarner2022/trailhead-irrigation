@@ -7,6 +7,9 @@ import type { Route } from "./routes"
 import { readChoice } from "@/app/_flows/walkthrough/marketing-choice"
 import { fullName, serviceWords, stateOf } from "../requests/request-model"
 import { requestStore } from "../requests/request-store"
+import { quoteRowsOf } from "../quotes/quote-list-model"
+import { QUOTES_NOW, QUOTE_PILL, money as quoteMoney } from "../quotes/quote-model"
+import { walkQuotes } from "../quotes/quote-store"
 
 export * from "./jobs-data"
 
@@ -201,7 +204,7 @@ export function resolveRoute(route: Route, owner?: string): Route {
     if (id === "c-1" || id === "c1") return { screen: "customer", id: owner ?? "andrea" }
     return { screen: "customer", id: ({ c2: "dale", c3: "marcus" } as Record<string, string>)[id] ?? id }
   }
-  if (route.screen === "job") return { screen: "job", id: OWNER_JOB[owner ?? ""]?.[id] ?? COMMON_JOB[id] ?? id }
+  if (route.screen === "job") return { ...route, id: OWNER_JOB[owner ?? ""]?.[id] ?? COMMON_JOB[id] ?? id }
   if (route.screen === "invoice") return { screen: "invoice", id: OWNER_INVOICE[owner ?? ""]?.[id] ?? (id === "i1" ? invoiceOf(owner) : id === "i0" ? "inv-31" : id) }
   return route
 }
@@ -268,5 +271,9 @@ export function searchWorld(query: string): SearchHit[] {
     .filter((r) => !r.becameJob && ["new", "seen"].includes(stateOf(r)))
     .filter((r) => `${fullName(r)} ${r.street} ${r.email} ${r.service}`.toLowerCase().includes(q) || (qd.length >= 3 && digits(r.phone).includes(qd)))
     .map((r) => ({ kind: "request" as const, id: r.id, title: fullName(r), detail: [serviceWords(r), r.town].filter((x) => x !== "Not said" && x).join(" · "), href: `/admin/requests?request=${r.id}`, contact: r.phone }))
-  return [...requests, ...customers, ...jobs]
+  // a quote is found by its number, its customer's name or the street, and opens its job at the Quote section
+  const quotes: SearchHit[] = quoteRowsOf(Object.values(walkQuotes.getSnapshot()), QUOTES_NOW)
+    .filter((r) => `${r.id} ${r.customer} ${r.street}`.toLowerCase().includes(q))
+    .map((r) => ({ kind: "quote" as const, id: r.id, title: r.id, detail: `${r.customer}, ${r.jobName}, ${quoteMoney(r.amount)} · ${QUOTE_PILL[r.state].label}`, href: `/admin/jobs?job=${r.jobId}#quote-h` }))
+  return [...requests, ...customers, ...jobs, ...quotes]
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { Briefcase, CalendarDays, Inbox, Users } from "lucide-react"
+import { Briefcase, CalendarDays, FileText, Inbox, Users } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -23,11 +23,13 @@ export interface CommandSearchProps {
   delay?: number
 }
 
-const GROUPS: { kind: RecordKey | "request"; heading: string; icon: typeof Users }[] = [
+const GROUPS: { kind: RecordKey | "request" | "quote"; heading: string; icon: typeof Users }[] = [
   { kind: "customer", heading: "Customers", icon: Users },
   // a request still waiting (New and Seen) is found here and nowhere else; once a job is made of it, its customer and job are (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.7)
   { kind: "request", heading: "Requests", icon: Inbox },
   { kind: "job", heading: "Jobs", icon: Briefcase },
+  // a quote is found by its number or its customer's name and opens the Quotes list on it (Hannah, Nov 20 2026)
+  { kind: "quote", heading: "Quotes", icon: FileText },
   { kind: "visit", heading: "Days", icon: CalendarDays },
 ]
 

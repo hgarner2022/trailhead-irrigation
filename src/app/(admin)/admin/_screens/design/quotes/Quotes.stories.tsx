@@ -5,11 +5,14 @@ import { AdminShell } from "@/components/blocks/AdminShell"
 import { JobsGridDesign } from "../JobsGridDesign"
 import { allRows } from "../walkthrough/jobs-data"
 import { QuoteJobPage, type QuoteJobPageProps } from "./QuoteJobPage"
+import { QuotesList } from "./QuotesList"
+import { QuotesShell } from "./QuotesShell"
+import { QUOTE_HISTORY_FIXTURES } from "./quote-history-fixtures"
 import { DESIGN_VISIT_JOB, QUOTES_NOW, QUOTE_JOB_FIXTURES, fixtureJob, jobFromRequest, type QuoteJob } from "./quote-model"
 import { createQuoteStore } from "./quote-store"
 
 // The quote on the job (Hannah, Nov 20 2026): a job from a request reads Needs a quote, Ryan prices its lines and sends a quote with an optional deposit, the
-// job reads Quote sent, and the customer approves or declines. There is no Quotes item in the nav: a quote is a section of its job, and Jobs' Status filter
+// job reads Quote sent, and the customer approves or declines. A quote is a section of its job, and Jobs' Status filter
 // lists Needs a quote and Quote sent. Each story says what Ryan sees. Pure screens over fixtures: nothing is wired and nothing is sent.
 
 const meta = {
@@ -164,6 +167,39 @@ export const JobsStatusFilter: Story = {
     <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>
       <JobsGridDesign rows={allRows()} defaultFilters={[{ column: "stage", values: ["needs-a-quote", "quote-sent"] }]} />
     </AdminShell>
+  ),
+}
+
+// ---------------------------------------------------------------------------------------------------------------------- the Quotes list
+
+const ALL = [...QUOTE_JOB_FIXTURES, ...QUOTE_HISTORY_FIXTURES]
+const list = (jobs: readonly QuoteJob[], globals: typeof laptop, o: { initialFilters?: { column: string; values: string[] }[] } = {}): Story => ({
+  args,
+  globals,
+  render: () => (
+    <QuotesShell jobs={jobs}>
+      <QuotesList jobs={jobs} now={QUOTES_NOW} {...o} />
+    </QuotesShell>
+  ),
+})
+
+/** Quotes, a rail item after Jobs with the count of quotes still waiting (2). Every quote is a row: the two Sent ones first (the longest waiting on top, with Remind), then Approved, Declined and Replaced. The tiles are Waiting, Approved this month and Declined this month, and each sets the Status filter. */
+export const List: Story = { ...list(ALL, laptop), name: "List" }
+export const ListPhone: Story = { ...list(ALL, phone), name: "List, phone" }
+/** No quotes yet: the band reads Nothing waiting and the table says how one gets made. */
+export const ListEmpty: Story = { ...list([], laptop), name: "List empty" }
+/** The Status filter hides every row: "No quotes match." with Clear filters. */
+export const ListNoMatch: Story = { ...list(QUOTE_JOB_FIXTURES, laptop, { initialFilters: [{ column: "status", values: ["approved"] }] }), name: "List no match" }
+
+/** Cmd+K has a Quotes group: type a quote number or a customer's name and the quote opens its job at the Quote section. */
+export const Search: Story = {
+  name: "Cmd+K finds a quote",
+  args,
+  globals: laptop,
+  render: () => (
+    <QuotesShell jobs={ALL} defaultSearchOpen defaultSearchQuery="Beth">
+      <QuotesList jobs={ALL} now={QUOTES_NOW} />
+    </QuotesShell>
   ),
 }
 
