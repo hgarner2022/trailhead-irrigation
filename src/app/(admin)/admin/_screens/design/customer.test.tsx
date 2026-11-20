@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
-import { fireEvent, render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { CustomerPage } from "./CustomerPage"
 import { sortInvoices, sortJobs } from "./CustomerTables"
 import { CUSTOMER_STATES, customerPageOf } from "./customer-fixtures"
@@ -17,7 +17,9 @@ describe("customer page", () => {
       render(<CustomerPage customer={customerPageOf(state)} />)
       expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument()
       expect(document.querySelector("[data-slot=record-footer] a, [data-slot=record-footer] button")).toHaveTextContent("New job")
-      for (const name of ["Jobs", "Season Pass", "Billing", "Messages", "Notes and history", "Contact", "Property", "Consent"]) expect(screen.getByRole("heading", { name })).toBeInTheDocument()
+      for (const name of ["Jobs", "Billing", "Messages", "Notes and history", "Contact", "Property", "Consent"]) expect(screen.getByRole("heading", { name })).toBeInTheDocument()
+      // a Season Pass block only for a customer who has a pass
+      expect(screen.queryByRole("heading", { name: "Season Pass" }) !== null).toBe(customerPageOf(state).area.kind === "pass")
       expect(document.querySelectorAll("[data-slot=summary-icon]")).toHaveLength(4)
     })
   }
@@ -102,9 +104,12 @@ describe("customer page", () => {
     expect(pass.getByRole("link", { name: /Season Pass 2027, TH-2027-0011/ })).toBeInTheDocument()
   })
 
-  it("sells a pass to a one-off customer", () => {
+  it("has no Season Pass card or sales pitch for a customer without a pass, and sells one from More", () => {
     render(<CustomerPage customer={customerPageOf("one-off")} />)
-    expect(screen.getByRole("link", { name: "Get a Season Pass" })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Season Pass" })).toBeNull()
+    expect(screen.queryByText("Get a Season Pass")).toBeNull()
+    fireEvent.pointerDown(within(document.querySelector("[data-slot=record-footer]") as HTMLElement).getByRole("button", { name: "More" }), { button: 0, ctrlKey: false })
+    expect(screen.getByText("Sell a Season Pass")).toBeInTheDocument()
   })
 
   it("invites the first job when there is none", () => {
@@ -140,6 +145,63 @@ describe("customer page", () => {
     expect(pay.getAllByRole("link", { name: "Receipt" }).length).toBe(2)
     expect(pay.getAllByRole("link", { name: /Open in Stripe/ }).length).toBe(1)
     expect(pay.getAllByRole("link", { name: /Job:/ }).length).toBe(2)
+  })
+
+  it("shows refunds in the words of the job page: Refunded in Jobs, the negative grey row, no Unpaid, no Collect payment", () => {
+    render(<CustomerPage customer={customerPageOf("refunded")} />)
+    expect(within(sectionOf("Jobs")).getByText("Refunded")).toBeInTheDocument()
+    const billing = within(sectionOf("Billing"))
+    expect(billing.getByText("$145 refunded to the card on Nov 19, by Ryan")).toBeInTheDocument()
+    expect(billing.getByText("-$145")).toBeInTheDocument()
+    expect(billing.queryByText("Unpaid")).toBeNull()
+    expect(screen.getByText("Nothing unpaid")).toBeInTheDocument()
+    expect(within(document.querySelector("[data-slot=record-footer]") as HTMLElement).queryByRole("button", { name: "Collect payment" })).toBeNull()
+  })
+
+  it("reads Paid, $50 refunded in green after a partial refund", () => {
+    render(<CustomerPage customer={customerPageOf("part-refunded")} />)
+    expect(within(sectionOf("Jobs")).getByText("Paid, $50 refunded")).toBeInTheDocument()
+    const line = document.querySelector("[data-slot=billing-state]") as HTMLElement
+    expect(line.dataset.tone).toBe("paid")
+    expect(line).toHaveTextContent("$95 stays paid by card, Visa ending 4242. $50 was refunded to the card on Nov 19, by Ryan.")
+  })
+
+  it("keeps transactional consent apart from marketing, off by default, and turns a channel on only through a dialog with a source and a note", async () => {
+    render(<CustomerPage customer={customerPageOf("one-off")} />)
+    const consent = within(sectionOf("Consent"))
+    expect(consent.getByText("Texts and email about your visits and billing")).toBeInTheDocument()
+    expect(consent.getByText("Allowed")).toBeInTheDocument()
+    expect(consent.getByText("Not in marketing")).toBeInTheDocument()
+    expect(consent.getByRole("switch", { name: "Marketing email" })).toHaveAttribute("aria-checked", "false")
+    fireEvent.click(consent.getByRole("switch", { name: "Marketing email" }))
+    const dialog = screen.getByRole("dialog")
+    const confirm = within(dialog).getByRole("button", { name: "Opt in to email" })
+    expect(confirm).toBeDisabled()
+    fireEvent.change(within(dialog).getByLabelText("How did they say yes?"), { target: { value: "In person" } })
+    fireEvent.change(within(dialog).getByLabelText(/^Note/), { target: { value: "Said yes at the door" } })
+    expect(confirm).toBeEnabled()
+    fireEvent.click(confirm)
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    await waitFor(() => expect(consent.getByRole("switch", { name: "Marketing email" })).toHaveAttribute("aria-checked", "true"))
+    expect(consent.queryByText("Not in marketing")).toBeNull()
+  })
+
+  it("turns a channel off at once and writes a consent row", () => {
+    render(<CustomerPage customer={customerPageOf("pass-holder")} />)
+    const consent = within(sectionOf("Consent"))
+    expect(consent.getByText("Opted in Nov 2 by the customer on the website")).toBeInTheDocument()
+    fireEvent.click(consent.getByRole("switch", { name: "Marketing email" }))
+    expect(consent.getByRole("switch", { name: "Marketing email" })).toHaveAttribute("aria-checked", "false")
+    expect(consent.getByText("Not in marketing")).toBeInTheDocument()
+    fireEvent.click(consent.getByRole("button", { name: "Consent history" }))
+    expect(within(screen.getByRole("dialog")).getByText("Opted out of marketing email")).toBeInTheDocument()
+  })
+
+  it("says a STOP reply sends every text as an email, in neutral words", () => {
+    render(<CustomerPage customer={customerPageOf("two-seasons")} />)
+    const consent = within(sectionOf("Consent"))
+    expect(consent.getByText("Stopped by reply STOP on Oct 3. Every text goes as an email.")).toBeInTheDocument()
+    expect(consent.getByLabelText("Contact by")).toHaveValue("email")
   })
 
   it("holds no result message in any section", () => {

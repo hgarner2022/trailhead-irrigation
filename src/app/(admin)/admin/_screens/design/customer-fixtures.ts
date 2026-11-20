@@ -11,123 +11,8 @@ import type { PillData } from "./job-fixtures"
 // (the chain: 2027 renewed from 2026), a one-off customer paid in full, and one with nothing yet. Every record named here carries an id the
 // page turns into a RecordChip link; a fact with nothing behind it ("Nothing unpaid", "No card") carries no link.
 
-export type CustomerState = "pass-holder" | "two-seasons" | "one-off" | "nothing-yet"
-export const CUSTOMER_STATES: readonly CustomerState[] = ["pass-holder", "two-seasons", "one-off", "nothing-yet"]
-
-export interface MoneyWord {
-  /** the word, from `words.ts`: "Paid, card", "$145 unpaid", "Invoice sent", "Past due" */
-  word: string
-  tone?: "past-due" | "failed" | "plain"
-  /** the quiet second line: "due Dec 2", "Charged after each visit" */
-  note?: string
-}
-
-export interface CustomerJobRow {
-  id: string
-  name: string
-  /** open jobs sort above closed ones */
-  open: boolean
-  /** newest first within open and closed: the day of its next or last visit, ISO */
-  sortDay: string
-  day?: { iso: string; label: string; time: string; stops: number }
-  who?: string
-  status: PillStatus
-  statusLabel: string
-  /** what has happened so far; null when nothing is due yet */
-  money: MoneyWord | null
-  /** a quiet line under the money word, or under the dash when nothing is due: "Charged after each visit" */
-  note?: string
-}
-
-export interface CustomerInvoiceRow {
-  id: string
-  /** "INV-2026-0042" */
-  number: string
-  jobId: string
-  jobName: string
-  amount: string
-  sent: string
-  due: string
-  status: PillStatus
-  statusLabel: string
-  sortDay: string
-}
-
-export interface CustomerPaymentRow {
-  id: string
-  /** the receipt's number: "R-1031" */
-  receipt: string
-  date: string
-  sortDay: string
-  jobId: string
-  jobName: string
-  /** "Card", "Check 2210", "Venmo @andrea-d" */
-  how: string
-  amount: string
-  /** a card payment opens in Stripe */
-  stripeUrl?: string
-}
-
-export interface SeasonLink {
-  season: number
-  number: string
-  jobId: string
-}
-
-export interface EarlierSeason extends SeasonLink {
-  state: string
-  renewedAs?: SeasonLink
-}
-
-export type PassArea =
-  | { kind: "pass"; jobId: string; /** from November 1 the block and More offer Reserve next season */ reserveNext?: boolean; pass: Pass; facts: RecordFact[]; card: string; renewedFrom?: SeasonLink; renewedAs?: SeasonLink; earlier: EarlierSeason[] }
-  | { kind: "sell"; label: "Get a Season Pass" | "Reserve next season"; line: string; earlier: EarlierSeason[] }
-
-export interface BandCell {
-  value: string
-  sub: string
-  alert?: boolean
-  /** the job, invoice or pass the tile opens; none for a tile with nothing behind it */
-  jobId?: string
-  invoiceId?: string
-}
-
-export interface CustomerBillingData {
-  /** "Paid in full", "$145 unpaid", "Nothing billed yet" */
-  line: string
-  tone: "past-due" | "failed" | "plain"
-  total: string
-  paid: string
-  unpaid: string
-  card?: { brand: string; last4: string; expires: string; stripeUrl: string }
-  payments: CustomerPaymentRow[]
-  invoices: CustomerInvoiceRow[]
-}
-
-export interface CustomerPageData {
-  id: string
-  name: string
-  firstName: string
-  /** how the customer wants to hear from us: every customer-facing confirmation names this channel and its address */
-  contact: { channel: "text" | "email"; phone: { text: string; href: string }; email: string }
-  address: [string, string]
-  subtitle: string
-  pills: PillData[]
-  band: { next: BandCell; unpaid: BandCell; pass: BandCell; card: BandCell }
-  /** the amount of the open invoice or unpaid job, when something is unpaid ("$145") */
-  unpaid?: string
-  openInvoice?: { id: string; number: string; amount: string; jobName: string; due: string }
-  /** nothing has ever happened for this customer: Delete is offered */
-  untouched?: boolean
-  jobs: CustomerJobRow[]
-  billing: CustomerBillingData
-  messages: Message[]
-  photos: PhotoItem[]
-  notes: TimelineLine[]
-  property: RecordFact[]
-  consent: string
-  area: PassArea
-}
+import type { ConsentData, CustomerBillingData, CustomerPageData, CustomerState, PassArea } from "./customer-types"
+export * from "./customer-types"
 
 const PHONE = { text: "(970) 555-0123", href: "tel:+19705550123" }
 const PROPERTY: RecordFact[] = [["Zones", "8"], ["Controller", "Rachio 3, garage"], ["Backflow", "Front yard, green box"], ["Gate code", "4417"], ["Must be home", "No"], ["Access note", "Side gate by the garage, dog is friendly."]]
@@ -156,7 +41,13 @@ const base = (over: Partial<CustomerPageData>): CustomerPageData => ({
   photos: [],
   notes: [],
   property: PROPERTY,
-  consent: "Texts and email, agreed Apr 14, 2026 on the website",
+  consent: {
+    agreed: "Agreed Apr 14, 2026 on the website, terms v3",
+    email: { on: false },
+    text: { on: false },
+    contactBy: "text",
+    history: [{ id: "k0", on: "Apr 14, 2026", what: "Agreed to texts and email about visits and billing", source: "Website", who: "The customer" }],
+  },
   area: { kind: "sell", label: "Get a Season Pass", line: "Reserve the spring turn-on and the fall blowout at today's per-zone prices, with the days picked now.", earlier: [] },
   ...over,
 })
@@ -174,6 +65,7 @@ export function customerPageOf(state: CustomerState): CustomerPageData {
           pass: { value: "Season Pass 2027", sub: "TH-2027-0008, active", jobId: "p2027" },
           card: { value: "Visa 4242", sub: "Expires 08/28" },
         },
+        consent: { agreed: "Agreed Apr 14, 2026 on the website, terms v3", email: { on: true, note: "Opted in Nov 2 by the customer on the website" }, text: { on: false }, contactBy: "text", history: [{ id: "k1", on: "Nov 2, 2026", what: "Opted in to marketing email", source: "Website", who: "The customer" }, { id: "k0", on: "Apr 14, 2026", what: "Agreed to texts and email about visits and billing", source: "Website", who: "The customer" }] },
         unpaid: "$145",
         openInvoice: { id: "i1", number: "INV-2026-0042", amount: "$145", jobName: "Sprinkler repair", due: "Dec 2" },
         jobs: [
@@ -214,6 +106,7 @@ export function customerPageOf(state: CustomerState): CustomerPageData {
         name: "Dale Whitaker",
         firstName: "Dale",
         contact: { channel: "email", phone: PHONE, email: "dale.whitaker@example.com" },
+        consent: { agreed: "Agreed Mar 2, 2026 on the website, terms v3", stoppedOn: "Oct 3", email: { on: false }, text: { on: false }, contactBy: "email", history: [{ id: "k1", on: "Oct 3, 2026", what: "Replied STOP: texts stopped, every message goes by email", source: "Reply STOP", who: "The customer" }, { id: "k0", on: "Mar 2, 2026", what: "Agreed to texts and email about visits and billing", source: "Website", who: "The customer" }] },
         address: ["212 Main St", "Lafayette, CO"],
         subtitle: "Customer since Mar 2026 · 212 Main St, Lafayette",
         pills: [{ status: "active", label: "Season Pass 2027" }],
@@ -229,6 +122,7 @@ export function customerPageOf(state: CustomerState): CustomerPageData {
         ],
         billing: {
           line: "Paid in full",
+          settled: "paid",
           tone: "plain",
           total: "$210",
           paid: "$210",
@@ -264,6 +158,7 @@ export function customerPageOf(state: CustomerState): CustomerPageData {
         jobs: [{ id: "j1", name: "Sprinkler repair", open: false, sortDay: "2026-06-09", day: day("2026-06-09", "Jun 9, 2026", "1:00 pm", 4), who: RYAN, status: "done", statusLabel: "Done", money: { word: "Paid, card" } }],
         billing: {
           line: "Paid in full",
+          settled: "paid",
           tone: "plain",
           total: "$145",
           paid: "$145",
@@ -275,6 +170,76 @@ export function customerPageOf(state: CustomerState): CustomerPageData {
         messages: [msg("m1", "2026-06-09T22:00:00Z", "sms", "receipt", "Trailhead: receipt for $145, your repair at 35 Cherry Ln.")],
         notes: [event("n1", "2026-06-09T21:50:00Z", "Marked the repair done")],
       })
+    case "opted-out":
+      return base({
+        id: "c5",
+        name: "Rosa Medina",
+        firstName: "Rosa",
+        contact: { channel: "text", phone: PHONE, email: "rosa.medina@example.com" },
+        address: ["14 Willow Way", "Erie, CO"],
+        subtitle: "Customer since May 2026 · 14 Willow Way, Erie",
+        band: { next: { value: "None", sub: "Nothing scheduled" }, unpaid: { value: "$0", sub: "Nothing unpaid" }, pass: { value: "None", sub: "No Season Pass" }, card: { value: "No card", sub: "Add one when you collect" } },
+        jobs: [{ id: "j1", name: "Sprinkler repair", open: false, sortDay: "2026-06-02", day: day("2026-06-02", "Jun 2, 2026", "10:00 am", 3), who: RYAN, status: "done", statusLabel: "Done", money: { word: "Paid, check" } }],
+        billing: { line: "Paid in full", settled: "paid", tone: "plain", total: "$145", paid: "$145", unpaid: "$0", invoices: [], payments: [{ id: "p1", receipt: "R-1004", date: "Jun 2", sortDay: "2026-06-02", jobId: "j1", jobName: "Sprinkler repair", how: "Check 2188", amount: "$145" }] },
+        notes: [event("n1", "2026-11-09T16:00:00Z", "Turned marketing email off, asked by phone")],
+        consent: { agreed: "Agreed May 6, 2026 on the website, terms v3", email: { on: false, note: "Opted out Nov 9, asked by phone, Ryan" }, text: { on: false }, contactBy: "text", history: [{ id: "k2", on: "Nov 9, 2026", what: "Opted out of marketing email", source: "Phone, by the office", who: "Ryan" }, { id: "k1", on: "Nov 2, 2026", what: "Opted in to marketing email", source: "Website", who: "The customer" }, { id: "k0", on: "May 6, 2026", what: "Agreed to texts and email about visits and billing", source: "Website", who: "The customer" }] },
+      })
+    case "refunded":
+      return base({
+        id: "c6",
+        name: "Nora Quinn",
+        firstName: "Nora",
+        contact: { channel: "text", phone: PHONE, email: "nora.quinn@example.com" },
+        address: ["203 Maple Ct", "Lafayette, CO"],
+        subtitle: "Customer since Aug 2026 · 203 Maple Ct, Lafayette",
+        band: { next: { value: "None", sub: "Nothing scheduled" }, unpaid: { value: "$0", sub: "Nothing unpaid" }, pass: { value: "None", sub: "No Season Pass" }, card: { value: "Visa 4242", sub: "Expires 08/28" } },
+        jobs: [{ id: "j1", name: "Sprinkler repair", open: false, sortDay: "2026-11-18", day: day("2026-11-18", "Nov 18, 2026", "9:00 am", 4), who: RYAN, status: "done", statusLabel: "Done", money: { word: "Refunded" } }],
+        billing: {
+          line: "$145 refunded to the card on Nov 19, by Ryan",
+          settled: "refunded",
+          tone: "plain",
+          total: "$145",
+          paid: "$0",
+          unpaid: "$0",
+          refunded: "$145",
+          card: VISA("4242", "08/28"),
+          invoices: [{ id: "i1", number: "INV-2026-0051", jobId: "j1", jobName: "Sprinkler repair", amount: "$145", sent: "Nov 18", due: "Dec 2", status: "refunded", statusLabel: "Refunded", sortDay: "2026-11-18" }],
+          payments: [
+            { id: "r1", receipt: "R-1102", date: "Nov 19", sortDay: "2026-11-19", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "-$145", refund: true },
+            { id: "p1", receipt: "R-1101", date: "Nov 18", sortDay: "2026-11-18", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "$145", stripeUrl: "https://dashboard.stripe.com/payments/pi_demo5", refunded: true },
+          ],
+        },
+        messages: [msg("m1", "2026-11-19T15:01:00Z", "sms", "receipt", "Trailhead: $145 was refunded to your card for the repair at 203 Maple Ct.")],
+        notes: [event("n2", "2026-11-19T15:00:00Z", "Refunded $145 to the card"), event("n1", "2026-11-18T17:50:00Z", "Charged $145 to the card")],
+      })
+    case "part-refunded":
+      return base({
+        id: "c7",
+        name: "Kyle Brandt",
+        firstName: "Kyle",
+        contact: { channel: "text", phone: PHONE, email: "kyle.brandt@example.com" },
+        address: ["88 Orchard Ln", "Louisville, CO"],
+        subtitle: "Customer since Sep 2026 · 88 Orchard Ln, Louisville",
+        band: { next: { value: "None", sub: "Nothing scheduled" }, unpaid: { value: "$0", sub: "Nothing unpaid" }, pass: { value: "None", sub: "No Season Pass" }, card: { value: "Visa 4242", sub: "Expires 08/28" } },
+        jobs: [{ id: "j1", name: "Sprinkler repair", open: false, sortDay: "2026-11-18", day: day("2026-11-18", "Nov 18, 2026", "9:00 am", 4), who: RYAN, status: "done", statusLabel: "Done", money: { word: "Paid, $50 refunded" } }],
+        billing: {
+          line: "Paid, $50 refunded",
+          lineNote: "$95 stays paid by card, Visa ending 4242. $50 was refunded to the card on Nov 19, by Ryan.",
+          settled: "paid",
+          tone: "plain",
+          total: "$145",
+          paid: "$95",
+          unpaid: "$0",
+          refunded: "$50",
+          card: VISA("4242", "08/28"),
+          invoices: [],
+          payments: [
+            { id: "r1", receipt: "R-1112", date: "Nov 19", sortDay: "2026-11-19", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "-$50", refund: true },
+            { id: "p1", receipt: "R-1111", date: "Nov 18", sortDay: "2026-11-18", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "$145", stripeUrl: "https://dashboard.stripe.com/payments/pi_demo6" },
+          ],
+        },
+        notes: [event("n2", "2026-11-19T15:00:00Z", "Refunded $50 to the card"), event("n1", "2026-11-18T17:50:00Z", "Charged $145 to the card")],
+      })
     case "nothing-yet":
       return base({
         id: "c4",
@@ -285,7 +250,7 @@ export function customerPageOf(state: CustomerState): CustomerPageData {
         subtitle: "Added today · 77 Aspen Way, Firestone",
         property: [["Zones", "Not set"], ["Controller", "Not set"], ["Gate code", "None"], ["Must be home", "Not set"]],
         notes: [event("n0", "2026-11-18T15:00:00Z", "Added Priya Nair as a customer")],
-        consent: "Not asked yet",
+        consent: { agreed: "", email: { on: false }, text: { on: false }, contactBy: "text", history: [] },
         untouched: true,
       })
   }
@@ -295,5 +260,8 @@ export const STATE_NOTES: Record<CustomerState, string> = {
   "pass-holder": "Ryan sees a Season Pass holder with a repair on Thursday and an unpaid invoice. The one primary action is New job; Collect payment sits beside Send a message, Unpaid $145 is a badge beside the name and every tile in the band opens what it summarises.",
   "two-seasons": "Ryan sees the 2027 pass renewed from 2026: the Season Pass card links back to the 2026 pass, the folded earlier season links forward to the 2027 one, and the Jobs table lists both.",
   "one-off": "Ryan sees a customer who has had one repair and paid in full: Billing says Paid in full, the card and the one payment with its receipt and Stripe link. The aside offers Get a Season Pass.",
+  "opted-out": "Ryan sees a customer who opted in to marketing email on the website and opted out by phone: both switches are off, the Consent card says who and when, and the pill reads Not in marketing.",
+  refunded: "Ryan sees a repair paid by card and refunded: the Billing line reads \"$145 refunded to the card on Nov 19, by Ryan\" in grey, Payments has the negative grey row under the payment, the Jobs table says Refunded, the Unpaid tile reads Nothing unpaid, and there is no Collect payment.",
+  "part-refunded": "Ryan sees a partial refund: the job reads \"Paid, $50 refunded\" in green and Payments has a negative grey $50 row under the card payment.",
   "nothing-yet": "Ryan sees a customer with no work yet. Every empty card invites the first job, a tile with nothing behind it is not a link, and Delete is offered under More because nothing has happened.",
 }

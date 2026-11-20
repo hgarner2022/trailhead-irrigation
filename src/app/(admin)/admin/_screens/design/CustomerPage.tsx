@@ -16,6 +16,7 @@ import { StatusPill } from "@/components/blocks/StatusPill"
 import { SummaryBand, type SummaryItem } from "@/components/blocks/SummaryBand"
 import { recordHref } from "@/components/blocks/record-preview-model"
 import { useToast } from "@/components/blocks/Toast"
+import { ConsentCard } from "./ConsentCard"
 import { CustomerBilling } from "./CustomerBilling"
 import { CollectDialog, CopyDialog, EditDetailsDialog, MergeDialog, contactOf } from "./CustomerDialogs"
 import { MessagesTable, JobsTable } from "./CustomerTables"
@@ -114,9 +115,11 @@ export interface CustomerPageProps {
   customer: CustomerPageData
   /** the dialog open on first render (the stories that show one) */
   initialDialog?: CustomerDialog
+  /** the Consent dialog open on first render (the stories that show one) */
+  initialConsent?: "opt-in" | "history" | null
 }
 
-export function CustomerPage({ customer: d, initialDialog = null }: CustomerPageProps) {
+export function CustomerPage({ customer: d, initialDialog = null, initialConsent = null }: CustomerPageProps) {
   const [dialog, setDialog] = useState<CustomerDialog>(initialDialog)
   // the payment or invoice row a refund or a reminder was opened from
   const [row, setRow] = useState<{ number?: string; amount: string; how?: string; due?: string; pastDue?: boolean } | null>(null)
@@ -152,16 +155,13 @@ export function CustomerPage({ customer: d, initialDialog = null }: CustomerPage
                 rows={[
                   ["Phone", <a key="p" href={d.contact.phone.href} className={`${LINK} inline-flex min-h-11 items-center`}>{d.contact.phone.text}</a>],
                   ["Email", <a key="e" href={`mailto:${d.contact.email}`} className={`${LINK} inline-flex min-h-11 items-center break-all`}>{d.contact.email}</a>],
-                  ["Contact by", d.contact.channel === "text" ? "Text" : "Email"],
                 ]}
               />
             </SectionCard>
             <SectionCard title="Property" id="property-h" action={<button type="button" onClick={open("edit")} className={`min-h-11 ${LINK}`}>Edit</button>}>
               <RecordFacts divided rows={[["Address", <AddressChip key="a" customerId={d.id} street={d.address[0]} />], ...d.property]} />
             </SectionCard>
-            <SectionCard title="Consent" id="consent-h">
-              <p className="text-sm font-medium">{d.consent}</p>
-            </SectionCard>
+            <ConsentCard consent={d.consent} firstName={d.firstName} initial={initialConsent} />
           </>
         }
       >

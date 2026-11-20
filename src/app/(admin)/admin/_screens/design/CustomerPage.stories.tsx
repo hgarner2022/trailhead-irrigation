@@ -24,7 +24,7 @@ type Story = StoryObj<typeof meta>
 
 const laptop = { viewport: { value: "laptop", isRotated: false } }
 const phone = { viewport: { value: "phone", isRotated: false } }
-const story = (state: CustomerState, globals: typeof laptop, initialDialog?: CustomerDialog): Story => ({ args: { customer: customerPageOf(state), initialDialog }, globals, parameters: { docs: { description: { story: STATE_NOTES[state] } } }, ...(globals === laptop && !initialDialog ? { play: ({ canvasElement }) => expectTablesFitTheirCards(canvasElement) } : {}) })
+const story = (state: CustomerState, globals: typeof laptop, initialDialog?: CustomerDialog, initialConsent?: "opt-in" | "history"): Story => ({ args: { customer: customerPageOf(state), initialDialog, initialConsent }, globals, parameters: { docs: { description: { story: STATE_NOTES[state] } } }, ...(globals === laptop && !initialDialog && !initialConsent ? { play: ({ canvasElement }) => expectTablesFitTheirCards(canvasElement) } : {}) })
 
 export const PassHolderUnpaid: Story = { ...story("pass-holder", laptop), name: "Pass holder unpaid" }
 export const PassHolderUnpaidPhone: Story = { ...story("pass-holder", phone), name: "Pass holder unpaid, phone" }
@@ -32,6 +32,19 @@ export const TwoSeasons: Story = { ...story("two-seasons", laptop), name: "Two s
 export const TwoSeasonsPhone: Story = { ...story("two-seasons", phone), name: "Two seasons, phone" }
 export const OneOffPaidInFull: Story = { ...story("one-off", laptop), name: "One off paid in full" }
 export const OneOffPaidInFullPhone: Story = { ...story("one-off", phone), name: "One off paid in full, phone" }
+export const OptedOutOfMarketing: Story = story("opted-out", laptop)
+export const OptedOutOfMarketingPhone: Story = story("opted-out", phone)
+/** STOP replied: the Consent card says every text goes as an email, in neutral words. (Two Seasons is this customer.) */
+export const StopReplied: Story = story("two-seasons", laptop)
+export const RefundedInFull: Story = story("refunded", laptop)
+export const RefundedInFullPhone: Story = story("refunded", phone)
+export const PartRefunded: Story = story("part-refunded", laptop)
+export const PartRefundedPhone: Story = story("part-refunded", phone)
+/** Turning a marketing channel on needs a source and a note: the customer's own yes. */
+export const OptInDialog: Story = story("one-off", laptop, undefined, "opt-in")
+export const OptInDialogPhone: Story = story("one-off", phone, undefined, "opt-in")
+/** Consent history: newest first, date, what changed, source, who. */
+export const ConsentHistory: Story = story("opted-out", laptop, undefined, "history")
 export const NothingYet: Story = { ...story("nothing-yet", laptop), name: "Nothing yet" }
 export const NothingYetPhone: Story = { ...story("nothing-yet", phone), name: "Nothing yet, phone" }
 

@@ -87,7 +87,7 @@ export const INVOICES: InvoiceListRow[] = [
 ]
 
 const swapAll = (text: string, pairs: readonly (readonly [string, string])[]) => pairs.reduce((s, [a, b]) => (a && s.includes(a) ? s.replaceAll(a, b) : s), text)
-const FIXTURE_OF: Record<InvoiceListRow["status"], InvoiceFixture> = { sent: "sent", "past-due": "past-due", paid: "paid-card", canceled: "canceled" }
+const FIXTURE_OF: Record<InvoiceListRow["status"], InvoiceFixture> = { sent: "sent", "past-due": "past-due", paid: "paid-card", refunded: "refunded", canceled: "canceled" }
 function rowOfStreet(street: string) {
   const hit = GRID_ROWS.find((r) => r.property.startsWith(street))
   return hit ? hit.property.split(", ")[1]! : "Erie"

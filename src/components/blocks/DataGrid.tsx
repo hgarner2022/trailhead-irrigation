@@ -59,7 +59,7 @@ export interface DataGridProps<T extends RowData> {
   card?: GridCardSlots
   /** false: no toolbar (search, filters, Columns, export) above the table; a small table inside a card, like a job's Payments and Invoices, has nothing to search. Default true */
   toolbar?: boolean
-  /** the table sits inside a `SectionCard`'s padding (a customer's Payments, an invoice's Reminders): no border, radius or shadow of its own, a light header (small grey words over one hairline), and -8px side margins so the first cell's text lines up with the card's headings. Use with `toolbar={false}` */
+  /** the table sits inside a `SectionCard`'s padding (a customer's Payments, an invoice's Reminders): no border, radius or shadow of its own, a light header (small grey words over one hairline), and -6px side margins so the first cell's text lines up with the card's headings. Use with `toolbar={false}` */
   inCard?: boolean
   className?: string
 }
@@ -167,7 +167,7 @@ export function DataGrid<T extends RowData>({
         data-more={more}
         className={cn(
           "group relative overflow-hidden bg-background outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-          inCard ? "-mx-2 bg-transparent" : "rounded-lg border border-border shadow-sm",
+          inCard ? "-mx-1.5 bg-transparent" : "rounded-lg border border-border shadow-sm",
           "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-30 after:w-10 after:bg-linear-to-r after:from-transparent after:to-background after:opacity-0 after:transition-opacity after:content-[''] data-[more=true]:after:opacity-100",
           "[&>[data-slot=table-container]]:max-h-[70vh] [&>[data-slot=table-container]]:overflow-auto",
         )}
@@ -184,7 +184,7 @@ export function DataGrid<T extends RowData>({
                     <TableHead
                       key={header.id}
                       aria-sort={column.getCanSort() ? (sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none") : undefined}
-                      className={cn(freeze(column.id), right && "text-right", inCard && "h-9 text-xs text-muted-foreground")}
+                      className={cn(freeze(column.id), right && "text-right", inCard && "h-9 px-1.5 text-xs text-muted-foreground")}
                     >
                       {header.isPlaceholder ? null : column.getCanSort() ? (
                         <button
@@ -242,7 +242,7 @@ export function DataGrid<T extends RowData>({
                     const right = column.columnDef.meta?.align === "right"
                     const href = column.id === nameId ? column.columnDef.meta?.href?.(row.original as object) : undefined
                     return (
-                      <TableCell key={cell.id} className={cn(freeze(column.id), right && "text-right tabular-nums")}>
+                      <TableCell key={cell.id} className={cn(freeze(column.id), right && "text-right tabular-nums", inCard && "px-1.5")}>
                         {column.id !== nameId || column.columnDef.meta?.bare ? (
                           <table.FlexRender cell={cell} />
                         ) : href ? (

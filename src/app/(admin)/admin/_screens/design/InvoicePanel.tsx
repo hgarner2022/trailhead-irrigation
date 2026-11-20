@@ -47,8 +47,8 @@ const REMINDER_COLUMNS: GridColumnDef<ReminderRow>[] = [
 const REMINDER_CARD: GridCardSlots = { title: "sent", line: ["how"], when: ["to", "words"] }
 
 function RemindersCard({ d, rows, paused, onPause }: { d: InvoicePageData; rows: ReminderRow[]; paused: boolean; onPause: () => void }) {
-  const done = d.status === "paid" || d.status === "canceled"
-  const line = done ? (d.status === "paid" ? "No more reminders: it is paid." : "No reminders: it is canceled.") : paused ? "Scheduled reminders are paused." : d.schedule ? `Next reminder: ${d.schedule.next}` : "No reminder is scheduled."
+  const done = d.status === "paid" || d.status === "canceled" || d.status === "refunded"
+  const line = done ? (d.status === "paid" ? "No more reminders: it is paid." : d.status === "refunded" ? "No reminders: the payment was refunded." : "No reminders: it is canceled.") : paused ? "Scheduled reminders are paused." : d.schedule ? `Next reminder: ${d.schedule.next}` : "No reminder is scheduled."
   return (
     <SectionCard title="Reminders" id="reminders-h">
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
@@ -92,7 +92,7 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
     { label: "Amount", value: d.amount, sub: d.totals.some(([k, v]) => k === "Tax" && v !== "$0") ? "Tax included" : "No tax", icon: Receipt, onClick: scrollTo("lines-h") },
     { label: "Sent", value: d.sent, sub: first ? `${d.customer.contact.channel === "text" ? "Text" : "Email"} to ${first}` : undefined, icon: Send, onClick: scrollTo("messages-h") },
     { label: "Due", value: d.due, sub: status === "past-due" ? "Past due" : status === "sent" ? "Not yet due" : undefined, tone: status === "past-due" ? "alert" : "plain", icon: Calendar, onClick: scrollTo("reminders-h") },
-    { label: "Paid on", value: paidNow ? paidNow.label.split(",")[0]! : "Not paid", sub: paidNow ? paidNow.label.split(", ")[1] ?? "" : status === "canceled" ? "Canceled" : `${unpaid} unpaid`, icon: CheckCircle2, ...(paidNow ? { href: paymentHref(paidNow.paymentId) } : {}) },
+    { label: "Paid on", value: d.refundedOn ? "Refunded" : paidNow ? paidNow.label.split(",")[0]! : "Not paid", sub: d.refundedOn ? d.refundedOn.label : paidNow ? paidNow.label.split(", ")[1] ?? "" : status === "canceled" ? "Canceled" : `${unpaid} unpaid`, icon: CheckCircle2, ...(d.refundedOn ? { href: paymentHref(d.refundedOn.paymentId) } : paidNow ? { href: paymentHref(paidNow.paymentId) } : {}) },
   ]
 
   const more: FooterAction[] = [act("Resend the invoice", () => setDialog("resend")), { label: "Open pay page", href: `https://trailheadirrigation.com/pay/${d.id}`, external: true }]
@@ -100,7 +100,7 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
     <RecordFooter
       primary={out ? act(state.reminded ? "Reminded today" : "Send a payment reminder", () => setDialog("remind"), state.reminded) : undefined}
       secondary={out ? [act("Collect payment", () => setDialog("collect"))] : undefined}
-      more={status === "canceled" ? [{ label: "Open pay page", href: `https://trailheadirrigation.com/pay/${d.id}`, external: true }] : more}
+      more={status === "canceled" || status === "refunded" ? [{ label: "Open pay page", href: `https://trailheadirrigation.com/pay/${d.id}`, external: true }] : more}
       destructive={out ? act("Cancel invoice", () => setDialog("cancel")) : undefined}
       destructiveInMenu
     />

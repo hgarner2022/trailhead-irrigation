@@ -30,11 +30,10 @@ export interface CustomerBillingProps {
 
 export function CustomerBilling({ billing, customerName, onUpdateCard, onRefund, onRemind }: CustomerBillingProps) {
   const { card } = billing
-  const paidInFull = billing.line === "Paid in full"
-  const facts = [
+    const facts = [
     ["Total", billing.total],
     ["Paid", billing.paid],
-    ["Unpaid", billing.unpaid],
+    billing.refunded ? (["Refunded", billing.refunded] as const) : (["Unpaid", billing.unpaid] as const),
     [
       "Card on file",
       card ? (
@@ -67,8 +66,9 @@ export function CustomerBilling({ billing, customerName, onUpdateCard, onRefund,
   return (
     <SectionCard title="Billing" id="billing-h">
       <div className="pb-6">
-        <p data-slot="billing-state" className="mb-3 text-base font-semibold">
-          {paidInFull ? <span className="text-positive-deep">Paid in full</span> : billing.unpaid === "$0" ? <span className="text-muted-foreground">{billing.line}</span> : <MoneyCell text={billing.line} tone={billing.tone} />}
+        <p data-slot="billing-state" data-tone={billing.settled ?? "open"} className="mb-3 text-base font-semibold">
+          {billing.settled === "paid" ? <span className="text-positive-deep">{billing.line}</span> : billing.settled === "refunded" || billing.unpaid === "$0" ? <span className="text-muted-foreground">{billing.line}</span> : <MoneyCell text={billing.line} tone={billing.tone} />}
+          {billing.lineNote && <span className="mt-0.5 block text-sm font-normal text-muted-foreground">{billing.lineNote}</span>}
         </p>
         <RecordFacts divided rows={facts.map(([k, v]) => [k, v])} className="mt-0" />
       </div>

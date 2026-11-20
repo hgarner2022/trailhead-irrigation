@@ -39,6 +39,8 @@ export const InvoicePaidByCard: Story = { ...page("paid-card", laptop), name: "I
 export const InvoicePaidByCardPhone: Story = { ...page("paid-card", phone), name: "Invoice paid by card, phone" }
 export const InvoicePaidByCheck: Story = { ...page("paid-check", laptop), name: "Invoice paid by check" }
 export const InvoicePaidByCheckPhone: Story = { ...page("paid-check", phone), name: "Invoice paid by check, phone" }
+export const InvoiceRefunded: Story = page("refunded", laptop)
+export const InvoiceRefundedPhone: Story = page("refunded", phone)
 export const InvoiceCanceled: Story = { ...page("canceled", laptop), name: "Invoice canceled" }
 export const InvoiceCanceledPhone: Story = { ...page("canceled", phone), name: "Invoice canceled, phone" }
 

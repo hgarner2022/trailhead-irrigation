@@ -10,14 +10,15 @@ import type { CustomerPaymentRow } from "./customer-fixtures"
 // Wednesday, Nov 18, 2026. Invoice words are the glossary's: Invoice sent, Past due, Paid, Canceled. A payment on an invoice settles it, so an
 // invoice has one status and its payments are rows under it. No wiring.
 
-export type InvoiceStatus = "sent" | "past-due" | "paid" | "canceled"
+export type InvoiceStatus = "sent" | "past-due" | "paid" | "refunded" | "canceled"
 export const INVOICE_PILL: Record<InvoiceStatus, { pill: PillStatus; label: string }> = {
   sent: { pill: "bill-sent", label: "Invoice sent" },
   "past-due": { pill: "overdue", label: "Past due" },
   paid: { pill: "paid", label: "Paid" },
+  refunded: { pill: "refunded", label: "Refunded" },
   canceled: { pill: "cancelled", label: "Canceled" },
 }
-export const INVOICE_STATUSES: readonly InvoiceStatus[] = ["sent", "past-due", "paid", "canceled"]
+export const INVOICE_STATUSES: readonly InvoiceStatus[] = ["sent", "past-due", "paid", "refunded", "canceled"]
 
 export const TODAY = "2026-11-18"
 
@@ -123,6 +124,8 @@ export interface InvoicePageData {
   sent: string
   due: string
   paidOn?: { label: string; paymentId: string }
+  /** the payment was refunded: the invoice reads Refunded, never Past due, and offers no reminder */
+  refundedOn?: { label: string; paymentId: string }
   lines: LineItem[]
   totals: LineTotal[]
   payments: CustomerPaymentRow[]
@@ -144,8 +147,8 @@ const repairLines: LineItem[] = [{ name: "Repair", description: "A visit to find
 const owed = (total: string, tax = "$0", subtotal = total): LineTotal[] => [["Subtotal", subtotal], ["Tax", tax], ["Total", total, "strong"], ["Paid", "$0"], ["Unpaid", total, "alert"]]
 const paidTotals = (total: string): LineTotal[] => [["Subtotal", total], ["Tax", "$0"], ["Total", total, "strong"], ["Paid", total], ["Unpaid", "$0"]]
 
-export type InvoiceFixture = "sent" | "past-due" | "paid-card" | "paid-check" | "canceled"
-export const INVOICE_FIXTURES: readonly InvoiceFixture[] = ["sent", "past-due", "paid-card", "paid-check", "canceled"]
+export type InvoiceFixture = "sent" | "past-due" | "paid-card" | "paid-check" | "refunded" | "canceled"
+export const INVOICE_FIXTURES: readonly InvoiceFixture[] = ["sent", "past-due", "paid-card", "paid-check", "refunded", "canceled"]
 
 export function invoicePageOf(which: InvoiceFixture): InvoicePageData {
   const base = { id: "i42", number: "INV-2026-0042", customer: BELL, property: PROPERTY, job: { id: "j-i42", name: "Sprinkler repair", status: "done" as PillStatus, statusLabel: "Done", next: "None ahead", total: "$145" }, amount: "$145", unpaid: "$145", sent: "Nov 12", due: "Dec 2", lines: repairLines, totals: owed("$145"), payments: [], reminders: [], messages: [msg("m1", "2026-11-12T21:42:00Z", "sms", "invoice", "Trailhead: invoice INV-2026-0042 for your repair, $145, due Dec 2.")], notes: [note("n1", "2026-11-12T21:40:00Z", "Sent invoice INV-2026-0042, $145, due Dec 2")] }
@@ -214,6 +217,28 @@ export function invoicePageOf(which: InvoiceFixture): InvoicePageData {
         messages: [msg("m3", "2026-11-17T20:00:00Z", "sms", "receipt", "Trailhead: receipt for $145, your repair at 330 Elm Dr."), msg("m2", "2026-11-14T16:00:00Z", "sms", "invoice-reminder", "Trailhead: a reminder that your $145 invoice for the repair is due Nov 24. Pay here: trailheadirrigation.com/pay/0040"), msg("m1", "2026-11-10T17:00:00Z", "sms", "invoice", "Trailhead: invoice INV-2026-0040 for your repair, $145, due Nov 24.")],
         notes: [note("n2", "2026-11-17T20:00:00Z", "Recorded a $145 check, number 2210. The invoice is paid and its pay link is closed"), note("n1", "2026-11-10T17:00:00Z", "Sent invoice INV-2026-0040, $145, due Nov 24")],
       }
+    case "refunded":
+      return {
+        ...base,
+        id: "i51",
+        number: "INV-2026-0051",
+        status: "refunded",
+        customer: { id: "c6", name: "Nora Quinn", contact: { first: "Nora", channel: "text", phone: "(970) 555-0123", email: "nora.quinn@example.com" }, phone: { text: "(970) 555-0123", href: "tel:+19705550123" }, street: "203 Maple Ct", town: "Lafayette, CO" },
+        job: { id: "j1", name: "Sprinkler repair", status: "refunded", statusLabel: "Refunded", next: "None ahead", total: "$145" },
+        sent: "Nov 18",
+        due: "Dec 2",
+        unpaid: "$0",
+        refundedOn: { label: "Nov 19, to the card", paymentId: "r1" },
+        totals: [["Subtotal", "$145"], ["Tax", "$0"], ["Total", "$145", "strong"], ["Paid", "$0"], ["Refunded", "$145"]],
+        payments: [
+          { id: "r1", receipt: "R-1102", date: "Nov 19", sortDay: "2026-11-19", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "-$145", refund: true },
+          { id: "p1", receipt: "R-1101", date: "Nov 18", sortDay: "2026-11-18", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "$145", stripeUrl: stripe, refunded: true },
+        ],
+        card: { brand: "Visa", last4: "4242" },
+        schedule: null,
+        messages: [msg("m2", "2026-11-19T15:01:00Z", "sms", "receipt", "Trailhead: $145 was refunded to your card for the repair at 203 Maple Ct."), msg("m1", "2026-11-18T17:55:00Z", "sms", "invoice", "Trailhead: invoice INV-2026-0051 for your repair, $145, due Dec 2.")],
+        notes: [note("n3", "2026-11-19T15:00:00Z", "Refunded $145 to the card. The invoice reads Refunded and no reminders are sent"), note("n2", "2026-11-18T17:50:00Z", "Paid $145 by card from the pay link"), note("n1", "2026-11-18T17:40:00Z", "Sent invoice INV-2026-0051, $145, due Dec 2")],
+      }
     case "canceled":
       return {
         ...base,
@@ -238,5 +263,6 @@ export const INVOICE_NOTES: Record<InvoiceFixture, string> = {
   "past-due": "Ryan sees Past due in red, two scheduled reminders already sent and the next one set for 7 days after the due date. The tax is on the lines.",
   "paid-card": "Ryan sees Paid by card from the pay link, with the card kept on file and its receipt and Stripe link. There is no primary action and no reminder schedule.",
   "paid-check": "Ryan sees Paid by a check he recorded: the recording settled the invoice and closed its pay link. There is no primary action.",
+  refunded: "Ryan sees an invoice whose card payment was refunded: a grey Refunded pill, never Past due, both rows in Payments (the payment and its negative grey refund), no reminder offered and no Collect payment.",
   canceled: "Ryan sees a canceled invoice kept on record: nothing owed, its pay link closed, no reminders.",
 }

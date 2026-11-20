@@ -142,6 +142,17 @@ describe("Invoice page", () => {
     expect(screen.getAllByRole("link", { name: /Open in Stripe/ }).length).toBeGreaterThan(0)
   })
 
+  it("reads Refunded, never Past due, with both payment rows and no reminder or Collect payment", () => {
+    render(<InvoicePage invoice={invoicePageOf("refunded")} />)
+    expect(within(document.querySelector("[data-slot=record-page-badges]") as HTMLElement).getByText("Refunded")).toBeInTheDocument()
+    expect(screen.queryByText("Past due")).toBeNull()
+    const pay = within(document.querySelector("[data-slot=payment-table]") as HTMLElement)
+    expect(pay.getByText("-$145")).toBeInTheDocument()
+    expect(pay.getByText("$145")).toBeInTheDocument()
+    const bar = document.querySelector("[data-slot=record-footer]") as HTMLElement
+    expect(within(bar).queryByRole("button", { name: /reminder|Collect payment/ })).toBeNull()
+  })
+
   it("asks to cancel in the destructive colour, with a notify-free way under the caret", () => {
     render(<InvoicePage invoice={invoicePageOf("sent")} initialDialog="cancel" />)
     const dialog = screen.getByRole("dialog")
