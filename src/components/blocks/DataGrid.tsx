@@ -59,12 +59,16 @@ export interface DataGridProps<T extends RowData> {
   card?: GridCardSlots
   /** false: no toolbar (search, filters, Columns, export) above the table; a small table inside a card, like a job's Payments and Invoices, has nothing to search. Default true */
   toolbar?: boolean
-  /** the table sits inside a `SectionCard`'s padding (a customer's Payments, an invoice's Reminders): no border, radius or shadow of its own, a light header (small grey words over one hairline), and -6px side margins so the first cell's text lines up with the card's headings. Use with `toolbar={false}` */
+  /** the table sits inside a `SectionCard`'s padding (Billing's Payments, an invoice's Reminders, Messages): no border, radius or shadow of its own, a light header (small grey words over one hairline), the first cell's text on the card's left edge and the last on its right so the hairlines end where the card's headings do, one 56px row height, and no sort arrows under six rows. Use with `toolbar={false}` */
   inCard?: boolean
   className?: string
 }
 
 const SKELETON_ROWS = 8
+/** inside a card, a table of fewer rows than this has nothing to sort */
+const SORT_FROM = 6
+/** the cells of an embedded table: 8px between columns, none at the card's own edges */
+const CARD_CELL = "px-2 first:pl-0 last:pr-0"
 const SELECT_WIDTH = "w-10 min-w-10 max-w-10"
 // The checkbox and name columns stay put while the rest scrolls. The checkbox
 // column is a fixed 40px, so the name sits 40px in when it is there and at the
@@ -128,11 +132,13 @@ export function DataGrid<T extends RowData>({
   const hasSelect = bulkActions.length > 0
   const nameId = columns.length ? columnId(columns[0]) : ""
   const allColumns = useMemo(() => {
-    const prepared = withFilterFns(columns, searchColumn, chipKey ? chipKey.split(",") : []).map((def) =>
-      columnId(def) === nameId ? { ...def, enableHiding: false } : def,
-    )
+    const fewRows = inCard && data.length < SORT_FROM
+    const prepared = withFilterFns(columns, searchColumn, chipKey ? chipKey.split(",") : []).map((def) => {
+      const named = columnId(def) === nameId ? { ...def, enableHiding: false } : def
+      return fewRows ? { ...named, enableSorting: false } : named
+    })
     return hasSelect ? [selectColumn<T>(), ...prepared] : prepared
-  }, [columns, searchColumn, chipKey, hasSelect, nameId])
+  }, [columns, searchColumn, chipKey, hasSelect, nameId, inCard, data.length])
   // Read once: TanStack resolves initial state at construction.
   const [initialState] = useState(() => ({
     pagination: { pageIndex: 0, pageSize },
@@ -167,7 +173,7 @@ export function DataGrid<T extends RowData>({
         data-more={more}
         className={cn(
           "group relative overflow-hidden bg-background outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-          inCard ? "-mx-1.5 bg-transparent" : "rounded-lg border border-border shadow-sm",
+          inCard ? "bg-transparent" : "rounded-lg border border-border shadow-sm",
           "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-30 after:w-10 after:bg-linear-to-r after:from-transparent after:to-background after:opacity-0 after:transition-opacity after:content-[''] data-[more=true]:after:opacity-100",
           "[&>[data-slot=table-container]]:max-h-[70vh] [&>[data-slot=table-container]]:overflow-auto",
         )}
@@ -184,7 +190,7 @@ export function DataGrid<T extends RowData>({
                     <TableHead
                       key={header.id}
                       aria-sort={column.getCanSort() ? (sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none") : undefined}
-                      className={cn(freeze(column.id), right && "text-right", inCard && "h-9 px-1.5 text-xs text-muted-foreground")}
+                      className={cn(freeze(column.id), right && "text-right", column.columnDef.meta?.width, inCard && cn("h-9 text-xs text-muted-foreground", CARD_CELL))}
                     >
                       {header.isPlaceholder ? null : column.getCanSort() ? (
                         <button
@@ -208,9 +214,9 @@ export function DataGrid<T extends RowData>({
           <TableBody>
             {loading ? (
               Array.from({ length: SKELETON_ROWS }, (_, r) => (
-                <TableRow key={r} className="h-11 bg-background">
+                <TableRow key={r} className={cn("bg-background", inCard ? "h-14" : "h-11")}>
                   {table.getVisibleLeafColumns().map((column) => (
-                    <TableCell key={column.id} className={freeze(column.id)}>
+                    <TableCell key={column.id} className={cn(freeze(column.id), inCard && CARD_CELL)}>
                       <Skeleton className={column.id === SELECT_COLUMN ? "size-4" : "h-4 w-24"} />
                     </TableCell>
                   ))}
@@ -236,13 +242,13 @@ export function DataGrid<T extends RowData>({
               </TableRow>
             ) : (
               rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() ? "selected" : undefined} className="h-11 bg-background">
+                <TableRow key={row.id} data-state={row.getIsSelected() ? "selected" : undefined} className={cn("bg-background", inCard ? "h-14" : "h-11")}>
                   {row.getVisibleCells().map((cell) => {
                     const { column } = cell
                     const right = column.columnDef.meta?.align === "right"
                     const href = column.id === nameId ? column.columnDef.meta?.href?.(row.original as object) : undefined
                     return (
-                      <TableCell key={cell.id} className={cn(freeze(column.id), right && "text-right tabular-nums", inCard && "px-1.5")}>
+                      <TableCell key={cell.id} className={cn(freeze(column.id), right && "text-right tabular-nums", column.columnDef.meta?.width, inCard && CARD_CELL)}>
                         {column.id !== nameId || column.columnDef.meta?.bare ? (
                           <table.FlexRender cell={cell} />
                         ) : href ? (

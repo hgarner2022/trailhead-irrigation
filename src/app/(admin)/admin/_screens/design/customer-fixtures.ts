@@ -11,6 +11,7 @@ import type { PillData } from "./job-fixtures"
 // named here carries an id the page turns into a RecordChip link; a fact with nothing behind it carries no link. Status is set by `customerStatusOf`.
 
 import { withStatus } from "./customer-status-fixtures"
+import { depositCustomer } from "./customer-deposit-fixture"
 import type { ConsentData, CustomerBillingData, CustomerPageData, CustomerState, PassArea } from "./customer-types"
 export * from "./customer-types"
 export { AS_OF, STATUS_PILL, statusFactsOf, withStatus } from "./customer-status-fixtures"
@@ -90,7 +91,7 @@ function rawCustomer(state: CustomerState): CustomerPageData {
           ],
           payments: [
             { id: "p-venmo", receipt: "R-1058", date: "Oct 12", sortDay: "2026-10-12", jobId: "j2", jobName: "Fall blowout", how: "Venmo @andrea-d", amount: "$115" },
-            { id: "p-card", receipt: "R-1031", date: "Apr 20", sortDay: "2026-04-20", jobId: "j0", jobName: "Spring turn-on", how: "Card", amount: "$145", stripeUrl: "https://dashboard.stripe.com/payments/pi_demo" },
+            { id: "p-card", receipt: "R-1031", date: "Apr 20", sortDay: "2026-04-20", jobId: "j0", jobName: "Spring turn-on", how: "Card", amount: "$145", invoiceId: "i0", stripeUrl: "https://dashboard.stripe.com/payments/pi_demo" },
           ],
         },
         messages: [
@@ -167,7 +168,7 @@ function rawCustomer(state: CustomerState): CustomerPageData {
           unpaid: "$0",
           card: VISA("7713", "05/28"),
           invoices: [{ id: "i1", number: "INV-2026-0007", jobId: "j1", jobName: "Sprinkler repair", amount: "$145", sent: "Jun 9", due: "Jun 23", status: "paid", statusLabel: "Paid", sortDay: "2026-06-09" }],
-          payments: [{ id: "p1", receipt: "R-1007", date: "Jun 9", sortDay: "2026-06-09", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "$145", stripeUrl: "https://dashboard.stripe.com/payments/pi_demo4" }],
+          payments: [{ id: "p1", receipt: "R-1007", date: "Jun 9", sortDay: "2026-06-09", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "$145", invoiceId: "i1", stripeUrl: "https://dashboard.stripe.com/payments/pi_demo4" }],
         },
         messages: [msg("m1", "2026-06-09T22:00:00Z", "sms", "receipt", "Trailhead: receipt for $145, your repair at 35 Cherry Ln.")],
         notes: [event("n1", "2026-06-09T21:50:00Z", "Marked the repair done")],
@@ -197,18 +198,15 @@ function rawCustomer(state: CustomerState): CustomerPageData {
         band: { next: { value: "None", sub: "Nothing scheduled" }, unpaid: { value: "$0", sub: "Nothing unpaid" }, pass: { value: "None", sub: "No Season Pass" }, card: { value: "Visa 4242", sub: "Expires 08/28" } },
         jobs: [{ id: "j1", name: "Sprinkler repair", open: false, sortDay: "2026-11-18", day: day("2026-11-18", "Nov 18, 2026", "9:00 am", 4), who: RYAN, status: "done", statusLabel: "Done", money: { word: "Refunded" } }],
         billing: {
-          line: "$145 refunded to the card on Nov 19, by Ryan",
+          line: "Refunded",
           settled: "refunded",
           tone: "plain",
-          total: "$145",
-          paid: "$0",
-          unpaid: "$0",
-          refunded: "$145",
+          total: "$145", paid: "$0", unpaid: "$0", refunded: "$145",
           card: VISA("4242", "08/28"),
           invoices: [{ id: "i1", number: "INV-2026-0051", jobId: "j1", jobName: "Sprinkler repair", amount: "$145", sent: "Nov 18", due: "Dec 2", status: "refunded", statusLabel: "Refunded", sortDay: "2026-11-18" }],
           payments: [
-            { id: "r1", receipt: "R-1102", date: "Nov 19", sortDay: "2026-11-19", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "-$145", refund: true },
-            { id: "p1", receipt: "R-1101", date: "Nov 18", sortDay: "2026-11-18", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "$145", stripeUrl: "https://dashboard.stripe.com/payments/pi_demo5", refunded: true },
+            { id: "r1", receipt: "R-1102", date: "Nov 19", sortDay: "2026-11-19", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "-$145", refund: true, refundOf: "p1" },
+            { id: "p1", receipt: "R-1101", date: "Nov 18", sortDay: "2026-11-18", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "$145", invoiceId: "i1", stripeUrl: "https://dashboard.stripe.com/payments/pi_demo5", refunded: true },
           ],
         },
         messages: [msg("m1", "2026-11-19T15:01:00Z", "sms", "receipt", "Trailhead: $145 was refunded to your card for the repair at 203 Maple Ct.")],
@@ -226,7 +224,6 @@ function rawCustomer(state: CustomerState): CustomerPageData {
         jobs: [{ id: "j1", name: "Sprinkler repair", open: false, sortDay: "2026-11-18", day: day("2026-11-18", "Nov 18, 2026", "9:00 am", 4), who: RYAN, status: "done", statusLabel: "Done", money: { word: "Paid, $50 refunded" } }],
         billing: {
           line: "Paid, $50 refunded",
-          lineNote: "$95 stays paid by card, Visa ending 4242. $50 was refunded to the card on Nov 19, by Ryan.",
           settled: "paid",
           tone: "plain",
           total: "$145",
@@ -236,12 +233,13 @@ function rawCustomer(state: CustomerState): CustomerPageData {
           card: VISA("4242", "08/28"),
           invoices: [],
           payments: [
-            { id: "r1", receipt: "R-1112", date: "Nov 19", sortDay: "2026-11-19", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "-$50", refund: true },
+            { id: "r1", receipt: "R-1112", date: "Nov 19", sortDay: "2026-11-19", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "-$50", refund: true, refundOf: "p1" },
             { id: "p1", receipt: "R-1111", date: "Nov 18", sortDay: "2026-11-18", jobId: "j1", jobName: "Sprinkler repair", how: "Card", amount: "$145", stripeUrl: "https://dashboard.stripe.com/payments/pi_demo6" },
           ],
         },
         notes: [event("n2", "2026-11-19T15:00:00Z", "Refunded $50 to the card"), event("n1", "2026-11-18T17:50:00Z", "Charged $145 to the card")],
       })
+    case "deposit": return depositCustomer(customerPageOf("one-off"))
     case "active-recent":
       return base({
         id: "c8",

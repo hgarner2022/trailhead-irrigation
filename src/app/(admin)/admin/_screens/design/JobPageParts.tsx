@@ -197,7 +197,7 @@ export function CollectBlock({ collect, facts, handlers, bare }: { collect: NonN
 export function MessagesCard({ messages }: { messages: Message[] }) {
   return (
     <SectionCard title="Messages" id="messages-h">
-      <MessageTable messages={messages} to={CONTACT} toolbar={false} />
+      <MessageTable messages={messages} to={CONTACT} toolbar={false} compact />
     </SectionCard>
   )
 }

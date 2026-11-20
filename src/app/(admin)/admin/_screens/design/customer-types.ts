@@ -9,8 +9,8 @@ import type { PillData } from "./job-fixtures"
 
 // The shapes the customer page takes (docs/plans/2026-11-19-admin-page-layout-research.md): pure data, kept apart from the fixtures that fill them.
 
-export type CustomerState = "pass-holder" | "two-seasons" | "one-off" | "nothing-yet" | "opted-out" | "refunded" | "part-refunded" | "active-recent" | "past-customer" | "archived"
-export const CUSTOMER_STATES: readonly CustomerState[] = ["pass-holder", "two-seasons", "one-off", "nothing-yet", "opted-out", "refunded", "part-refunded", "active-recent", "past-customer", "archived"]
+export type CustomerState = "pass-holder" | "two-seasons" | "one-off" | "nothing-yet" | "opted-out" | "refunded" | "part-refunded" | "deposit" | "active-recent" | "past-customer" | "archived"
+export const CUSTOMER_STATES: readonly CustomerState[] = ["pass-holder", "two-seasons", "one-off", "nothing-yet", "opted-out", "refunded", "part-refunded", "deposit", "active-recent", "past-customer", "archived"]
 
 export interface MoneyWord {
   /** the word, from `words.ts`: "Paid, card", "$145 unpaid", "Invoice sent", "Past due" */
@@ -49,6 +49,8 @@ export interface CustomerInvoiceRow {
   status: PillStatus
   statusLabel: string
   sortDay: string
+  /** a quiet line about the invoice: "$145 less the $50 deposit" */
+  note?: string
 }
 
 export interface ConsentEventRow {
@@ -85,6 +87,10 @@ export interface CustomerPaymentRow {
   refund?: boolean
   /** this payment has been refunded in full: no Refund under its More */
   refunded?: boolean
+  /** the payment this refund reverses: the refund sits under it */
+  refundOf?: string
+  /** the invoice this payment settled: the two are one row of Invoices and payments */
+  invoiceId?: string
   id: string
   /** the receipt's number: "R-1031" */
   receipt: string
@@ -97,6 +103,8 @@ export interface CustomerPaymentRow {
   amount: string
   /** a card payment opens in Stripe */
   stripeUrl?: string
+  /** a word about the payment, as the quiet line in place of who recorded it: "Deposit" */
+  note?: string
 }
 
 export interface SeasonLink {
@@ -128,8 +136,6 @@ export interface CustomerBillingData {
   line: string
   /** a settled line draws green (paid) or grey (refunded) */
   settled?: "paid" | "refunded"
-  /** a second sentence under the line: "$95 stays paid by card, Visa ending 4242. $50 was refunded to the card on Nov 19, by Ryan." */
-  lineNote?: string
   /** replaces Unpaid in the facts once something came back: "$145" */
   refunded?: string
   tone: "past-due" | "failed" | "plain"

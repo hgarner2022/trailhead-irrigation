@@ -1,7 +1,8 @@
 "use client"
 
 import { Banknote, FileText, MapPin, Receipt } from "lucide-react"
-import { PaymentTable, type PaymentRowData } from "@/components/blocks/BillingTables"
+import { BillingBody, type BillingLine } from "@/components/blocks/BillingBody"
+import type { PaymentRowData } from "@/components/blocks/BillingTables"
 import { LineItemList } from "@/components/blocks/LineItemList"
 import { RecordFacts, RecordList, RecordRowEnd, RECORD_ROW } from "@/components/blocks/RecordPanel"
 import { SectionCard } from "@/components/blocks/SectionCard"
@@ -68,7 +69,7 @@ export function depositPayments(job: QuoteJob): PaymentRowData[] {
     ...(p.how === "card" ? { stripeHref: "https://dashboard.stripe.com/payments/pi_3QxK1042" } : {}),
     canRefund: !p.refundedOn,
   }
-  return p.refundedOn ? [row, { ...row, id: `${row.id}-r`, at: p.refundedOn, amount: `-${row.amount}`, refund: true, canRefund: false, stripeHref: undefined }] : [row]
+  return p.refundedOn ? [row, { ...row, id: `${row.id}-r`, at: p.refundedOn, amount: `-${row.amount}`, refund: true, refundOf: row.id, canRefund: false, stripeHref: undefined }] : [row]
 }
 
 /** What's included: the job's lines. While the job needs a quote each has Edit and the card has Add a line; once a quote is out they are locked. */
@@ -157,18 +158,16 @@ export function QuoteCard({ job, now }: { job: QuoteJob; now: string }) {
   )
 }
 
-/** Billing once the deposit is paid: the balance, the Payments table and the line that says what the final invoice will show. */
+/** Billing once the deposit is paid, on the shared `BillingBody`: the balance is the headline (with what the final invoice will show), the three figures (a deposit and a balance are worth explaining) and the deposit as a payment with no invoice. */
 export function QuoteBilling({ job, onRefund }: { job: QuoteJob; onRefund: () => void }) {
   const q = liveQuote(job)
   if (q?.state !== "approved" || !q.deposit?.paid) return null
   const paid = q.deposit.paid.refundedOn ? 0 : q.deposit.amount
+  const line: BillingLine = { tone: "unpaid", title: `${money(q.total - paid)} unpaid`, text: q.deposit.paid.refundedOn ? undefined : `The invoice will show the ${money(q.deposit.amount)} deposit as already paid.` }
+  const facts: [string, string][] = [["Total", money(q.total)], ["Paid", money(paid)], ["Unpaid", money(q.total - paid)]]
   return (
     <SectionCard title="Billing" id="billing-h">
-      <RecordFacts divided rows={[["Total", money(q.total)], ["Paid", money(paid)], ["Unpaid", money(q.total - paid)]]} />
-      <div className="mt-4 border-t border-border pt-4">
-        <PaymentTable rows={depositPayments(job)} onRefund={onRefund} />
-      </div>
-      {!q.deposit.paid.refundedOn && <p className="mt-3 text-sm text-muted-foreground">The invoice will show the {money(q.deposit.amount)} deposit as already paid.</p>}
+      <BillingBody line={line} facts={facts} payments={depositPayments(job)} onRefund={onRefund} />
     </SectionCard>
   )
 }

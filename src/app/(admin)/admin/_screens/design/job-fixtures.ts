@@ -3,6 +3,7 @@ import type { FooterAction } from "@/components/blocks/RecordFooter"
 import type { LineItem, LineTotal } from "@/components/blocks/LineItemList"
 import type { BillingRowData } from "@/components/blocks/BillingSection"
 import type { InvoiceRowData, PaymentMethod, PaymentRowData } from "@/components/blocks/BillingTables"
+import type { BillingLine } from "@/components/blocks/BillingBody"
 import type { RecordFact } from "@/components/blocks/RecordPanel"
 import type { PillStatus } from "@/components/blocks/StatusPill"
 import type { Message } from "@/lib/admin/types"
@@ -17,8 +18,8 @@ export const NOW = new Date("2026-11-18T18:00:00Z")
 export const noop = () => undefined
 export const noteOk = async () => ({ ok: true as const })
 
-export type JobState = "unscheduled" | "scheduled" | "today" | "on-the-way" | "active" | "late" | "done-unpaid" | "done-paid" | "paid-check" | "paid-card" | "refunded" | "part-refunded" | "invoice-sent" | "past-due" | "canceled"
-export const JOB_STATES: readonly JobState[] = ["unscheduled", "scheduled", "today", "on-the-way", "active", "late", "done-unpaid", "done-paid", "paid-check", "paid-card", "refunded", "part-refunded", "invoice-sent", "past-due", "canceled"]
+export type JobState = "unscheduled" | "scheduled" | "today" | "on-the-way" | "active" | "late" | "done-unpaid" | "done-paid" | "paid-check" | "paid-card" | "paid-deposit" | "refunded" | "part-refunded" | "invoice-sent" | "past-due" | "canceled"
+export const JOB_STATES: readonly JobState[] = ["unscheduled", "scheduled", "today", "on-the-way", "active", "late", "done-unpaid", "done-paid", "paid-check", "paid-card", "paid-deposit", "refunded", "part-refunded", "invoice-sent", "past-due", "canceled"]
 
 export interface FooterPlan {
   primary?: FooterAction
@@ -47,9 +48,10 @@ export interface PastVisit {
 }
 
 /**
- * What Billing shows. Facts first (`summary`), then `paidLine` when the job is settled (green "Paid in full", or grey after a refund), then the
- * Payments and Invoices tables when there are rows; `emptyLine` ("No invoice or payment yet.") only when there are none. `rows` and `status`
- * are the older one-line rows the pass and return-trip pages still use.
+ * What Billing shows. `paidLine` is the headline in every state (green "Paid in full", gold "$145 unpaid. Invoice ... sent Nov 18, due Dec 2.",
+ * red "Past due since Nov 17", grey "Refunded"); `summary` holds the Total, Paid, Unpaid (or Refunded) and Card on file the card draws only when
+ * they add something (`billingFigures`); `payments` and `invoices` are the rows, and a payment with an `invoiceId` is merged into that invoice's
+ * row. `emptyLine` only when there are none. `rows` and `status` are the older one-line rows the pass and return-trip pages still use.
  */
 export interface BillingData {
   summary: [string, string][]
@@ -57,7 +59,7 @@ export interface BillingData {
   emptyLine?: string
   status?: { text: string; tone?: "past-due" }
   /** the one status line at the top of Billing, in every state: paid (green), unpaid (waiting grey), past due (red), refunded (grey). `{invoice}` in `text` is the invoice's chip. */
-  paidLine?: { tone: "paid" | "unpaid" | "pastdue" | "refunded"; title: string; text: string; invoice?: { name: string; href: string } }
+  paidLine?: BillingLine
   payments?: PaymentRowData[]
   invoices?: InvoiceRowData[]
 }
@@ -126,14 +128,31 @@ export const paymentRow = (by: PaymentMethod, ref?: string, id = "p1"): PaymentR
 
 export const invoiceRow = (sent: string, due: string, status: InvoiceRowData["status"], statusLabel?: string): InvoiceRowData => ({ id: "i1", number: "INV-2026-0001", amount: "$145", sent, due, status, statusLabel, href: "/admin/invoices?invoice=inv-1", canRemind: status !== "paid" })
 
-/** A job paid in full: the green line, the facts and the Payments table (and the paid invoice when the payment settled one). */
+/** A job paid in full: the green headline, and the one payment (merged into its invoice's row when the payment settled an invoice). */
 export function paidBilling(by: PaymentMethod, ref?: string, settledInvoice = false): BillingData {
   return {
     summary: [["Total", "$145"], ["Paid", "$145"], ["Unpaid", "$0"], ...(by === "card" ? [CARD] : [])],
     rows: [],
-    paidLine: { tone: "paid", title: "Paid in full", text: `$145 paid by ${asWords(by, ref)} on Nov 18, recorded by Ryan` },
-    payments: [paymentRow(by, ref)],
+    paidLine: { tone: "paid", title: "Paid in full" },
+    payments: [{ ...paymentRow(by, ref), ...(settledInvoice ? { invoiceId: "i1" } : {}) }],
     ...(settledInvoice ? { invoices: [invoiceRow("Nov 18", "Dec 2", "paid")] } : {}),
+  }
+}
+
+/**
+ * Paid with a deposit: $50 came in by check on Nov 10 with no invoice (a payment of its own), then the final invoice credited it, was $95,
+ * and was paid by card on Nov 18 (one row). The three figures show, because they say what the line and the rows do not.
+ */
+export function depositBilling(): BillingData {
+  return {
+    summary: [["Total", "$145"], ["Paid", "$145"], ["Unpaid", "$0"], CARD],
+    rows: [],
+    paidLine: { tone: "paid", title: "Paid in full" },
+    payments: [
+      { ...paymentRow("card"), amount: "$95", invoiceId: "i1" },
+      { ...paymentRow("check", "1031", "dp"), at: "2026-11-10T17:00:00Z", amount: "$50", reference: "Deposit · Ryan" },
+    ],
+    invoices: [{ ...invoiceRow("Nov 18", "Dec 2", "paid"), amount: "$95", note: "$145 less the $50 deposit" }],
   }
 }
 
@@ -142,23 +161,23 @@ export function partRefundedBilling(): BillingData {
   return {
     summary: [["Total", "$145"], ["Paid", "$95"], ["Refunded", "$50"], CARD],
     rows: [],
-    paidLine: { tone: "paid", title: "Paid, $50 refunded", text: "$95 stays paid by card, Visa ending 4242. $50 was refunded to the card on Nov 19, by Ryan." },
+    paidLine: { tone: "paid", title: "Paid, $50 refunded" },
     payments: [
-      { id: "r2", at: "2026-11-19T15:00:00Z", method: "card", methodLabel: methodLabel("card"), amount: "-$50", by: "Ryan", refund: true, receiptHref: "/account/receipts/r2" },
       paymentRow("card"),
+      { id: "r2", at: "2026-11-19T15:00:00Z", method: "card", methodLabel: methodLabel("card"), amount: "-$50", by: "Ryan", refund: true, refundOf: "p1", receiptHref: "/account/receipts/r2" },
     ],
   }
 }
 
-/** A paid job that was refunded in full: the refund is its own negative row in grey and the payment stays; the job reads Refunded, never Unpaid. */
+/** A paid job that was refunded in full: the refund is its own negative row in grey under the payment, which stays; the job reads Refunded, never Unpaid. */
 export function refundedBilling(by: PaymentMethod = "card", ref?: string): BillingData {
   return {
     summary: [["Total", "$145"], ["Paid", "$0"], ["Refunded", "$145"], CARD],
     rows: [],
-    paidLine: { tone: "refunded", title: `$145 refunded ${by === "card" ? "to the card" : `(${asWords(by, ref)})`} on Nov 19, by Ryan`, text: "" },
+    paidLine: { tone: "refunded", title: "Refunded" },
     payments: [
-      { id: "r1", at: "2026-11-19T15:00:00Z", method: by, methodLabel: methodLabel(by, ref), amount: "-$145", by: "Ryan", refund: true, receiptHref: "/account/receipts/r1" },
       { ...paymentRow(by, ref), canRefund: false },
+      { id: "r1", at: "2026-11-19T15:00:00Z", method: by, methodLabel: methodLabel(by, ref), amount: "-$145", by: "Ryan", refund: true, refundOf: "p1", receiptHref: "/account/receipts/r1" },
     ],
   }
 }
@@ -171,7 +190,7 @@ export const paymentNote = (by: PaymentMethod, ref?: string): TimelineLine => ({
 export const refundNote = (by: PaymentMethod, ref?: string): TimelineLine => ({ id: "n7", at: "2026-11-19T15:00:00Z", actor: "Ryan", kind: "event", what: by === "card" ? "Refunded $145 to the card" : `Refunded $145, ${asWords(by, ref)}` })
 const MARKED_DONE: TimelineLine = { id: "n2d", at: "2026-11-18T16:40:00Z", actor: "Ryan", what: "Marked done", kind: "event" }
 
-const CHECKLIST: Record<JobState, number | null> = { unscheduled: 0, scheduled: 0, today: 0, "on-the-way": 0, "active": 2, late: 0, "done-unpaid": 5, "done-paid": 5, "paid-check": 5, "paid-card": 5, refunded: 5, "part-refunded": 5, "invoice-sent": 5, "past-due": 5, canceled: null }
+const CHECKLIST: Record<JobState, number | null> = { unscheduled: 0, scheduled: 0, today: 0, "on-the-way": 0, "active": 2, late: 0, "done-unpaid": 5, "done-paid": 5, "paid-check": 5, "paid-card": 5, "paid-deposit": 5, refunded: 5, "part-refunded": 5, "invoice-sent": 5, "past-due": 5, canceled: null }
 
 const SKY = ["darkseagreen", "tan", "lightsteelblue", "rosybrown"]
 const pic = (n: number) => `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="${SKY[n % SKY.length]}"/><circle cx="200" cy="170" r="70" fill="white" fill-opacity="0.5"/><rect y="290" width="400" height="110" fill="black" fill-opacity="0.35"/></svg>`)}`
@@ -223,15 +242,17 @@ function buildJob(state: JobState): JobPageData {
     case "paid-check":
       return { ...buildJob("done-paid"), pills: [{ status: "done" }, { status: "paid", label: "Paid, Check" }], billing: paidBilling("check", "#1042"), notes: [paymentNote("check", "#1042"), MARKED_DONE, ADDED("n1")] }
     case "paid-card":
-      return { ...buildJob("done-paid"), pills: [{ status: "done" }, { status: "paid", label: "Paid, Card" }], billing: paidBilling("card"), notes: [paymentNote("card"), MARKED_DONE, ADDED("n1")] }
+      return { ...buildJob("done-paid"), pills: [{ status: "done" }, { status: "paid", label: "Paid, Card" }], billing: paidBilling("card", undefined, true), notes: [paymentNote("card"), MARKED_DONE, ADDED("n1")] }
+    case "paid-deposit":
+      return { ...buildJob("paid-card"), billing: depositBilling(), footer: { more: more("Send a message", "Undo done") }, notes: [paymentNote("card"), { id: "n9", at: "2026-11-10T17:00:00Z", actor: "Ryan", what: "Recorded a $50 check, #1031, as the deposit", kind: "event" }, MARKED_DONE, ADDED("n1")] }
     case "refunded":
       return { ...buildJob("done-unpaid"), pills: [{ status: "done" }, { status: "refunded" }], footer: { secondary: [act("Send a message")], more: more("Collect payment", "Undo done", "Edit") }, billing: refundedBilling(), collect: { plan: collectPlan({ ...input, card: visa }), summary: "Repair · $145" }, notes: [refundNote("card"), paymentNote("card"), MARKED_DONE, ADDED("n1")] }
     case "part-refunded":
       return { ...buildJob("paid-card"), pills: [{ status: "done" }, { status: "paid", label: "Paid, $50 refunded" }], billing: partRefundedBilling(), notes: [{ id: "n8", at: "2026-11-19T15:00:00Z", actor: "Ryan", what: "Refunded $50 to the card", kind: "event" }, paymentNote("card"), MARKED_DONE, ADDED("n1")] }
     case "invoice-sent":
-      return { ...base, pills: [{ status: "done" }, { status: "bill-sent" }], when: day("Today, Wed Nov 18", "Done at 9:40 am"), billing: { summary: [["Total", "$145"], ["Paid", "$0"], ["Unpaid", "$145"]], rows: [], paidLine: { tone: "unpaid", title: "$145 unpaid", text: "Invoice {invoice} sent Nov 18, due Dec 2.", invoice: { name: "INV-2026-0001", href: "/admin/invoices?invoice=inv-1" } }, invoices: [{ ...invoiceRow("Nov 18", "Dec 2", "bill-sent"), note: "Includes the visit report" }] }, collect: { plan: collectPlan({ ...input, card: visa, canInvoice: false }), summary: "Repair · $145 unpaid" }, totals: owedTotals, notes: [{ id: "n4", at: "2026-11-18T17:55:00Z", actor: "Ryan", what: "Sent invoice INV-2026-0001, due Dec 2", kind: "event" }, ADDED("n1")], messages: [...scheduledMsgs, msg("m4", "2026-11-18T17:55:00Z", "sms", "invoice", "Trailhead: invoice for your repair, $145, due Dec 2.")], footer: { primary: act("Send a payment reminder"), secondary: [act("Collect payment")], more: more("Send a message", "Undo done") } }
+      return { ...base, pills: [{ status: "done" }, { status: "bill-sent" }], when: day("Today, Wed Nov 18", "Done at 9:40 am"), billing: { summary: [["Total", "$145"], ["Paid", "$0"], ["Unpaid", "$145"], CARD], rows: [], paidLine: { tone: "unpaid", title: "$145 unpaid", text: "Invoice {invoice} sent Nov 18, due Dec 2.", invoice: { name: "INV-2026-0001", href: "/admin/invoices?invoice=inv-1" } }, invoices: [{ ...invoiceRow("Nov 18", "Dec 2", "bill-sent"), note: "Includes the visit report" }] }, collect: { plan: collectPlan({ ...input, card: visa, canInvoice: false }), summary: "Repair · $145 unpaid" }, totals: owedTotals, notes: [{ id: "n4", at: "2026-11-18T17:55:00Z", actor: "Ryan", what: "Sent invoice INV-2026-0001, due Dec 2", kind: "event" }, ADDED("n1")], messages: [...scheduledMsgs, msg("m4", "2026-11-18T17:55:00Z", "sms", "invoice", "Trailhead: invoice for your repair, $145, due Dec 2.")], footer: { primary: act("Send a payment reminder"), secondary: [act("Collect payment")], more: more("Send a message", "Undo done") } }
     case "past-due":
-      return { ...base, pills: [{ status: "done" }, { status: "overdue" }], when: day("Tue, Nov 3", "Done at 11:20 am"), billing: { summary: [["Total", "$145"], ["Paid", "$0"], ["Unpaid", "$145"]], rows: [], status: { text: "Past due since Nov 17", tone: "past-due" }, paidLine: { tone: "pastdue", title: "Past due since Nov 17", text: "$145 unpaid. Invoice {invoice} sent Nov 3.", invoice: { name: "INV-2026-0001", href: "/admin/invoices?invoice=inv-1" } }, invoices: [invoiceRow("Nov 3", "Nov 17", "overdue")] }, collect: { plan: collectPlan({ ...input, card: visa, canInvoice: false }), summary: "Repair · $145 unpaid" }, totals: owedTotals, notes: [{ id: "n5", at: "2026-11-10T17:00:00Z", actor: "Ryan", what: "Reminded Andrea about invoice INV-2026-0001", kind: "event" }, ADDED("n1", "2026-11-02T16:10:00Z")], messages: [msg("m5", "2026-11-10T17:00:00Z", "sms", "invoice-reminder", "Trailhead: a reminder that invoice 1042, $145, is due Nov 17."), msg("m4", "2026-11-03T20:00:00Z", "sms", "invoice", "Trailhead: invoice for your repair, $145, due Nov 17.")], footer: { primary: act("Send a payment reminder"), secondary: [act("Collect payment")], more: more("Send a message") } }
+      return { ...base, pills: [{ status: "done" }, { status: "overdue" }], when: day("Tue, Nov 3", "Done at 11:20 am"), billing: { summary: [["Total", "$145"], ["Paid", "$0"], ["Unpaid", "$145"], CARD], rows: [], status: { text: "Past due since Nov 17", tone: "past-due" }, paidLine: { tone: "pastdue", title: "Past due since Nov 17", text: "$145 unpaid. Invoice {invoice} sent Nov 3.", invoice: { name: "INV-2026-0001", href: "/admin/invoices?invoice=inv-1" } }, invoices: [invoiceRow("Nov 3", "Nov 17", "overdue")] }, collect: { plan: collectPlan({ ...input, card: visa, canInvoice: false }), summary: "Repair · $145 unpaid" }, totals: owedTotals, notes: [{ id: "n5", at: "2026-11-10T17:00:00Z", actor: "Ryan", what: "Reminded Andrea about invoice INV-2026-0001", kind: "event" }, ADDED("n1", "2026-11-02T16:10:00Z")], messages: [msg("m5", "2026-11-10T17:00:00Z", "sms", "invoice-reminder", "Trailhead: a reminder that invoice 1042, $145, is due Nov 17."), msg("m4", "2026-11-03T20:00:00Z", "sms", "invoice", "Trailhead: invoice for your repair, $145, due Nov 17.")], footer: { primary: act("Send a payment reminder"), secondary: [act("Collect payment")], more: more("Send a message") } }
     case "canceled":
       return { ...base, pills: [{ status: "cancelled" }], notice: "Canceled Nov 17. Nothing is owed.", when: [["Day", "None"], ["Who", "No one"]], billing: { summary: [], rows: [], emptyLine: "Nothing was billed." }, lines: [{ ...LINE[0], canceled: true }], totals: [], notes: [{ id: "n6", at: "2026-11-17T20:00:00Z", actor: "Ryan", what: "Canceled the job", kind: "event" }, ADDED("n1", "2026-11-12T16:10:00Z")], messages: [msg("m6", "2026-11-17T20:00:00Z", "email", "visit-cancelled", "Your repair on Tue, Nov 24 is canceled")], footer: {} }
   }
@@ -244,13 +265,14 @@ export const STATE_NOTES: Record<JobState, string> = {
   "on-the-way": "Ryan pressed On my way and sent the text, so the job is Active since 9:12 am, in the band under the time. The one primary action is Mark done, which leads to How is this paid?.",
   "active": "Ryan sees Active since 9:12 am and the checklist half done. The one primary action is Mark done.",
   late: "Ryan sees a trip whose day passed with no Mark done. The one primary action is Mark done, with Skip beside it.",
-  "done-unpaid": "Right after Mark done, How is this paid? opens as its own dialog (Not now leaves the job Done and unpaid). Here Ryan sees Billing say No invoice or payment yet, and the header's one primary is Collect payment, which opens the same How is this paid? dialog: the card on file first and preselected.",
-  "done-paid": "Ryan sees Billing read Paid in full in green (Venmo), the facts, and the Payments table. There is no primary action; the quiet ones are under More.",
-  "paid-check": "Paid by check: the green line says $145 paid by check #1042 on Nov 18, recorded by Ryan; the Payments row offers Receipt and, under its More menu, Refund.",
-  "paid-card": "Paid by card: the Payments row also offers Open in Stripe, with the external-link icon.",
-  refunded: "Refunded: a grey Refunded pill and line (\"$145 refunded to the card on Nov 19, by Ryan\"), the refund as its own negative grey row under the payment (never a delete). The job reads Refunded, never Unpaid; the header has no Collect payment primary and Collect payment is under More.",
-  "part-refunded": "A partial refund: the job reads \"Paid, $50 refunded\" in green, with a negative grey $50 row under the card payment.",
-  "invoice-sent": "Ryan sees the invoice in an Invoices table, Invoice sent, with Remind and Open invoice beside it. The one primary action is Send a payment reminder; Collect payment sits beside it.",
+  "done-unpaid": "Right after Mark done, How is this paid? opens as its own dialog (Not now leaves the job Done and unpaid). Here Ryan sees Billing say $145 unpaid. No invoice yet. (no figures, because nothing has been paid) with the card on file, and the header's one primary is Collect payment, which opens the same How is this paid? dialog: the card on file first and preselected.",
+  "done-paid": "Ryan sees Billing read Paid in full in green (Venmo has no invoice, so its one payment is the Payments table's one row). No figures and no card: nothing needs explaining. There is no primary action; the quiet ones are under More.",
+  "paid-check": "Paid by check: the green headline Paid in full and one Payments row (a check has no invoice) with View receipt and, under its More menu, Refund. The check number is the row's quiet line.",
+  "paid-card": "Paid by card: the invoice and its payment are one row of Invoices and payments (\"Paid by Visa ending 4242 on Nov 18 · Ryan\") with View receipt, Open in Stripe and Open invoice as icons; Refund is under More. The headline says Paid in full and nothing repeats the $145.",
+  "paid-deposit": "Paid with a deposit: the $50 deposit is a payment with no invoice (in Payments), the final invoice credits it and is one row with the card payment that settled it. Total, Paid and Unpaid show because two payments need explaining.",
+  refunded: "Refunded: a grey Refunded headline, the card payment, and the refund as its own negative grey row under it (never a delete). The job reads Refunded, never Unpaid; the header has no Collect payment primary and Collect payment is under More.",
+  "part-refunded": "A partial refund: the job reads \"Paid, $50 refunded\" in green, Total, Paid and Refunded show because they add to the headline, and a negative grey $50 row sits under the card payment.",
+  "invoice-sent": "Ryan sees \"$145 unpaid. Invoice INV-2026-0001 sent Nov 18, due Dec 2.\", the card on file, and the invoice as one row of Invoices and payments, Invoice sent, with Remind and Open invoice beside it. The one primary action is Send a payment reminder; Collect payment sits beside it.",
   "past-due": "Ryan sees Past due since Nov 17 in red on one row. The one primary action is Send a payment reminder, which shows the exact text first.",
   canceled: "Ryan sees a canceled job with nothing owed. There are no buttons.",
 }
