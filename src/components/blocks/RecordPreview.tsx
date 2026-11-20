@@ -1,6 +1,6 @@
 import Link from "next/link"
 import type { MouseEvent } from "react"
-import { Briefcase, CalendarCheck, CalendarDays, CreditCard, MapPin, Receipt, type LucideIcon } from "lucide-react"
+import { Briefcase, CalendarCheck, CalendarDays, CreditCard, FileText, Inbox, MapPin, Receipt, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { StatusPill } from "./StatusPill"
 import { KIND_WORD, type RecordKind, type RecordPreviewData } from "./record-preview-model"
@@ -16,6 +16,8 @@ export const KIND_ICON: Record<Exclude<RecordKind, "customer" | "person">, Lucid
   invoice: Receipt,
   payment: CreditCard,
   day: CalendarDays,
+  request: Inbox,
+  quote: FileText,
 }
 
 export const initialsOf = (name: string) =>

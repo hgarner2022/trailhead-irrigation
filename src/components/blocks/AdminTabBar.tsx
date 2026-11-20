@@ -12,6 +12,8 @@ import { MoreMenu } from "./MoreMenu"
 
 export interface AdminTabBarProps {
   current: AdminSection
+  /** a screen that has Requests: More holds it, with the count on the button */
+  requests?: { count: number }
 }
 
 const TAB = "flex w-full flex-col items-center gap-0.5 pb-1.5 pt-1.5 text-xs font-medium leading-tight outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring"
@@ -25,7 +27,7 @@ function Tab({ active, children, icon }: { active: boolean; children: React.Reac
   )
 }
 
-export function AdminTabBar({ current }: AdminTabBarProps) {
+export function AdminTabBar({ current, requests }: AdminTabBarProps) {
   const tone = (active: boolean) => (active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/80")
   return (
     <nav aria-label="Main" data-slot="admin-tabbar" className="fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] text-sidebar-foreground md:hidden">
@@ -43,7 +45,7 @@ export function AdminTabBar({ current }: AdminTabBarProps) {
           )
         })}
         <li>
-          <MoreMenu current={current} />
+          <MoreMenu current={current} requests={requests} />
         </li>
       </ul>
     </nav>

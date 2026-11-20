@@ -195,3 +195,42 @@ export const NewJobUnarchivesTest: Story = {
     await expect(canvasElement.querySelector("[data-slot=archived-banner]")).toBeNull()
   },
 }
+
+/** Starts on Requests: two are New (the rail says 2), one matches Andrea Dalton. Open Rosa Delgado, Accept (a customer and a job that needs a quote), price the line, Send a quote with a deposit, and the job reads Quote sent in Jobs. */
+export const FromRequests: Story = { name: "From requests", args: { start: { screen: "requests" } }, globals: laptop }
+export const FromRequestsPhone: Story = { name: "From requests, phone", args: { start: { screen: "requests" } }, globals: phone }
+export const RequestToQuoteTest: Story = {
+  name: "Request to quote (test)",
+  args: { start: { screen: "requests" } },
+  globals: laptop,
+  tags: HIDDEN,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await expect(await c.findByRole("heading", { level: 1, name: "Requests" })).toBeInTheDocument()
+    await expect(canvasElement.querySelector("[data-slot=nav-count]")?.textContent).toContain("2")
+    // open the request: it is Seen
+    await userEvent.click(await c.findByRole("button", { name: "Rosa Delgado" }))
+    await waitFor(() => expect(route(canvasElement)).toBe("request:rq-rosa"))
+    await expect(await c.findByText("Seen", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
+    // Accept: a customer and a job that needs a quote
+    await userEvent.click(await c.findByRole("button", { name: "Accept" }))
+    await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Accept" }))
+    await userEvent.click(await c.findByRole("link", { name: "Open job" }))
+    await waitFor(() => expect(route(canvasElement)).toBe("job:q-rosa"))
+    await expect((await c.findAllByText("Needs a quote")).length).toBeGreaterThan(0)
+    // price the line, then send the quote with a $300 deposit
+    await userEvent.click(await c.findByRole("button", { name: /Edit Christmas lights/ }))
+    await userEvent.type(await within(await body.findByRole("dialog")).findByRole("textbox", { name: "Price in dollars" }), "1200")
+    await userEvent.click(within(await body.findByRole("dialog")).getByRole("button", { name: "Save the line" }))
+    await userEvent.click(await c.findByRole("button", { name: "Send a quote" }))
+    await userEvent.click(await body.findByRole("radio", { name: "Dollars" }))
+    await userEvent.type(await body.findByRole("textbox", { name: "Deposit in dollars" }), "300")
+    await userEvent.click(await body.findByRole("button", { name: "Send the quote" }))
+    await expect((await c.findAllByText("Quote sent")).length).toBeGreaterThan(0)
+    // Jobs lists it under Quote sent, and the rail's count has dropped to the one New request left
+    await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/jobs"]')!)
+    await expect((await c.findAllByText("Quote sent")).length).toBeGreaterThan(0)
+    await expect(canvasElement.querySelector("[data-slot=nav-count]")?.textContent).toContain("1")
+  },
+}

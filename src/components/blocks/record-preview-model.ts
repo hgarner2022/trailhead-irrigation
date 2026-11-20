@@ -3,7 +3,7 @@ import type { PillStatus } from "./StatusPill"
 // One set of data for one record in every place it shows (docs/plans/2026-11-19-record-links-research.md, rule 6): the chip's link, the
 // hover card, a Cmd+K summary and the page read the same `RecordPreviewData`, so a fact cannot differ between them. Pure, no React.
 
-export type RecordKind = "customer" | "property" | "job" | "visit" | "invoice" | "payment" | "person" | "day"
+export type RecordKind = "customer" | "property" | "job" | "visit" | "invoice" | "payment" | "person" | "day" | "request" | "quote"
 
 export const KIND_WORD: Record<RecordKind, string> = {
   customer: "Customer",
@@ -14,6 +14,8 @@ export const KIND_WORD: Record<RecordKind, string> = {
   payment: "Payment",
   person: "Person",
   day: "Day",
+  request: "Request",
+  quote: "Quote",
 }
 
 export interface RecordPreviewData {
@@ -41,6 +43,10 @@ export const recordHref = {
   person: () => `/admin/settings?tab=people`,
   /** a scheduled day opens the Schedule's Day view */
   day: (isoDay: string) => `/admin/schedule?day=${q(isoDay)}`,
+  /** a request opens in the Requests list's own page (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.2) */
+  request: (id: string) => `/admin/requests?request=${q(id)}`,
+  /** a quote is a section of its job: the chip opens the job at its Quote card */
+  quote: (jobId: string) => `/admin/jobs?job=${q(jobId)}#quote-h`,
 }
 
 const cap = (facts: RecordPreviewData["facts"]) => facts.slice(0, 4)

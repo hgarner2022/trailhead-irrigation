@@ -5,13 +5,14 @@ import { Ellipsis } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { AdminSection } from "./AdminShell"
-import { MORE_ITEMS } from "./admin-nav"
+import { MORE_ITEMS, REQUESTS_ITEM } from "./admin-nav"
 
 // The phone's More (docs/plans/2026-11-19-navigation-design.md, Hannah's answer 3): a bordered, labelled button in the bottom bar's fifth place
 // so it reads as a button, opening Reports and Settings above the bar. Sign out is not here, it is in the account menu. Lit while Reports or Settings is the screen.
 
-export function MoreMenu({ current, className }: { current: AdminSection; className?: string }) {
-  const active = MORE_ITEMS.some((i) => i.id === current)
+export function MoreMenu({ current, className, requests }: { current: AdminSection; className?: string; requests?: { count: number } }) {
+  const items = requests ? [REQUESTS_ITEM, ...MORE_ITEMS] : MORE_ITEMS
+  const active = items.some((i) => i.id === current)
   return (
     <div data-slot="more-menu" className={cn("flex justify-center px-1 py-1.5", className)}>
       <DropdownMenu modal={false}>
@@ -25,16 +26,30 @@ export function MoreMenu({ current, className }: { current: AdminSection; classN
               active ? "border-sidebar-primary bg-sidebar-primary text-sidebar-primary-foreground" : "border-sidebar-foreground/50 text-sidebar-foreground",
             )}
           >
-            <Ellipsis className="size-5" aria-hidden />
+            <span className="relative">
+              <Ellipsis className="size-5" aria-hidden />
+              {requests && requests.count > 0 && (
+                <span data-slot="more-count" className="absolute -right-3 -top-2 inline-flex min-w-4 items-center justify-center rounded-full bg-cream px-1 text-[11px] font-semibold leading-4 text-navy tabular-nums">
+                  <span className="sr-only">{requests.count} new requests</span>
+                  <span aria-hidden>{requests.count}</span>
+                </span>
+              )}
+            </span>
             More
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="top" align="end" className="min-w-44">
-          {MORE_ITEMS.map(({ id, label, href, icon: Icon }) => (
+          {items.map(({ id, label, href, icon: Icon }) => (
             <DropdownMenuItem key={id} asChild className="min-h-11">
               <Link href={href} aria-current={id === current ? "page" : undefined}>
                 <Icon aria-hidden />
                 {label}
+                {id === "requests" && requests && requests.count > 0 && (
+                  <span data-slot="nav-count" className="ml-auto rounded-full bg-navy px-1.5 text-xs font-semibold leading-5 text-white tabular-nums">
+                    <span className="sr-only">{requests.count} new</span>
+                    <span aria-hidden>{requests.count}</span>
+                  </span>
+                )}
               </Link>
             </DropdownMenuItem>
           ))}

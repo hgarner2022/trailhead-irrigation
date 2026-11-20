@@ -17,9 +17,10 @@ import { StatusPill, type PillStatus } from "@/components/blocks/StatusPill"
 export type BillingState = "owed" | "bill-sent" | "overdue" | "paid" | "refunded"
 export const BILLING_WORDS: Record<BillingState, string> = { owed: "Unpaid", "bill-sent": "Invoice sent", overdue: "Past due", paid: "Paid", refunded: "Refunded" }
 
-export type GridStatus = "today" | "active" | "unscheduled" | "scheduled" | "late" | "done" | "cancelled"
-export const GRID_WORDS: Record<GridStatus, string> = { today: "Today", active: "Active", unscheduled: "Unscheduled", scheduled: "Scheduled", late: "Late", done: "Done", cancelled: "Canceled" }
-const GRID_TONE: Record<GridStatus, PillStatus> = { today: "today", active: "job-active", unscheduled: "needs-a-day", scheduled: "scheduled", late: "overdue", done: "done", cancelled: "cancelled" }
+// Needs a quote and Quote sent are the two stages a job has before it is sold (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.1): the quote is a document on the job, so these are Status filter values and there is no Quotes item in the nav
+export type GridStatus = "needs-a-quote" | "quote-sent" | "today" | "active" | "unscheduled" | "scheduled" | "late" | "done" | "cancelled"
+export const GRID_WORDS: Record<GridStatus, string> = { "needs-a-quote": "Needs a quote", "quote-sent": "Quote sent", today: "Today", active: "Active", unscheduled: "Unscheduled", scheduled: "Scheduled", late: "Late", done: "Done", cancelled: "Canceled" }
+const GRID_TONE: Record<GridStatus, PillStatus> = { "needs-a-quote": "needs-a-day", "quote-sent": "waiting", today: "today", active: "job-active", unscheduled: "needs-a-day", scheduled: "scheduled", late: "overdue", done: "done", cancelled: "cancelled" }
 export const WHO_OPTIONS = ["Ryan Garner", "Hannah Garner", "No one yet"].map((w) => ({ value: w, label: w }))
 
 export interface GridJob {
@@ -61,7 +62,7 @@ export const jobGridColumns: GridColumnDef<GridJob>[] = [
 /** On a phone: the customer, the service, where it stands, the next day, and the billing word at the right. */
 export const jobGridCard: GridCardSlots = { title: "name", line: ["jobName"], state: "stage", when: ["next"], money: "billing" }
 
-export const SERVICE_OPTIONS = ["Season Pass", "Spring turn-on", "Fall blowout", "Sprinkler repair", "New sprinkler system installation", "Core aeration", "Christmas lights"].map((s) => ({ value: s, label: s }))
+export const SERVICE_OPTIONS = ["Season Pass", "Spring turn-on", "Fall blowout", "Sprinkler repair", "Larger sprinkler repair", "New sprinkler system installation", "Core aeration", "Christmas lights"].map((s) => ({ value: s, label: s }))
 
 export interface JobsGridDesignProps {
   rows: GridJob[]

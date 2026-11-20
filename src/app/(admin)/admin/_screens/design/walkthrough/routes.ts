@@ -2,21 +2,23 @@
 // `parseHref` turns the hrefs the record chips and the nav emit (`recordHref.*`, `/admin/...`) into a route, so the walkthrough never edits a
 // page component: it listens for the links the pages already draw. An href that is not in the prototype parses to null.
 
-export type Screen = "home" | "schedule" | "jobs" | "customers" | "invoices" | "reports" | "settings" | "job" | "customer" | "invoice" | "receipt"
+export type Screen = "home" | "schedule" | "requests" | "jobs" | "customers" | "invoices" | "reports" | "settings" | "request" | "job" | "customer" | "invoice" | "receipt"
 export interface Route {
   screen: Screen
   id?: string
   /** the New job sheet is open on the Jobs screen; `id` is the customer it was started from */
   newJob?: boolean
+  /** the Requests list opened with its Status chip set (Home's "2 new requests" row: new) */
+  filter?: "new"
 }
 
-export const ROOTS: readonly Screen[] = ["home", "schedule", "jobs", "customers", "invoices", "reports", "settings"]
+export const ROOTS: readonly Screen[] = ["home", "schedule", "requests", "jobs", "customers", "invoices", "reports", "settings"]
 export const isRoot = (r: Route) => ROOTS.includes(r.screen) && !r.id && !r.newJob
-export const sameRoute = (a: Route, b: Route) => a.screen === b.screen && a.id === b.id && Boolean(a.newJob) === Boolean(b.newJob)
+export const sameRoute = (a: Route, b: Route) => a.screen === b.screen && a.id === b.id && Boolean(a.newJob) === Boolean(b.newJob) && a.filter === b.filter
 
-const SECTION: Record<string, Screen> = { "": "home", schedule: "schedule", jobs: "jobs", customers: "customers", invoices: "invoices", reports: "reports", settings: "settings" }
-const RECORD: Partial<Record<string, Screen>> = { jobs: "job", customers: "customer", invoices: "invoice" }
-const KEY: Record<string, string> = { jobs: "job", customers: "customer", invoices: "invoice" }
+const SECTION: Record<string, Screen> = { "": "home", schedule: "schedule", requests: "requests", jobs: "jobs", customers: "customers", invoices: "invoices", reports: "reports", settings: "settings" }
+const RECORD: Partial<Record<string, Screen>> = { requests: "request", jobs: "job", customers: "customer", invoices: "invoice" }
+const KEY: Record<string, string> = { requests: "request", jobs: "job", customers: "customer", invoices: "invoice" }
 
 /** The route an href names, or null when it leaves the prototype (tel:, mailto:, Stripe, the pay page, a receipt). */
 export function parseHref(href: string): Route | null {
@@ -40,6 +42,7 @@ export function parseHref(href: string): Route | null {
     const customer = url.searchParams.get("customer")
     return customer ? { screen: "jobs", newJob: true, id: customer } : { screen: "jobs", newJob: true }
   }
+  if (section === "requests" && url.searchParams.get("status") === "new") return { screen: "requests", filter: "new" }
   if (section === "schedule") {
     const day = url.searchParams.get("day")
     return day ? { screen: "schedule", id: day } : { screen }
@@ -54,9 +57,10 @@ export const dayTitle = (iso: string) => {
   return Number.isNaN(d.getTime()) ? iso : DAY.format(d)
 }
 
-export const SCREEN_TITLE: Record<"home" | "schedule" | "jobs" | "customers" | "invoices" | "reports" | "settings", string> = {
+export const SCREEN_TITLE: Record<"home" | "schedule" | "requests" | "jobs" | "customers" | "invoices" | "reports" | "settings", string> = {
   home: "Home",
   schedule: "Schedule",
+  requests: "Requests",
   jobs: "Jobs",
   customers: "Customers",
   invoices: "Invoices",
@@ -66,7 +70,7 @@ export const SCREEN_TITLE: Record<"home" | "schedule" | "jobs" | "customers" | "
 
 /** The breadcrumb words of a route: the list's name, or the record's own name (given by the caller, who holds the data). */
 export function routeTitle(route: Route, nameOf: (r: Route) => string | undefined = () => undefined): string {
-  if (route.screen === "job" || route.screen === "customer" || route.screen === "invoice") return nameOf(route) ?? route.id ?? route.screen
+  if (route.screen === "request" || route.screen === "job" || route.screen === "customer" || route.screen === "invoice") return nameOf(route) ?? route.id ?? route.screen
   if (route.screen === "receipt") return "Andrea's receipt"
   if (route.screen === "schedule" && route.id) return dayTitle(route.id)
   if (route.newJob) return "New job"

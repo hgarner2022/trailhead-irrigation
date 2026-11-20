@@ -5,6 +5,8 @@ import { INVOICE_ROWS, dayWords, invoicePageOf, money, type InvoiceFixture, type
 import { allRows, GRID_ROWS, contactOf, customerIdOf, customerOfJob, isActiveAgain, isRealCustomer, rowOf } from "./jobs-data"
 import type { Route } from "./routes"
 import { readChoice } from "@/app/_flows/walkthrough/marketing-choice"
+import { fullName, serviceWords, stateOf } from "../requests/request-model"
+import { requestStore } from "../requests/request-store"
 
 export * from "./jobs-data"
 
@@ -221,6 +223,10 @@ export function ownerOf(route: Route): string | undefined {
 
 /** The words a record is called in the breadcrumb strip. */
 export function nameOfRoute(route: Route): string | undefined {
+  if (route.screen === "request") {
+    const r = requestStore.getSnapshot().find((x) => x.id === route.id)
+    return r ? fullName(r) : undefined
+  }
   if (route.screen === "customer") return customerPage(route.id ?? "")?.name ?? otherCustomer(route.id ?? "")?.name
   if (route.screen === "job") {
     const r = rowOf(route.id ?? "")
@@ -256,5 +262,11 @@ export function searchWorld(query: string): SearchHit[] {
     .filter((c) => `${c.name} ${c.street}`.toLowerCase().includes(q) || (qd.length >= 3 && digits(c.phone).includes(qd)))
     .map((c) => ({ kind: "customer", id: c.id, title: c.name, detail: statusDetail(c.id, c.street), href: `/admin/customers?customer=${c.id}`, contact: c.phone }))
   const jobs: SearchHit[] = allRows().filter((r) => `${r.name} ${r.property} ${r.title}`.toLowerCase().includes(q)).map((r) => ({ kind: "job", id: r.id, title: r.title === r.service && r.service !== "Season Pass" ? `${r.name}, ${r.title}` : `${r.name}, ${r.title}`, detail: r.property, href: `/admin/jobs?job=${r.id}` }))
-  return [...customers, ...jobs]
+  // a request that is New or Seen is found here and nowhere else; once accepted its customer and job are
+  const requests: SearchHit[] = requestStore
+    .getSnapshot()
+    .filter((r) => ["new", "seen"].includes(stateOf(r)))
+    .filter((r) => `${fullName(r)} ${r.street} ${r.email} ${r.service}`.toLowerCase().includes(q) || (qd.length >= 3 && digits(r.phone).includes(qd)))
+    .map((r) => ({ kind: "request" as const, id: r.id, title: fullName(r), detail: [serviceWords(r), r.town].filter((x) => x !== "Not said" && x).join(" · "), href: `/admin/requests?request=${r.id}`, contact: r.phone }))
+  return [...requests, ...customers, ...jobs]
 }

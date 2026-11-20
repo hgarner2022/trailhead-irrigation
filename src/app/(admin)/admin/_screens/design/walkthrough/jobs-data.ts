@@ -3,6 +3,8 @@ import { type JobPageData, type JobState, jobPageOf } from "../job-fixtures"
 import { money } from "../invoice-fixtures"
 import { passPageOf, type MultiTripData } from "../trip-fixtures"
 import type { PageCustomer } from "../JobPageTrips"
+import { quoteGridRow } from "../quotes/quote-grid"
+import { walkQuotes } from "../quotes/quote-store"
 
 // The walkthrough's jobs (see data.ts for the world): the Jobs grid's rows and the page each one opens.
 
@@ -42,6 +44,10 @@ export const GRID_ROWS: GridJob[] = [
   g("hal-turn-on", "Hal Reed", "Spring turn-on", "Spring turn-on", "41 Cottonwood Dr, Erie", "done", "1 of 1 done", 145, "overdue", "Past due since Apr 3, 2025", "None", RYAN, "2025"),
   g("ivy-repair", "Ivy Lund", "Sprinkler repair", "Sprinkler repair", "9 Meadow Ln, Louisville", "done", "1 of 1 done", 145, "paid", "Paid, check", "None", RYAN, "2024"),
   g("gus-blowout", "Gus Pratt", "Fall blowout", "Fall blowout", "70 Ridge Rd, Lafayette", "done", "1 of 1 done", 95, "paid", "Paid, card", "None", RYAN, "2023"),
+  // jobs that have a quote (Requests and quotes, Nov 20 2026): their stage is read from the quotes, so these rows are re-read by `allRows`
+  g("q-dana", "Dana Cho", "Larger sprinkler repair", "Larger sprinkler repair", "18 Cedar Way, Erie", "needs-a-quote", "0 of 1 done", 0, null, "", "Unscheduled", NOONE),
+  g("q-beth", "Beth Orr", "Christmas lights", "Christmas lights", "33 Aspen Ct, Lafayette", "quote-sent", "0 of 1 done", 1200, null, "", "Unscheduled", NOONE),
+  g("q-greg", "Greg Olsen", "Larger sprinkler repair", "Larger sprinkler repair", "5 Birch Ln, Erie", "quote-sent", "0 of 1 done", 860, null, "", "Unscheduled", NOONE),
   g("g-ana", "Ana Ruiz", "Sprinkler repair", "Sprinkler repair", "9 Laurel St, Louisville", "late", "0 of 1 done", 145, null, "", "Mon, Nov 16", RYAN),
 ]
 
@@ -61,7 +67,12 @@ export const INVOICE_OF_JOB: Record<string, { id: string; number: string }> = {
 const OLD = "INV-2026-0001"
 /** Jobs made in the prototype (New job, Sell pass): they join the grid until Start over. */
 const EXTRA: GridJob[] = []
-export const allRows = (): GridJob[] => [...GRID_ROWS, ...EXTRA]
+/** The rows of the grid; a job with a quote reads its stage and total from the quote store. */
+export const allRows = (): GridJob[] =>
+  [...GRID_ROWS, ...EXTRA].map((r) => {
+    const job = r.id.startsWith("q-") ? walkQuotes.getSnapshot()[r.id] : undefined
+    return job ? quoteGridRow(r, job) : r
+  })
 export const registerJob = (row: GridJob) => void EXTRA.push(row)
 /** Customers brought back by new work in the prototype (Archived until a job is made for them); Start over clears it. */
 const BROUGHT_BACK = new Set<string>()
@@ -71,7 +82,7 @@ export const resetExtras = () => (EXTRA.length = 0, BROUGHT_BACK.clear(), undefi
 export const rowOf = (id: string) => allRows().find((r) => r.id === id)
 export const customerOfJob = (id: string) => customerIdOf(rowOf(id)?.name ?? "")
 
-export type JobView = { kind: "flow" } | { kind: "page"; data: JobPageData } | { kind: "trips"; data: MultiTripData; customer?: PageCustomer } | { kind: "none" }
+export type JobView = { kind: "flow" } | { kind: "quote" } | { kind: "page"; data: JobPageData } | { kind: "trips"; data: MultiTripData; customer?: PageCustomer } | { kind: "none" }
 
 const STATE_OF = (r: GridJob): JobState => {
   if (r.stage === "done") return r.billingState === "paid" ? "done-paid" : r.billingState === "overdue" ? "past-due" : r.billingState === "bill-sent" ? "invoice-sent" : "done-unpaid"
@@ -121,6 +132,7 @@ export function jobView(id: string): JobView {
   const row = rowOf(id)
   if (!row) return { kind: "none" }
   if (id === "andrea-repair") return { kind: "flow" }
+  if (id.startsWith("q-")) return { kind: "quote" }
   if (id === "pass-2027") return { kind: "trips", data: passPageOf("ahead", { kind: "from", number: "TH-2026-0021" }) }
   if (id === "pass-2026") {
     const d = passPageOf("both-done", { kind: "as", number: "TH-2027-0008" })

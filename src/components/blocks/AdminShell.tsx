@@ -24,7 +24,7 @@ import {
 import { openRecordInAddress } from "@/lib/admin/record-url"
 import type { SearchHit } from "@/lib/admin/search-hit"
 import { AdminBarContext } from "./admin-bar"
-import { NAV } from "./admin-nav"
+import { railItems } from "./admin-nav"
 import { sectionOf } from "./admin-section"
 import { AdminTabBar } from "./AdminTabBar"
 import { useMedia } from "./use-media"
@@ -46,7 +46,7 @@ import { TopBar } from "./TopBar"
 // `env(safe-area-inset-bottom)`, which the admin root layout enables with `viewport.viewportFit = "cover"`. Cmd or Ctrl+K and the Search
 // button open `CommandSearch` when `onSearch` is given; a hit opens in place on a screen with a record host and on its own page elsewhere.
 
-export type AdminSection = "home" | "schedule" | "jobs" | "customers" | "reports" | "settings"
+export type AdminSection = "home" | "schedule" | "requests" | "jobs" | "customers" | "reports" | "settings"
 
 export interface AdminShellProps {
   current: AdminSection
@@ -62,8 +62,12 @@ export interface AdminShellProps {
   helpHref?: string
   /** set when the signed-in email is also a customer's: Open as customer */
   customerHref?: string
+  /** a screen that has Requests: the rail gets the item after Schedule with this count of new requests (none shown at 0), and a phone's More holds it first with the count on its button */
+  requests?: { count: number }
   /** the search box starts open (a story that shows Cmd+K without a script) */
   defaultSearchOpen?: boolean
+  /** what the open box starts with, so a story shows the results of a search without a script */
+  defaultSearchQuery?: string
   /** whether the rail starts expanded on a laptop; under 1024px it starts collapsed either way */
   defaultOpen?: boolean
   children: ReactNode
@@ -92,7 +96,18 @@ function SearchButton({ onClick, className, iconOnly = false }: { onClick: () =>
 
 type RailAccount = Pick<AdminShellProps, "user" | "profileHref" | "helpHref" | "customerHref" | "onSignOut">
 
-function Rail({ current, switcher, user, profileHref, helpHref, customerHref, onSignOut }: Pick<AdminShellProps, "current" | "switcher"> & RailAccount) {
+/** The count of new requests beside a nav label: a quiet cream chip, never a status colour. */
+export function CountBadge({ count, className }: { count: number; className?: string }) {
+  if (count <= 0) return null
+  return (
+    <span data-slot="nav-count" className={cn("ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-cream px-1.5 text-xs font-semibold leading-5 text-navy tabular-nums group-data-[collapsible=icon]:hidden", className)}>
+      <span className="sr-only">{count === 1 ? "1 new" : `${count} new`}</span>
+      <span aria-hidden>{count}</span>
+    </span>
+  )
+}
+
+function Rail({ current, switcher, user, profileHref, helpHref, customerHref, onSignOut, requests }: Pick<AdminShellProps, "current" | "switcher" | "requests"> & RailAccount) {
   return (
     <Sidebar collapsible="icon" className="motion-reduce:transition-none">
       {/* The brand lockup (Hannah, Nov 20 2026): the 40px mark and two lines, on the nav icons' inset (measured: the icons sit 16px from the rail's edge, the header's 8px plus 8px), 20px above and
@@ -117,12 +132,13 @@ function Rail({ current, switcher, user, profileHref, helpHref, customerHref, on
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="group-data-[collapsible=icon]:items-center">
-              {NAV.map(({ id, label, href, icon: Icon }) => (
+              {railItems(Boolean(requests)).map(({ id, label, href, icon: Icon }) => (
                 <SidebarMenuItem key={id}>
                   <SidebarMenuButton asChild isActive={id === current} tooltip={label}>
                     <Link href={href} aria-current={id === current ? "page" : undefined}>
                       <Icon />
                       <span>{label}</span>
+                      {id === "requests" && requests && <CountBadge count={requests.count} />}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -139,7 +155,7 @@ function Rail({ current, switcher, user, profileHref, helpHref, customerHref, on
   )
 }
 
-export function AdminShell({ current: initial, user, switcher, onSignOut, onSearch, profileHref, helpHref, customerHref, defaultSearchOpen = false, defaultOpen = true, children }: AdminShellProps) {
+export function AdminShell({ current: initial, user, switcher, onSignOut, onSearch, profileHref, helpHref, customerHref, requests, defaultSearchOpen = false, defaultSearchQuery, defaultOpen = true, children }: AdminShellProps) {
   // The rail follows the address, not the server's first render: the layout stays mounted while the reader moves between
   // pages, so a section chosen once on the server would stay lit (Home on every page). Outside the app, in the catalog, `current` is used.
   const pathname = usePathname()
@@ -163,7 +179,7 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, onSear
   const openHit = useCallback(
     (hit: SearchHit) => {
       // "See all N" goes to the full list; a record opens in place
-      if (hit.seeAll) router.push(hit.href)
+      if (hit.seeAll || hit.kind === "request") router.push(hit.href)
       else if (document.querySelector("[data-record-host]")) openRecordInAddress({ key: hit.kind, id: hit.id }, { fresh: true })
       else router.push(hit.href)
     },
@@ -180,7 +196,7 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, onSear
   const bar = useMemo(() => ({ mode: phone ? ("inline" as const) : ("bar" as const), title: titleSlot, actions: actionsSlot, primary: primarySlot }), [phone, titleSlot, actionsSlot, primarySlot])
   return (
     <SidebarProvider data-slot="admin-shell" data-phone={phone || undefined} open={open} onOpenChange={setChoice} style={RAIL_WIDTH}>
-      {phone ? null : <Rail current={current} switcher={switcher} user={user} profileHref={profileHref} helpHref={helpHref} customerHref={customerHref} onSignOut={onSignOut} />}
+      {phone ? null : <Rail current={current} switcher={switcher} requests={requests} user={user} profileHref={profileHref} helpHref={helpHref} customerHref={customerHref} onSignOut={onSignOut} />}
       <SidebarInset className="min-h-svh min-w-0 bg-cream">
         <TopBar
           phone={phone}
@@ -198,8 +214,8 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, onSear
           </AdminBarContext.Provider>
         </div>
       </SidebarInset>
-      {phone && <AdminTabBar current={current} />}
-      {onSearch && <CommandSearch open={searching} onOpenChange={setSearching} onSearch={onSearch} onOpen={openHit} />}
+      {phone && <AdminTabBar current={current} requests={requests} />}
+      {onSearch && <CommandSearch open={searching} onOpenChange={setSearching} onSearch={onSearch} onOpen={openHit} defaultQuery={defaultSearchQuery} />}
     </SidebarProvider>
   )
 }

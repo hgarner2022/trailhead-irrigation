@@ -10,6 +10,9 @@ import { allRows, nameOfRoute, ownerOf, resetExtras, resolveRoute, searchWorld }
 import { NewJobSheet, RouteScreen } from "./WalkScreens"
 import { MessageView, ReceiptToast, newestPayment, paidFrom, useReceiptToast, type Paid } from "./receipts"
 import { navigate, parseHref, routeTitle, type Route } from "./routes"
+import { newCount } from "../requests/request-model"
+import { requestStore, useRequests } from "../requests/request-store"
+import { useQuoteJobs, walkQuotes } from "../quotes/quote-store"
 
 // The one clickable admin prototype (docs/plans/2026-11-19-prototype-walkthrough-spec.md, section 2): the real AdminShell around a screen chosen by
 // an in-memory route stack, no Next router and no address changes (Storybook owns the URL). Navigation is by intercepting the links the pages
@@ -18,7 +21,7 @@ import { navigate, parseHref, routeTitle, type Route } from "./routes"
 // its route. The rail gets an Invoices item here only, by patching `NAV` while the prototype is mounted; the live nav is never edited.
 
 const USER = { initials: "HG", name: "Hannah" }
-const SECTION_OF: Record<Route["screen"], AdminSection> = { home: "home", schedule: "schedule", jobs: "jobs", job: "jobs", customers: "customers", customer: "customers", invoices: "invoices" as AdminSection, invoice: "invoices" as AdminSection, receipt: "jobs", reports: "reports", settings: "settings" }
+const SECTION_OF: Record<Route["screen"], AdminSection> = { home: "home", schedule: "schedule", requests: "requests", request: "requests", jobs: "jobs", job: "jobs", customers: "customers", customer: "customers", invoices: "invoices" as AdminSection, invoice: "invoices" as AdminSection, receipt: "jobs", reports: "reports", settings: "settings" }
 const START: Route = { screen: "jobs" }
 
 /** Invoices in the rail while the walkthrough is mounted: the shell's NAV is patched, then restored. */
@@ -95,9 +98,12 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
   const [made, setMade] = useState(0)
   const [message, setMessage] = useState<{ channel: "text" | "email"; paid: Paid } | null>(null)
   const receiptToast = useReceiptToast()
-  // the grid's rows: the world's, then the jobs made here
+  // Requests: the fixtures, what Ryan did to them and what the customer walkthrough sent; the rail's badge counts the New ones
+  const requests = useRequests()
+  const quoteJobs = useQuoteJobs()
+  // the grid's rows: the world's, then the jobs made here (and the jobs a request became)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const rows = useMemo(() => allRows(), [made])
+  const rows = useMemo(() => allRows(), [made, requests, quoteJobs])
   const toastRef = useRef<(m: string) => void>(() => undefined)
   const laterToast = useRef<string | null>(null)
   // New work for an archived customer brings them back; the toast shows on the job's page that opens next
@@ -131,8 +137,8 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
     // a Cmd+K hit
     const item = target.closest("[cmdk-item]")
     if (item) {
-      const hit = (item.getAttribute("data-value") ?? "").match(/^(customer|job)-(.+)$/)
-      if (hit) go({ screen: hit[1] as "customer" | "job", id: hit[2] })
+      const hit = (item.getAttribute("data-value") ?? "").match(/^(customer|job|request)-(.+)$/)
+      if (hit) go({ screen: hit[1] as "customer" | "job" | "request", id: hit[2] })
       return
     }
     const a = target.closest("a[href]")
@@ -156,7 +162,8 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
     }
     // a table row opens its record: the first chip in it
     const tr = target.closest("tr")
-    if (tr && !target.closest(INTERACTIVE)) {
+    // a request row opens through its name, never through the customer it matches
+    if (tr && !target.closest(INTERACTIVE) && !tr.closest("[data-slot=requests-list]")) {
       const chips = KIND_ORDER.map((k) => tr.querySelector(`a[data-kind=${k}]`)).filter(Boolean) as Element[]
       const route = chips[0] && parseHref(chips[0].getAttribute("href") ?? "")
       if (route) {
@@ -170,8 +177,8 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
   const onKeyDownCapture = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== "Enter") return
     const item = (e.target as Element).closest("[cmdk-root]")?.querySelector("[cmdk-item][aria-selected=true]")
-    const hit = (item?.getAttribute("data-value") ?? "").match(/^(customer|job)-(.+)$/)
-    if (hit) go({ screen: hit[1] as "customer" | "job", id: hit[2] })
+    const hit = (item?.getAttribute("data-value") ?? "").match(/^(customer|job|request)-(.+)$/)
+    if (hit) go({ screen: hit[1] as "customer" | "job" | "request", id: hit[2] })
   }
 
   const openReceipt = (paid: Paid) => {
@@ -181,6 +188,8 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
   const startOver = () => {
     setSheet(null)
     resetExtras()
+    requestStore.reset()
+    walkQuotes.reset()
     setMade((n) => n + 1)
     setStack([START])
     setEpoch((n) => n + 1)
@@ -189,11 +198,11 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
 
   return (
     <div data-slot="walkthrough" data-route={`${top.screen}${top.id ? `:${top.id}` : ""}`} style={{ display: "contents" }} onClickCapture={onClickCapture} onKeyDownCapture={onKeyDownCapture}>
-      <AdminShell key={`${top.screen}:${top.id ?? ""}`} current={SECTION_OF[top.screen]} user={USER} defaultSearchOpen={startSearch} onSearch={async (q) => searchWorld(q)} profileHref="/admin/profile" helpHref="/admin/help">
+      <AdminShell key={`${top.screen}:${top.id ?? ""}`} current={SECTION_OF[top.screen]} user={USER} defaultSearchOpen={startSearch} requests={{ count: newCount(requests) }} onSearch={async (q) => searchWorld(q)} profileHref="/admin/profile" helpHref="/admin/help">
         <ToastBridge toastRef={toastRef} later={laterToast} />
         <Strip stack={stack} onJump={jump} onStartOver={startOver} />
         <div key={`${epoch}-${top.screen}-${top.id ?? ""}`}>
-          <RouteScreen route={top} rows={rows} onBack={() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))} onOpenJob={(id) => go({ screen: "job", id })} onOpenCustomer={(id) => go({ screen: "customer", id })} onNew={() => go({ screen: "jobs", newJob: true })} />
+          <RouteScreen route={top} rows={rows} onBack={() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))} onOpenJob={(id) => go({ screen: "job", id })} onOpenCustomer={(id) => go({ screen: "customer", id })} onOpenRequest={(id) => go({ screen: "request", id })} onNew={() => go({ screen: "jobs", newJob: true })} />
         </div>
         <NewJobSheet sheet={sheet} onClose={() => setSheet(null)} onMade={() => setMade((n) => n + 1)} onCreated={(id) => go({ screen: "job", id })} onActiveAgain={onActiveAgain} />
       </AdminShell>

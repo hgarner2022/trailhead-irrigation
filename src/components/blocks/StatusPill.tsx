@@ -17,7 +17,11 @@ import { JOB_WORDS, REASON_WORDS, WORK_WORDS, type Job, type JobState, type Mone
 // only reach 4.2 to 4.4 on their tints, which is why they are not used here. Gold: warning-ink #854D0E on bg-warning/14 (gold #A16207 at 14%) is
 // 5.70 over white, 5.49 over cream and 5.24 over stone; navy #2B3544 on bg-navy/10 is 10.4, 9.9 and 9.5.
 
-export type PillStatus = PassStatus | JobState | WorkState | MoneyState | "overdue" | "waiting" | "today" | "job-active" | "refunded"
+/** A request's four words and a quote's four (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.5): New and Seen wait on Ryan (gold), Accepted is an outcome (green), Archived and the quote's Declined and Replaced are quiet (grey), a quote that is Sent waits on the customer (gold) and Approved is an outcome (green). */
+export type RequestStatus = "request-new" | "request-seen" | "request-accepted" | "request-archived"
+export type QuoteStatus = "quote-sent" | "quote-approved" | "quote-declined" | "quote-replaced"
+
+export type PillStatus = PassStatus | JobState | WorkState | MoneyState | "overdue" | "waiting" | "today" | "job-active" | "refunded" | RequestStatus | QuoteStatus
 
 const LABELS: Record<PillStatus, string> = {
   ...JOB_WORDS,
@@ -35,6 +39,14 @@ const LABELS: Record<PillStatus, string> = {
   today: "Today",
   "job-active": "Active",
   refunded: "Refunded",
+  "request-new": "New",
+  "request-seen": "Seen",
+  "request-accepted": "Accepted",
+  "request-archived": "Archived",
+  "quote-sent": "Sent",
+  "quote-approved": "Approved",
+  "quote-declined": "Declined",
+  "quote-replaced": "Replaced",
 }
 
 const GOOD = "bg-positive/10 text-positive-deep border-positive/30"
@@ -70,6 +82,14 @@ const TONES: Record<PillStatus, string> = {
   today: INFO,
   "job-active": PROGRESS,
   refunded: OVER,
+  "request-new": GOLD,
+  "request-seen": GOLD,
+  "request-accepted": GOOD,
+  "request-archived": OVER,
+  "quote-sent": GOLD,
+  "quote-approved": GOOD,
+  "quote-declined": OVER,
+  "quote-replaced": OVER,
 }
 
 /** The word shown for a status: "Past due" for overdue, "Unscheduled" for a job with no day, else the status in sentence case. */

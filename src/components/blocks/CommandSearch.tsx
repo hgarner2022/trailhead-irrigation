@@ -1,6 +1,6 @@
 "use client"
 
-import { Briefcase, CalendarDays, Users } from "lucide-react"
+import { Briefcase, CalendarDays, Inbox, Users } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -17,17 +17,21 @@ export interface CommandSearchProps {
   onOpenChange: (open: boolean) => void
   onSearch: (query: string) => Promise<SearchHit[]>
   onOpen: (hit: SearchHit) => void
+  /** what the box starts with (a story that shows a search's results) */
+  defaultQuery?: string
   /** the pause after the last key before asking, in milliseconds */
   delay?: number
 }
 
-const GROUPS: { kind: RecordKey; heading: string; icon: typeof Users }[] = [
+const GROUPS: { kind: RecordKey | "request"; heading: string; icon: typeof Users }[] = [
   { kind: "customer", heading: "Customers", icon: Users },
+  // a request not yet accepted (New and Seen) is found here and nowhere else; once accepted its customer and job are (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.7)
+  { kind: "request", heading: "Requests", icon: Inbox },
   { kind: "job", heading: "Jobs", icon: Briefcase },
   { kind: "visit", heading: "Days", icon: CalendarDays },
 ]
 
-export function CommandSearch({ open, onOpenChange, onSearch, onOpen, delay = 150 }: CommandSearchProps) {
+export function CommandSearch({ open, onOpenChange, onSearch, onOpen, delay = 150, defaultQuery }: CommandSearchProps) {
   const pick = (hit: SearchHit) => {
     onOpenChange(false)
     onOpen(hit)
@@ -39,15 +43,15 @@ export function CommandSearch({ open, onOpenChange, onSearch, onOpen, delay = 15
           <DialogTitle>Search</DialogTitle>
           <DialogDescription>Find a customer, a job or a day by name, street, phone or pass number.</DialogDescription>
         </DialogHeader>
-        <SearchBox onSearch={onSearch} onPick={pick} delay={delay} />
+        <SearchBox onSearch={onSearch} onPick={pick} delay={delay} defaultQuery={defaultQuery} />
       </DialogContent>
     </Dialog>
   )
 }
 
 /** The box and its list. It is mounted only while the dialog is open, so every opening starts empty. */
-function SearchBox({ onSearch, onPick, delay }: { onSearch: CommandSearchProps["onSearch"]; onPick: (hit: SearchHit) => void; delay: number }) {
-  const [query, setQuery] = useState("")
+function SearchBox({ onSearch, onPick, delay, defaultQuery }: { onSearch: CommandSearchProps["onSearch"]; onPick: (hit: SearchHit) => void; delay: number; defaultQuery?: string }) {
+  const [query, setQuery] = useState(defaultQuery ?? "")
   const [found, setFound] = useState<{ text: string; hits: SearchHit[] }>({ text: "", hits: [] })
   const latest = useRef(0)
   const text = query.trim()

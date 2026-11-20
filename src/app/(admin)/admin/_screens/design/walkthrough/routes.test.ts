@@ -45,3 +45,20 @@ describe("navigate and titles", () => {
     expect(dayTitle("2026-11-24")).toBe("Tuesday, November 24")
   })
 })
+
+describe("Requests routes", () => {
+  it("reads the Requests list, a request and Home's New filter", () => {
+    expect(parseHref("/admin/requests")).toEqual({ screen: "requests" })
+    expect(parseHref(recordHref.request("rq-rosa"))).toEqual({ screen: "request", id: "rq-rosa" })
+    expect(parseHref("/admin/requests?status=new")).toEqual({ screen: "requests", filter: "new" })
+    expect(parseHref(recordHref.quote("q-beth"))).toEqual({ screen: "job", id: "q-beth" })
+  })
+  it("makes Requests a root and a request one deeper, and titles them", () => {
+    const list: Route = { screen: "requests" }
+    const one: Route = { screen: "request", id: "rq-rosa" }
+    expect(navigate([{ screen: "jobs" }], list)).toEqual([list])
+    expect(navigate([list], one)).toEqual([list, one])
+    expect(routeTitle(list)).toBe("Requests")
+    expect(routeTitle(one, () => "Rosa Delgado")).toBe("Rosa Delgado")
+  })
+})

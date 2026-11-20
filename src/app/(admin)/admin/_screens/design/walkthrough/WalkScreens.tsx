@@ -32,6 +32,8 @@ import { ScheduleScreen } from "../../ScheduleScreen"
 import { SettingsScreen } from "../../SettingsScreen"
 import { makeNewJobActions, WALK_DATA, WALK_TODAY } from "./walk-new-job"
 import { Placeholder } from "./Placeholder"
+import { RequestRoute, RequestsRoute } from "./WalkRequests"
+import { QuoteJobRoute } from "./WalkQuotes"
 import { ReceiptRoute } from "./receipts"
 import { type Route } from "./routes"
 
@@ -147,8 +149,12 @@ const NotFound = ({ what }: { what: string }) => (
 )
 
 /** One route, rendered. Keyed by the caller so a record's state resets when another opens. */
-export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, onNew }: { route: Route; rows: GridJob[]; onBack: () => void; onOpenJob: (id: string) => void; onOpenCustomer: (id: string) => void; onNew: () => void }) {
+export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, onOpenRequest, onNew }: { route: Route; rows: GridJob[]; onBack: () => void; onOpenJob: (id: string) => void; onOpenCustomer: (id: string) => void; onOpenRequest: (id: string) => void; onNew: () => void }) {
   switch (route.screen) {
+    case "requests":
+      return <RequestsRoute filter={route.filter} onOpen={onOpenRequest} />
+    case "request":
+      return <RequestRoute id={route.id ?? ""} />
     case "jobs":
       return <WalkJobsGrid rows={rows} onOpen={onOpenJob} onNew={onNew} />
     case "customers":
@@ -157,6 +163,7 @@ export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, on
       return <InvoicesPage rows={INVOICES} />
     case "job": {
       const v = jobView(route.id ?? "")
+      if (v.kind === "quote") return <QuoteJobRoute id={route.id ?? ""} />
       if (v.kind === "flow") return <JobFlow embedded invoice={{ id: "inv-42", number: "INV-2026-0042" }} />
       if (v.kind === "trips") return <JobPagePass data={v.data} customer={v.customer} />
       if (v.kind === "page") return <StaticJob id={route.id!} />
