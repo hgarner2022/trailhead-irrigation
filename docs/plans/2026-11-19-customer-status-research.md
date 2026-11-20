@@ -145,3 +145,15 @@ In the order to ask them, one at a time. My default is in bold.
 4. **May Ryan archive a customer who still has an unpaid invoice, after a confirm that names the amount?** **Yes with the confirm, but never while a job, a visit or a pass is still open.**
 5. **Should Do not service be a typed flag with a red tag that stops new jobs and online booking but still lets Ryan move or cancel visits already booked?** **Yes, with an optional reason kept in the history and never shown to the customer.**
 6. **Should Do not contact be a second typed flag that also records a marketing opt-out in the consent record, so there is one answer to "may we market to them"?** **Yes. Clearing the flag leaves marketing off until the customer says yes.**
+
+
+## Hannah's answers (Nov 20 2026), the decisions
+
+1. Status is worked out from facts by `customerStatusOf`; Archive is the only status set by hand. **Yes.**
+2. Active means a job in the last 24 months, always. Past customer is no job in 24 months. **24 months.**
+3. A person with no job yet reads New; no Lead word until quotes exist. **Yes.**
+4. Ryan may archive a customer who owes money after a confirm that names the amount; never while a job, visit or pass is open; the invoice stays open and shows on Reports. **Yes.**
+5. Do not service is a mark only: a checkbox sets it, a red tag shows wherever the customer shows, New job shows a warning line when the customer is picked, and nothing is blocked. **Mark only.**
+6. No separate Do not contact flag: the Consent card's Email and Text marketing switches do it, and both off reads "Not in marketing". **Skipped.**
+
+Open questions 1 to 6 above are closed by these answers; where the text above says "blocks new jobs and online booking" for Do not service, or adds a Do not contact flag, answers 5 and 6 replace it.
