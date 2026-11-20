@@ -12,7 +12,8 @@ describe("ServicePicker", () => {
     expect(screen.getByText("Opens Apr 25")).toBeInTheDocument()
     expect(screen.getByText("Reserve the Season Pass and your turn-on day is held.")).toBeInTheDocument()
     expect(screen.queryByText(/Priced after Ryan looks/)).toBeNull()
-    expect(screen.queryByRole("radio", { name: /New sprinkler system/ })).toBeNull()
+    expect(screen.queryByRole("radio", { name: /Christmas lights/ })).toBeNull()
+    expect(screen.getByRole("radio", { name: /New sprinkler system installation/ })).toBeEnabled()
   })
   it("reports the chosen service and offers the request path as one link", async () => {
     const onChange = vi.fn()

@@ -4,17 +4,26 @@ import { describe, expect, it, vi } from "vitest"
 import { FlowShell } from "./FlowShell"
 
 describe("FlowShell", () => {
-  it("shows the question, the step count and Call Ryan, and goes back and on", async () => {
+  it("shows the question, the step count and a Close, and goes back and on", async () => {
     const onBack = vi.fn()
     const onNext = vi.fn()
     render(<FlowShell question="Where is the yard?" step={3} total={6} onBack={onBack} onNext={onNext}>body</FlowShell>)
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Where is the yard?")
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuetext", "Step 3 of 6")
-    expect(screen.getByRole("link", { name: /Call Ryan/ })).toHaveAttribute("href", "tel:9706927270")
+    expect(screen.getByRole("link", { name: /back to the website/ })).toHaveAttribute("href", "/")
+    expect(screen.getByRole("link", { name: "Close the booking form" })).toHaveAttribute("href", "/")
+    expect(screen.queryByText(/Call Ryan/)).toBeNull()
+    expect(screen.getByText("Step 3 of 6")).toBeInTheDocument()
     await userEvent.click(screen.getByRole("button", { name: "Back" }))
     await userEvent.click(screen.getByRole("button", { name: "Continue" }))
     expect(onBack).toHaveBeenCalledOnce()
     expect(onNext).toHaveBeenCalledOnce()
+  })
+  it("makes Close a button that asks first when the flow gives it onClose", async () => {
+    const onClose = vi.fn()
+    render(<FlowShell question="Q" step={2} total={6} onClose={onClose}>body</FlowShell>)
+    await userEvent.click(screen.getByRole("button", { name: "Close the booking form" }))
+    expect(onClose).toHaveBeenCalledOnce()
   })
   it("turns Continue off with a hint, and has no Back on the first step or buttons when done", () => {
     const { rerender } = render(<FlowShell question="Pick your day" step={1} total={6} nextDisabled hint="Tap a start time to continue.">body</FlowShell>)

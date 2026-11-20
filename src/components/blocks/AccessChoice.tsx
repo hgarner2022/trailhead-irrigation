@@ -11,7 +11,7 @@ export type Access = "yes" | "no"
 
 const CHOICES: { value: Access; name: string; detail: string }[] = [
   { value: "yes", name: "Yes", detail: "The controller and shut-off are reachable" },
-  { value: "no", name: "No, I need to be there", detail: "We'll offer days that suit you" },
+  { value: "no", name: "No, I need to be there", detail: "Pick a day you can be there" },
 ]
 
 export interface AccessChoiceProps {

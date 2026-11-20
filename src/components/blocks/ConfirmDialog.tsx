@@ -26,6 +26,8 @@ export interface ConfirmDialogProps {
   /** the thing the button does is hard to take back: its dismiss reads "Keep it" instead of "Cancel" */
   destructive?: boolean
   confirmDisabled?: boolean
+  /** the dismiss button's words when "Cancel" or "Keep it" would not say it (the booking form's "Keep booking") */
+  dismissLabel?: string
   open: boolean
   onOpenChange: (open: boolean) => void
   /** runs the confirm; answers the API's outcome. `variant` is what `renderConfirm` passed (which of a split button's two ways was pressed) */
@@ -40,7 +42,7 @@ export interface ConfirmDialogProps {
   slot?: string
 }
 
-export function ConfirmDialog({ title, message, blocked, children, confirmLabel, destructive = false, confirmDisabled, open, onOpenChange, onConfirm, renderConfirm, log, actions = "confirm", size = "sm", slot }: ConfirmDialogProps) {
+export function ConfirmDialog({ title, message, blocked, children, confirmLabel, destructive = false, confirmDisabled, dismissLabel, open, onOpenChange, onConfirm, renderConfirm, log, actions = "confirm", size = "sm", slot }: ConfirmDialogProps) {
   const [pending, start] = useTransition()
   const [problem, setProblem] = useState("")
   const confirm = (variant?: string) => {
@@ -69,7 +71,7 @@ export function ConfirmDialog({ title, message, blocked, children, confirmLabel,
         {actions === "confirm" && (
           <DialogFooter>
             <Button variant="outline" className="min-h-11" onClick={() => onOpenChange(false)}>
-              {destructive || blocked ? "Keep it" : "Cancel"}
+              {dismissLabel ?? (destructive || blocked ? "Keep it" : "Cancel")}
             </Button>
             {!blocked && renderConfirm && renderConfirm({ confirm, pending: pending || Boolean(confirmDisabled) })}
             {!blocked && !renderConfirm && confirmLabel && (

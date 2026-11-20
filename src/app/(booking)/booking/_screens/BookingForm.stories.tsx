@@ -35,7 +35,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The booking form a customer sees at Book Online, every step at 375 (Phone) and 1280 (Laptop). Click Continue through a Sprinkler repair: zip code 80516, the service, the address, the details (zones, access, a note, photos), a day and an exact start time, then who we reach and how, then Confirm and book. Nothing is kept until the contact step is submitted. Zip 80302 shows the way out; \"Need a quote? Request one\" shows the request path, which has no day. Nothing is sent. The whole clickable customer path is under Customer / Walkthrough (clickable).",
+          "The booking form a customer sees at Book Online, every step at 375 (Phone) and 1280 (Laptop). Click Continue through a Sprinkler repair: zip code 80516, the service, the address, the details (zones, access, the questions that belong to the service, a note, photos), a day and an exact start time, then who we reach and how, then Confirm and book. Nothing is kept until the contact step is submitted. Close (top right) leaves, and asks first only once something is entered; the browser's Back button goes to the previous step. Zip 80302 shows the way out; \"Need a quote? Request one\" lists what we do not book online (Christmas lights, larger repairs) and has no day. Nothing is sent. The whole clickable customer path is under Customer / Walkthrough (clickable).",
       },
     },
   },
@@ -79,7 +79,7 @@ const serviceChosen = on({ initial: { step: "service", zip: "80516", service: "r
 export const ServiceChosenPhone: Story = { ...serviceChosen.phone, name: "Service chosen, phone" }
 
 /** 2b. "Need a quote? Request one": what we quote, with no prices. Same first screens, no day. */
-const quote = on({ initial: { step: "quote-service", zip: "80516", quote: true, service: "new-system" } }, "Request a quote, services")
+const quote = on({ initial: { step: "quote-service", zip: "80516", quote: true, service: "lights" } }, "Request a quote, services")
 export const QuotePathServicesPhone: Story = { ...quote.phone, name: "Request a quote, services, phone" }
 export const QuotePathServicesLaptop: Story = { ...quote.laptop, name: "Request a quote, services, laptop" }
 
@@ -110,15 +110,26 @@ export const DetailsRepairLaptop: Story = { ...detailsRepair.laptop, name: "Serv
 /** Continue pressed with the access question unanswered. */
 const detailsMissing = on({ initial: { step: "details", zip: "80516", service: "repair", fields: home, attempted: true } }, "Service details, access not answered", {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Tell us whether we can get to the system without you.")).toBeInTheDocument()
+    await expect((await canvas.findAllByText("Tell us whether we can get to the system without you.")).length).toBe(2)
   },
 })
 export const DetailsAccessMissingPhone: Story = { ...detailsMissing.phone, name: "Service details, access not answered, phone" }
 
 /** 4b. The request path's details: what to quote, in their words, and photos. */
-const quoteDetails = on({ initial: { step: "details", zip: "80516", quote: true, service: "new-system", fields: { ...home, accessNote: "A new system for the back yard, about a quarter acre." }, photos } }, "Request a quote, tell Ryan about it")
+const quoteDetails = on({ initial: { step: "details", zip: "80516", quote: true, service: "lights", fields: { ...home, accessNote: "Lights along the front roofline." }, photos } }, "Request a quote, tell Ryan about it")
 export const QuotePathDetailsPhone: Story = { ...quoteDetails.phone, name: "Request a quote, tell Ryan about it, phone" }
 export const QuotePathDetailsLaptop: Story = { ...quoteDetails.laptop, name: "Request a quote, tell Ryan about it, laptop" }
+
+/** 4c. The questions that belong to a service: the Rachio install asks the controller there now and Wi-Fi; water efficiency what to improve; the installation design visit what kind of project, the area and photos (strongly suggested). */
+const detailsRachio = on({ initial: { step: "details", zip: "80516", service: "rachio-install", fields: { ...home, zones: 10 }, extras: { brand: "Hunter", wifi: "yes" } } }, "Service details, Rachio install")
+export const DetailsRachioPhone = detailsRachio.phone
+export const DetailsRachioLaptop = detailsRachio.laptop
+const detailsEfficiency = on({ initial: { step: "details", zip: "80516", service: "water-efficiency", fields: home, extras: { goals: ["Dry spots", "A garden bed to put on drip"] } } }, "Service details, water efficiency and drip")
+export const DetailsEfficiencyPhone = detailsEfficiency.phone
+export const DetailsEfficiencyLaptop = detailsEfficiency.laptop
+const detailsInstall = on({ initial: { step: "details", zip: "80516", service: "install", fields: home, extras: { installType: "new", area: "5,000" } } }, "Service details, new system design visit")
+export const DetailsInstallPhone = detailsInstall.phone
+export const DetailsInstallLaptop = detailsInstall.laptop
 
 /** 5. Day and exact time: the best day selected ("We're already in Erie that day"), its start times under it, none selected, Continue off. */
 const day = on({ initial: { step: "day", zip: "80516", service: "repair", fields: details } }, "Day and time", {
@@ -141,7 +152,7 @@ const dayMore = on({ initial: { step: "day", zip: "80516", service: "repair", fi
 })
 export const DayMoreDaysPhone: Story = { ...dayMore.phone, name: "Day and time, more days, phone" }
 export const DayMoreDaysLaptop: Story = { ...dayMore.laptop, name: "Day and time, more days, laptop" }
-/** No open day in the window: "These days are full. We'll call you to find one." and Continue is on, ending in a call. */
+/** No open day in the window: "These days are full. We'll call you to find one.", a box for when would suit, the phone number, and Continue is on. */
 const dayFull = on({ initial: { step: "day", zip: "80516", service: "repair", fields: details }, offersFor: () => [] }, "Day and time, no open day")
 export const DayNoOpenDayPhone: Story = { ...dayFull.phone, name: "Day and time, no open day, phone" }
 export const DayNoOpenDayLaptop: Story = { ...dayFull.laptop, name: "Day and time, no open day, laptop" }
@@ -158,15 +169,15 @@ export const ContactFilledPhone: Story = { ...contactFilled.phone, name: "Contac
 /** Continue pressed with nothing filled in: each problem is written as help under its field. */
 const contactMissing = on({ initial: { step: "contact", zip: "80516", service: "repair", fields: { ...details, firstName: "Andrea", lastName: "Dalton", email: "andrea.dalton@example.com" }, picks: picked, attempted: true } }, "Contact, missing phone and terms", {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Add a phone number so we can text you the day.")).toBeInTheDocument()
-    await expect(canvas.getByText("Tick the box to accept the terms.")).toBeInTheDocument()
+    await expect((await canvas.findAllByText("Add a phone number so we can text you the day.")).length).toBe(2)
+    await expect(canvas.getAllByText("Tick the box to accept the terms.")).toHaveLength(2)
   },
 })
 export const ContactMissingPhonePhone: Story = { ...contactMissing.phone, name: "Contact, missing phone and terms, phone" }
 export const ContactMissingPhoneLaptop: Story = { ...contactMissing.laptop, name: "Contact, missing phone and terms, laptop" }
 
 /** 6b. The request path ends on contact: no terms line, no confirm, and the button says Send to Ryan. */
-const quoteContact = on({ initial: { step: "contact", zip: "80516", quote: true, service: "new-system", fields: { ...home, accessNote: "A new system for the back yard, about a quarter acre." } } }, "Request a quote, contact")
+const quoteContact = on({ initial: { step: "contact", zip: "80516", quote: true, service: "lights", fields: { ...home, accessNote: "Lights along the front roofline." } } }, "Request a quote, contact")
 export const QuotePathContactPhone: Story = { ...quoteContact.phone, name: "Request a quote, contact, phone" }
 export const QuotePathContactLaptop: Story = { ...quoteContact.laptop, name: "Request a quote, contact, laptop" }
 
@@ -185,16 +196,16 @@ export const ConfirmBothPhone: Story = { ...confirmBoth.phone, name: "Confirm, t
 /** 8. Booked: the holographic card with the exact time, "You added 2 photos", what happens next, Add to calendar, your Trailhead account. */
 const booked = on({ initial: { step: "done", zip: "80516", service: "repair", fields: full, picks: picked, channel: "text", photos } }, "Booked", {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("You added 2 photos. Ryan sees them before the visit.")).toBeInTheDocument()
+    await expect(await canvas.findByText("You added 2 photos.")).toBeInTheDocument()
     await expect(canvas.getByRole("article", { name: /booked Tuesday, April 20 at 10:30 am/ })).toBeInTheDocument()
     await expect(canvas.getByRole("link", { name: "your Trailhead account" })).toBeInTheDocument()
   },
 })
 export const BookedPhone: Story = { ...booked.phone, name: "Booked, phone" }
 export const BookedLaptop: Story = { ...booked.laptop, name: "Booked, laptop" }
-const bookedCall = on({ initial: { step: "done", zip: "80516", service: "repair", fields: full, channel: "text" }, offersFor: () => [] }, "Booked with no open day, Ryan calls")
-export const BookedCallPhone: Story = { ...bookedCall.phone, name: "Booked with no open day, Ryan calls, phone" }
-const quoteDone = on({ initial: { step: "done", zip: "80516", quote: true, service: "new-system", fields: { ...home, ...person, termsAccepted: false }, photos } }, "Request sent")
+const bookedCall = on({ initial: { step: "done", zip: "80516", service: "repair", fields: full, channel: "text" }, offersFor: () => [] }, "Request sent, no open day")
+export const BookedCallPhone: Story = { ...bookedCall.phone, name: "Request sent, no open day, phone" }
+const quoteDone = on({ initial: { step: "done", zip: "80516", quote: true, service: "lights", fields: { ...home, ...person, termsAccepted: false }, photos } }, "Request sent")
 export const QuotePathDonePhone: Story = { ...quoteDone.phone, name: "Request sent, phone" }
 export const QuotePathDoneLaptop: Story = { ...quoteDone.laptop, name: "Request sent, laptop" }
 const passBooked = on({ pass, initial: { step: "done", zip: "80516", service: "season-pass", fields: { ...full, zones: 8 } } }, "Season Pass booked")
@@ -233,11 +244,11 @@ export const WholePathPhoneTest: Story = {
     await next()
     await expect(await c.findByText(/We'll text a confirmation to \(970\) 555-0123 and email one to/)).toBeInTheDocument()
     await next("Confirm and book")
-    await expect(await c.findByText("You added 2 photos. Ryan sees them before the visit.")).toBeInTheDocument()
+    await expect(await c.findByText("You added 2 photos.")).toBeInTheDocument()
   },
 }
 
-/** The request path on a phone, clicked: zip, what we quote, address, tell Ryan, contact, Send to Ryan. It has no day, no card and no confirm, and ends "Thanks, Ryan will call you by tomorrow." */
+/** The request path on a phone, clicked: zip, what we quote, address, tell Ryan, contact, Send to Ryan. It has no day, no card and no confirm, and ends "Thanks. We've got your request." */
 export const QuotePathPhone: Story = {
   ...phone,
   name: "Request a quote path, phone",
@@ -251,7 +262,7 @@ export const QuotePathPhoneTest: Story = {
     await userEvent.type(await c.findByLabelText("Zip code"), "80516")
     await next()
     await userEvent.click(await c.findByRole("button", { name: "Need a quote? Request one" }))
-    await userEvent.click(await c.findByRole("radio", { name: /New sprinkler system/ }))
+    await userEvent.click(await c.findByRole("radio", { name: /Christmas lights/ }))
     await next()
     await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
     await userEvent.click((await c.findAllByRole("option"))[0]!)
@@ -262,6 +273,81 @@ export const QuotePathPhoneTest: Story = {
     await userEvent.type(await c.findByLabelText("Email"), "andrea.dalton@example.com")
     await userEvent.type(await c.findByLabelText("Phone"), "9705550123")
     await next("Send to Ryan")
-    await expect(await c.findByText("Thanks, Ryan will call you by tomorrow.")).toBeInTheDocument()
+    await expect(await c.findByText("Thanks. We've got your request.")).toBeInTheDocument()
+  },
+}
+
+/** Confirm for the design visit: the service-specific answers are rows with their Change links, and the price reads "Price set at the visit." and nothing more. */
+const confirmInstall = on({ initial: { step: "confirm", zip: "80516", service: "install", fields: full, picks: picked, extras: { installType: "new", area: "5,000" }, photos } }, "Confirm, new system design visit", {
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Price set at the visit.")).toBeInTheDocument()
+    await expect(canvas.getByText("A new lawn")).toBeInTheDocument()
+  },
+})
+export const ConfirmInstallPhone = confirmInstall.phone
+export const ConfirmInstallLaptop = confirmInstall.laptop
+
+/** Close with something entered asks first: "Leave without booking? Your answers aren't saved." */
+const leave = on({ initial: { step: "service", zip: "80516" } }, "Leave without booking", {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Close the booking form" }))
+    await expect(await within(document.body).findByText("Leave without booking?")).toBeInTheDocument()
+    await expect(within(document.body).getByText("Your answers aren't saved.")).toBeInTheDocument()
+    await expect(within(document.body).getByRole("button", { name: "Keep booking" })).toBeInTheDocument()
+  },
+})
+export const LeavePhone = leave.phone
+export const LeaveLaptop = leave.laptop
+
+/** Close with nothing entered just leaves: it is a link to the website, with no question. */
+export const CloseWithNothingEntered: Story = {
+  ...phone,
+  name: "Close with nothing entered, phone",
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("link", { name: "Close the booking form" })).toHaveAttribute("href", "/")
+    await expect(canvas.queryByRole("button", { name: "Close the booking form" })).toBeNull()
+  },
+}
+
+/** A failed Continue puts the summary at the top of the step and focus on the first field that is wrong. */
+export const ProblemsFocusPhone: Story = {
+  ...phone,
+  name: "Missing details, summary and focus, phone",
+  args: { initial: { step: "contact", zip: "80516", service: "repair", fields: details, picks: picked } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect(await canvas.findByText("Check these before you continue")).toBeInTheDocument()
+    await expect(canvas.getByLabelText("First name")).toHaveFocus()
+  },
+}
+
+/** The browser's Back button goes to the previous step and never out of the form (hidden twin, not in the sidebar). */
+export const HistoryBehaviour: Story = {
+  ...phone,
+  name: "History behaviour",
+  tags: ["!dev", "!autodocs"],
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.type(await canvas.findByLabelText("Zip code"), "80516")
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await userEvent.click(await canvas.findByRole("radio", { name: /Sprinkler repair/ }))
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect(await canvas.findByText("Where is the yard?")).toBeInTheDocument()
+    // the browser's Back goes to the services, then the zip, with the answers kept
+    window.history.back()
+    await expect(await canvas.findByText("What can we do for you?")).toBeInTheDocument()
+    await expect(canvas.getByRole("radio", { name: /Sprinkler repair/ })).toBeChecked()
+    window.history.back()
+    await expect(await canvas.findByText("What's your zip code?")).toBeInTheDocument()
+    await expect(canvas.getByLabelText("Zip code")).toHaveValue("80516")
+    // Forward comes back, and the Back button on the screen does the same as the browser's
+    window.history.forward()
+    await expect(await canvas.findByText("What can we do for you?")).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole("button", { name: "Back" }))
+    await expect(await canvas.findByText("What's your zip code?")).toBeInTheDocument()
+    // the heading takes focus on a step change and the page is named for it
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect(await canvas.findByText("What can we do for you?")).toBeInTheDocument()
+    await expect(canvas.getByRole("heading", { level: 1 })).toHaveFocus()
+    await expect(document.title).toContain("What can we do for you?")
   },
 }

@@ -3,7 +3,7 @@ import { expect } from "storybook/test"
 import { BookingSummary } from "./BookingSummary"
 import { FlowShell } from "./FlowShell"
 
-// The frame of the booking flow and the Season Pass checkout: progress line, logo, Call Ryan, the question, the body and the sticky Back and Continue.
+// The frame of the booking form: the logo (a link to the site), Close at the top right, one card in a 640px column with a real progress bar (Step 3 of 6), the question, the body and Back and Continue as a pair at the card's foot (fixed to the bottom of a phone).
 const meta = {
   title: "Blocks/FlowShell",
   component: FlowShell,
@@ -23,7 +23,9 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Where is the yard?" })).toBeInTheDocument()
-    await expect(canvas.getByRole("link", { name: /Call Ryan/ })).toHaveAttribute("href", "tel:9706927270")
+    await expect(canvas.getByRole("link", { name: /Trailhead Lawn & Irrigation, back to the website/ })).toHaveAttribute("href", "/")
+    await expect(canvas.getByRole("link", { name: "Close the booking form" })).toHaveAttribute("href", "/")
+    await expect(canvas.getByRole("progressbar")).toHaveAttribute("aria-valuetext", "Step 3 of 6")
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
   },
 }
@@ -43,3 +45,16 @@ export const Phone: Story = {
 
 /** The last screen: no button bar. */
 export const Done: Story = { args: { done: true, question: "Booked", step: 6 } }
+
+/** Something is wrong with the step: the notice sits at the top of the card under the progress bar. */
+export const WithNotice: Story = {
+  args: { notice: <p role="alert" className="mb-6 rounded-lg border border-destructive/40 p-4 text-destructive">Check these before you continue</p> },
+}
+
+/** Close asks first: it is a button when the flow passes `onClose`. */
+export const CloseAsksFirst: Story = {
+  args: { onClose: () => {} },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: "Close the booking form" })).toBeInTheDocument()
+  },
+}

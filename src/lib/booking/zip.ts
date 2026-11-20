@@ -17,6 +17,6 @@ export function zipCheck(text: string): ZipResult {
 }
 
 export const ZIP_HELP = "Add your five-digit zip code so we can check we come to you."
-export const zipServed = (town: Town) => `Good news, we work in ${town}.`
+export const zipServed = (town: Town) => `We work in ${town}.`
 export const zipOutside = (zip: string) => `We don't serve ${zip} yet. ${SERVICE_AREA_SENTENCE}`
-export const ZIP_WAY_OUT = "Not sure? Call Ryan and he'll tell you."
+export const ZIP_WAY_OUT = "Not sure? Call Ryan."
