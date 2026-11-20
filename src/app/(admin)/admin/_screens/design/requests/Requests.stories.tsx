@@ -5,6 +5,7 @@ import { RequestsHome } from "./RequestsHome"
 import { RequestsList } from "./RequestsList"
 import { RequestsShell } from "./RequestsShell"
 import { REQUESTS_NOW, REQUEST_FIXTURES, listOrder, matchOf, type RequestData } from "./request-model"
+import { fromSent } from "./request-store"
 import type { RequestRow } from "@/components/blocks/RequestRows"
 
 // Requests (Hannah, Nov 20 2026): someone who is not a customer asks for work that cannot be booked online. It waits here until Ryan presses Accept, even
@@ -53,6 +54,10 @@ export const ListNewOnly: Story = { name: "List, New only", args: List.args, ren
 
 /** Nothing has come in: one line says where a request will show. */
 export const ListEmpty: Story = { name: "List, nothing yet", args: List.args, render: () => list([]), globals: laptop }
+
+/** A request the customer sent from the booking form's "Request a quote" path: New, first in the list, held outside Customers. */
+const FROM_FORM = fromSent({ id: "rq-form", at: REQUESTS_NOW, first: "Sam", last: "Ito", phone: "(970) 555-0100", email: "sam.ito@example.com", contact: "text", street: "7 Oak St", town: "Erie", serviceKey: "lights", serviceName: "Christmas lights", words: "The roofline and two trees.", photos: [{ name: "a.jpg", src: "data:image/svg+xml;utf8,a" }] })
+export const ListFromTheForm: Story = { name: "List, with a request from the booking form", args: { requests: ALL, now: NOW, onOpen: () => undefined }, render: () => list([FROM_FORM, ...ALL]), globals: laptop }
 
 /** A request from a new person: New, "No match", and Accept is the one primary action. */
 export const New: Story = { name: "New", args: List.args, render: () => page(byId("rq-rosa")), globals: laptop }

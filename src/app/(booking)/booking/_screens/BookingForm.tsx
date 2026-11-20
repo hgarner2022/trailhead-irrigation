@@ -37,12 +37,12 @@ import { ACTIONS, CONFIRM_BOOK, DAY_HINT, NO_EXTRAS, QUESTIONS, QUOTE_QUESTIONS,
 // something is entered; every step is a browser-history entry so the phone's Back button goes to the previous step; Back is the same as the browser's Back; the heading takes focus and the page
 // title follows each step; a failed Continue puts a summary at the top and focus on the first bad field. Nothing is sent, and nothing is kept before the contact step is submitted.
 
-export type { Booked, BookingFormProps, BookingProgress } from "./booking-form-types"
+export type { Booked, BookingFormProps, BookingProgress, Requested } from "./booking-form-types"
 
 const PASS_VISITS = [{ key: "turn-on", heading: "Your spring turn-on" }, { key: "blowout", heading: "Your fall blowout" }] as const
 const TYPING = new Set(["text", "email", "tel", "radio"])
 
-export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial = {}, offersFor = (_k, m, t) => fixtureDayTimes(m, t ?? "Erie"), pass, places = fixturePlaces, onBooked, onOpenAccount, onStep }: BookingFormProps) {
+export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial = {}, offersFor = (_k, m, t) => fixtureDayTimes(m, t ?? "Erie"), pass, places = fixturePlaces, onBooked, onRequested, onOpenAccount, onStep }: BookingFormProps) {
   const [fields, dispatch] = useCheckoutState({ today, ...initial.fields })
   const [zip, setZip] = useState(initial.zip ?? "")
   const [quote, setQuote] = useState(initial.quote ?? false)
@@ -116,6 +116,12 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
     ;(surface?.querySelector<HTMLElement>('[aria-invalid="true"]') ?? document.getElementById("step-problems"))?.focus()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presses])
+  useEffect(() => {
+    if (step === "done" && quote && service) {
+      onRequested?.({ serviceKey: service.key, serviceName: service.name, firstName: fields.firstName, lastName: fields.lastName, phone: fields.phone, email: fields.email, channel, street: street || "", town: town ?? zipTown ?? "", words: fields.accessNote.trim(), photos })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
   useEffect(() => {
     if (step === "done" && !quote && !callback && service && pick?.day && pick.start) {
       onBooked?.({ service: service.name, day: pick.day, start: pick.start, street: street || "480 Briggs St", town: town ?? "Erie", firstName: fields.firstName || "Andrea", email: fields.email, phone: fields.phone, channel, photos: photos.length, marketing: fields.marketingEmail })

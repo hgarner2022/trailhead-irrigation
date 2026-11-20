@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, userEvent, waitFor, within } from "storybook/test"
+import { clearSent, writeSent } from "@/app/_flows/walkthrough/request-bridge"
 import { Walkthrough } from "./Walkthrough"
 import { WalkthroughDocs } from "./WalkthroughDocs"
 
@@ -232,5 +233,34 @@ export const RequestToQuoteTest: Story = {
     await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/jobs"]')!)
     await expect((await c.findAllByText("Quote sent")).length).toBeGreaterThan(0)
     await expect(canvasElement.querySelector("[data-slot=nav-count]")?.textContent).toContain("1")
+  },
+}
+
+/** A request sent from the booking form in the customer walkthrough is in Requests: New, first in the list, with the customer's words, photos and address, and no customer made. */
+const SENT = { id: "rq-sent-test", at: "2026-11-20T10:00:00Z", first: "Sam", last: "Ito", phone: "(970) 555-0100", email: "sam.ito@example.com", contact: "text" as const, street: "7 Oak St", town: "Erie", serviceKey: "lights", serviceName: "Christmas lights", words: "The roofline and two trees.", photos: [{ name: "a.jpg", src: "data:image/svg+xml;utf8,a" }, { name: "b.jpg", src: "data:image/svg+xml;utf8,b" }] }
+export const RequestFromTheBookingForm: Story = {
+  name: "Request from the booking form",
+  args: { start: { screen: "requests" } },
+  globals: laptop,
+  beforeEach: () => {
+    writeSent(SENT)
+    return () => clearSent()
+  },
+}
+export const RequestFromTheBookingFormTest: Story = {
+  name: "Request from the booking form (test)",
+  args: { start: { screen: "requests" } },
+  globals: laptop,
+  tags: HIDDEN,
+  beforeEach: RequestFromTheBookingForm.beforeEach,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await expect(await c.findByRole("heading", { level: 1, name: "Requests" })).toBeInTheDocument()
+    await userEvent.click(await c.findByRole("button", { name: "Sam Ito" }))
+    await waitFor(() => expect(route(canvasElement)).toBe("request:rq-sent-test"))
+    await expect(await c.findByText("The roofline and two trees.")).toBeInTheDocument()
+    await expect(await c.findAllByRole("img", { name: /Photo added/ })).toHaveLength(2)
+    await expect(c.getAllByText("No match").length).toBeGreaterThan(0)
+    await expect(c.getByText("7 Oak St")).toBeInTheDocument()
   },
 }

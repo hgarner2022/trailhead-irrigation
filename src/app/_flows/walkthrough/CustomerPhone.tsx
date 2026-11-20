@@ -25,6 +25,8 @@ import { allMessages, DEFAULT_FACTS, type TextFacts } from "./walk-texts"
 import { PhoneInbox } from "./PhoneInbox"
 import { MarketingSwitches } from "./MarketingSwitches"
 import { MARKETING_MAIL, readChoice, writeChoice } from "./marketing-choice"
+import { clearSent, writeSent } from "./request-bridge"
+import { QuoteWalk } from "./QuoteWalk"
 import { BookingForm, type Booked } from "@/app/(booking)/booking/_screens/BookingForm"
 import { WAYS, type Way } from "./receipt-data"
 import { ReceiptSet } from "./ReceiptViews"
@@ -51,7 +53,7 @@ const receiptOf = {
 }
 const RENEWAL = { passId: "p-last", season: 2028, firstName: "Andrea", lastName: "Anderson", email: "andrea@example.com", phone: "(970) 555-0123", place: { id: "property-1", label: "123 Trailhead Way, Erie, CO", line1: "123 Trailhead Way", town: "Erie", state: "CO", zip: "80516" }, zones: 8, inspection: false, needsCustomerHome: false, accessNote: "", card: { last4: "4242", expires: "2029-08" } }
 
-const START_HREF: Record<StepKey, string | null> = { book: null, texts: null, account: "/account", visits: "/account/visits/v1", pay: null, receipts: null, pass: null, details: "/account/details" }
+const START_HREF: Record<StepKey, string | null> = { book: null, texts: null, account: "/account", visits: "/account/visits/v1", pay: null, receipts: null, pass: null, details: "/account/details", quote: null }
 
 function Plain({ title, line, children }: { title: string; line: string; children?: ReactNode }) {
   return (
@@ -81,6 +83,8 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   // Marketing is off until the customer says so: by the box in the booking, or the switches in Details. The admin walkthrough reads the same choice.
   const [marketing, setMarketing] = useState<{ email: boolean; text: boolean }>(() => {
     writeChoice({})
+    // a request sent from the booking form on an earlier run is forgotten with the rest
+    clearSent()
     return { email: false, text: false }
   })
   const choose = (kind: "email" | "text", on: boolean) => {
@@ -173,7 +177,10 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   let body: ReactNode
   switch (where) {
     case "book":
-      body = <BookingForm key={bookRun} onBooked={(b) => (setBooked(b), b.marketing && (setMarketing((m) => ({ ...m, email: true })), writeChoice({ ...readChoice(), email: true })))} onOpenAccount={() => open("/account")} />
+      body = <BookingForm key={bookRun} onRequested={(r) => writeSent({ id: `rq-sent-${Date.now().toString(36)}`, at: new Date().toISOString(), first: r.firstName, last: r.lastName, phone: r.phone, email: r.email, contact: r.channel, street: r.street, town: r.town, serviceKey: r.serviceKey, serviceName: r.serviceName, words: r.words, photos: r.photos.map((p) => ({ name: p.name, src: p.src })) })} onBooked={(b) => (setBooked(b), b.marketing && (setMarketing((m) => ({ ...m, email: true })), writeChoice({ ...readChoice(), email: true })))} onOpenAccount={() => open("/account")} />
+      break
+    case "quote":
+      body = <QuoteWalk onOpenLink={open} />
       break
     case "texts":
       body = <PhoneInbox texts={[...allMessages(facts, pref), ...(marketing.email ? [MARKETING_MAIL] : [])]} onLink={open} onUnsubscribe={() => choose("email", false)} />
@@ -239,6 +246,7 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
     if (key === "book") return go({ where: "book" }, "/booking")
     if (key === "texts") return go({ where: "texts" }, "")
     if (key === "receipts") return go({ where: "receipts" }, "")
+    if (key === "quote") return go({ where: "quote" }, "")
     if (key === "pass") return go({ where: "pass" }, "/account/pass")
     if (key === "pay") {
       const id = s.jobs.flatMap((j) => j.invoices)[0]?.id ?? "inv_1"

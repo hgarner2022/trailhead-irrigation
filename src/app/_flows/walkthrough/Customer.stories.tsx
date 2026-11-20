@@ -115,3 +115,58 @@ export const PayPath: StoryObj<typeof CustomerPhone> = {
     await expect(await c.findByText(/Receipt/i, { selector: "h1" })).toBeInTheDocument()
   },
 }
+
+/** Request a quote end to end: the words, two photos, the address and who to reach, "Send to Ryan", "Thanks. We've got your request." (nothing about when), and the request is kept for the admin walkthrough's Requests. */
+export const RequestPath: StoryObj<typeof CustomerPhone> = {
+  name: "Request path",
+  tags: ["!dev", "!autodocs"],
+  render: () => <CustomerPhone />,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const next = async (name: string | RegExp = "Continue") => userEvent.click(await c.findByRole("button", { name }))
+    await userEvent.type(await c.findByLabelText("Zip code"), "80516")
+    await next()
+    await userEvent.click(await c.findByRole("button", { name: "Need a quote? Request one" }))
+    await userEvent.click(await c.findByRole("radio", { name: /Christmas lights/ }))
+    await next()
+    await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
+    await userEvent.click((await c.findAllByRole("option"))[0]!)
+    await next()
+    await userEvent.type(await c.findByLabelText(/A (few words|note)/), "The roofline and two trees.")
+    await userEvent.click(await c.findByRole("button", { name: "Add 2 sample photos" }))
+    await next()
+    await userEvent.type(await c.findByLabelText("First name"), "Rosa")
+    await userEvent.type(await c.findByLabelText("Last name"), "Delgado")
+    await userEvent.type(await c.findByLabelText("Email"), "rosa.delgado@example.com")
+    await userEvent.type(await c.findByLabelText("Phone"), "9705550166")
+    await next("Send to Ryan")
+    await expect(await c.findByText("Thanks. We've got your request.")).toBeInTheDocument()
+    const sent = JSON.parse(window.localStorage.getItem("trailhead-walkthrough-requests") ?? "[]") as { first: string; words: string; serviceName: string; photos: unknown[] }[]
+    await expect(sent[0]).toMatchObject({ first: "Rosa", words: "The roofline and two trees.", serviceName: "Christmas lights" })
+    await expect(sent[0]!.photos).toHaveLength(2)
+  },
+}
+
+/** The quote step: open the link in the text, Approve with a deposit (Stripe's card page, drawn), then the quote with no deposit and Decline. */
+export const QuotePath: StoryObj<typeof CustomerPhone> = {
+  name: "Quote path",
+  tags: ["!dev", "!autodocs"],
+  render: () => <CustomerPhone />,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await expect(await c.findByText("What's your zip code?")).toBeInTheDocument()
+    window.postMessage({ walk: "cmd", cmd: "go", step: "quote" }, "*")
+    await userEvent.click(await c.findByRole("button", { name: "trailheadirrigation.com/q/4d8w" }))
+    await userEvent.click(await c.findByRole("button", { name: "Approve and pay $300" }))
+    await userEvent.click(await c.findByRole("button", { name: "Pay $300" }))
+    await expect(await c.findByText("We sent a receipt for your $300 deposit to beth.orr@example.com.")).toBeInTheDocument()
+    await waitFor(() => expect(step(canvasElement)).toBe("quote"))
+    // the quote with no deposit: Decline
+    await userEvent.click(await c.findByRole("button", { name: "Back to the text" }))
+    await userEvent.click(await c.findByRole("button", { name: "With no deposit" }))
+    await userEvent.click(await c.findByRole("button", { name: "trailheadirrigation.com/q/4d8w" }))
+    await userEvent.click(await c.findByRole("button", { name: "Decline" }))
+    await userEvent.click(await within(document.body).findByRole("button", { name: "Decline the quote" }))
+    await expect(await c.findByText("You declined this quote.")).toBeInTheDocument()
+  },
+}

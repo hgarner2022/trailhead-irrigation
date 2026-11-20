@@ -18,7 +18,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The page a quote link opens, behind a signed token and never indexed: the Trailhead badge, Your quote, what it includes with its prices, the total, the deposit line only when Ryan asked for one, Approve and Decline with Text Ryan and Call Ryan beside them. The states are the quote open (with and without a deposit), Stripe's card page, Approved (with the deposit receipt line, or the optional Add a card), the decline confirm, Declined, a replaced quote and a link that is old or wrong. The clickable path is Customer / Walkthrough (clickable), step 8.",
+          "The page a quote link opens, behind a signed token and never indexed: the Trailhead badge, Your quote, what it includes with its prices, the total, the deposit line only when Ryan asked for one, Approve and Decline with Text Ryan and Call Ryan beside them. The states are the quote open (with and without a deposit), Stripe's card page, Approved (with the deposit receipt line, or the optional Add a card), the decline confirm, Declined, a replaced quote and a link that is old or wrong. The clickable path is Customer / Walkthrough (clickable), the last step, A quote.",
       },
     },
   },

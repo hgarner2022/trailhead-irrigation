@@ -2,8 +2,8 @@
 // screens draw (`/account`, `/account/visits/<id>`, `/pay/<id>`, `/booking`, `/season-pass/checkout`, and the absolute ones the texts carry) into where
 // the prototype goes: one of its screens, an account page the account reducer opens, a labelled placeholder, or nowhere (tel:, mailto:, other sites).
 
-export type Where = "book" | "texts" | "account" | "receipts" | "pass" | "renew" | "placeholder"
-export type Target = { where: "book" } | { where: "texts" } | { where: "receipts" } | { where: "account"; href: string } | { where: "pass" } | { where: "renew" } | { where: "placeholder"; title: string; path: string } | { where: "outside" }
+export type Where = "book" | "texts" | "account" | "receipts" | "pass" | "renew" | "quote" | "placeholder"
+export type Target = { where: "book" } | { where: "texts" } | { where: "quote" } | { where: "receipts" } | { where: "account"; href: string } | { where: "pass" } | { where: "renew" } | { where: "placeholder"; title: string; path: string } | { where: "outside" }
 
 const HOSTS = ["www.trailheadirrigation.com", "trailheadirrigation.com"]
 
@@ -27,6 +27,7 @@ export function classifyHref(href: string): Target {
   if (/^\/(booking|book)(\/|$)/.test(path)) return { where: "book" }
   if (path === "/account/pass") return { where: "pass" }
   if (path === "/season-pass/checkout") return { where: "renew" }
+  if (/^\/quote\/[^/]+$/.test(path)) return { where: "quote" }
   const hit = TITLES.find(([re]) => re.test(path))
   if (hit) return { where: "placeholder", title: hit[1], path }
   if (path === "/account" || /^\/account\/(visits|details|receipts)(\/|$)/.test(path) || /^\/pay\/[^/]+(\/paid)?$/.test(path)) return { where: "account", href: `${path}${url.search}` }
@@ -43,6 +44,7 @@ export const STEPS = [
   { key: "receipts", label: "Your receipt" },
   { key: "pass", label: "Season Pass" },
   { key: "details", label: "Details" },
+  { key: "quote", label: "A quote" },
 ] as const
 export type StepKey = (typeof STEPS)[number]["key"]
 
@@ -50,6 +52,7 @@ export type StepKey = (typeof STEPS)[number]["key"]
 export function stepOf(where: Where, accountPage?: string): StepKey | null {
   if (where === "book") return "book"
   if (where === "texts") return "texts"
+  if (where === "quote") return "quote"
   if (where === "receipts") return "receipts"
   if (where === "pass" || where === "renew") return "pass"
   if (where === "placeholder") return null

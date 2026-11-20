@@ -12,4 +12,5 @@ export const STEP_COPY: Record<StepKey, { line: string }> = {
   receipts: { line: "You paid. This is the receipt you get: a text, an email and a page. Tap a chip to see another way of paying." },
   pass: { line: "This is your Season Pass. Tap See it from November 1, then Reserve next season." },
   details: { line: "These are your details: your phone, your yard notes and how we reach you. Change anything." },
+  quote: { line: "Ryan sent you a quote by text. Tap the link, then Approve or Decline. A quote with a deposit sends you to Stripe's card page. Switch the quote to try it with no deposit." },
 }

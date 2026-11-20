@@ -17,6 +17,8 @@ describe("classifyHref", () => {
     expect(classifyHref("/account/pass")).toEqual({ where: "pass" })
     expect(classifyHref("/season-pass/checkout?renew=p1")).toEqual({ where: "renew" })
     expect(classifyHref("/account/sign-in")).toMatchObject({ where: "placeholder" })
+    expect(classifyHref("/quote/Q-2026-0007")).toEqual({ where: "quote" })
+    expect(classifyHref("https://www.trailheadirrigation.com/quote/Q-2026-0007")).toEqual({ where: "quote" })
   })
   it("leaves the prototype for the rest", () => {
     for (const href of ["tel:+19706927270", "mailto:ryan@example.com", "https://dashboard.stripe.com/x", "/api/visits/v1/calendar.ics", ""]) expect(classifyHref(href)).toEqual({ where: "outside" })
@@ -32,6 +34,7 @@ describe("stepOf", () => {
     expect(stepOf("account", "details")).toBe("details")
     expect(stepOf("renew")).toBe("pass")
     expect(stepOf("receipts")).toBe("receipts")
+    expect(stepOf("quote")).toBe("quote")
     expect(stepOf("placeholder")).toBeNull()
   })
 })

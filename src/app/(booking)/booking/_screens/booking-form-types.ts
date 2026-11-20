@@ -24,6 +24,22 @@ export interface Booked {
   marketing: boolean
 }
 
+/** What a request for a quote holds when "Send to Ryan" is pressed: the person's own words, photos and address (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.3). It becomes a request in the admin, held outside Customers until Ryan accepts it. */
+export interface Requested {
+  serviceKey: string
+  serviceName: string
+  firstName: string
+  lastName: string
+  phone: string
+  email: string
+  channel: ContactChannel
+  street: string
+  town: string
+  /** "Tell Ryan about it" */
+  words: string
+  photos: PickedPhoto[]
+}
+
 export interface BookingProgress {
   step: FormStep
   steps: FormStep[]
@@ -49,6 +65,8 @@ export interface BookingFormProps {
   places?: PlaceProvider
   /** told once when a day is booked */
   onBooked?: (booked: Booked) => void
+  /** told once when a request for a quote is sent: the walkthrough passes it on to Requests in the admin */
+  onRequested?: (request: Requested) => void
   /** the account link on the last screen */
   onOpenAccount?: () => void
   /** told on every step change with where the form is; the clickable flow story reads it */

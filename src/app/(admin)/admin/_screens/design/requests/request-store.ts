@@ -3,7 +3,7 @@
 import { useEffect, useSyncExternalStore } from "react"
 import { readSent, type SentRequest } from "@/app/_flows/walkthrough/request-bridge"
 import { FROM_ANDREA, photo } from "../job-fixtures"
-import { REQUEST_FIXTURES, type ArchiveReason, type RequestData } from "./request-model"
+import { REQUESTS_NOW, REQUEST_FIXTURES, type ArchiveReason, type RequestData } from "./request-model"
 
 // The Requests the admin walkthrough holds: the fixtures, what Ryan did to them this session (opened, accepted, archived) and the requests the customer
 // walkthrough sent from the booking form (read from the same browser storage the marketing choice uses). Module state read through
@@ -24,8 +24,9 @@ const bump = () => {
 }
 
 /** A request the customer walkthrough sent, in the admin's shape: a new request, held outside Customers. */
+/** The time is the fixtures' now, not the browser's: the admin world has its own clock, and a request just sent is the newest. */
 export function fromSent(s: SentRequest): RequestData {
-  const at = s.at
+  const at = REQUESTS_NOW
   return {
     id: s.id,
     receivedAt: at,
