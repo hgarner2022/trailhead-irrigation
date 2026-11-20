@@ -1,10 +1,10 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Textarea } from "@/components/ui/textarea"
 import { AddressSearch } from "@/components/blocks/AddressSearch"
-import { SERVICE_AREA_SENTENCE, isTypedPlace, needsDetails, type PlaceProvider, type PlaceSuggestion } from "@/lib/places"
+import { SERVICE_AREA_SENTENCE, SERVICE_ZIPS, isTypedPlace, needsDetails, type PlaceProvider, type PlaceSuggestion } from "@/lib/places"
 import { fixturePlaces } from "@/lib/places/fixture"
 import { googlePlaceDetails } from "@/lib/places/google"
 import { ACCESS_PROBLEM, addressProblem, type CheckoutFields } from "./checkout-state"
@@ -36,6 +36,8 @@ export interface AddressStepProps {
   details?: (id: string) => Promise<PlaceSuggestion | null>
   /** the access question under the address; the booking form asks it on its details step instead, so it passes false */
   showAccess?: boolean
+  /** told when the typed fields open or close, so a screen can name a missing town in its summary */
+  onTypedChange?: (open: boolean) => void
 }
 
 const ACCESS_PROBLEM_ID = "checkout-access-problem"
@@ -48,12 +50,18 @@ const ACCESS = [
   { value: "no", name: "No, I need to be there", detail: "We'll offer you days to pick from" },
 ] as const
 
-export function AddressStep({ state, attempted, onType, onPick, set, places = fixturePlaces, details = googlePlaceDetails, showAccess = true }: AddressStepProps) {
+export function AddressStep({ state, attempted, onType, onPick, set, places = fixturePlaces, details = googlePlaceDetails, showAccess = true, onTypedChange }: AddressStepProps) {
   // Opens on the typed fields when the step comes back to a typed address; `opened` says the customer opened them here, so they take focus.
-  const [typed, setTyped] = useState<{ open: boolean; line1: string; opened: boolean }>(() => ({ open: !!state.place && isTypedPlace(state.place.id), line1: "", opened: false }))
+  // `asked`: a pick came back with no town we can read, so the fields open with the town already asked for.
+  const [typed, setTyped] = useState<{ open: boolean; line1: string; opened: boolean; asked: boolean }>(() => ({ open: !!state.place && isTypedPlace(state.place.id), line1: "", opened: false, asked: false }))
   const latestPick = useRef<string | null>(null)
   const picked = state.place !== null
   const accessMissing = attempted && picked && state.access === null
+
+  useEffect(() => {
+    onTypedChange?.(typed.open)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typed.open])
 
   const type = (text: string) => {
     latestPick.current = null
@@ -63,21 +71,29 @@ export function AddressStep({ state, attempted, onType, onPick, set, places = fi
   const pick = (place: PlaceSuggestion) => {
     latestPick.current = place.id
     onPick(place)
-    if (!needsDetails(place)) return
+    if (!needsDetails(place)) return askTown(place)
     void details(place.id).then((full) => {
-      if (full && latestPick.current === place.id) onPick(full)
+      if (latestPick.current !== place.id) return
+      if (full) onPick(full)
+      askTown(full ?? place)
     })
   }
-  const openTyped = (line1: string) => setTyped({ open: true, line1, opened: true })
+  // An address with no town we can read and no zip we serve is not turned away: the typed fields open with the street filled in and ask for the town.
+  const askTown = (place: PlaceSuggestion) => {
+    if (place.town.trim() !== "" || SERVICE_ZIPS[place.zip]) return
+    type(place.line1)
+    setTyped({ open: true, line1: place.line1, opened: true, asked: true })
+  }
+  const openTyped = (line1: string) => setTyped({ open: true, line1, opened: true, asked: false })
   const openFind = () => {
     type("")
-    setTyped({ open: false, line1: "", opened: false })
+    setTyped({ open: false, line1: "", opened: false, asked: false })
   }
 
   return (
     <>
       {typed.open ? (
-        <TypedAddress place={state.place} initialLine1={typed.line1} attempted={attempted} focusOnOpen={typed.opened} onType={type} onPick={pick} />
+        <TypedAddress place={state.place} initialLine1={typed.line1} attempted={attempted} townAsked={typed.asked} focusOnOpen={typed.opened} onType={type} onPick={pick} />
       ) : (
         <AddressSearch
           name="address"

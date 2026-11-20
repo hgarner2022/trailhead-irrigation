@@ -44,7 +44,7 @@ export const PhoneSteps: StoryObj<typeof CustomerPhone> = {
   render: () => <CustomerPhone />,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
-    await expect(await c.findByText("What's your zip code?")).toBeInTheDocument()
+    await expect(await c.findByText("Where is the yard?")).toBeInTheDocument()
     const order = [["texts", "texts"], ["account", "home"], ["visits", "visit"], ["pay", "pay"], ["receipts", null], ["pass", null], ["details", "details"]] as const
     for (const [lit, shown] of order) {
       tell("next")
@@ -60,7 +60,7 @@ export const PhoneSteps: StoryObj<typeof CustomerPhone> = {
   },
 }
 
-/** Book online end to end: zip, service, address, details with two photos, a day and an exact time, contact with how we reach you, Confirm and book, and the holographic card. */
+/** Book online end to end: address, service, details with two photos, a day and an exact time, contact with how we reach you, Confirm and book, and the holographic card. */
 export const BookingPath: StoryObj<typeof CustomerPhone> = {
   name: "Booking path",
   tags: ["!dev", "!autodocs"],
@@ -68,12 +68,10 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
     const next = async (name: string | RegExp = "Continue") => userEvent.click(await c.findByRole("button", { name }))
-    await userEvent.type(await c.findByLabelText("Zip code"), "80516")
-    await next()
-    await userEvent.click(await c.findByRole("radio", { name: /Sprinkler repair/ }))
-    await next()
     await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
     await userEvent.click((await c.findAllByRole("option"))[0]!)
+    await next()
+    await userEvent.click(await c.findByRole("radio", { name: /Sprinkler repair/ }))
     await next()
     // access, then two photos, then an exact start time (never a window), and only then who we reach
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
@@ -106,7 +104,7 @@ export const PayPath: StoryObj<typeof CustomerPhone> = {
   render: () => <CustomerPhone />,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
-    await expect(await c.findByText("What's your zip code?")).toBeInTheDocument()
+    await expect(await c.findByText("Where is the yard?")).toBeInTheDocument()
     window.postMessage({ walk: "cmd", cmd: "go", step: "account" }, "*")
     await userEvent.click(await c.findByRole("link", { name: /Pay now/ }))
     await userEvent.click(await c.findByRole("button", { name: /Pay \$115 by card/ }))
@@ -124,13 +122,11 @@ export const RequestPath: StoryObj<typeof CustomerPhone> = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
     const next = async (name: string | RegExp = "Continue") => userEvent.click(await c.findByRole("button", { name }))
-    await userEvent.type(await c.findByLabelText("Zip code"), "80516")
+    await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
+    await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
     await userEvent.click(await c.findByRole("button", { name: "Need a quote? Request one" }))
     await userEvent.click(await c.findByRole("radio", { name: /Christmas lights/ }))
-    await next()
-    await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
-    await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
     await userEvent.type(await c.findByLabelText(/A (few words|note)/), "The roofline and two trees.")
     await userEvent.click(await c.findByRole("button", { name: "Add 2 sample photos" }))
@@ -154,7 +150,7 @@ export const QuotePath: StoryObj<typeof CustomerPhone> = {
   render: () => <CustomerPhone />,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
-    await expect(await c.findByText("What's your zip code?")).toBeInTheDocument()
+    await expect(await c.findByText("Where is the yard?")).toBeInTheDocument()
     window.postMessage({ walk: "cmd", cmd: "go", step: "quote" }, "*")
     await userEvent.click(await c.findByRole("button", { name: "trailheadirrigation.com/q/4d8w" }))
     await userEvent.click(await c.findByRole("button", { name: "Approve and pay $300" }))

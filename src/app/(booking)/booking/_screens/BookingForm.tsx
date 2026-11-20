@@ -9,12 +9,9 @@ import type { ContactChannel } from "@/components/blocks/ContactPreference"
 import { FlowShell } from "@/components/blocks/FlowShell"
 import type { PickedPhoto } from "@/components/blocks/PhotoPicker"
 import { ServicePicker } from "@/components/blocks/ServicePicker"
-import { ZipCheck } from "@/components/blocks/ZipCheck"
-import { zipCheck } from "@/lib/booking/zip"
 import { clock12, fixtureDayTimes, startDay, type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
 import { QUOTE_SERVICES, SERVICES } from "@/lib/booking/services"
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
-import { serviceability } from "@/lib/places"
 import { fixturePlaces } from "@/lib/places/fixture"
 import { shortDay } from "@/lib/portal/words"
 import { AddressStep } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-address"
@@ -28,12 +25,13 @@ import { BookingDetails, QuoteDetails } from "./booking-details"
 import { StepProblems } from "./booking-problems"
 import type { BookingFormProps } from "./booking-form-types"
 import { useStepHistory } from "./use-step-history"
-import { ACTIONS, CONFIRM_BOOK, DAY_HINT, NO_EXTRAS, QUESTIONS, QUOTE_QUESTIONS, SEND_REQUEST, SERVICE_HINT, ZIP_HINT, callbackMode, canContinue, hasEntries, happensWords, problemList, reviewRows, stepTotal, stepsFor, townOf, type Extras, type FormStep } from "./booking-form-model"
+import { ACTIONS, CONFIRM_BOOK, DAY_HINT, NO_EXTRAS, QUESTIONS, QUOTE_QUESTIONS, SEND_REQUEST, SERVICE_HINT, areaState, callbackMode, canContinue, hasEntries, happensWords, problemList, reviewRows, stepTotal, stepsFor, townOf, type Extras, type FormStep } from "./booking-form-model"
 
-// The customer's booking form (docs/plans/2026-11-19-booking-form-design.md), one question per screen on the FlowShell, in Jobber's order for the first screens: zip code, then the services with
-// their lengths, then the address, the service details (zones with the price, access, the questions that belong to the service, a note, photos), the day and an exact start time from the open
-// slots, and only then who we reach (and how: text, email or both, asked once) with the terms, so an abandoned booking leaves nothing (Hannah, Nov 20 2026); a confirm step says what happens,
-// then the booked card. A service we quote is zip, services, address, details and contact ("Send to Ryan") with no day and no confirm. Navigation and close: Close at the top right asks only once
+// The customer's booking form (docs/plans/2026-11-19-booking-form-design.md), one question per screen on the FlowShell. It opens on the address, the checkout's type-ahead with its typed fallback
+// (Hannah, Nov 20 2026: no zip step, the address qualifies the yard; the town and zip come from the chosen address and an address outside the six towns stops at once with the way out), then the
+// services with their lengths, the service details (zones with the price, access, the questions that belong to the service, a note, photos), the day and an exact start time from the open slots,
+// and only then who we reach (and how: text, email or both, asked once) with the terms, so an abandoned booking leaves nothing; a confirm step says what happens, then the booked card. A service we
+// quote is the address, services, "Tell Ryan about it" and contact ("Send to Ryan") with no day and no confirm. Navigation and close: Close at the top right asks only once
 // something is entered; every step is a browser-history entry so the phone's Back button goes to the previous step; Back is the same as the browser's Back; the heading takes focus and the page
 // title follows each step; a failed Continue puts a summary at the top and focus on the first bad field. Nothing is sent, and nothing is kept before the contact step is submitted.
 
@@ -44,12 +42,11 @@ const TYPING = new Set(["text", "email", "tel", "radio"])
 
 export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial = {}, offersFor = (_k, m, t) => fixtureDayTimes(m, t ?? "Erie"), pass, places = fixturePlaces, onBooked, onRequested, onOpenAccount, onStep }: BookingFormProps) {
   const [fields, dispatch] = useCheckoutState({ today, ...initial.fields })
-  const [zip, setZip] = useState(initial.zip ?? "")
   const [quote, setQuote] = useState(initial.quote ?? false)
   const [serviceKey, setServiceKey] = useState<string | null>(initial.service ?? null)
   const service = [...entries, ...QUOTE_SERVICES].find((e) => e.key === serviceKey) ?? null
   const steps = stepsFor(service, quote)
-  const [step, setStep] = useState<FormStep>(initial.step ?? "zip")
+  const [step, setStep] = useState<FormStep>(initial.step ?? "address")
   const [attempted, setAttempted] = useState(initial.attempted ?? false)
   const [presses, setPresses] = useState(initial.attempted ? 1 : 0)
   const [picks, setPicks] = useState<Record<string, DayTimePick>>(initial.picks ?? {})
@@ -58,24 +55,20 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
   const [photos, setPhotos] = useState<PickedPhoto[]>(initial.photos ?? [])
   const [extras, setExtras] = useState<Extras>({ ...NO_EXTRAS, ...initial.extras })
   const [leaving, setLeaving] = useState(initial.leaving ?? false)
+  const [addressTyped, setAddressTyped] = useState(false)
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
   const town = townOf(fields)
-  const zipTown = (() => {
-    const z = zipCheck(zip)
-    return z.state === "ok" ? z.town : null
-  })()
   const first = useRef(true)
   const leaveLink = useRef<HTMLAnchorElement>(null)
 
   const groups: DayGroup[] = useMemo(() => {
     if (!service || service.kind === "quote") return []
     const minutes = service.minutes ?? 60
-    const at = town ?? zipTown
-    return service.kind === "pass" ? PASS_VISITS.map((v) => ({ key: v.key, heading: v.heading, minutes, offers: offersFor(v.key, minutes, at) })) : [{ key: "visit", minutes, offers: offersFor("visit", minutes, at) }]
-  }, [service, town, zipTown, offersFor])
+    return service.kind === "pass" ? PASS_VISITS.map((v) => ({ key: v.key, heading: v.heading, minutes, offers: offersFor(v.key, minutes, town) })) : [{ key: "visit", minutes, offers: offersFor("visit", minutes, town) }]
+  }, [service, town, offersFor])
   // The best day starts selected on each visit; a time is never selected for the customer.
   const heldPicks = Object.fromEntries(groups.map((g) => [g.key, picks[g.key] ?? { day: startDay(g.offers), start: null }]))
-  const answers = { zip, service, fields, picks: heldPicks, offers: Object.fromEntries(groups.map((g) => [g.key, g.offers as DayTimeOffer[]])), when }
+  const answers = { service, fields, addressTyped, picks: heldPicks, offers: Object.fromEntries(groups.map((g) => [g.key, g.offers as DayTimeOffer[]])), when }
   const valid = canContinue(step, answers)
   const callback = !quote && callbackMode(answers)
   const at = steps.indexOf(step)
@@ -84,7 +77,7 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
   const pick = heldPicks.visit
   const street = fields.place?.line1 ?? fields.address
   const problems = attempted && !valid ? problemList(step, answers) : []
-  const dirty = hasEntries({ zip, service, fields, when, photos: photos.length })
+  const dirty = hasEntries({ service, fields, when, photos: photos.length })
 
   // One browser-history entry per step: the phone's Back button goes to the previous step and never out of the form.
   const history = useStepHistory(step, setStep, done)
@@ -118,7 +111,7 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
   }, [presses])
   useEffect(() => {
     if (step === "done" && quote && service) {
-      onRequested?.({ serviceKey: service.key, serviceName: service.name, firstName: fields.firstName, lastName: fields.lastName, phone: fields.phone, email: fields.email, channel, street: street || "", town: town ?? zipTown ?? "", words: fields.accessNote.trim(), photos })
+      onRequested?.({ serviceKey: service.key, serviceName: service.name, firstName: fields.firstName, lastName: fields.lastName, phone: fields.phone, email: fields.email, channel, street: street || "", town: town ?? "", words: fields.accessNote.trim(), photos })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
@@ -163,22 +156,20 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
   const dayPart = pick?.day && pick.start && !callback ? `${shortDay(pick.day)} at ${clock12(pick.start)}` : null
   const parts: SummaryPart[] = [
     ...(service && at > steps.indexOf(quote ? "quote-service" : "service") ? [{ label: service.name, what: "service", onChange: () => go(quote ? "quote-service" : "service") }] : []),
-    ...(street && at > steps.indexOf("address") ? [{ label: street, what: "address", onChange: () => go("address") }] : []),
+    ...(street && at > steps.indexOf("address") ? [{ label: [street, town].filter(Boolean).join(", "), what: "address", onChange: () => go("address") }] : []),
     ...(dayPart && steps.indexOf("day") >= 0 && at > steps.indexOf("day") ? [{ label: dayPart, what: "day and time", onChange: () => go("day") }] : []),
   ]
   const confirmLabel = quote || callback ? SEND_REQUEST : CONFIRM_BOOK
   const label = step === "confirm" ? confirmLabel : step === "contact" && quote ? SEND_REQUEST : (ACTIONS[step] ?? "Continue")
-  // Continue is off only where the screen says why: a choice not yet made (service, a start time) or a dead end (a zip or an address we do not serve). Everywhere else it stays on and a press names what is missing.
-  const deadEnd = (step === "zip" && zipCheck(zip).state === "outside") || (step === "address" && fields.place !== null && !valid)
+  // Continue is off only where the screen says why: a choice not yet made (service, a start time) or a dead end (an address we do not serve). Everywhere else it stays on and a press names what is missing.
+  const area = areaState(fields.place)
+  const deadEnd = step === "address" && area === "outside"
   const off = !valid && (deadEnd || step === "service" || step === "quote-service" || step === "day")
-  const hint = step === "day" ? DAY_HINT : step === "service" || step === "quote-service" ? SERVICE_HINT : step === "zip" ? ZIP_HINT : undefined
-  const outsideArea = step === "address" && fields.place !== null && !serviceability(fields.place).ok
+  const hint = step === "day" ? DAY_HINT : step === "service" || step === "quote-service" ? SERVICE_HINT : undefined
+  const outsideArea = step === "address" && area === "outside"
 
   let body: React.ReactNode
   switch (step) {
-    case "zip":
-      body = <ZipCheck value={zip} onChange={setZip} attempted={attempted} />
-      break
     case "service":
     case "quote-service":
       body = <ServicePicker entries={quote ? QUOTE_SERVICES : entries} value={serviceKey} onChange={choose} onRequestQuote={quote ? undefined : startQuote} />
@@ -186,7 +177,7 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
     case "address":
       body = (
         <>
-          <AddressStep state={fields} attempted={attempted} places={places} showAccess={false} onType={(text) => dispatch({ type: "typeAddress", text })} onPick={(place) => dispatch({ type: "pickPlace", place })} set={set} />
+          <AddressStep state={fields} attempted={attempted} places={places} showAccess={false} onTypedChange={setAddressTyped} onType={(text) => dispatch({ type: "typeAddress", text })} onPick={(place) => dispatch({ type: "pickPlace", place })} set={set} />
           {outsideArea && (
             <p data-slot="address-help" className="mt-4 text-base text-muted-foreground">
               {"Not sure? Call Ryan at "}
@@ -205,7 +196,7 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
       break
     }
     case "day":
-      body = <DayTimeGroups groups={groups} picks={heldPicks} onPick={(k, p) => setPicks((prev) => ({ ...prev, [k]: p }))} town={town ?? zipTown} note={when} onNote={setWhen} />
+      body = <DayTimeGroups groups={groups} picks={heldPicks} onPick={(k, p) => setPicks((prev) => ({ ...prev, [k]: p }))} town={town} note={when} onNote={setWhen} />
       break
     case "contact":
       body = (
@@ -222,7 +213,7 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
     case "confirm":
       body = service && (
         <BookingReview
-          rows={reviewRows({ service, fields, town: town ?? zipTown, zip: fields.place?.zip || zip, pick, when, callback, channel, photos: photos.length, quote, extras, go })}
+          rows={reviewRows({ service, fields, town, pick, when, callback, channel, photos: photos.length, quote, extras, go })}
           happens={happensWords({ channel, phone: fields.phone, email: fields.email, quote, callback })}
         />
       )

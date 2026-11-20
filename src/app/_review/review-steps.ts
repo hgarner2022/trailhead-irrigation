@@ -44,6 +44,8 @@ export const REVIEW_PARTS: ReviewPart[] = [
     intro: "Start with the walkthrough, then check these in order.",
     steps: [
       { id: "customer-walkthrough-clickable--walkthrough", label: "Walk the customer side", look: "Nine steps on a phone, from booking to a quote; click Next or tap anything in the phone." },
+      { id: "customer-booking-form--address-phone", label: "The booking form's first step", look: "It opens on the address, and the town and zip come from it, so there is no zip step; the form is six steps." },
+      { id: "customer-booking-form--address-outside-area-phone", label: "An address we don't serve", look: "It says so under the address with the six towns and Ryan's number, and Continue stays off." },
       { id: "customer-booking-form--day-phone", label: "The booking form", look: "The day and exact time come first and contact comes after, so an abandoned booking leaves nothing." },
       { id: "customer-booking-form--contact-filled-phone", label: "The marketing box on contact", look: "Tips and offers by email and by text are unticked until the customer ticks them." },
       { id: "customer-walkthrough-clickable--walkthrough", label: "The texts and emails", look: "Step 2 of the walkthrough shows every text and email in the order a customer meets them." },
@@ -100,7 +102,7 @@ export const REVIEW_PARTS: ReviewPart[] = [
 export const CHANGED_SINCE_LAST_REVIEW: string[] = [
   "Requests: a new Requests item in the left menu. A website request waits there as New or Seen until Ryan makes a job of it with Create job or Send a quote. The request moves into the job and leaves the list; nothing is accepted, and a request has no Accepted status.",
   "Quotes: sent from the job, approved from a link with Approve and Decline. A deposit is optional, paid at Approve, and Ryan can mark a quote approved by hand.",
-  "Booking form: no Call Ryan in the header, a Close button and a Back button on every step, and Rachio, water efficiency and installation are bookable. Only Christmas lights and the larger repair are requests.",
+  "Booking form: the zip step is gone. It opens on the address, which qualifies the yard, so it is six steps instead of seven (four instead of five for a request for a quote). No Call Ryan in the header, a Close button and a Back button on every step, and Rachio, water efficiency and installation are bookable. Only Christmas lights and the larger repair are requests.",
   "Messages: every email and text the customer can get is in one section, with a redesigned layout shown next to the current one.",
   "Customer account: the invoice to pay is the first thing on Home.",
   "Status colours, Collect payment and receipts, Refunded, customer status, consent, and the account menu at the bottom left of the rail are all in, as before.",

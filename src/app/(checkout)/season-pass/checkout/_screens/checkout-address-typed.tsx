@@ -21,6 +21,8 @@ export interface TypedAddressProps {
   /** the street to start from: what was in the search box when the fields opened */
   initialLine1: string
   attempted: boolean
+  /** the town is asked for at once: the pick the street came from had no town we could read */
+  townAsked?: boolean
   /** take focus when the fields open; off when the step itself opens on them (the shell focuses `[data-autofocus]` then) */
   focusOnOpen?: boolean
   onType: (text: string) => void
@@ -37,7 +39,7 @@ export const ZIP_PROBLEM = "A ZIP code is five digits. Leave it blank if you are
 const zipOk = (zip: string) => zip === "" || /^\d{5}$/.test(zip)
 const streetOk = (line1: string) => line1.trim().length >= MIN_STREET
 
-export function TypedAddress({ place, initialLine1, attempted, focusOnOpen, onType, onPick }: TypedAddressProps) {
+export function TypedAddress({ place, initialLine1, attempted, townAsked, focusOnOpen, onType, onPick }: TypedAddressProps) {
   const id = useId()
   const typed = place && isTypedPlace(place.id) ? place : null
   const [line1, setLine1] = useState(typed?.line1 ?? initialLine1)
@@ -45,9 +47,11 @@ export function TypedAddress({ place, initialLine1, attempted, focusOnOpen, onTy
   const [zip, setZip] = useState(typed?.zip ?? "")
   const [touched, setTouched] = useState<Set<string>>(() => new Set())
   const street = useRef<HTMLInputElement>(null)
+  const townBox = useRef<HTMLSelectElement>(null)
 
   useEffect(() => {
-    if (focusOnOpen) street.current?.focus({ preventScroll: true })
+    if (focusOnOpen) (townAsked ? townBox : street).current?.focus({ preventScroll: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusOnOpen])
 
   // Every change answers the step at once: the whole address when the three fields hold one, else just the text (which clears any pick).
@@ -59,7 +63,7 @@ export function TypedAddress({ place, initialLine1, attempted, focusOnOpen, onTy
     else onType(next.line1)
   }
   const touch = (field: string) => setTouched((prev) => new Set(prev).add(field))
-  const show = (field: string) => attempted || touched.has(field)
+  const show = (field: string) => attempted || touched.has(field) || (field === "town" && !!townAsked)
 
   const problems = {
     line1: show("line1") && !streetOk(line1) ? STREET_PROBLEM : null,
@@ -101,6 +105,7 @@ export function TypedAddress({ place, initialLine1, attempted, focusOnOpen, onTy
             Town
           </Label>
           <select
+            ref={townBox}
             id={`${id}-town`}
             name="town"
             autoComplete="address-level2"
