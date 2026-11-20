@@ -43,7 +43,7 @@ export function JobsTable({ rows, customer }: { rows: readonly CustomerJobRow[];
         accessorFn: (r) => r.name,
         header: "Job",
         meta: { bare: true },
-        cell: ({ row: { original: r } }) => <JobChip table id={r.id} name={r.name} customer={customer} status={r.status} next={r.day ? dayText(r) : undefined} />,
+        cell: ({ row: { original: r } }) => <JobChip table noMark id={r.id} name={r.name} customer={customer} status={r.status} next={r.day ? dayText(r) : undefined} />,
       },
       { id: "label", accessorFn: (r) => r.name, header: "Job name" },
       { id: "dayText", accessorFn: dayText, header: "Day text" },
