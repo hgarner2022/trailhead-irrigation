@@ -37,6 +37,8 @@ export interface GridColumnMeta {
   /** the first column draws its own cell (a chip that is itself a link), so the grid wraps it in no link or button */
   bare?: boolean
   csv?(row: object): string
+  /** a Tailwind width class for the column's header and cells ("w-20"), so two tables in one card line their amounts and statuses up */
+  width?: string
 }
 
 /** A chip filter: the row passes when its value is one of the chosen values. */

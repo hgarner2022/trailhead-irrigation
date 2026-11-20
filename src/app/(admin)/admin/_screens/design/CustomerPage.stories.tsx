@@ -36,6 +36,15 @@ export const OptedOutOfMarketing: Story = { ...story("opted-out", laptop), name:
 export const OptedOutOfMarketingPhone: Story = { ...story("opted-out", phone), name: "Opted out of marketing, phone" }
 /** STOP replied: the Consent card says every text goes as an email, in neutral words. (Two Seasons is this customer.) */
 export const StopReplied: Story = { ...story("two-seasons", laptop), name: "Stop replied" }
+/** Billing with a deposit: the $50 check is a payment with no invoice, the final invoice credits it and is one row with the card payment. Total, Paid and Unpaid show. */
+export const PaidWithDeposit: Story = { ...story("deposit", laptop), name: "Paid with a deposit" }
+export const PaidWithDepositPhone: Story = { ...story("deposit", phone), name: "Paid with a deposit, phone" }
+/** Billing paid by check: one Payments row, no invoice, no figures. (Rosa Medina, the opted-out customer.) */
+export const BillingPaidByCheck: Story = { ...story("opted-out", laptop), name: "Billing, paid by check" }
+export const BillingPaidByCheckPhone: Story = { ...story("opted-out", phone), name: "Billing, paid by check, phone" }
+/** Billing paid by card: the invoice and its card payment are one row. (Marcus Webb, the one-off customer.) */
+export const BillingPaidByCard: Story = { ...story("one-off", laptop), name: "Billing, paid by card" }
+export const BillingPaidByCardPhone: Story = { ...story("one-off", phone), name: "Billing, paid by card, phone" }
 export const RefundedInFull: Story = { ...story("refunded", laptop), name: "Refunded in full" }
 export const RefundedInFullPhone: Story = { ...story("refunded", phone), name: "Refunded in full, phone" }
 export const PartRefunded: Story = { ...story("part-refunded", laptop), name: "Part refunded" }

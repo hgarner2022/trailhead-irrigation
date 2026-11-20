@@ -55,22 +55,68 @@ describe("job page, one trip", () => {
     expect(within(table).getByRole("link", { name: /Open invoice/ })).toBeInTheDocument()
   })
 
-  it("says Paid in full in green with how, when and who, then the facts and a Payments table", () => {
+  it("says Paid in full in green and nothing else, with the one payment in a Payments table (a check has no invoice)", () => {
     render(<JobPage job={jobPageOf("paid-check")} />)
     const line = document.querySelector("[data-slot=settled-line]") as HTMLElement
     expect(line).toHaveAttribute("data-tone", "paid")
-    expect(line).toHaveTextContent("Paid in full. $145 paid by check #1042 on Nov 18, recorded by Ryan")
+    expect(line).toHaveTextContent(/^Paid in full$/)
+    expect(document.querySelector("[data-slot=billing-figures]")).toBeNull()
+    expect(screen.queryByText("Card on file")).toBeNull()
     const table = document.querySelector("[data-slot=payment-table]") as HTMLElement
     expect(within(table).getByText("Check #1042")).toBeInTheDocument()
-    expect(within(table).getByRole("link", { name: /Receipt/ })).toBeInTheDocument()
+    expect(within(table).getByRole("link", { name: "View receipt" })).toBeInTheDocument()
     expect(within(table).queryByText(/Open in Stripe/)).toBeNull()
     expect(within(table).getByRole("button", { name: /More for the \$145 payment/ })).toBeInTheDocument()
   })
 
-  it("offers Open in Stripe on a card payment", () => {
+  it("shows a card payment that settled an invoice as ONE row, with Open in Stripe in a new tab", () => {
     render(<JobPage job={jobPageOf("paid-card")} />)
-    const link = within(document.querySelector("[data-slot=payment-table]") as HTMLElement).getByRole("link", { name: /Open in Stripe/ })
-    expect(link).toHaveAttribute("target", "_blank")
+    const table = document.querySelector("[data-slot=invoice-table]") as HTMLElement
+    expect(document.querySelector("[data-slot=payment-table]")).toBeNull()
+    expect(within(table).getAllByRole("row")).toHaveLength(2)
+    expect(within(table).getByText("INV-2026-0001")).toBeInTheDocument()
+    expect(within(table).getByText("Paid by Visa ending 4242 on Nov 18 · Ryan")).toBeInTheDocument()
+    expect(within(table).getByRole("link", { name: /Open in Stripe/ })).toHaveAttribute("target", "_blank")
+    expect(within(table).getByRole("link", { name: "View receipt" })).toBeInTheDocument()
+    expect(within(table).getByRole("button", { name: /More for the \$145 payment/ })).toBeInTheDocument()
+    expect(document.querySelector("[data-slot=billing-figures]")).toBeNull()
+    expect(screen.queryByText("Card on file")).toBeNull()
+  })
+
+  it("says the unpaid amount once and shows the card on file only while it is unpaid", () => {
+    render(<JobPage job={jobPageOf("done-unpaid")} />)
+    expect(document.querySelector("[data-slot=billing-figures]")).toBeNull()
+    expect(screen.getByText("Card on file")).toBeInTheDocument()
+  })
+
+  it("shows a deposit as a payment with no invoice and the final invoice that credits it as one row, with the three figures", () => {
+    render(<JobPage job={jobPageOf("paid-deposit")} />)
+    const pay = within(document.querySelector("[data-slot=payment-table]") as HTMLElement)
+    expect(pay.getByText("$50")).toBeInTheDocument()
+    const inv = within(document.querySelector("[data-slot=invoice-table]") as HTMLElement)
+    expect(inv.getByText("$145 less the $50 deposit")).toBeInTheDocument()
+    expect(inv.getByText("$95")).toBeInTheDocument()
+    expect(document.querySelector("[data-slot=billing-figures]")).toHaveTextContent("Total$145Paid$145Unpaid$0")
+    expect(screen.queryByText("Card on file")).toBeNull()
+  })
+
+  it("puts a refund under its payment: in the invoice's row when the payment settled one, else in Payments", () => {
+    render(<JobPage job={jobPageOf("part-refunded")} />)
+    const rows = within(document.querySelector("[data-slot=payment-table]") as HTMLElement).getAllByRole("row")
+    expect(rows).toHaveLength(3)
+    expect(within(rows[1]!).getByText("$145")).toBeInTheDocument()
+    expect(within(rows[2]!).getByText("-$50")).toBeInTheDocument()
+  })
+
+  it("titles each list one step under the card title with 24px above and 8px below", () => {
+    render(<JobPage job={jobPageOf("paid-deposit")} />)
+    for (const name of ["Invoices and payments", "Payments"]) {
+      const h = screen.getByRole("heading", { name })
+      expect(h).toHaveAttribute("data-size", "sub")
+      expect(h.className).toMatch(/text-base/)
+      expect(h.className).toMatch(/mb-2/)
+      expect(h.closest("section")?.className).toMatch(/mt-6/)
+    }
   })
 
   it("shows a refund as its own negative grey row and keeps the payment", () => {

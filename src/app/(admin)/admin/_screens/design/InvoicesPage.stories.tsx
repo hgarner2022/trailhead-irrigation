@@ -39,6 +39,12 @@ export const InvoicePaidByCard: Story = { ...page("paid-card", laptop), name: "I
 export const InvoicePaidByCardPhone: Story = { ...page("paid-card", phone), name: "Invoice paid by card, phone" }
 export const InvoicePaidByCheck: Story = { ...page("paid-check", laptop), name: "Invoice paid by check" }
 export const InvoicePaidByCheckPhone: Story = { ...page("paid-check", phone), name: "Invoice paid by check, phone" }
+/** A paid invoice whose card payment was partly refunded: the invoice stays Paid, and Payments has a grey negative row right under the payment. */
+export const InvoicePartRefunded: Story = { ...page("part-refunded", laptop), name: "Invoice part refunded" }
+export const InvoicePartRefundedPhone: Story = { ...page("part-refunded", phone), name: "Invoice part refunded, phone" }
+/** The final invoice of a job that took a deposit: $95 after the $50 credit, and Payments lists the payment and the deposit it credits. */
+export const InvoicePaidWithDeposit: Story = { ...page("deposit", laptop), name: "Invoice paid with a deposit" }
+export const InvoicePaidWithDepositPhone: Story = { ...page("deposit", phone), name: "Invoice paid with a deposit, phone" }
 export const InvoiceRefunded: Story = { ...page("refunded", laptop), name: "Invoice refunded" }
 export const InvoiceRefundedPhone: Story = { ...page("refunded", phone), name: "Invoice refunded, phone" }
 export const InvoiceCanceled: Story = { ...page("canceled", laptop), name: "Invoice canceled" }

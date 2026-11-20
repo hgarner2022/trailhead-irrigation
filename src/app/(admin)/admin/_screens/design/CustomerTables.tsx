@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { InvoiceTable, PaymentTable, type InvoiceRowData, type PaymentMethod, type PaymentRowData } from "@/components/blocks/BillingTables"
+import { PaymentTable, type InvoiceRowData, type PaymentMethod, type PaymentRowData } from "@/components/blocks/BillingTables"
 import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
 import type { GridCardSlots } from "@/components/blocks/DataGridCard"
 import { MessageTable } from "@/components/blocks/MessageTable"
@@ -13,7 +13,7 @@ import { DayChip, JobChip, PersonChip, useRowOpen } from "./RecordChips"
 import type { CustomerInvoiceRow, CustomerJobRow, CustomerPaymentRow } from "./customer-fixtures"
 
 // The tables on a customer's page, all on `DataGrid` in its embedded mode (no toolbar; the same header, border and phone cards as every table
-// of a record page), the job page's own `PaymentTable`, `InvoiceTable` and `MessageTable` for the money and the messages, and one `JobsTable`
+// of a record page), the job page's own `PaymentTable`, `InvoiceTable` and `MessageTable` for the money and the messages (Billing draws them through `BillingBody`; `toPaymentRows` and `toInvoiceRows` hand it the customer's rows), and one `JobsTable`
 // here. A date, an amount, a chip and a button never wrap. Open work sorts first and each group is newest first. Money words are only Paid,
 // Unpaid, Invoice sent, Past due and Failed. A phone shows each row as the grid's card: name, a quiet line, the pill, the day and the money
 // word at the right. Pure props over the fixtures.
@@ -83,52 +83,57 @@ export function JobsTable({ rows, customer }: { rows: readonly CustomerJobRow[];
 
 const methodOf = (how: string): PaymentMethod => (how.startsWith("Check") ? "check" : how.startsWith("Venmo") ? "venmo" : how.startsWith("Cash") ? "cash" : "card")
 
-/** The job page's Payments table with the job each payment was for as a chip under the method. */
-export function PaymentsTable({ rows, customer, cardWords = "Visa ending 4242", omitJob, onRefund }: { rows: readonly CustomerPaymentRow[]; customer: string; cardWords?: string; omitJob?: boolean; onRefund?: (row: PaymentRowData) => void }) {
-  const data = useMemo<PaymentRowData[]>(
-    () =>
-      sortPayments(rows).map((r) => {
-        const method = methodOf(r.how)
-        const [word, ...rest] = r.how.replace(", kept on file", "").split(" ")
-        return {
-          id: r.id,
-          at: `${r.sortDay}T17:00:00Z`,
-          method,
-          methodLabel: method === "card" ? (r.how.includes("kept") ? `${cardWords}, kept on file` : cardWords) : word!,
-          reference: r.refund ? "Recorded by Ryan" : method === "card" ? "Online" : rest.join(" ") || "Recorded by Ryan",
-          amount: r.amount,
-          by: "Ryan",
-          receiptHref: `/admin/payments?payment=${r.id}`,
-          stripeHref: r.stripeUrl,
-          refund: r.refund,
-          canRefund: Boolean(onRefund) && !r.refund && !r.refunded,
-          job: omitJob ? undefined : <JobChip table noMark id={r.jobId} name={r.jobName} customer={customer} />,
-        }
-      }),
-    [rows, customer, cardWords, omitJob, onRefund],
-  )
-  return <PaymentTable rows={data} onRefund={onRefund} />
+/** The customer's payments in the Payments table's shape, newest first, with the job each was for as a chip under the method. A payment that settled an invoice carries `invoiceId`. */
+export function toPaymentRows(rows: readonly CustomerPaymentRow[], customer: string, o: { cardWords?: string; omitJob?: boolean; canRefund?: boolean } = {}): PaymentRowData[] {
+  const { cardWords = "Visa ending 4242", omitJob, canRefund } = o
+  return sortPayments(rows).map((r) => {
+    const method = methodOf(r.how)
+    const [word, ...rest] = r.how.replace(", kept on file", "").split(" ")
+    const handle = rest.join(" ")
+    return {
+      id: r.id,
+      at: `${r.sortDay}T17:00:00Z`,
+      method,
+      methodLabel: method === "card" ? (r.how.includes("kept") ? `${cardWords}, kept on file` : cardWords) : handle ? `${word} ${/^[@#]/.test(handle) ? handle : `#${handle}`}` : word!,
+      reference: r.refund ? "Recorded by Ryan" : r.note ? `${r.note} · Ryan` : method === "card" ? "Online" : undefined,
+      amount: r.amount,
+      by: method === "card" && !r.refund ? "online" : "Ryan",
+      receiptHref: `/admin/payments?payment=${r.id}`,
+      stripeHref: r.stripeUrl,
+      refund: r.refund,
+      refundOf: r.refundOf,
+      invoiceId: r.invoiceId,
+      canRefund: Boolean(canRefund) && !r.refund && !r.refunded,
+      job: omitJob ? undefined : <JobChip table noMark id={r.jobId} name={r.jobName} customer={customer} />,
+    }
+  })
 }
 
-/** The job page's Invoices table with the job each invoice is for as a chip under the number, and Remind while it is out. */
-export function InvoicesTable({ rows, customer, onRemind }: { rows: readonly CustomerInvoiceRow[]; customer: string; onRemind?: (row: InvoiceRowData) => void }) {
-  const data = useMemo<InvoiceRowData[]>(
-    () =>
-      sortInvoices(rows).map((r) => ({
-        id: r.id,
-        number: r.number,
-        amount: r.amount,
-        sent: r.sent,
-        due: r.due,
-        status: r.status,
-        statusLabel: r.statusLabel,
-        href: recordHref.invoice(r.id),
-        note: <span className="block pl-8"><JobChip table noMark id={r.jobId} name={r.jobName} customer={customer} /></span>,
-        canRemind: r.status === "bill-sent" || r.status === "overdue",
-      })),
-    [rows, customer],
-  )
-  return <InvoiceTable rows={data} onRemind={onRemind} />
+/** The customer's invoices in the Invoices table's shape, the ones still out first, with the job each is for as a chip under the number, and Remind while it is out. */
+export function toInvoiceRows(rows: readonly CustomerInvoiceRow[], customer: string): InvoiceRowData[] {
+  return sortInvoices(rows).map((r) => ({
+    id: r.id,
+    number: r.number,
+    amount: r.amount,
+    sent: r.sent,
+    due: r.due,
+    status: r.status,
+    statusLabel: r.statusLabel,
+    href: recordHref.invoice(r.id),
+    note: (
+      <span className="block">
+        {r.note && <span className="block">{r.note}</span>}
+        <span className="block"><JobChip table noMark id={r.jobId} name={r.jobName} customer={customer} /></span>
+      </span>
+    ),
+    canRemind: r.status === "bill-sent" || r.status === "overdue",
+  }))
+}
+
+/** The invoice page's Payments table, on the job page's own `PaymentTable`. */
+export function PaymentsTable({ rows, customer, cardWords, omitJob, onRefund }: { rows: readonly CustomerPaymentRow[]; customer: string; cardWords?: string; omitJob?: boolean; onRefund?: (row: PaymentRowData) => void }) {
+  const data = useMemo(() => toPaymentRows(rows, customer, { cardWords, omitJob, canRefund: Boolean(onRefund) }), [rows, customer, cardWords, omitJob, onRefund])
+  return <PaymentTable rows={data} onRefund={onRefund} />
 }
 
 /** Everything the app sent the customer: the job page's Message table with no toolbar and no To column (the customer's number and address are in the Contact card). */

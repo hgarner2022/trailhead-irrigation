@@ -80,7 +80,8 @@ describe("customer page", () => {
   it("says Paid in full or the unpaid amount in Billing, with Total, Paid, Unpaid and the card", () => {
     const { unmount } = render(<CustomerPage customer={customerPageOf("pass-holder")} />)
     const billing = within(sectionOf("Billing"))
-    expect(billing.getByText("$145 unpaid")).toBeInTheDocument()
+    expect(billing.getByText("$145 unpaid.")).toBeInTheDocument()
+    expect(document.querySelector("[data-slot=settled-line]")).toHaveTextContent("$145 unpaid. Invoice Invoice: INV-2026-0042 sent Nov 12, due Dec 2.")
     for (const label of ["Total", "Paid", "Unpaid", "Card on file"]) expect(billing.getAllByText(label).length).toBeGreaterThan(0)
     expect(billing.getByText(/Visa ending 4242, expires 08\/28/)).toBeInTheDocument()
     expect(billing.getAllByRole("link", { name: /Open in Stripe/ }).length).toBeGreaterThan(1)
@@ -93,7 +94,9 @@ describe("customer page", () => {
   it("puts the invoices still out first and links each invoice row to the invoice", () => {
     expect(sortInvoices(customerPageOf("pass-holder").billing.invoices).map((i) => i.number)).toEqual(["INV-2026-0042", "INV-2026-0031"])
     render(<CustomerPage customer={customerPageOf("pass-holder")} />)
-    expect(within(sectionOf("Billing")).getByRole("link", { name: "Invoice: INV-2026-0042" })).toHaveAttribute("href", expect.stringContaining("invoice=i1"))
+    const links = within(sectionOf("Billing")).getAllByRole("link", { name: "Invoice: INV-2026-0042" })
+    expect(links.length).toBeGreaterThan(1) // the status line names it and so does its row
+    for (const link of links) expect(link).toHaveAttribute("href", expect.stringContaining("invoice=i1"))
   })
 
   it("links a renewal back to last season and last season forward to the renewal", () => {
@@ -140,18 +143,26 @@ describe("customer page", () => {
 
   it("shows the payments as the job page's table: the date, the method with its handle as a quiet line, the amount, a status and icon buttons", () => {
     render(<CustomerPage customer={customerPageOf("pass-holder")} />)
+    // the Venmo payment has no invoice, so it is the Payments table's one row; the card payment is part of its paid invoice's row
     const pay = within(document.querySelector("[data-slot=payment-table]") as HTMLElement)
-    expect(pay.getByText("@andrea-d")).toBeInTheDocument()
-    expect(pay.getAllByRole("link", { name: "Receipt" }).length).toBe(2)
-    expect(pay.getAllByRole("link", { name: /Open in Stripe/ }).length).toBe(1)
-    expect(pay.getAllByRole("link", { name: /Job:/ }).length).toBe(2)
+    expect(pay.getByText("Venmo @andrea-d")).toBeInTheDocument()
+    expect(pay.getByText("Oct 12 · Ryan")).toBeInTheDocument()
+    expect(pay.getAllByRole("link", { name: "View receipt" }).length).toBe(1)
+    expect(pay.queryByRole("link", { name: /Open in Stripe/ })).toBeNull()
+    expect(pay.getAllByRole("link", { name: /Job:/ }).length).toBe(1)
+    const inv = within(document.querySelector("[data-slot=invoice-table]") as HTMLElement)
+    expect(inv.getByText(/^Paid by Visa ending 4242 on Apr 20/)).toBeInTheDocument()
+    expect(inv.getAllByRole("link", { name: /Open in Stripe/ }).length).toBe(1)
   })
 
   it("shows refunds in the words of the job page: Refunded in Jobs, the negative grey row, no Unpaid, no Collect payment", () => {
     render(<CustomerPage customer={customerPageOf("refunded")} />)
     expect(within(sectionOf("Jobs")).getByText("Refunded")).toBeInTheDocument()
     const billing = within(sectionOf("Billing"))
-    expect(billing.getByText("$145 refunded to the card on Nov 19, by Ryan")).toBeInTheDocument()
+    const line = document.querySelector("[data-slot=settled-line]") as HTMLElement
+    expect(line).toHaveAttribute("data-tone", "refunded")
+    expect(line).toHaveTextContent("Refunded")
+    expect(billing.getByText("Refunded to Visa ending 4242 on Nov 19 · Ryan")).toBeInTheDocument()
     expect(billing.getByText("-$145")).toBeInTheDocument()
     expect(billing.queryByText("Unpaid")).toBeNull()
     expect(screen.getByText("Nothing unpaid")).toBeInTheDocument()
@@ -161,9 +172,13 @@ describe("customer page", () => {
   it("reads Paid, $50 refunded in green after a partial refund", () => {
     render(<CustomerPage customer={customerPageOf("part-refunded")} />)
     expect(within(sectionOf("Jobs")).getByText("Paid, $50 refunded")).toBeInTheDocument()
-    const line = document.querySelector("[data-slot=billing-state]") as HTMLElement
+    const line = document.querySelector("[data-slot=settled-line]") as HTMLElement
     expect(line.dataset.tone).toBe("paid")
-    expect(line).toHaveTextContent("$95 stays paid by card, Visa ending 4242. $50 was refunded to the card on Nov 19, by Ryan.")
+    expect(line).toHaveTextContent("Paid, $50 refunded")
+    // Total, Paid and Refunded show here because the line only names the $50
+    const figures = within(document.querySelector("[data-slot=billing-figures]") as HTMLElement)
+    expect(figures.getByText("$95")).toBeInTheDocument()
+    expect(figures.getByText("Refunded")).toBeInTheDocument()
   })
 
   it("keeps transactional consent apart from marketing, off by default, and turns a channel on only through a dialog with a source and a note", async () => {
@@ -256,5 +271,31 @@ describe("customer page", () => {
     render(<CustomerPage customer={customerPageOf("pass-holder")} />)
     expect(screen.queryByText(/Note added/)).toBeNull()
     expect(document.querySelectorAll("[role=status]:not(:empty)")).toHaveLength(0)
+  })
+})
+
+describe("Billing on the customer page says each fact once", () => {
+  it("shows no figures for a job paid in full by one payment, and the paid invoice and its card payment as one row", () => {
+    render(<CustomerPage customer={customerPageOf("one-off")} />)
+    expect(document.querySelector("[data-slot=billing-figures]")).toBeNull()
+    expect(document.querySelector("[data-slot=payment-table]")).toBeNull()
+    const rows = within(document.querySelector("[data-slot=invoice-table]") as HTMLElement).getAllByRole("row")
+    expect(rows).toHaveLength(2)
+  })
+
+  it("lists a deposit as a payment with no invoice and the final invoice as one row crediting it", () => {
+    render(<CustomerPage customer={customerPageOf("deposit")} />)
+    const pay = within(document.querySelector("[data-slot=payment-table]") as HTMLElement)
+    expect(pay.getByText("$50")).toBeInTheDocument()
+    expect(pay.getByText("Nov 10 · Deposit · Ryan")).toBeInTheDocument()
+    const inv = within(document.querySelector("[data-slot=invoice-table]") as HTMLElement)
+    expect(inv.getByText("$145 less the $50 deposit")).toBeInTheDocument()
+    expect(inv.getAllByRole("row")).toHaveLength(2)
+    expect(document.querySelector("[data-slot=billing-figures]")).toHaveTextContent("Total$145Paid$145Unpaid$0")
+  })
+
+  it("titles the two lists one step under the card title", () => {
+    render(<CustomerPage customer={customerPageOf("deposit")} />)
+    for (const name of ["Invoices and payments", "Payments"]) expect(screen.getByRole("heading", { name })).toHaveAttribute("data-size", "sub")
   })
 })
