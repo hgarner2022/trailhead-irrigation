@@ -40,6 +40,8 @@ describe("RequestRows", () => {
     render(<RequestRows rows={rows} now={NOW} onRemind={onRemind} />)
     expect(screen.getByText("Beth Orr, Christmas lights, $1,200")).toBeInTheDocument()
     expect(screen.getByText("Sent 8 days ago")).toBeInTheDocument()
+    // the row opens the Quotes list on the Sent quotes
+    expect(screen.getByRole("link", { name: /Quote waiting/ })).toHaveAttribute("href", "/admin/quotes?status=sent")
     fireEvent.click(screen.getByRole("button", { name: "Remind" }))
     expect(onRemind).toHaveBeenCalledWith(expect.objectContaining({ id: "Q-1" }))
   })

@@ -48,6 +48,9 @@ export const GRID_ROWS: GridJob[] = [
   g("q-dana", "Dana Cho", "Larger sprinkler repair", "Larger sprinkler repair", "18 Cedar Way, Erie", "needs-a-quote", "0 of 1 done", 0, null, "", "Unscheduled", NOONE),
   g("q-beth", "Beth Orr", "Christmas lights", "Christmas lights", "33 Aspen Ct, Lafayette", "quote-sent", "0 of 1 done", 1200, null, "", "Unscheduled", NOONE),
   g("q-greg", "Greg Olsen", "Larger sprinkler repair", "Larger sprinkler repair", "5 Birch Ln, Erie", "quote-sent", "0 of 1 done", 860, null, "", "Unscheduled", NOONE),
+  g("q-nora", "Nora Quinn", "Christmas lights", "Christmas lights", "12 Elk Ct, Louisville", "unscheduled", "0 of 1 done", 750, null, "", "Unscheduled", NOONE),
+  g("q-owen", "Owen Pratt", "Larger sprinkler repair", "Larger sprinkler repair", "40 Hill St, Erie", "cancelled", "0 of 1 done", 1150, null, "", "None", NOONE),
+  g("q-ravi", "Ravi Shah", "Larger sprinkler repair", "Larger sprinkler repair", "8 Willow Dr, Firestone", "needs-a-quote", "0 of 1 done", 0, null, "", "Unscheduled", NOONE),
   g("g-ana", "Ana Ruiz", "Sprinkler repair", "Sprinkler repair", "9 Laurel St, Louisville", "late", "0 of 1 done", 145, null, "", "Mon, Nov 16", RYAN),
 ]
 

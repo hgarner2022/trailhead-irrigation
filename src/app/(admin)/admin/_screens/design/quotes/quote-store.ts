@@ -1,6 +1,7 @@
 "use client"
 
 import { useSyncExternalStore } from "react"
+import { QUOTE_HISTORY_FIXTURES } from "./quote-history-fixtures"
 import { QUOTE_JOB_FIXTURES, STAGE_PILL, liveQuote, nextNumber, stageOf, type Channel, type DepositHow, type QuoteJob, type QuoteLine, type QuoteState } from "./quote-model"
 
 // The quotes of the prototype: each job's lines and the quotes made on it, held in a small store that a page subscribes to. A story makes its own store (so a
@@ -27,7 +28,7 @@ export interface QuoteStore {
 
 const VIA = { text: "text", email: "email", both: "text and email", none: "" }
 
-export function createQuoteStore(initial: readonly QuoteJob[] = QUOTE_JOB_FIXTURES): QuoteStore {
+export function createQuoteStore(initial: readonly QuoteJob[] = [...QUOTE_JOB_FIXTURES, ...QUOTE_HISTORY_FIXTURES]): QuoteStore {
   const seed = () => Object.fromEntries(initial.map((j) => [j.jobId, structuredClone(j)]))
   let jobs: Record<string, QuoteJob> = seed()
   const first = jobs

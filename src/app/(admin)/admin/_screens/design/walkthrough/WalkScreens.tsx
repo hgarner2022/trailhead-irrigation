@@ -33,7 +33,7 @@ import { SettingsScreen } from "../../SettingsScreen"
 import { makeNewJobActions, WALK_DATA, WALK_TODAY } from "./walk-new-job"
 import { Placeholder } from "./Placeholder"
 import { HomeRequestRows, RequestRoute, RequestsRoute } from "./WalkRequests"
-import { QuoteJobRoute } from "./WalkQuotes"
+import { QuoteJobRoute, QuotesRoute } from "./WalkQuotes"
 import { ReceiptRoute } from "./receipts"
 import { type Route } from "./routes"
 
@@ -70,7 +70,7 @@ export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen:
         hiddenColumns={["who", "jobName"]}
         onOpen={(r) => onOpen(r.id)}
         exportName="jobs"
-        pageSize={25}
+        pageSize={50}
         noMatchTitle="No jobs match."
         emptyTitle="No jobs yet"
         emptyLine="Jobs appear here as passes are sold and work is booked. Add one with New job."
@@ -152,9 +152,11 @@ const NotFound = ({ what }: { what: string }) => (
 export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, onOpenRequest, onNew, onJobCreated }: { route: Route; rows: GridJob[]; onBack: () => void; onOpenJob: (id: string) => void; onOpenCustomer: (id: string) => void; onOpenRequest: (id: string) => void; onNew: () => void; onJobCreated?: (jobId: string, message: string) => void }) {
   switch (route.screen) {
     case "requests":
-      return <RequestsRoute filter={route.filter} onOpen={onOpenRequest} />
+      return <RequestsRoute filter={route.filter === "new" ? "new" : undefined} onOpen={onOpenRequest} />
     case "request":
       return <RequestRoute id={route.id ?? ""} onJobCreated={onJobCreated} />
+    case "quotes":
+      return <QuotesRoute filter={route.filter === "sent" ? "sent" : undefined} />
     case "jobs":
       return <WalkJobsGrid rows={rows} onOpen={onOpenJob} onNew={onNew} />
     case "customers":
@@ -163,7 +165,7 @@ export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, on
       return <InvoicesPage rows={INVOICES} />
     case "job": {
       const v = jobView(route.id ?? "")
-      if (v.kind === "quote") return <QuoteJobRoute id={route.id ?? ""} />
+      if (v.kind === "quote") return <QuoteJobRoute id={route.id ?? ""} anchor={route.anchor} />
       if (v.kind === "flow") return <JobFlow embedded invoice={{ id: "inv-42", number: "INV-2026-0042" }} />
       if (v.kind === "trips") return <JobPagePass data={v.data} customer={v.customer} />
       if (v.kind === "page") return <StaticJob id={route.id!} />

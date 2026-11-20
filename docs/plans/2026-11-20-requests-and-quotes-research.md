@@ -93,6 +93,8 @@ Research only. No code is written and nothing is wired. Hannah asked: "Where do 
 
 ### 4.2 Navigation: one item, "Requests", and no Quotes item
 
+> **Hannah, Nov 20 2026: a Quotes nav item was added after all.** It sits after Jobs with a count of the quotes still waiting for an answer (Sent and not decided), like the Requests count. The job still holds the quote and Jobs still shows Needs a quote and Quote sent; the Quotes list is a second view of every quote, modelled on the Invoices list. The reasoning below is the earlier decision and is kept as it was.
+
 Jobber puts Requests and Quotes beside Jobs. Trailhead should not copy both, for three reasons.
 
 1. **The volume is small.** Only Christmas lights and the larger repair are quote-only. A list of quotes with its own item would be nearly empty most of the year.

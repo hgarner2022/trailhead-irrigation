@@ -11,7 +11,7 @@ import { recordHref } from "./record-preview-model"
 // Home's rows for requests and quotes (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.7; Hannah's answers 1 and 8 of Nov 20 2026), in the same
 // anatomy as a Needs action row: an icon in a tinted circle, the message, how long it has been waiting and ONE action. "2 new requests" is one row that
 // opens the Requests list filtered to New and shows the oldest age, never a promise. "Quote waiting" is one row per quote that is Sent and undecided,
-// oldest first, with its age and Remind (a quote is reminded only when Ryan presses it, once a day). A decided quote raises one row that Dismiss clears.
+// oldest first, with its age and Remind (a quote is reminded only when Ryan presses it, once a day); the row opens the Quotes list on the Sent quotes. A decided quote raises one row that Dismiss clears.
 // A tech sees none of them. On a phone these rows are the way into Requests, which sits under More. Pure props over an `at` for the age.
 
 export type RequestRow =
@@ -78,7 +78,7 @@ export function RequestRows({ rows, now, onRemind, onDismiss, readOnly, classNam
         if (row.kind === "quote-waiting") {
           return (
             <li key={rowKey(row)} data-kind="quote-waiting" className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:gap-3">
-              <Link href={recordHref.job(row.jobId)} className={LINK}>
+              <Link href="/admin/quotes?status=sent" className={LINK}>
                 <Body icon={FileText} tone={TONE_WAIT} name="Quote waiting" message={`${row.customer}, ${row.service}, ${row.amount}`} sub={`Sent ${relativeTime(row.sentAt, now)}${row.remindedAt ? `. Reminded ${relativeTime(row.remindedAt, now)}` : ""}`} since={row.sentAt} />
               </Link>
               <Button type="button" variant="outline" className="min-h-11 self-start sm:self-center" disabled={row.remindedToday} onClick={() => onRemind?.(row)}>

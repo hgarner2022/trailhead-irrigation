@@ -51,7 +51,15 @@ describe("Requests routes", () => {
     expect(parseHref("/admin/requests")).toEqual({ screen: "requests" })
     expect(parseHref(recordHref.request("rq-rosa"))).toEqual({ screen: "request", id: "rq-rosa" })
     expect(parseHref("/admin/requests?status=new")).toEqual({ screen: "requests", filter: "new" })
-    expect(parseHref(recordHref.quote("q-beth"))).toEqual({ screen: "job", id: "q-beth" })
+    // a quote is a section of its job: the link opens the job at its Quote section
+    expect(parseHref(recordHref.quote("q-beth"))).toEqual({ screen: "job", id: "q-beth", anchor: "quote" })
+    expect(parseHref(recordHref.job("q-beth"))).toEqual({ screen: "job", id: "q-beth" })
+  })
+  it("reads the Quotes list and Home's Quote waiting link, makes Quotes a root and titles it", () => {
+    expect(parseHref("/admin/quotes")).toEqual({ screen: "quotes" })
+    expect(parseHref("/admin/quotes?status=sent")).toEqual({ screen: "quotes", filter: "sent" })
+    expect(navigate([{ screen: "jobs" }], { screen: "quotes" })).toEqual([{ screen: "quotes" }])
+    expect(routeTitle({ screen: "quotes" })).toBe("Quotes")
   })
   it("makes Requests a root and a request one deeper, and titles them", () => {
     const list: Route = { screen: "requests" }

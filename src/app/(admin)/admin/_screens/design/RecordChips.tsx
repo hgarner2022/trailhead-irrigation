@@ -23,13 +23,16 @@ export const CustomerChip = ({ id, name, phone, address, openJobs = 0, unpaid, s
   <RecordChip kind="customer" name={name} flag={doNotService ? "Do not service" : undefined} href={recordHref.customer(id)} size={size} className={tableCls(table, true)} preview={customerPreview({ id, name, phone, address, openJobs, unpaid })} />
 )
 
-export const JobChip = ({ id, name, customer, status = "scheduled", next, total = "$0", size, table, noMark }: { table?: boolean; noMark?: boolean; id: string; name: string; customer: string; status?: PillStatus; next?: string; total?: string; size?: Size }) => (
-  <RecordChip kind="job" name={name} noMark={noMark} href={recordHref.job(id)} size={size} className={tableCls(table)} preview={jobPreview({ id, name, customer, status, next, total })} />
+export const JobChip = ({ id, name, customer, status = "scheduled", next, total = "$0", size, table, noMark, href }: { table?: boolean; noMark?: boolean; id: string; name: string; customer: string; status?: PillStatus; next?: string; total?: string; size?: Size; /** where it opens when not the job itself (the Quotes list: the job at its Quote section) */ href?: string }) => (
+  <RecordChip kind="job" name={name} noMark={noMark} href={href ?? recordHref.job(id)} size={size} className={tableCls(table)} preview={jobPreview({ id, name, customer, status, next, total })} />
 )
 
 export const InvoiceChip = ({ id, number, customer, status, statusLabel, total, balance, due, size, table }: { table?: boolean; id: string; number: string; customer: string; status: PillStatus; statusLabel: string; total: string; balance: string; due: string; size?: Size }) => (
   <RecordChip kind="invoice" name={number} href={recordHref.invoice(id)} size={size} className={tableCls(table, true)} preview={invoicePreview({ id, number, customer, status, statusLabel, total, balance, due })} />
 )
+
+/** A quote is a section of its job: the chip opens the job at its Quote card. */
+export const QuoteChip = ({ jobId, number, table }: { jobId: string; number: string; table?: boolean }) => <RecordChip kind="quote" name={number} href={recordHref.quote(jobId)} className={tableCls(table, true)} />
 
 export const PaymentChip = ({ id, receipt, table }: { id: string; receipt: string; table?: boolean }) => <RecordChip kind="payment" name={`Receipt ${receipt}`} href={paymentHref(id)} className={tableCls(table, true)} />
 

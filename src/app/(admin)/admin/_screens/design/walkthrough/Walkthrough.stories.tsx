@@ -210,6 +210,9 @@ export const RequestToQuoteTest: Story = {
     const body = within(document.body)
     await expect(await c.findByRole("heading", { level: 1, name: "Requests" })).toBeInTheDocument()
     await expect(canvasElement.querySelector("[data-slot=nav-count]")?.textContent).toContain("2")
+    // the Quotes item after Jobs counts the two quotes already waiting
+    const quotesCount = () => canvasElement.querySelector('a[href="/admin/quotes"] [data-slot=nav-count]')?.textContent
+    await expect(quotesCount()).toContain("2")
     // open the request: it is Seen
     await userEvent.click(await c.findByRole("button", { name: "Rosa Delgado" }))
     await waitFor(() => expect(route(canvasElement)).toBe("request:rq-rosa"))
@@ -234,6 +237,21 @@ export const RequestToQuoteTest: Story = {
     await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/jobs"]')!)
     await expect((await c.findAllByText("Quote sent")).length).toBeGreaterThan(0)
     await expect(canvasElement.querySelector("[data-slot=nav-count]")?.textContent).toContain("1")
+    // Quotes lists it at once as Sent, and the rail's count is now 3
+    await expect(quotesCount()).toContain("3")
+    await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/quotes"]')!)
+    await expect(await c.findByRole("heading", { level: 1, name: "Quotes" })).toBeInTheDocument()
+    // the tab counts and the tiles moved with it: 3 Sent of 6, and the open pipeline is $1,200 + $860 + the new $1,200
+    await expect(await c.findByRole("tab", { name: /^Sent/ })).toHaveTextContent("Sent3")
+    await expect(await c.findByRole("tab", { name: /^All/ })).toHaveTextContent("All6")
+    await expect(await c.findByText("$3,260")).toBeInTheDocument()
+    const row = (await c.findAllByText("Q-2026-0009"))[0]!.closest("tr")!
+    await expect(within(row).getByText("Rosa Delgado")).toBeInTheDocument()
+    await expect(within(row).getByText("Sent", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
+    await expect(within(row).getByText("$300")).toBeInTheDocument()
+    // a click on the row opens the job at its Quote section
+    await userEvent.click(within(row).getByRole("link", { name: /Christmas lights/ }))
+    await waitFor(() => expect(route(canvasElement)).toBe("job:q-rosa"))
   },
 }
 
