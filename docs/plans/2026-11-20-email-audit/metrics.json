@@ -1,0 +1,344 @@
+{
+  "purchase-confirmation": {
+    "subjectLength": 33,
+    "htmlKb": 9.9,
+    "h1": 1,
+    "buttons": 1,
+    "links": 8,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 33,
+    "plainTextUrls": 5
+  },
+  "booking-confirmation": {
+    "subjectLength": 50,
+    "htmlKb": 6.4,
+    "h1": 1,
+    "buttons": 1,
+    "links": 5,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 21,
+    "plainTextUrls": 3
+  },
+  "date-set": {
+    "subjectLength": 39,
+    "htmlKb": 6.4,
+    "h1": 1,
+    "buttons": 1,
+    "links": 5,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 21,
+    "plainTextUrls": 3
+  },
+  "date-moved": {
+    "subjectLength": 45,
+    "htmlKb": 6.4,
+    "h1": 1,
+    "buttons": 1,
+    "links": 5,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 21,
+    "plainTextUrls": 3
+  },
+  "day-before": {
+    "subjectLength": 29,
+    "htmlKb": 6.4,
+    "h1": 1,
+    "buttons": 1,
+    "links": 6,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 21,
+    "plainTextUrls": 3
+  },
+  "date-confirm": {
+    "subjectLength": 39,
+    "htmlKb": 6.5,
+    "h1": 1,
+    "buttons": 1,
+    "links": 5,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 21,
+    "plainTextUrls": 3
+  },
+  "receipt": {
+    "subjectLength": 46,
+    "htmlKb": 9.3,
+    "h1": 1,
+    "buttons": 1,
+    "links": 4,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 28,
+    "plainTextUrls": 2
+  },
+  "invoice": {
+    "subjectLength": 60,
+    "htmlKb": 9.2,
+    "h1": 1,
+    "buttons": 1,
+    "links": 4,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 26,
+    "plainTextUrls": 2
+  },
+  "invoice-reminder": {
+    "subjectLength": 45,
+    "htmlKb": 9.2,
+    "h1": 1,
+    "buttons": 1,
+    "links": 4,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 26,
+    "plainTextUrls": 2
+  },
+  "card-failed": {
+    "subjectLength": 50,
+    "htmlKb": 4.4,
+    "h1": 1,
+    "buttons": 1,
+    "links": 3,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 14,
+    "plainTextUrls": 1
+  },
+  "card-expiring": {
+    "subjectLength": 42,
+    "htmlKb": 4.2,
+    "h1": 1,
+    "buttons": 1,
+    "links": 3,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 12,
+    "plainTextUrls": 1
+  },
+  "cancelled": {
+    "subjectLength": 33,
+    "htmlKb": 4.2,
+    "h1": 1,
+    "buttons": 1,
+    "links": 3,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 13,
+    "plainTextUrls": 1
+  },
+  "visit-cancelled": {
+    "subjectLength": 46,
+    "htmlKb": 4.2,
+    "h1": 1,
+    "buttons": 1,
+    "links": 3,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 13,
+    "plainTextUrls": 1
+  },
+  "renewal": {
+    "subjectLength": 37,
+    "htmlKb": 4.2,
+    "h1": 1,
+    "buttons": 1,
+    "links": 3,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 15,
+    "plainTextUrls": 2
+  },
+  "not-closed-crew": {
+    "subjectLength": 37,
+    "htmlKb": 4.7,
+    "h1": 1,
+    "buttons": 1,
+    "links": 3,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 11,
+    "plainTextUrls": 1
+  },
+  "admin-alert": {
+    "subjectLength": 38,
+    "htmlKb": 3.6,
+    "h1": 1,
+    "buttons": 1,
+    "links": 3,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 8,
+    "plainTextUrls": 1
+  },
+  "invoice-with-report": {
+    "subjectLength": 60,
+    "htmlKb": 14.2,
+    "h1": 1,
+    "buttons": 1,
+    "links": 4,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 38,
+    "plainTextUrls": 2
+  },
+  "sign-in": {
+    "subjectLength": 27,
+    "htmlKb": 4.5,
+    "h1": 1,
+    "buttons": 1,
+    "links": 3,
+    "fontSizes": [
+      14,
+      16,
+      18,
+      28
+    ],
+    "lang": true,
+    "colorScheme": "light",
+    "darkStyles": false,
+    "tabularNums": false,
+    "plainTextLines": 13,
+    "plainTextUrls": 1
+  }
+}
