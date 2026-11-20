@@ -22,12 +22,14 @@ export interface PhotoPickerProps {
   samples?: readonly PickedPhoto[]
   /** the most photos taken; default 6 */
   max?: number
+  /** the line under the button before any photo is added; "Optional." by default, "Strongly suggested." where the service wants them */
+  hint?: string
   className?: string
 }
 
 export const photoCount = (n: number) => `${n} photo${n === 1 ? "" : "s"}`
 
-export function PhotoPicker({ photos, onAdd, onRemove, samples, max = 6, className }: PhotoPickerProps) {
+export function PhotoPicker({ photos, onAdd, onRemove, samples, max = 6, hint = "Optional.", className }: PhotoPickerProps) {
   const room = max - photos.length
   const fresh = (list: readonly PickedPhoto[]) => list.filter((p) => !photos.some((x) => x.name === p.name)).slice(0, Math.max(0, room))
   return (
@@ -58,7 +60,7 @@ export function PhotoPicker({ photos, onAdd, onRemove, samples, max = 6, classNa
         )}
       </div>
       <p role="status" className="text-base text-muted-foreground">
-        {photos.length > 0 ? `${photoCount(photos.length)} added. Ryan sees ${photos.length === 1 ? "it" : "them"} before the visit.` : "Optional. A photo of the yard or the problem helps Ryan come ready."}
+        {photos.length > 0 ? `${photoCount(photos.length)} added.` : hint}
       </p>
       {photos.length > 0 && (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">

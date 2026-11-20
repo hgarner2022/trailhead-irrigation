@@ -5,16 +5,18 @@ import { AddToCalendarLinks } from "@/components/blocks/AddToCalendarLinks"
 import { BookedCard } from "@/components/blocks/BookedCard"
 import { channelWords, type ContactChannel } from "@/components/blocks/ContactPreference"
 import { photoCount } from "@/components/blocks/PhotoPicker"
-import { Button } from "@/components/ui/button"
 import { clock12, type DayTimePick } from "@/lib/booking/day-time"
 import { QUOTE_DONE } from "@/lib/booking/services"
+import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { longDay } from "@/lib/portal/words"
 import { phoneWords } from "./booking-form-model"
 
-// The last screen: the booked card with the exact time, "You added 2 photos", what happens next on a trail line, Add to calendar, and the way into your Trailhead account. A request for a
-// quote has no card and no day ("Thanks, Ryan will call you by tomorrow."); a booking with no open day says Ryan will call. The words follow how the customer asked to be reached. Pure props.
+// The last screen: no Back and no Continue, because there is nothing to go back to. A booking shows the booked card with the exact time, "You added 2 photos", what happens next on a trail line,
+// Add to calendar, the way into your Trailhead account and "Back to the website". A request (a service we quote, or a booking with no open day) has no card and no day: "Thanks. We've got your
+// request." and the contact the customer gave, never a time we do not know; a request for a quote adds Ryan's number as plain help. The words follow how the customer asked to be reached. Pure props.
 
 const LINK = "font-medium text-primary-dark underline underline-offset-2 hover:text-primary-deep"
+const BLOCK_LINK = `${LINK} inline-flex min-h-11 items-center`
 
 const dayBefore = (iso: string) => {
   const d = new Date(`${iso}T12:00:00Z`)
@@ -50,41 +52,52 @@ export interface BookingBookedProps {
   /** the booked day and time; absent for a request or a booking with no open day */
   pick?: DayTimePick
   photos: number
-  /** "Ryan will call you": no day was offered or taken */
+  /** no day was offered or taken: a request about a day */
   callback?: boolean
   quote?: boolean
-  onDone?: () => void
+  onOpenAccount?: () => void
 }
 
-export function BookingBooked({ service, where, channel, phone, email, pick, photos, callback, quote, onDone }: BookingBookedProps) {
-  const account = (
-    <p data-slot="done-account" className="mt-8 text-base text-muted-foreground">
-      {quote ? "Your request is saved in " : "Change your day, see receipts and pay in "}
-      <Link href="/account" className={LINK}>
-        your Trailhead account
+export function BookingBooked({ service, where, channel, phone, email, pick, photos, callback, quote, onOpenAccount }: BookingBookedProps) {
+  const links = (
+    <div data-slot="done-links" className="mt-8 flex flex-col items-start">
+      <p data-slot="done-account" className="text-base text-muted-foreground">
+        {"Change your day, see receipts and pay in "}
+        <Link href="/account" onClick={onOpenAccount ? (e) => (e.preventDefault(), onOpenAccount()) : undefined} className={LINK}>
+          your Trailhead account
+        </Link>
+        .
+      </p>
+      <Link href="/" className={BLOCK_LINK}>
+        Back to the website
       </Link>
-      .
-    </p>
+    </div>
   )
-  const photoLine = photos > 0 && <p data-slot="done-photos" className="mt-4 text-base text-foreground">{`You added ${photoCount(photos)}. Ryan sees ${photos === 1 ? "it" : "them"} before the visit.`}</p>
+  const photoLine = photos > 0 && <p data-slot="done-photos" className="mt-4 text-base text-foreground">{`You added ${photoCount(photos)}.`}</p>
   if (quote || callback || !pick?.day || !pick.start) {
+    const dest = channel === "email" ? email : channel === "text" ? phoneWords(phone) : `${phoneWords(phone)} and ${email}`
     return (
       <div>
-        <h2 className="font-display text-4xl leading-none text-navy">{quote ? QUOTE_DONE : "Ryan will call you."}</h2>
+        <h2 className="font-display text-4xl leading-none text-navy">{QUOTE_DONE}</h2>
         <p className="mt-3 text-base text-foreground">{`${service} at ${where}.`}</p>
         {photoLine}
-        <Trail
-          lines={[
-            quote
-              ? { key: "call", lead: "By tomorrow", text: `Ryan calls ${phoneWords(phone)} to set a time to look at the yard, and puts the price in writing before any work.` }
-              : { key: "call", lead: "Soon", text: `Ryan calls ${phoneWords(phone)} to find a day that works. Nothing is booked until you both agree.` },
-            { key: "now", lead: "Now", text: `We're sending a copy of your ${quote ? "request" : "details"} to ${channel === "email" ? email : channel === "text" ? phoneWords(phone) : `${phoneWords(phone)} and ${email}`}.` },
-          ]}
-        />
-        {account}
-        <Button size="lg" variant="outline" className="mt-8" onClick={onDone}>
-          Done
-        </Button>
+        <p data-slot="done-contact" className="mt-4 text-base text-foreground">
+          {`We'll use ${dest} to get back to you${quote ? " about your quote" : " about a day"}.`}
+        </p>
+        {quote && (
+          <p data-slot="done-help" className="mt-4 text-base text-muted-foreground">
+            {"Questions? Call Ryan at "}
+            <a href={PHONE_TEL} className={LINK}>
+              {PHONE_DISPLAY}
+            </a>
+            .
+          </p>
+        )}
+        <div className="mt-6">
+          <Link href="/" className={BLOCK_LINK}>
+            Back to the website
+          </Link>
+        </div>
       </div>
     )
   }
@@ -98,16 +111,13 @@ export function BookingBooked({ service, where, channel, phone, email, pick, pho
         lines={[
           { key: "now", lead: "Now", text: now },
           { key: "before", lead: longDay(dayBefore(pick.day)), text: `A reminder by ${channelWords(channel)}: Ryan is coming tomorrow at ${clock12(pick.start)}.` },
-          { key: "after", lead: "After the visit", text: "Ryan asks how you'd like to pay: card, check, Venmo or cash. Your receipt arrives by email." },
+          { key: "after", lead: "After the visit", text: "You pay by card, check, Venmo or cash. We email your receipt." },
         ]}
       />
       <div className="mt-6">
         <AddToCalendarLinks googleHref="https://calendar.google.com/calendar/render?action=TEMPLATE" icsHref="/api/visits/v1/calendar.ics?token=t" />
       </div>
-      {account}
-      <Button size="lg" className="mt-8" onClick={onDone}>
-        Done
-      </Button>
+      {links}
     </div>
   )
 }

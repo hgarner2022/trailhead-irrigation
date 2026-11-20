@@ -16,7 +16,7 @@ describe("ZipCheck", () => {
     const box = screen.getByLabelText("Zip code")
     await user.type(box, "80a516")
     expect(box).toHaveValue("80516")
-    expect(screen.getByText("Good news, we work in Erie.")).toBeInTheDocument()
+    expect(screen.getByText("We work in Erie.")).toBeInTheDocument()
     await user.clear(box)
     await user.type(box, "80302")
     expect(screen.getByText(/We don't serve 80302 yet/)).toBeInTheDocument()

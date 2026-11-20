@@ -50,7 +50,7 @@ export function DayTimePicker({ offers, value, onChange, legend, helper, length,
           {DAYS_FULL}
         </p>
         {onNote && (
-          <FormRow label="When would suit you?" hint="Optional. Ryan reads this and calls you.">
+          <FormRow label="When would suit you?" hint="Optional.">
             <Textarea value={note} onChange={(e) => onNote(e.target.value)} placeholder="Any weekday morning in May" className="min-h-24 text-base" />
           </FormRow>
         )}

@@ -29,5 +29,6 @@ describe("the services", () => {
     expect(SERVICES.every((s) => s.kind !== "quote")).toBe(true)
     expect(QUOTE_SERVICES.every((s) => s.kind === "quote")).toBe(true)
     expect(SERVICES[0]!.kind).toBe("pass")
+    expect(SERVICES.every((s) => s.online === "bookable") && QUOTE_SERVICES.every((s) => s.online === "quote")).toBe(true)
   })
 })

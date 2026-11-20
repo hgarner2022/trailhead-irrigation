@@ -20,7 +20,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(canvas.getByLabelText("Zip code"), "80516")
-    await expect(await canvas.findByText("Good news, we work in Erie.")).toBeInTheDocument()
+    await expect(await canvas.findByText("We work in Erie.")).toBeInTheDocument()
   },
 }
 

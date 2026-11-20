@@ -90,7 +90,7 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.click(await c.findByRole("radio", { name: /Text and email/ }))
     await next()
     await next("Confirm and book")
-    await expect(await c.findByText("You added 2 photos. Ryan sees them before the visit.")).toBeInTheDocument()
+    await expect(await c.findByText("You added 2 photos.")).toBeInTheDocument()
     await expect(await c.findByRole("article", { name: /booked/ })).toBeInTheDocument()
     await userEvent.click(await c.findByRole("link", { name: "your Trailhead account" }))
     await waitFor(() => expect(where(canvasElement)).toBe("account"))
