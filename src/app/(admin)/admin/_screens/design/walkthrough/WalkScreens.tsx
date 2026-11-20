@@ -27,6 +27,7 @@ import { ScheduleScreen } from "../../ScheduleScreen"
 import { SettingsScreen } from "../../SettingsScreen"
 import { makeNewJobActions, WALK_DATA, WALK_TODAY } from "./walk-new-job"
 import { Placeholder } from "./Placeholder"
+import { ReceiptRoute } from "./receipts"
 import { type Route } from "./routes"
 
 // The screens of the walkthrough, each one of the design pages over the walkthrough's data (docs/plans/2026-11-19-prototype-walkthrough-spec.md,
@@ -120,7 +121,7 @@ const NotFound = ({ what }: { what: string }) => (
 )
 
 /** One route, rendered. Keyed by the caller so a record's state resets when another opens. */
-export function RouteScreen({ route, rows, onOpenJob, onOpenCustomer, onNew }: { route: Route; rows: GridJob[]; onOpenJob: (id: string) => void; onOpenCustomer: (id: string) => void; onNew: () => void }) {
+export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, onNew }: { route: Route; rows: GridJob[]; onBack: () => void; onOpenJob: (id: string) => void; onOpenCustomer: (id: string) => void; onNew: () => void }) {
   switch (route.screen) {
     case "jobs":
       return <WalkJobsGrid rows={rows} onOpen={onOpenJob} onNew={onNew} />
@@ -152,6 +153,8 @@ export function RouteScreen({ route, rows, onOpenJob, onOpenCustomer, onNew }: {
       const inv = invoicePage(route.id ?? "")
       return inv ? <InvoicePage invoice={inv} /> : <NotFound what="That invoice" />
     }
+    case "receipt":
+      return <ReceiptRoute id={route.id ?? "card"} onBack={onBack} />
     case "home":
       return <HomeScreen data={LIVE} today={LIVE_TODAY} />
     case "schedule":

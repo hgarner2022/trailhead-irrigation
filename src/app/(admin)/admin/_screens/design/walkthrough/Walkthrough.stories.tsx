@@ -89,6 +89,30 @@ export const FromSearch: Story = {
   },
 }
 
+/** Record a check on Andrea's repair: the toast offers the receipt, and the receipt page is what Andrea would see, with the method and the check number. */
+export const Receipt: Story = {
+  name: "Receipt",
+  globals: laptop,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await userEvent.click((await c.findAllByRole("button", { name: "Andrea Dalton" }))[0]!)
+    await userEvent.click(await c.findByRole("button", { name: "Schedule" }))
+    await userEvent.click(await body.findByRole("button", { name: /Schedule and notify the customer/ }))
+    await userEvent.click(await c.findByRole("button", { name: "Mark done" }))
+    await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Mark done" }))
+    await userEvent.click(await body.findByRole("radio", { name: /Check/ }))
+    await userEvent.type(await body.findByLabelText(/Check number/), "2210")
+    await userEvent.click(await body.findByRole("button", { name: "Record the check" }))
+    const confirm = await body.findAllByRole("button", { name: /Record the payment/ })
+    await userEvent.click(confirm[confirm.length - 1]!)
+    await expect(await body.findByText("Recorded. Andrea gets a receipt by text.")).toBeInTheDocument()
+    await userEvent.click(await body.findByRole("button", { name: "View the receipt" }))
+    await waitFor(() => expect(route(canvasElement)).toMatch(/^receipt:check\|2210/))
+    await expect(await c.findByText("Check number")).toBeInTheDocument()
+  },
+}
+
 /** New job is the real sheet: pick a customer, a service, Add job, and the new job opens as Unscheduled. */
 export const NewJobSheet: Story = {
   name: "New job",

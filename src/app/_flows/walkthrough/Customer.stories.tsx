@@ -25,7 +25,7 @@ const laptop = { viewport: { value: "laptop", isRotated: false } }
 const where = (el: HTMLElement) => el.querySelector("[data-slot=flow-screen]")?.getAttribute("data-where")
 const page = (el: HTMLElement) => el.querySelector("[data-slot=flow-screen]")?.getAttribute("data-page")
 
-/** Starts on Book online. Next in the strip walks the seven steps; the booking's confirmation opens the account. */
+/** Starts on Book online. Next in the strip walks the eight steps; the booking's confirmation opens the account. */
 export const Phone: Story = {
   name: "Phone",
   globals: phone,
@@ -41,6 +41,10 @@ export const Phone: Story = {
     await waitFor(() => expect(page(canvasElement)).toBe("visits"))
     await userEvent.click(await c.findByRole("button", { name: "Next: Pay an invoice" }))
     await waitFor(() => expect(page(canvasElement)).toBe("pay"))
+    await userEvent.click(await c.findByRole("button", { name: "Next: Receipts" }))
+    await waitFor(() => expect(where(canvasElement)).toBe("receipts"))
+    await userEvent.click(await c.findByRole("button", { name: "Check" }))
+    await expect(await c.findByText(/Check number/)).toBeInTheDocument()
     await userEvent.click(await c.findByRole("button", { name: "Next: Season Pass" }))
     await waitFor(() => expect(where(canvasElement)).toBe("pass"))
     await userEvent.click(await c.findByRole("button", { name: "Next: Details" }))

@@ -2,7 +2,7 @@
 // `parseHref` turns the hrefs the record chips and the nav emit (`recordHref.*`, `/admin/...`) into a route, so the walkthrough never edits a
 // page component: it listens for the links the pages already draw. An href that is not in the prototype parses to null.
 
-export type Screen = "home" | "schedule" | "jobs" | "customers" | "invoices" | "reports" | "settings" | "job" | "customer" | "invoice"
+export type Screen = "home" | "schedule" | "jobs" | "customers" | "invoices" | "reports" | "settings" | "job" | "customer" | "invoice" | "receipt"
 export interface Route {
   screen: Screen
   id?: string
@@ -64,6 +64,7 @@ export const SCREEN_TITLE: Record<"home" | "schedule" | "jobs" | "customers" | "
 /** The breadcrumb words of a route: the list's name, or the record's own name (given by the caller, who holds the data). */
 export function routeTitle(route: Route, nameOf: (r: Route) => string | undefined = () => undefined): string {
   if (route.screen === "job" || route.screen === "customer" || route.screen === "invoice") return nameOf(route) ?? route.id ?? route.screen
+  if (route.screen === "receipt") return "Andrea's receipt"
   if (route.screen === "schedule" && route.id) return dayTitle(route.id)
   if (route.newJob) return "New job"
   return SCREEN_TITLE[route.screen]

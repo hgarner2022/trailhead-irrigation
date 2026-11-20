@@ -23,6 +23,8 @@ import { channelWords, ContactPreference, type ContactChannel } from "./ContactP
 import { classifyHref, STEPS, stepOf, type StepKey, type Target, type Where } from "./routes"
 import { allMessages, bookingMessages, DEFAULT_FACTS, type TextFacts } from "./walk-texts"
 import { WalkBooking, type Booked } from "./WalkBooking"
+import { WAYS, type Way } from "./receipt-data"
+import { ReceiptSet } from "./ReceiptViews"
 
 // The customer side, one clickable prototype (docs/plans/2026-11-19-prototype-walkthrough-spec.md, section 7): Book online, the texts and emails that
 // follow, the account (Home, Visits, a visit with Reschedule and Cancel), paying an invoice to its receipt, the Season Pass page and its renewal
@@ -47,7 +49,7 @@ const receiptOf = {
 const RENEWAL = { passId: "p-last", season: 2028, firstName: "Andrea", lastName: "Anderson", email: "andrea@example.com", phone: "(970) 555-0123", place: { id: "property-1", label: "123 Trailhead Way, Erie, CO", line1: "123 Trailhead Way", town: "Erie", state: "CO", zip: "80516" }, zones: 8, inspection: false, needsCustomerHome: false, accessNote: "", card: { last4: "4242", expires: "2029-08" } }
 
 const LINK_ONE = "/account/visits/v1?t=abc"
-const START_HREF: Record<StepKey, string | null> = { book: null, texts: null, account: "/account", visits: "/account/visits", pay: null, pass: null, details: "/account/details" }
+const START_HREF: Record<StepKey, string | null> = { book: null, texts: null, account: "/account", visits: "/account/visits", pay: null, receipts: null, pass: null, details: "/account/details" }
 
 function Plain({ title, line, children }: { title: string; line: string; children?: ReactNode }) {
   return (
@@ -75,6 +77,7 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   const [channel, setChannel] = useState<ContactChannel>("text")
   const [bookRun, setBookRun] = useState(0)
   const [notice, setNotice] = useState<string | null>(null)
+  const [way, setWay] = useState<Way>("card")
   const [passDay, setPassDay] = useState<"april" | "november">("april")
   // The booking's header and progress bar are fixed to the top of the window; the Flow strip is too, so they are moved down by the strip's own height (it wraps on a phone).
   const screen = useRef<HTMLDivElement>(null)
@@ -181,6 +184,22 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
         </div>
       )
       break
+    case "receipts": {
+      const choice = WAYS.find((w) => w.way === way)!
+      body = (
+        <div className="mx-auto max-w-2xl px-4 pt-6">
+          <h1 className="font-display text-3xl font-semibold text-navy">Receipts</h1>
+          <p className="mt-1 text-base text-muted-foreground">What she gets for one payment: a text, an email and the receipt page. Pick how it was paid to read each wording.</p>
+          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="How it was paid">
+            {WAYS.map((w) => (
+              <Button key={w.way} type="button" size="sm" variant={w.way === way ? "default" : "outline"} aria-pressed={w.way === way} onClick={() => setWay(w.way)}>{w.label}</Button>
+            ))}
+          </div>
+          <ReceiptSet key={way} way={way} reference={choice.ref} />
+        </div>
+      )
+      break
+    }
     case "pass":
       body = (
         <div className="bg-cream">
@@ -227,6 +246,7 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   const jump = (key: StepKey) => {
     if (key === "book") return go({ where: "book" }, "/booking")
     if (key === "texts") return go({ where: "texts" }, "")
+    if (key === "receipts") return go({ where: "receipts" }, "")
     if (key === "pass") return go({ where: "pass" }, "/account/pass")
     if (key === "pay") {
       const id = s.jobs.flatMap((j) => j.invoices)[0]?.id ?? "inv_1"

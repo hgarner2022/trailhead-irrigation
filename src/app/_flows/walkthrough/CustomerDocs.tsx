@@ -6,6 +6,7 @@ const STEPS: [string, string][] = [
   ["Account", "Home: the next visit with Reschedule and Cancel (or Text Ryan inside 24 hours), an invoice to pay, the pass card and the latest visits."],
   ["Visits", "The timeline, then a visit page, then Reschedule (three days and Show more days) and Cancel with their done steps."],
   ["Pay an invoice", "Pay now opens the pay page (Stripe's box is drawn, never a card field), then Paid, then the receipt."],
+  ["Receipts", "What she gets for one payment: the text, the email and the receipt page. The chips switch how it was paid (Card, Check, Cash, Venmo) and the refund, so each wording is there to read."],
   ["Season Pass", "The card, the season line, add July, skip a visit. See it from November 1 turns on Reserve next season, which opens the renewal checkout."],
   ["Details", "Name, phone, yard notes, Tell Ryan someone needs to be home, and how we reach you."],
 ]

@@ -8,6 +8,7 @@ import { useToast } from "@/components/blocks/Toast"
 import { Button } from "@/components/ui/button"
 import { allRows, nameOfRoute, ownerOf, resetExtras, resolveRoute, searchWorld } from "./data"
 import { NewJobSheet, RouteScreen } from "./WalkScreens"
+import { MessageView, ReceiptToast, newestPayment, paidFrom, useReceiptToast, type Paid } from "./receipts"
 import { navigate, parseHref, routeTitle, type Route } from "./routes"
 
 // The one clickable admin prototype (docs/plans/2026-11-19-prototype-walkthrough-spec.md, section 2): the real AdminShell around a screen chosen by
@@ -17,7 +18,7 @@ import { navigate, parseHref, routeTitle, type Route } from "./routes"
 // its route. The rail gets an Invoices item here only, by patching `NAV` while the prototype is mounted; the live nav is never edited.
 
 const USER = { initials: "HG", name: "Hannah" }
-const SECTION_OF: Record<Route["screen"], AdminSection> = { home: "home", schedule: "schedule", jobs: "jobs", job: "jobs", customers: "customers", customer: "customers", invoices: "invoices" as AdminSection, invoice: "invoices" as AdminSection, reports: "reports", settings: "settings" }
+const SECTION_OF: Record<Route["screen"], AdminSection> = { home: "home", schedule: "schedule", jobs: "jobs", job: "jobs", customers: "customers", customer: "customers", invoices: "invoices" as AdminSection, invoice: "invoices" as AdminSection, receipt: "jobs", reports: "reports", settings: "settings" }
 const START: Route = { screen: "jobs" }
 
 /** Invoices in the rail while the walkthrough is mounted: the shell's NAV is patched, then restored. */
@@ -86,6 +87,8 @@ export function Walkthrough({ start = START }: { start?: Route }) {
   const [epoch, setEpoch] = useState(0)
   const [sheet, setSheet] = useState(false)
   const [made, setMade] = useState(0)
+  const [message, setMessage] = useState<{ channel: "text" | "email"; paid: Paid } | null>(null)
+  const receiptToast = useReceiptToast()
   // the grid's rows: the world's, then the jobs made here
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const rows = useMemo(() => allRows(), [made])
@@ -129,7 +132,16 @@ export function Walkthrough({ start = START }: { start?: Route }) {
       stop()
       const route = parseHref(href)
       if (route) go(route)
+      else if (/^\/account\/receipts\//.test(href)) openReceipt(paidFrom(a.closest("tr, li")?.textContent ?? ""))
       else outside(href)
+      return
+    }
+    // a Receipt (or refund) row of Messages opens what the customer got
+    const row = target.closest("tr, li")
+    const said = row?.textContent ?? ""
+    if (row && !target.closest(INTERACTIVE) && /Delivered/.test(said) && /Receipt|refunded/.test(said) && /Text|Email/.test(said)) {
+      stop()
+      setMessage({ channel: /Email/.test(said) ? "email" : "text", paid: /refunded/i.test(said) ? { way: "refund" } : (newestPayment() ?? { way: "card" }) })
       return
     }
     // a table row opens its record: the first chip in it
@@ -152,6 +164,10 @@ export function Walkthrough({ start = START }: { start?: Route }) {
     if (hit) go({ screen: hit[1] as "customer" | "job", id: hit[2] })
   }
 
+  const openReceipt = (paid: Paid) => {
+    setSheet(false)
+    setStack((s) => navigate(s, { screen: "receipt", id: `${paid.way}|${paid.ref ?? ""}` }))
+  }
   const startOver = () => {
     setSheet(false)
     resetExtras()
@@ -167,10 +183,12 @@ export function Walkthrough({ start = START }: { start?: Route }) {
         <ToastBridge toastRef={toastRef} />
         <Strip stack={stack} onJump={jump} onStartOver={startOver} />
         <div key={`${epoch}-${top.screen}-${top.id ?? ""}`}>
-          <RouteScreen route={top} rows={rows} onOpenJob={(id) => go({ screen: "job", id })} onOpenCustomer={(id) => go({ screen: "customer", id })} onNew={() => go({ screen: "jobs", newJob: true })} />
+          <RouteScreen route={top} rows={rows} onBack={() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))} onOpenJob={(id) => go({ screen: "job", id })} onOpenCustomer={(id) => go({ screen: "customer", id })} onNew={() => go({ screen: "jobs", newJob: true })} />
         </div>
         <NewJobSheet open={sheet} onClose={() => setSheet(false)} onMade={() => setMade((n) => n + 1)} onCreated={(id) => go({ screen: "job", id })} />
       </AdminShell>
+      {receiptToast.toast && <ReceiptToast text={receiptToast.toast.text} onView={() => (openReceipt(receiptToast.toast!.paid), receiptToast.clear())} />}
+      {message && <MessageView channel={message.channel} paid={message.paid} onClose={() => setMessage(null)} />}
     </div>
   )
 }

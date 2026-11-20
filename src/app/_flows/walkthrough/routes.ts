@@ -2,8 +2,8 @@
 // screens draw (`/account`, `/account/visits/<id>`, `/pay/<id>`, `/booking`, `/season-pass/checkout`, and the absolute ones the texts carry) into where
 // the prototype goes: one of its screens, an account page the account reducer opens, a labelled placeholder, or nowhere (tel:, mailto:, other sites).
 
-export type Where = "book" | "texts" | "account" | "pass" | "renew" | "placeholder"
-export type Target = { where: "book" } | { where: "texts" } | { where: "account"; href: string } | { where: "pass" } | { where: "renew" } | { where: "placeholder"; title: string; path: string } | { where: "outside" }
+export type Where = "book" | "texts" | "account" | "receipts" | "pass" | "renew" | "placeholder"
+export type Target = { where: "book" } | { where: "texts" } | { where: "receipts" } | { where: "account"; href: string } | { where: "pass" } | { where: "renew" } | { where: "placeholder"; title: string; path: string } | { where: "outside" }
 
 const HOSTS = ["www.trailheadirrigation.com", "trailheadirrigation.com"]
 
@@ -40,15 +40,17 @@ export const STEPS = [
   { key: "account", label: "Account" },
   { key: "visits", label: "Visits" },
   { key: "pay", label: "Pay an invoice" },
+  { key: "receipts", label: "Receipts" },
   { key: "pass", label: "Season Pass" },
   { key: "details", label: "Details" },
 ] as const
 export type StepKey = (typeof STEPS)[number]["key"]
 
-/** Which of the seven steps a screen belongs to, for the strip. A placeholder is none. */
+/** Which of the eight steps a screen belongs to, for the strip. A placeholder is none. */
 export function stepOf(where: Where, accountPage?: string): StepKey | null {
   if (where === "book") return "book"
   if (where === "texts") return "texts"
+  if (where === "receipts") return "receipts"
   if (where === "pass" || where === "renew") return "pass"
   if (where === "placeholder") return null
   if (accountPage === "details") return "details"
