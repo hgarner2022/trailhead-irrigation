@@ -7,6 +7,7 @@ import { FormRow } from "@/components/blocks/FormRow"
 import { SplitButton } from "@/components/blocks/SplitButton"
 import { useToast } from "@/components/blocks/Toast"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { collectPlan, dollars } from "@/lib/money/collect"
 import { collectConfirm, type ConfirmCopy, type Reach } from "./confirm-copy"
 import type { CustomerPageData } from "./customer-fixtures"
@@ -76,10 +77,12 @@ export function CollectDialog({ who, amount, card, invoice, onClose, onPaid }: C
 
 const FIELD = "min-h-11 rounded-lg border border-input bg-background px-3 text-sm"
 
-export function EditDetailsDialog({ d, onClose, onDone }: { d: CustomerPageData; onClose: () => void; onDone: () => void }) {
+export function EditDetailsDialog({ d, dns, onClose, onDone }: { d: CustomerPageData; dns?: { reason?: string }; onClose: () => void; onDone: (v: { dns?: { reason?: string } }) => void }) {
   const [channel, setChannel] = useState(d.contact.channel)
+  const [mark, setMark] = useState(Boolean(dns))
+  const [reason, setReason] = useState(dns?.reason ?? "")
   return (
-    <ConfirmDialog open onOpenChange={(o) => !o && onClose()} title="Edit details" message={`Save ${d.firstName}'s details. Nobody is notified. Texts and emails already sent keep their old address.`} confirmLabel="Save details" size="md" slot="edit-details" onConfirm={async () => (onDone(), { ok: true })}>
+    <ConfirmDialog open onOpenChange={(o) => !o && onClose()} title="Edit details" message={`Save ${d.firstName}'s details. Nobody is notified. Texts and emails already sent keep their old address.`} confirmLabel="Save details" size="md" slot="edit-details" onConfirm={async () => (onDone({ dns: mark ? { reason: reason.trim() || undefined } : undefined }), { ok: true })}>
       <div className="flex flex-col gap-3">
         <FormRow label="Name"><Input defaultValue={d.name} className="min-h-11" /></FormRow>
         <FormRow label="Phone"><Input defaultValue={d.contact.phone.text} inputMode="tel" className="min-h-11" /></FormRow>
@@ -90,6 +93,15 @@ export function EditDetailsDialog({ d, onClose, onDone }: { d: CustomerPageData;
             <option value="email">Email</option>
           </select>
         </FormRow>
+        <div className="flex min-h-11 items-center gap-3 text-sm font-medium">
+          <input id="dns-box" type="checkbox" checked={mark} onChange={(e) => setMark(e.target.checked)} aria-labelledby="dns-box-l" className="size-5 shrink-0 cursor-pointer accent-primary" />
+          <span id="dns-box-l" className="cursor-pointer" onClick={() => setMark((m) => !m)}>Do not service this customer</span>
+        </div>
+        {mark && (
+          <FormRow label="Reason (optional)" hint="Kept in the history. The customer never sees it, and it blocks nothing.">
+            <Textarea value={reason} rows={2} onChange={(e) => setReason(e.target.value)} />
+          </FormRow>
+        )}
       </div>
     </ConfirmDialog>
   )

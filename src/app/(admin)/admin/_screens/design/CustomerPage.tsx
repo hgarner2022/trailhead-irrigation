@@ -16,13 +16,17 @@ import { StatusPill } from "@/components/blocks/StatusPill"
 import { SummaryBand, type SummaryItem } from "@/components/blocks/SummaryBand"
 import { recordHref } from "@/components/blocks/record-preview-model"
 import { useToast } from "@/components/blocks/Toast"
+import { useUndoToast } from "@/components/blocks/UndoToast"
+import { DoNotServiceTag } from "@/components/blocks/DoNotServiceTag"
+import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
+import { customerStatusOf } from "@/lib/customers/status"
 import { ConsentCard } from "./ConsentCard"
 import { CustomerBilling } from "./CustomerBilling"
 import { CollectDialog, CopyDialog, EditDetailsDialog, MergeDialog, contactOf } from "./CustomerDialogs"
 import { MessagesTable, JobsTable } from "./CustomerTables"
 import { AddressChip, JobChip } from "./RecordChips"
 import { cardLinkCopy, deleteCustomerCopy, mergeCopy, refundCopy } from "./confirm-copy"
-import type { CustomerPageData, PassArea, SeasonLink } from "./customer-fixtures"
+import { AS_OF, STATUS_PILL, type CustomerPageData, type PassArea, type SeasonLink } from "./customer-fixtures"
 import { MessageDialog } from "./MessageDialog"
 import { ReminderDialog } from "./ReminderDialog"
 import { NOW, noteOk } from "./job-fixtures"
@@ -36,7 +40,7 @@ import { NOW, noteOk } from "./job-fixtures"
 // with the effect and the customer's channel; a result is a toast, never a message in a section. Pure props, nothing wired.
 
 const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-export type CustomerDialog = "message" | "collect" | "card-link" | "refund" | "remind" | "edit" | "merge" | "delete" | null
+export type CustomerDialog = "archive" | "message" | "collect" | "card-link" | "refund" | "remind" | "edit" | "merge" | "delete" | null
 
 const scrollTo = (id: string) => () => {
   const el = document.getElementById(id)
@@ -124,6 +128,14 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
   // the payment or invoice row a refund or a reminder was opened from
   const [row, setRow] = useState<{ number?: string; amount: string; how?: string; due?: string; pastDue?: boolean } | null>(null)
   const toast = useToast()
+  const undoToast = useUndoToast()
+  // The status is read from the facts by `customerStatusOf`; Archive is the one status the office sets, so it is the one piece of state here.
+  const [archivedAt, setArchivedAt] = useState(d.statusFacts.archivedAt ?? null)
+  const [dns, setDns] = useState(d.doNotService)
+  const [history, setHistory] = useState<typeof d.notes>([])
+  const status = customerStatusOf({ ...d.statusFacts, archivedAt }, AS_OF)
+  const openJobs = d.jobs.filter((j) => j.open && j.status !== "cancelled")
+  const pill = STATUS_PILL[status]
   const c = contactOf(d)
   const close = () => setDialog(null)
   const open = (which: CustomerDialog) => () => setDialog(which)
@@ -132,7 +144,7 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
   const secondary: [FooterAction] | [FooterAction, FooterAction] = unpaid ? [act("Send a message", open("message")), act("Collect payment", open("collect"))] : [act("Send a message", open("message"))]
   // Selling a pass lives here and in New job, never in a card of its own; a lapsed holder is offered the next season instead.
   const sell: FooterAction = d.area.kind === "pass" ? (d.area.reserveNext ? { label: "Reserve next season", href: `/admin/jobs?new=1&customer=${d.id}&service=season-pass&renew=${d.area.jobId}` } : { label: "" }) : { label: d.area.earlier.length ? "Reserve next season" : "Sell a Season Pass", href: `/admin/jobs?new=1&customer=${d.id}&service=season-pass` }
-  const more = [act("Edit details", open("edit")), ...(sell.label ? [sell] : []), act("Send card link", open("card-link")), act("Merge", open("merge"))]
+  const more = [act("Edit details", open("edit")), ...(sell.label ? [sell] : []), act("Send card link", open("card-link")), act("Merge", open("merge")), ...(archivedAt ? [] : [act("Archive customer", open("archive"))])]
   const pay = row ?? (d.billing.payments[0] ? { amount: d.billing.payments[0].amount, how: d.billing.payments[0].how.split(" ")[0]!.toLowerCase() } : undefined)
   const inv = row?.number ? row : d.openInvoice ? { number: d.openInvoice.number, amount: d.openInvoice.amount, due: d.openInvoice.due, pastDue: false } : undefined
   const sentVia = d.contact.channel === "text" ? "texted" : "emailed"
@@ -143,7 +155,23 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
         crumb={{ label: "Customers", href: "/admin/customers" }}
         title={d.name}
         subtitle={d.subtitle}
-        badges={d.pills.map((p) => <StatusPill key={p.label ?? p.status} status={p.status} label={p.label} size="lg" />)}
+        badges={
+          <>
+            <StatusPill status={pill.status} label={pill.label} size="lg" />
+            {d.pills.filter((p) => p.status !== "owed" && p.status !== "overdue").map((p) => <StatusPill key={p.label ?? p.status} status={p.status} label={p.label} size="lg" />)}
+            {dns && <DoNotServiceTag reason={dns.reason} />}
+          </>
+        }
+        notice={
+          archivedAt ? (
+            <p data-slot="archived-banner" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-5 py-3 text-sm shadow-sm">
+              <span>Archived Nov 20. New work brings them back.</span>
+              <Button type="button" variant="outline" className="min-h-11" onClick={() => (setArchivedAt(null), toast(`${d.firstName} is back on the Customers list`))}>
+                Unarchive
+              </Button>
+            </p>
+          ) : undefined
+        }
         band={<SummaryBand items={bandOf(d)} />}
         asideLabel="About this customer"
         actions={<RecordFooter primary={{ label: "New job", href: `/admin/jobs?new=1&customer=${d.id}` }} secondary={secondary} more={more} destructive={d.untouched ? act("Delete customer", open("delete")) : undefined} destructiveInMenu />}
@@ -183,7 +211,7 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
           </SectionCard>
         )}
         <SectionCard title="Notes and history" id="notes-h">
-          <NotesAndHistory bare lines={d.notes} onAddNote={noteOk} now={NOW} />
+          <NotesAndHistory bare lines={[...history, ...d.notes]} onAddNote={noteOk} now={NOW} />
         </SectionCard>
       </RecordPage>
 
@@ -194,7 +222,33 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
       {dialog === "card-link" && <CopyDialog copy={cardLinkCopy(c)} onClose={close} onDone={() => toast(`Card link ${sentVia} to ${d.firstName}`)} />}
       {dialog === "refund" && pay && <CopyDialog copy={refundCopy(c, pay.amount, pay.how ?? "card")} onClose={close} onDone={(v) => toast(quiet(v) ? `Refunded ${pay.amount}. ${d.firstName} was not notified.` : `Refunded ${pay.amount}. ${d.firstName} was ${sentVia} a notice.`)} />}
       {dialog === "remind" && inv && <ReminderDialog who={c} invoice={{ number: inv.number!, amount: inv.amount, service: "job", dueOn: inv.due ?? "", pastDue: inv.pastDue }} onClose={close} onSend={() => toast(`Reminder ${sentVia} to ${d.firstName}`)} />}
-      {dialog === "edit" && <EditDetailsDialog d={d} onClose={close} onDone={() => toast("Details saved")} />}
+      {dialog === "edit" && (
+        <EditDetailsDialog
+          d={d}
+          dns={dns}
+          onClose={close}
+          onDone={(v) => {
+            if (Boolean(v.dns) !== Boolean(dns) || v.dns?.reason !== dns?.reason) setHistory((h) => [{ id: `dns${h.length}`, at: "2026-11-20T15:00:00Z", actor: "Ryan", kind: "event", what: v.dns ? `Marked Do not service${v.dns.reason ? `: ${v.dns.reason}` : ""}` : "Cleared Do not service" }, ...h])
+            setDns(v.dns)
+            toast("Details saved")
+          }}
+        />
+      )}
+      {dialog === "archive" && openJobs.length > 0 && (
+        <ConfirmDialog open onOpenChange={(o) => !o && close()} title="Archive customer" blocked={`Open jobs: ${openJobs.map((j) => j.name).join(", ")}. Finish or cancel them first.`} actions="none" slot="archive-refused" />
+      )}
+      {dialog === "archive" && openJobs.length === 0 && (
+        <ConfirmDialog
+          open
+          onOpenChange={(o) => !o && close()}
+          title="Archive customer"
+          message={d.unpaid ? `${d.name} owes ${d.unpaid}. Archive anyway? The invoice stays open and shows on Reports.` : `Archive ${d.name}? They leave the Customers list until Show archived is on. New work brings them back.`}
+          confirmLabel="Archive customer"
+          destructive
+          slot="archive-confirm"
+          onConfirm={async () => (setArchivedAt(AS_OF), undoToast(`Archived ${d.name}`, () => setArchivedAt(null)), { ok: true })}
+        />
+      )}
       {dialog === "merge" && <MergeDialog d={d} others={["Andrea Daltons (duplicate)", "A. Dalton"]} copy={(o) => mergeCopy(d.name, o)} onClose={close} onDone={(o) => toast(`Merged ${o} into ${d.name}`)} />}
       {dialog === "delete" && <CopyDialog copy={deleteCustomerCopy(d.name)} onClose={close} onDone={() => toast(`Deleted ${d.name}`)} />}
     </>

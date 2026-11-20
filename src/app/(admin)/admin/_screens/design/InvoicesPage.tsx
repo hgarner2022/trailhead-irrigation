@@ -88,7 +88,7 @@ export function InvoicesPage({ rows, initialFilters = [] }: InvoicesPageProps) {
       { id: "label", accessorFn: (r) => r.number, header: "Invoice number" },
       { id: "jobText", accessorFn: (r) => r.jobName, header: "Job name" },
       { id: "customerText", accessorFn: (r) => r.customer, header: "Customer name" },
-      { id: "customer", accessorFn: (r) => r.customer, header: "Customer", cell: ({ row: { original: r } }) => <CustomerChip table id={r.customerId} name={r.customer} address={r.street} unpaid={money(r.balance)} /> },
+      { id: "customer", accessorFn: (r) => r.customer, header: "Customer", cell: ({ row: { original: r } }) => <CustomerChip table doNotService={r.doNotService} id={r.customerId} name={r.customer} address={r.street} unpaid={money(r.balance)} /> },
       { id: "jobName", accessorFn: (r) => r.jobName, header: "Job", cell: ({ row: { original: r } }) => <JobChip table id={r.jobId} name={r.jobName} customer={r.customer} status="done" total={money(r.amount)} /> },
       { id: "amount", accessorFn: (r) => r.amount, header: "Amount", meta: { align: "right", csv: (r) => String((r as InvoiceListRow).amount) }, cell: ({ row: { original: r } }) => money(r.amount) },
       { id: "datesText", accessorFn: (r) => `Sent ${dayWords(r.sentOn)}, due ${dayWords(r.dueOn)}`, header: "Sent and due" },

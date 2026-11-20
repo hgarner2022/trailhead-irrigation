@@ -4,12 +4,13 @@ import type { TimelineLine } from "@/lib/events/timeline"
 import type { PhotoItem } from "@/lib/photos/types"
 import type { RecordFact } from "@/components/blocks/RecordPanel"
 import type { PillStatus } from "@/components/blocks/StatusPill"
+import type { CustomerStatus, CustomerStatusFacts } from "@/lib/customers/status"
 import type { PillData } from "./job-fixtures"
 
 // The shapes the customer page takes (docs/plans/2026-11-19-admin-page-layout-research.md): pure data, kept apart from the fixtures that fill them.
 
-export type CustomerState = "pass-holder" | "two-seasons" | "one-off" | "nothing-yet" | "opted-out" | "refunded" | "part-refunded"
-export const CUSTOMER_STATES: readonly CustomerState[] = ["pass-holder", "two-seasons", "one-off", "nothing-yet", "opted-out", "refunded", "part-refunded"]
+export type CustomerState = "pass-holder" | "two-seasons" | "one-off" | "nothing-yet" | "opted-out" | "refunded" | "part-refunded" | "active-recent" | "past-customer" | "archived"
+export const CUSTOMER_STATES: readonly CustomerState[] = ["pass-holder", "two-seasons", "one-off", "nothing-yet", "opted-out", "refunded", "part-refunded", "active-recent", "past-customer", "archived"]
 
 export interface MoneyWord {
   /** the word, from `words.ts`: "Paid, card", "$145 unpaid", "Invoice sent", "Past due" */
@@ -148,7 +149,13 @@ export interface CustomerPageData {
   contact: { channel: "text" | "email"; phone: { text: string; href: string }; email: string }
   address: [string, string]
   subtitle: string
+  /** the badges beside the name after the status: the Season Pass. Money never goes here (the Unpaid tile and Billing say it). */
   pills: PillData[]
+  /** worked out from the customer's jobs by `customerStatusOf`, never typed (the one typed status, Archived, is `statusFacts.archivedAt`) */
+  status: CustomerStatus
+  statusFacts: CustomerStatusFacts
+  /** a mark only: it blocks nothing. The reason stays in the history and is never shown to the customer. */
+  doNotService?: { reason?: string }
   band: { next: BandCell; unpaid: BandCell; pass: BandCell; card: BandCell }
   /** the amount of the open invoice or unpaid job, when something is unpaid ("$145") */
   unpaid?: string

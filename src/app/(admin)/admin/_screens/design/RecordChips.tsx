@@ -19,8 +19,8 @@ type Size = "row" | "band"
 const TABLE = "md:min-h-8 text-sm font-medium"
 const tableCls = (table?: boolean, nowrap?: boolean) => (table ? `${TABLE}${nowrap ? " whitespace-nowrap" : ""}` : undefined)
 
-export const CustomerChip = ({ id, name, phone, address, openJobs = 0, unpaid, size, table }: { table?: boolean; id: string; name: string; phone?: string; address?: string; openJobs?: number; unpaid?: string; size?: Size }) => (
-  <RecordChip kind="customer" name={name} href={recordHref.customer(id)} size={size} className={tableCls(table, true)} preview={customerPreview({ id, name, phone, address, openJobs, unpaid })} />
+export const CustomerChip = ({ id, name, phone, address, openJobs = 0, unpaid, size, table, doNotService }: { table?: boolean; doNotService?: boolean; id: string; name: string; phone?: string; address?: string; openJobs?: number; unpaid?: string; size?: Size }) => (
+  <RecordChip kind="customer" name={name} flag={doNotService ? "Do not service" : undefined} href={recordHref.customer(id)} size={size} className={tableCls(table, true)} preview={customerPreview({ id, name, phone, address, openJobs, unpaid })} />
 )
 
 export const JobChip = ({ id, name, customer, status = "scheduled", next, total = "$0", size, table, noMark }: { table?: boolean; noMark?: boolean; id: string; name: string; customer: string; status?: PillStatus; next?: string; total?: string; size?: Size }) => (

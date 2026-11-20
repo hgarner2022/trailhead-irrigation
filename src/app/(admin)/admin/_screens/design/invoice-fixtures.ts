@@ -40,6 +40,8 @@ export interface InvoiceListRow {
   paidOn?: string
   status: InvoiceStatus
   who: string
+  /** the customer is marked Do not service: a red dot on their chip */
+  doNotService?: boolean
   /** Remind was already pressed today: the row's Remind waits until tomorrow */
   remindedToday?: boolean
 }
@@ -74,7 +76,7 @@ export const INVOICE_ROWS: InvoiceListRow[] = [
   row("i40", "0040", "Priya Shah", "330 Elm Dr", "Sprinkler repair", 145, "2026-11-10", "2026-11-24", "paid", "Hannah Garner", { paidOn: "2026-11-17" }),
   row("i33", "0033", "Dana Cho", "18 Cedar Way", "Fall blowout", 115, "2026-11-02", "2026-11-16", "paid", "Ryan Garner", { paidOn: "2026-11-09" }),
   row("i29", "0029", "Sam Ortiz", "14 Aspen Dr", "Sprinkler repair", 145, "2026-10-20", "2026-11-03", "paid", "Ryan Garner", { paidOn: "2026-10-28" }),
-  row("i21", "0021", "Tom Becker", "600 Hill Rd", "Sprinkler repair", 145, "2026-10-12", "2026-10-26", "canceled", "Ryan Garner"),
+  row("i21", "0021", "Tom Becker", "600 Hill Rd", "Sprinkler repair", 145, "2026-10-12", "2026-10-26", "canceled", "Ryan Garner", { doNotService: true }),
 ]
 
 const inMonth = (iso: string | undefined) => Boolean(iso?.startsWith("2026-11"))
@@ -116,7 +118,7 @@ export interface InvoicePageData {
   id: string
   number: string
   status: InvoiceStatus
-  customer: { id: string; name: string; contact: Required<Reach>; phone: { text: string; href: string }; street: string; town: string }
+  customer: { id: string; name: string; doNotService?: boolean; contact: Required<Reach>; phone: { text: string; href: string }; street: string; town: string }
   job: { id: string; name: string; status: PillStatus; statusLabel: string; next: string; total: string }
   property: RecordFact[]
   amount: string
@@ -245,7 +247,7 @@ export function invoicePageOf(which: InvoiceFixture): InvoicePageData {
         id: "i21",
         number: "INV-2026-0021",
         status: "canceled",
-        customer: { id: "c-i21", name: "Tom Becker", contact: { first: "Tom", channel: "text", phone: "(970) 555-0123", email: "tom.becker@example.com" }, phone: { text: "(970) 555-0123", href: "tel:+19705550123" }, street: "600 Hill Rd", town: "Broomfield, CO" },
+        customer: { id: "c-i21", name: "Tom Becker", doNotService: true, contact: { first: "Tom", channel: "text", phone: "(970) 555-0123", email: "tom.becker@example.com" }, phone: { text: "(970) 555-0123", href: "tel:+19705550123" }, street: "600 Hill Rd", town: "Broomfield, CO" },
         job: { id: "j-i21", name: "Sprinkler repair", status: "cancelled", statusLabel: "Canceled", next: "None ahead", total: "$145" },
         sent: "Oct 12",
         due: "Oct 26",

@@ -45,6 +45,21 @@ export const OptInDialog: Story = story("one-off", laptop, undefined, "opt-in")
 export const OptInDialogPhone: Story = story("one-off", phone, undefined, "opt-in")
 /** Consent history: newest first, date, what changed, source, who. */
 export const ConsentHistory: Story = story("opted-out", laptop, undefined, "history")
+/** Active because a job was done 20 months ago (any job in the last 24 months). The past due invoice is the band's Unpaid tile and Billing, never a pill in the header. */
+export const ActiveByRecentJob: Story = story("active-recent", laptop)
+export const ActiveByRecentJobPhone: Story = story("active-recent", phone)
+/** Past customer: a job 30 months ago and nothing ahead. Do not service is marked, with the red tag beside the status. */
+export const PastCustomerDoNotService: Story = story("past-customer", laptop)
+export const PastCustomerDoNotServicePhone: Story = story("past-customer", phone)
+/** Archived: the grey status and the quiet banner with Unarchive. */
+export const Archived: Story = story("archived", laptop)
+export const ArchivedPhone: Story = story("archived", phone)
+/** Archive is refused while a job, visit or pass is open, and says which. */
+export const ArchiveRefused: Story = story("pass-holder", laptop, "archive")
+export const ArchiveRefusedPhone: Story = story("pass-holder", phone, "archive")
+/** With nothing open, the confirm names the balance, in the destructive colour. */
+export const ArchiveConfirmWithBalance: Story = story("active-recent", laptop, "archive")
+export const ArchiveConfirmWithBalancePhone: Story = story("active-recent", phone, "archive")
 export const NothingYet: Story = { ...story("nothing-yet", laptop), name: "Nothing yet" }
 export const NothingYetPhone: Story = { ...story("nothing-yet", phone), name: "Nothing yet, phone" }
 

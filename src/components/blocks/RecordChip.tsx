@@ -29,12 +29,14 @@ export interface RecordChipProps {
   preview?: RecordPreviewData
   /** shows the card at once (stories, tests) */
   previewOpen?: boolean
+  /** a mark on the record, shown as a small red dot after the name with this as its tooltip and its words for a screen reader: "Do not service" on a customer */
+  flag?: string
   className?: string
 }
 
 const LINK = "rounded-sm text-primary-dark underline decoration-primary/40 underline-offset-2 hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
 
-export function RecordChip({ kind, name, href, size = "row", noMark, short, onOpen, preview, previewOpen, className }: RecordChipProps) {
+export function RecordChip({ kind, name, href, size = "row", noMark, flag, short, onOpen, preview, previewOpen, className }: RecordChipProps) {
   const [open, setOpen] = useState(Boolean(previewOpen))
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pressed = useRef(false)
@@ -54,6 +56,12 @@ export function RecordChip({ kind, name, href, size = "row", noMark, short, onOp
           name
         )}
       </span>
+      {flag && (
+        <span data-slot="record-chip-flag" title={flag} className="inline-flex shrink-0 items-center">
+          <span aria-hidden className="size-2 rounded-full bg-destructive" />
+          <span className="sr-only">, {flag}</span>
+        </span>
+      )}
     </>
   )
 

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { CustomerPage } from "./CustomerPage"
 import { sortInvoices, sortJobs } from "./CustomerTables"
 import { CUSTOMER_STATES, customerPageOf } from "./customer-fixtures"
@@ -36,9 +36,9 @@ describe("customer page", () => {
     expect(bands[1]!.querySelectorAll("[data-link]")).toHaveLength(0)
   })
 
-  it("shows Unpaid $145 as a badge and offers Collect payment beside Send a message", () => {
+  it("has no Unpaid pill and offers Collect payment beside Send a message", () => {
     render(<CustomerPage customer={customerPageOf("pass-holder")} />)
-    expect(screen.getByText("Unpaid $145", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
+    expect(screen.queryByText("Unpaid $145", { selector: "[data-slot=status-pill]" })).toBeNull()
     const bar = document.querySelector("[data-slot=record-footer]") as HTMLElement
     expect(within(bar).getByRole("button", { name: "Collect payment" })).toBeInTheDocument()
     expect(within(bar).getByRole("button", { name: "Send a message" })).toBeInTheDocument()
@@ -202,6 +202,54 @@ describe("customer page", () => {
     const consent = within(sectionOf("Consent"))
     expect(consent.getByText("Stopped by reply STOP on Oct 3. Every text goes as an email.")).toBeInTheDocument()
     expect(consent.getByLabelText("Contact by")).toHaveValue("email")
+  })
+
+  it("shows the status pill, the pass pill and no money pill in the header, with the status read from the facts", () => {
+    const words: [Parameters<typeof customerPageOf>[0], string][] = [["nothing-yet", "New"], ["pass-holder", "Active"], ["active-recent", "Active"], ["past-customer", "Past customer"], ["archived", "Archived"]]
+    for (const [state, word] of words) {
+      const { unmount } = render(<CustomerPage customer={customerPageOf(state)} />)
+      const badges = within(document.querySelector("[data-slot=record-page-badges]") as HTMLElement)
+      expect(badges.getByText(word, { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
+      expect(badges.queryByText(/Unpaid \$|Past due \$/)).toBeNull()
+      unmount()
+    }
+    render(<CustomerPage customer={customerPageOf("pass-holder")} />)
+    expect(within(document.querySelector("[data-slot=record-page-badges]") as HTMLElement).getByText("Season Pass 2027")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /Unpaid/ })).toBeInTheDocument()
+  })
+
+  it("marks Do not service with a red tag and edits it from a checkbox with an optional reason that goes to the history", async () => {
+    render(<CustomerPage customer={customerPageOf("past-customer")} />)
+    expect(within(document.querySelector("[data-slot=record-page-badges]") as HTMLElement).getByText("Do not service")).toBeInTheDocument()
+    cleanup()
+    render(<CustomerPage customer={customerPageOf("one-off")} initialDialog="edit" />)
+    const dialog = screen.getByRole("dialog")
+    fireEvent.click(within(dialog).getByLabelText("Do not service this customer"))
+    fireEvent.change(within(dialog).getByLabelText(/Reason/), { target: { value: "Gate stays locked" } })
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save details" }))
+    await waitFor(() => expect(within(document.querySelector("[data-slot=record-page-badges]") as HTMLElement).getByText("Do not service")).toBeInTheDocument())
+    expect(screen.getByText("Marked Do not service: Gate stays locked")).toBeInTheDocument()
+    expect(screen.getAllByText(/Gate stays locked/).length).toBeGreaterThan(0)
+  })
+
+  it("refuses to archive while a job is open, naming it", () => {
+    render(<CustomerPage customer={customerPageOf("pass-holder")} initialDialog="archive" />)
+    const dialog = screen.getByRole("dialog")
+    expect(within(dialog).getByText("Open jobs: Season Pass 2027, Sprinkler repair. Finish or cancel them first.")).toBeInTheDocument()
+    expect(within(dialog).queryByRole("button", { name: "Archive customer" })).toBeNull()
+  })
+
+  it("confirms an archive with the balance in the destructive colour, then shows the banner and Unarchive", async () => {
+    render(<CustomerPage customer={customerPageOf("active-recent")} initialDialog="archive" />)
+    const dialog = screen.getByRole("dialog")
+    expect(within(dialog).getByText("Hal Reed owes $145. Archive anyway? The invoice stays open and shows on Reports.")).toBeInTheDocument()
+    fireEvent.click(within(dialog).getByRole("button", { name: "Archive customer" }))
+    await waitFor(() => expect(document.querySelector("[data-slot=archived-banner]")).not.toBeNull())
+    expect(screen.getByText("Archived Nov 20. New work brings them back.")).toBeInTheDocument()
+    expect(within(document.querySelector("[data-slot=record-page-badges]") as HTMLElement).getByText("Archived")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Unarchive" }))
+    expect(document.querySelector("[data-slot=archived-banner]")).toBeNull()
+    expect(within(document.querySelector("[data-slot=record-page-badges]") as HTMLElement).getByText("Active")).toBeInTheDocument()
   })
 
   it("holds no result message in any section", () => {

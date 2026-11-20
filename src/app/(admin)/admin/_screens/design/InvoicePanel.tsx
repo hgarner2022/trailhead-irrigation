@@ -114,7 +114,7 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
         badges={
           <>
             <StatusPill status={pill.pill} label={pill.label} size="lg" />
-            <CustomerChip id={d.customer.id} name={d.customer.name} phone={d.customer.phone.text} address={d.customer.street} unpaid={unpaid} />
+            <CustomerChip doNotService={d.customer.doNotService} id={d.customer.id} name={d.customer.name} phone={d.customer.phone.text} address={d.customer.street} unpaid={unpaid} />
           </>
         }
         band={<SummaryBand items={band} />}
@@ -124,7 +124,7 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
           <>
             <SectionCard title="Customer" id="customer-h">
               <div className="flex flex-col gap-1">
-                <CustomerChip id={d.customer.id} name={d.customer.name} phone={d.customer.phone.text} address={d.customer.street} unpaid={unpaid} />
+                <CustomerChip doNotService={d.customer.doNotService} id={d.customer.id} name={d.customer.name} phone={d.customer.phone.text} address={d.customer.street} unpaid={unpaid} />
                 <a href={d.customer.phone.href} className={`${LINK} inline-flex min-h-11 items-center text-sm font-medium`}>{d.customer.phone.text}</a>
                 <p className="text-sm text-muted-foreground">Contact by {c.channel === "text" ? "text" : "email"}</p>
               </div>
