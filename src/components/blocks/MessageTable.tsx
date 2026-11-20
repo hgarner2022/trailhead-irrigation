@@ -64,7 +64,7 @@ const COLUMNS: GridColumnDef<Row>[] = [
       const Icon = sms ? MessageSquare : Mail
       return (
         <span className="inline-flex items-center gap-1.5">
-          <Icon className="size-4 text-muted-foreground" aria-hidden />
+          <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           {sms ? "Text" : "Email"}
         </span>
       )
@@ -107,6 +107,7 @@ export function MessageTable({ messages, to, compact, toolbar = true }: MessageT
         onOpen={setOpen}
         hiddenColumns={compact ? ["to"] : undefined}
         toolbar={toolbar}
+        inCard={!toolbar}
         pageSize={10}
         emptyTitle="No messages yet"
         emptyLine="Every email and text the app sends this customer shows here."

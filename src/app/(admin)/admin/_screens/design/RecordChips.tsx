@@ -23,8 +23,8 @@ export const CustomerChip = ({ id, name, phone, address, openJobs = 0, unpaid, s
   <RecordChip kind="customer" name={name} href={recordHref.customer(id)} size={size} className={tableCls(table, true)} preview={customerPreview({ id, name, phone, address, openJobs, unpaid })} />
 )
 
-export const JobChip = ({ id, name, customer, status = "scheduled", next, total = "$0", size, table }: { table?: boolean; id: string; name: string; customer: string; status?: PillStatus; next?: string; total?: string; size?: Size }) => (
-  <RecordChip kind="job" name={name} href={recordHref.job(id)} size={size} className={tableCls(table)} preview={jobPreview({ id, name, customer, status, next, total })} />
+export const JobChip = ({ id, name, customer, status = "scheduled", next, total = "$0", size, table, noMark }: { table?: boolean; noMark?: boolean; id: string; name: string; customer: string; status?: PillStatus; next?: string; total?: string; size?: Size }) => (
+  <RecordChip kind="job" name={name} noMark={noMark} href={recordHref.job(id)} size={size} className={tableCls(table)} preview={jobPreview({ id, name, customer, status, next, total })} />
 )
 
 export const InvoiceChip = ({ id, number, customer, status, statusLabel, total, balance, due, size, table }: { table?: boolean; id: string; number: string; customer: string; status: PillStatus; statusLabel: string; total: string; balance: string; due: string; size?: Size }) => (

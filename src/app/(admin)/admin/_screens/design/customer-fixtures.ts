@@ -80,7 +80,7 @@ export interface EarlierSeason extends SeasonLink {
 }
 
 export type PassArea =
-  | { kind: "pass"; jobId: string; pass: Pass; facts: RecordFact[]; card: string; renewedFrom?: SeasonLink; renewedAs?: SeasonLink; earlier: EarlierSeason[] }
+  | { kind: "pass"; jobId: string; /** from November 1 the block and More offer Reserve next season */ reserveNext?: boolean; pass: Pass; facts: RecordFact[]; card: string; renewedFrom?: SeasonLink; renewedAs?: SeasonLink; earlier: EarlierSeason[] }
   | { kind: "sell"; label: "Get a Season Pass" | "Reserve next season"; line: string; earlier: EarlierSeason[] }
 
 export interface BandCell {

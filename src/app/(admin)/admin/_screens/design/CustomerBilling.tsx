@@ -61,29 +61,36 @@ export function CustomerBilling({ billing, customerName, onUpdateCard, onRefund,
       ),
     ],
   ] as const
+  // One rhythm: the status line and the facts, then each sub-section under a hairline with 24px above and below, its heading 8px over its table,
+  // every table in the card's own padding (`inCard`). An empty one is a single quiet line with no heading.
+  const SECTION = "border-t border-border py-6 last:pb-0"
   return (
-    <SectionCard
-      title="Billing"
-      id="billing-h"
-      flush
-    >
-      <div className="px-5 py-4">
-        <p data-slot="billing-state" className="mb-2 text-base font-semibold">
+    <SectionCard title="Billing" id="billing-h">
+      <div className="pb-6">
+        <p data-slot="billing-state" className="mb-3 text-base font-semibold">
           {paidInFull ? <span className="text-positive-deep">Paid in full</span> : billing.unpaid === "$0" ? <span className="text-muted-foreground">{billing.line}</span> : <MoneyCell text={billing.line} tone={billing.tone} />}
         </p>
-        <RecordFacts divided rows={facts.map(([k, v]) => [k, v])} />
+        <RecordFacts divided rows={facts.map(([k, v]) => [k, v])} className="mt-0" />
       </div>
-      <section aria-label={`${customerName}'s payments`} className="border-t border-border">
-        <div className="px-5 pt-3">
-          <SectionHeading level={3} id="payments-h">Payments</SectionHeading>
-        </div>
-        {billing.payments.length ? <PaymentsTable rows={billing.payments} customer={customerName} cardWords={billing.card ? `${billing.card.brand} ending ${billing.card.last4}` : undefined} onRefund={onRefund} /> : <p className="px-5 py-4 text-sm text-muted-foreground">No payments yet. A payment shows here with its receipt.</p>}
+      <section aria-label={`${customerName}'s payments`} className={SECTION}>
+        {billing.payments.length ? (
+          <>
+            <SectionHeading level={3} id="payments-h" className="mb-2">Payments</SectionHeading>
+            <PaymentsTable rows={billing.payments} customer={customerName} cardWords={billing.card ? `${billing.card.brand} ending ${billing.card.last4}` : undefined} onRefund={onRefund} />
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">No payments yet. A payment shows here with its receipt.</p>
+        )}
       </section>
-      <section aria-label={`${customerName}'s invoices`} className="border-t border-border">
-        <div className="px-5 pt-3">
-          <SectionHeading level={3} id="invoices-h">Invoices</SectionHeading>
-        </div>
-        {billing.invoices.length ? <InvoicesTable rows={billing.invoices} customer={customerName} onRemind={onRemind} /> : <p className="px-5 py-4 text-sm text-muted-foreground">No invoices yet. An invoice shows here when a done job is sent to be paid.</p>}
+      <section aria-label={`${customerName}'s invoices`} className={SECTION}>
+        {billing.invoices.length ? (
+          <>
+            <SectionHeading level={3} id="invoices-h" className="mb-2">Invoices</SectionHeading>
+            <InvoicesTable rows={billing.invoices} customer={customerName} onRemind={onRemind} />
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">No invoices yet. An invoice shows here when a done job is sent to be paid.</p>
+        )}
       </section>
     </SectionCard>
   )

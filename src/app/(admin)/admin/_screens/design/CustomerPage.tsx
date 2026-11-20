@@ -81,34 +81,31 @@ function Earlier({ area, customer }: { area: PassArea; customer: string }) {
   )
 }
 
+/** The Season Pass block exists only for a customer who has one: a customer without a pass has no block at all (selling one is New job, then Season Pass, and More, then Sell a Season Pass). From November 1 a holder's block offers Reserve next season. */
 function SeasonPassCard({ d }: { d: CustomerPageData }) {
   const { area } = d
+  if (area.kind !== "pass") return null
   return (
     <SectionCard title="Season Pass" id="pass-h">
-      {area.kind === "pass" ? (
-        <div className="flex flex-col gap-3">
-          <PassSeason variant="customer" idPrefix="cust-pass" pass={area.pass} today={NOW.toISOString()} facts={area.facts} card={area.card} visits={[]} charges={[]} className="sm:[&>div:first-child]:flex-col" />
-          {area.renewedFrom && (
-            <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
-              Renewed from {seasonChip(area.renewedFrom, d.name)}
-            </p>
-          )}
-          {area.renewedAs && (
-            <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
-              Renewed as {seasonChip(area.renewedAs, d.name)}
-            </p>
-          )}
-          <Earlier area={area} customer={d.name} />
-        </div>
-      ) : (
-        <div className="flex flex-col items-start gap-3">
-          <p className="text-sm text-muted-foreground">{area.line}</p>
-          <Button asChild variant="outline" className="min-h-11">
-            <Link href={`/admin/jobs?new=1&customer=${d.id}&service=season-pass`}>{area.label}</Link>
+      <div className="flex flex-col gap-3">
+        <PassSeason variant="customer" idPrefix="cust-pass" pass={area.pass} today={NOW.toISOString()} facts={area.facts} card={area.card} visits={[]} charges={[]} className="sm:[&>div:first-child]:flex-col" />
+        {area.renewedFrom && (
+          <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+            Renewed from {seasonChip(area.renewedFrom, d.name)}
+          </p>
+        )}
+        {area.renewedAs && (
+          <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+            Renewed as {seasonChip(area.renewedAs, d.name)}
+          </p>
+        )}
+        {area.reserveNext && (
+          <Button asChild variant="outline" className="min-h-11 self-start">
+            <Link href={`/admin/jobs?new=1&customer=${d.id}&service=season-pass&renew=${area.jobId}`}>Reserve next season</Link>
           </Button>
-          <Earlier area={area} customer={d.name} />
-        </div>
-      )}
+        )}
+        <Earlier area={area} customer={d.name} />
+      </div>
     </SectionCard>
   )
 }
@@ -130,7 +127,9 @@ export function CustomerPage({ customer: d, initialDialog = null }: CustomerPage
   const act = (label: string, onClick: () => void): FooterAction => ({ label, onClick })
   const unpaid = d.unpaid !== undefined
   const secondary: [FooterAction] | [FooterAction, FooterAction] = unpaid ? [act("Send a message", open("message")), act("Collect payment", open("collect"))] : [act("Send a message", open("message"))]
-  const more = [act("Edit details", open("edit")), act("Send card link", open("card-link")), act("Merge", open("merge"))]
+  // Selling a pass lives here and in New job, never in a card of its own; a lapsed holder is offered the next season instead.
+  const sell: FooterAction = d.area.kind === "pass" ? (d.area.reserveNext ? { label: "Reserve next season", href: `/admin/jobs?new=1&customer=${d.id}&service=season-pass&renew=${d.area.jobId}` } : { label: "" }) : { label: d.area.earlier.length ? "Reserve next season" : "Sell a Season Pass", href: `/admin/jobs?new=1&customer=${d.id}&service=season-pass` }
+  const more = [act("Edit details", open("edit")), ...(sell.label ? [sell] : []), act("Send card link", open("card-link")), act("Merge", open("merge"))]
   const pay = row ?? (d.billing.payments[0] ? { amount: d.billing.payments[0].amount, how: d.billing.payments[0].how.split(" ")[0]!.toLowerCase() } : undefined)
   const inv = row?.number ? row : d.openInvoice ? { number: d.openInvoice.number, amount: d.openInvoice.amount, due: d.openInvoice.due, pastDue: false } : undefined
   const sentVia = d.contact.channel === "text" ? "texted" : "emailed"
@@ -166,7 +165,7 @@ export function CustomerPage({ customer: d, initialDialog = null }: CustomerPage
           </>
         }
       >
-        <SectionCard title="Jobs" id="jobs-h" flush>
+        <SectionCard title="Jobs" id="jobs-h">
           {d.jobs.length ? (
             <JobsTable rows={d.jobs} customer={d.name} />
           ) : (
@@ -175,7 +174,7 @@ export function CustomerPage({ customer: d, initialDialog = null }: CustomerPage
         </SectionCard>
         <SeasonPassCard d={d} />
         <CustomerBilling billing={d.billing} customerName={d.name} onUpdateCard={open("card-link")} onRefund={(r) => (setRow({ amount: r.amount, how: r.methodLabel.split(" ")[0]!.toLowerCase() }), setDialog("refund"))} onRemind={(r) => (setRow({ number: r.number, amount: r.amount, due: r.due, pastDue: r.status === "overdue" }), setDialog("remind"))} />
-        <SectionCard title="Messages" id="messages-h" flush>
+        <SectionCard title="Messages" id="messages-h">
           <MessagesTable messages={d.messages} to={{ sms: d.contact.phone.text, email: d.contact.email }} />
         </SectionCard>
         {d.photos.length > 0 && (

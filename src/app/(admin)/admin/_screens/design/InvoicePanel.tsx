@@ -50,8 +50,8 @@ function RemindersCard({ d, rows, paused, onPause }: { d: InvoicePageData; rows:
   const done = d.status === "paid" || d.status === "canceled"
   const line = done ? (d.status === "paid" ? "No more reminders: it is paid." : "No reminders: it is canceled.") : paused ? "Scheduled reminders are paused." : d.schedule ? `Next reminder: ${d.schedule.next}` : "No reminder is scheduled."
   return (
-    <SectionCard title="Reminders" id="reminders-h" flush>
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+    <SectionCard title="Reminders" id="reminders-h">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
         <p data-slot="reminder-schedule" className="text-sm font-medium">{line}</p>
         {!done && d.schedule && (
           <Button type="button" variant="outline" className="min-h-11" onClick={onPause}>
@@ -60,11 +60,11 @@ function RemindersCard({ d, rows, paused, onPause }: { d: InvoicePageData; rows:
         )}
       </div>
       {rows.length > 0 ? (
-        <div className="border-t border-border">
-          <DataGrid columns={REMINDER_COLUMNS} card={REMINDER_CARD} data={rows} getRowId={(r) => r.id} toolbar={false} pageSize={10} emptyTitle="No reminders yet" emptyLine="Every reminder sent for this invoice shows here." />
+        <div className="border-t border-border pt-4">
+          <DataGrid columns={REMINDER_COLUMNS} card={REMINDER_CARD} data={rows} getRowId={(r) => r.id} toolbar={false} inCard pageSize={10} emptyTitle="No reminders yet" emptyLine="Every reminder sent for this invoice shows here." />
         </div>
       ) : (
-        <p className="border-t border-border px-5 py-4 text-sm text-muted-foreground">No reminders sent yet. They show here with how they went out.</p>
+        <p className="border-t border-border pt-4 text-sm text-muted-foreground">No reminders sent yet. They show here with how they went out.</p>
       )}
     </SectionCard>
   )
@@ -147,11 +147,11 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
         <SectionCard title="Lines" id="lines-h">
           <LineItemList lines={d.lines} totals={totals} />
         </SectionCard>
-        <SectionCard title="Payments" id="payments-h" flush>
-          {payments.length ? <PaymentsTable rows={payments} customer={d.customer.name} cardWords={d.card ? `${d.card.brand} ending ${d.card.last4}` : undefined} omitJob /> : <p className="px-5 py-4 text-sm text-muted-foreground">No payments yet. A payment shows here with its receipt, and settles the invoice.</p>}
+        <SectionCard title="Payments" id="payments-h">
+          {payments.length ? <PaymentsTable rows={payments} customer={d.customer.name} cardWords={d.card ? `${d.card.brand} ending ${d.card.last4}` : undefined} omitJob /> : <p className="text-sm text-muted-foreground">No payments yet. A payment shows here with its receipt, and settles the invoice.</p>}
         </SectionCard>
         <RemindersCard d={{ ...d, status }} rows={reminders} paused={state.paused} onPause={() => (setState((s) => ({ ...s, paused: !s.paused })), toast(state.paused ? "Scheduled reminders resumed" : "Scheduled reminders paused"))} />
-        <SectionCard title="Messages" id="messages-h" flush>
+        <SectionCard title="Messages" id="messages-h">
           <MessagesTable messages={d.messages} to={{ sms: d.customer.phone.text, email: c.email }} />
         </SectionCard>
         <SectionCard title="Notes and history" id="notes-h">

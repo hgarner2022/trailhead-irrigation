@@ -20,6 +20,8 @@ export interface RecordChipProps {
   /** the record's own page; leave it off for a record with no page (shown quiet) */
   href?: string
   size?: "band" | "row"
+  /** no icon square or initials before the name: a second line in a table cell, under a chip that has one */
+  noMark?: boolean
   /** the short form shown below `md` ("Today" for "Today, Wed Nov 18", "Ryan" for "Ryan Garner"); the name from `md` up */
   short?: string
   onOpen?: () => void
@@ -32,7 +34,7 @@ export interface RecordChipProps {
 
 const LINK = "rounded-sm text-primary-dark underline decoration-primary/40 underline-offset-2 hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
 
-export function RecordChip({ kind, name, href, size = "row", short, onOpen, preview, previewOpen, className }: RecordChipProps) {
+export function RecordChip({ kind, name, href, size = "row", noMark, short, onOpen, preview, previewOpen, className }: RecordChipProps) {
   const [open, setOpen] = useState(Boolean(previewOpen))
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pressed = useRef(false)
@@ -40,7 +42,7 @@ export function RecordChip({ kind, name, href, size = "row", short, onOpen, prev
 
   const inner = (
     <>
-      <RecordMark kind={kind} name={name} size={size} />
+      {!noMark && <RecordMark kind={kind} name={name} size={size} />}
       <span className="min-w-0 whitespace-nowrap">
         <span className="sr-only">{KIND_WORD[kind]}:</span>{" "}
         {short ? (

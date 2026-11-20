@@ -205,7 +205,7 @@ export function PaymentTable({ rows, onRefund }: { rows: PaymentRowData[]; onRef
   )
   return (
     <div data-slot="payment-table">
-      <DataGrid columns={columns} card={PAYMENT_CARD} data={rows} getRowId={(r) => r.id} onOpen={setOpen} toolbar={false} pageSize={10} emptyTitle="No payments yet" emptyLine="Every payment and refund on this job shows here." />
+      <DataGrid columns={columns} card={PAYMENT_CARD} data={rows} getRowId={(r) => r.id} onOpen={setOpen} toolbar={false} inCard pageSize={10} emptyTitle="No payments yet" emptyLine="Every payment and refund on this job shows here." />
       <ConfirmDialog open={open !== null} onOpenChange={(o) => !o && setOpen(null)} title={open ? `${open.refund ? "Refund" : "Payment"}, ${shortDate(open.at, TIME_ZONE)}` : "Payment"} actions="none" size="md" slot="payment-dialog">
         {open && (
           <div className="flex flex-col gap-3 text-sm">
@@ -282,7 +282,7 @@ export function InvoiceTable({ rows, onRemind }: { rows: InvoiceRowData[]; onRem
   )
   return (
     <div data-slot="invoice-table">
-      <DataGrid columns={columns} card={INVOICE_CARD} data={rows} getRowId={(r) => r.id} onOpen={setOpen} toolbar={false} hiddenColumns={["label"]} pageSize={10} emptyTitle="No invoices yet" emptyLine="Every invoice sent for this job shows here." />
+      <DataGrid columns={columns} card={INVOICE_CARD} data={rows} getRowId={(r) => r.id} onOpen={setOpen} toolbar={false} inCard hiddenColumns={["label"]} pageSize={10} emptyTitle="No invoices yet" emptyLine="Every invoice sent for this job shows here." />
       <ConfirmDialog open={open !== null} onOpenChange={(o) => !o && setOpen(null)} title={open ? `Invoice ${open.number}` : "Invoice"} actions="none" size="md" slot="invoice-dialog">
         {open && (
           <p className="text-sm">

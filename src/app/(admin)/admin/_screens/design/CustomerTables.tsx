@@ -78,7 +78,7 @@ export function JobsTable({ rows, customer }: { rows: readonly CustomerJobRow[];
     ],
     [customer],
   )
-  return <DataGrid columns={columns} card={JOB_CARD} data={data} getRowId={(r) => r.id} onOpen={(r) => open(r.name)} toolbar={false} hiddenColumns={HIDDEN} pageSize={10} emptyTitle="No jobs yet" emptyLine="Every job for this customer shows here." />
+  return <DataGrid columns={columns} card={JOB_CARD} data={data} getRowId={(r) => r.id} onOpen={(r) => open(r.name)} toolbar={false} inCard hiddenColumns={HIDDEN} pageSize={10} emptyTitle="No jobs yet" emptyLine="Every job for this customer shows here." />
 }
 
 const methodOf = (how: string): PaymentMethod => (how.startsWith("Check") ? "check" : how.startsWith("Venmo") ? "venmo" : how.startsWith("Cash") ? "cash" : "card")
@@ -101,7 +101,7 @@ export function PaymentsTable({ rows, customer, cardWords = "Visa ending 4242", 
           receiptHref: `/admin/payments?payment=${r.id}`,
           stripeHref: r.stripeUrl,
           canRefund: Boolean(onRefund),
-          job: omitJob ? undefined : <JobChip table id={r.jobId} name={r.jobName} customer={customer} />,
+          job: omitJob ? undefined : <JobChip table noMark id={r.jobId} name={r.jobName} customer={customer} />,
         }
       }),
     [rows, customer, cardWords, omitJob, onRefund],
@@ -122,7 +122,7 @@ export function InvoicesTable({ rows, customer, onRemind }: { rows: readonly Cus
         status: r.status,
         statusLabel: r.statusLabel,
         href: recordHref.invoice(r.id),
-        note: <JobChip table id={r.jobId} name={r.jobName} customer={customer} />,
+        note: <JobChip table noMark id={r.jobId} name={r.jobName} customer={customer} />,
         canRemind: r.status === "bill-sent" || r.status === "overdue",
       })),
     [rows, customer],
