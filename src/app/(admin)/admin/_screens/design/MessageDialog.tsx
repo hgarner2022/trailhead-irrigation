@@ -11,7 +11,7 @@ const STOP = " Reply STOP to opt out."
 
 /** Send a message: the channel as a chip at the top (a text, or an email when both exist), the fixed "Trailhead:" opener in grey before the cursor, a live count, and a preview of exactly what the customer reads (the opt-out line only on the first text to that number). */
 export function MessageDialog({ facts, onClose, onSend }: { facts: ConfirmFacts; onClose: () => void; onSend: (m: { channel: "text" | "email"; body: string }) => void }) {
-  const [channel, setChannel] = useState<"text" | "email">(facts.channel ?? "text")
+  const [channel, setChannel] = useState<"text" | "email">(facts.channel === "email" ? "email" : "text")
   const [body, setBody] = useState("")
   const isText = channel === "text"
   const sent = isText ? `${OPENER}${body}${facts.firstText ? STOP : ""}` : body

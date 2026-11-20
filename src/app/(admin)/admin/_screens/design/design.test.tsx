@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { JobPage } from "./JobPage"
 import { ReminderDialog } from "./ReminderDialog"
 import { PassFlow } from "./PassFlow"
+import { ScheduleDialog } from "./ScheduleDialog"
 import { JobPagePass, JobPageReturnTrip } from "./JobPageTrips"
 import { JOB_STATES, jobPageOf } from "./job-fixtures"
 import { FALL, PASS_STATES, SPRING, passPageOf, returnTripOf, tripOf } from "./trip-fixtures"
@@ -17,7 +18,7 @@ beforeAll(() => {
 })
 
 describe("job page, one trip", () => {
-  const PRIMARY: Record<string, string | null> = { unscheduled: "Schedule", scheduled: "Move", today: "On my way", late: "Mark done", "done-unpaid": "Collect payment", refunded: "Collect payment", "invoice-sent": "Send a payment reminder", "past-due": "Send a payment reminder", "on-the-way": "Mark done", active: "Mark done", "done-paid": null, canceled: null }
+  const PRIMARY: Record<string, string | null> = { unscheduled: "Schedule", scheduled: "Move", today: "On my way", late: "Mark done", "done-unpaid": "Collect payment", "invoice-sent": "Send a payment reminder", "past-due": "Send a payment reminder", "on-the-way": "Mark done", active: "Mark done", "done-paid": null, canceled: null }
   for (const state of JOB_STATES) {
     it(`renders ${state} with the customer as the title`, () => {
       render(<JobPage job={jobPageOf(state)} />)
@@ -74,6 +75,11 @@ describe("job page, one trip", () => {
 
   it("shows a refund as its own negative grey row and keeps the payment", () => {
     render(<JobPage job={jobPageOf("refunded")} />)
+    expect(screen.getByRole("heading", { level: 1, name: "Andrea Dalton" })).toBeInTheDocument()
+    expect(screen.getAllByText("Refunded").length).toBeGreaterThan(0)
+    expect(screen.queryByText("Unpaid", { selector: "[data-slot=status-pill]" })).toBeNull()
+    const head = document.querySelector("[data-slot=record-page-actions]") as HTMLElement
+    expect(within(head).queryByRole("button", { name: "Collect payment" })).toBeNull()
     const table = document.querySelector("[data-slot=payment-table]") as HTMLElement
     expect(within(table).getByText("-$145")).toBeInTheDocument()
     expect(within(table).getByText("Refunded")).toBeInTheDocument()
@@ -219,7 +225,7 @@ describe("Season Pass flow", () => {
     const press = (name: string | RegExp) => fireEvent.click(screen.getByRole("button", { name }))
     const confirm = async (name: string | RegExp) => fireEvent.click(await within(await screen.findByRole("dialog")).findByRole("button", { name }))
     press("Move")
-    await confirm("Move the visit")
+    await confirm(/Move and notify the customer/)
     await waitFor(() => expect(document.querySelector("[data-slot=trip-row]")).toHaveTextContent("Today"))
     await screen.findByRole("button", { name: "On my way" })
     press("On my way")
@@ -229,11 +235,41 @@ describe("Season Pass flow", () => {
     await confirm("Mark done")
     await screen.findAllByText(/How is this paid/i)
     const dialog = screen.getByRole("dialog")
+    expect(within(dialog).getByText(/Andrea gets a receipt by text\./)).toBeInTheDocument()
     fireEvent.click(within(dialog).getByRole("button", { name: /^Charge \$145/ }))
-    fireEvent.click(await within(await screen.findByRole("dialog", { name: /Charge \$145/ })).findByRole("button", { name: "Charge $145" }))
-    expect(await screen.findByRole("status")).toHaveTextContent("Charged $145")
+    await waitFor(() => expect(document.querySelector("[data-slot=toast]")).toHaveTextContent("Charged $145"))
     const rows = document.querySelectorAll("[data-slot=trip-row]")
     expect(rows[0]).toHaveTextContent("Paid, card")
     expect(rows[1]).toHaveAttribute("data-open", "true")
   }, 20000)
+})
+
+describe("Schedule dialog crew options", () => {
+  const dlg = (extra: Partial<React.ComponentProps<typeof ScheduleDialog>> = {}) => render(<ScheduleDialog verb="Schedule" first="Andrea" address="480 Briggs St" service="Sprinkler repair" onClose={() => undefined} onConfirm={() => undefined} {...extra} />)
+
+  it("has no crew-text box when Ryan assigns himself", () => {
+    dlg()
+    expect(screen.queryByRole("checkbox", { name: /that it's assigned/ })).toBeNull()
+    expect(document.querySelector("[data-slot=schedule-sentence]")).toHaveTextContent("Andrea gets a text with the day and time.")
+  })
+
+  it("offers the box off by default for a tech, shows the exact text and names both notices once it is on", () => {
+    dlg({ initialPeople: ["Tech Two"] })
+    const box = screen.getByRole("checkbox", { name: "Text Tech Two that it's assigned" })
+    expect(box).not.toBeChecked()
+    expect(document.querySelector("[data-slot=crew-text]")).toHaveTextContent("Trailhead: you're on 480 Briggs St, Tue Nov 24, Sprinkler repair.")
+    fireEvent.click(box)
+    expect(document.querySelector("[data-slot=schedule-sentence]")).toHaveTextContent("Andrea gets a text with the day and time. Tech Two gets a text that it's assigned.")
+    fireEvent.change(screen.getByLabelText(/Instructions for the crew/), { target: { value: "Gate code is 4417." } })
+    expect(document.querySelector("[data-slot=crew-text]")).toHaveTextContent("Sprinkler repair. Gate code is 4417.")
+    expect(screen.getByLabelText(/Instructions for the crew/)).toHaveAttribute("maxlength", "140")
+    expect(screen.getByLabelText("Remind the crew the morning of")).toHaveValue("none")
+  })
+
+  it("lets Who take two people and tells the customer about the first", () => {
+    dlg()
+    fireEvent.click(screen.getByRole("checkbox", { name: "Tech Two" }))
+    expect(screen.getByText(/The customer hears about Ryan, the first one chosen/)).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Text Tech Two that it's assigned" })).toBeInTheDocument()
+  })
 })

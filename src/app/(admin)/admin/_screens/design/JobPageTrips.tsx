@@ -15,6 +15,7 @@ import Link from "next/link"
 import { BillingCard } from "./BillingCard"
 import { Actions, Aside, Badges, CONTACT, EditLink, MessagesCard, Notice, bandItems, hasFooter, type CollectHandlers } from "./JobPageParts"
 import { TripBody } from "./TripBody"
+import type { ScheduleResult } from "./ScheduleDialog"
 import type { ConfirmFacts } from "./confirm-copy"
 
 // A job with more than one trip (docs/plans/2026-11-19-job-object-design.md): a Season Pass, or a repair with a return trip, on the same page
@@ -58,11 +59,13 @@ export interface TripsPageProps {
   /** the "How is this paid?" handlers of one trip */
   tripHandlers?: (tripId: string) => CollectHandlers
   onDo?: (label: string, variant?: string) => void
+  /** a trip's Schedule or Move dialog was confirmed, by trip id */
+  onTripSchedule?: (tripId: string, r: ScheduleResult) => void
   /** the trip that is open to begin with; the next trip ahead when left out */
   defaultOpen?: string
 }
 
-export function TripsPage({ data, customer, onTripDo, tripHandlers, onDo, defaultOpen }: TripsPageProps) {
+export function TripsPage({ data, customer, onTripDo, tripHandlers, onDo, onTripSchedule, defaultOpen }: TripsPageProps) {
   // one trip open at a time; the next trip ahead is open to begin with
   const [openId, setOpenId] = useState<string | null>(() => defaultOpen ?? (data.trips.find(isOpen) ?? data.trips[0])?.id ?? null)
   const facts = factsOf(data, customer)
@@ -90,7 +93,7 @@ export function TripsPage({ data, customer, onTripDo, tripHandlers, onDo, defaul
               actions={t.actions}
               {...(t.trip ? { open: openId === t.id, onToggle: () => setOpenId((id) => (id === t.id ? null : t.id)) } : {})}
             >
-              {t.trip && openId === t.id && <TripBody trip={t} onDo={onTripDo && ((label, variant) => onTripDo(t.id, label, variant))} handlers={tripHandlers?.(t.id)} />}
+              {t.trip && openId === t.id && <TripBody trip={t} onDo={onTripDo && ((label, variant) => onTripDo(t.id, label, variant))} handlers={tripHandlers?.(t.id)} onSchedule={onTripSchedule && ((r) => onTripSchedule(t.id, r))} />}
             </TripRow>
           ))}
         </RecordList>

@@ -80,9 +80,13 @@ export const PaidByCheckPhone: Story = { ...story("paid-check", phone), name: "P
 export const PaidByCard: Story = { ...story("paid-card", laptop), name: "Paid by card" }
 export const PaidByCardPhone: Story = { ...story("paid-card", phone), name: "Paid by card, phone" }
 
-/** Refunded: a grey line, the refund as its own negative grey row under the payment, the job Unpaid again with Collect payment as the primary. */
+/** Refunded: a grey Refunded pill, the grey line "$145 refunded to the card on Nov 19, by Ryan" and the refund as its own negative grey row under the payment. The job reads Refunded, never Unpaid; Collect payment is under More, not a primary. */
 export const Refunded: Story = { ...story("refunded", laptop), name: "Refunded" }
 export const RefundedPhone: Story = { ...story("refunded", phone), name: "Refunded, phone" }
+
+/** A partial refund: the job reads "Paid, $50 refunded" in green, with a negative grey $50 row under the card payment. */
+export const PartRefunded: Story = { ...story("part-refunded", laptop), name: "Part refunded" }
+export const PartRefundedPhone: Story = { ...story("part-refunded", phone), name: "Part refunded, phone" }
 
 /** Ryan sees the invoice in an Invoices table, Invoice sent, with Remind and Open invoice beside it. The primary is Send a payment reminder, with Collect payment beside it. */
 export const InvoiceSent: Story = { ...story("invoice-sent", laptop), name: "Invoice sent" }

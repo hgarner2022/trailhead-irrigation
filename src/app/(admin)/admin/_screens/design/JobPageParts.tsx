@@ -24,6 +24,7 @@ import type { SummaryItem } from "@/components/blocks/SummaryBand"
 import type { Message } from "@/lib/admin/types"
 import type { TimelineLine } from "@/lib/events/timeline"
 import { MessageDialog } from "./MessageDialog"
+import { ScheduleForFacts, type ScheduleResult } from "./ScheduleDialog"
 import { NOW, noop, noteOk, type FooterPlan, type JobPageData, type PastVisit, type PillData } from "./job-fixtures"
 
 // The cards the one-trip, Season Pass and return-trip job pages share, so a card reads the same on every job (the rules are in
@@ -32,7 +33,7 @@ import { NOW, noop, noteOk, type FooterPlan, type JobPageData, type PastVisit, t
 
 export const CONTACT = { sms: "(970) 555-0123", email: "andrea.dalton@example.com" }
 const PAY_WORDS: Partial<Record<string, string>> = { check: "Record the check", venmo: "Record the Venmo payment", cash: "Record the cash", invoice: "Send the invoice" }
-const MONEY: PillStatus[] = ["paid", "owed", "bill-sent", "overdue", "failed", "charge-failed"]
+const MONEY: PillStatus[] = ["paid", "owed", "bill-sent", "overdue", "failed", "charge-failed", "refunded"]
 const ALERT: PillStatus[] = ["overdue", "failed", "charge-failed"]
 const row = (rows: readonly RecordFact[], label: string) => rows.find(([k]) => k === label)?.[1] as string | undefined
 
@@ -227,7 +228,8 @@ export function factsOfJob(job: JobPageData): ConfirmFacts {
 }
 
 /** The header's actions: the primary, up to two outlines, More with the destructive one last inside it. A button that reaches the customer or their money opens its confirmation first (a customer-facing action always confirms and states its effect). */
-export function Actions({ plan, facts, onDo, onMessage, intercept = [], collect, handlers }: { plan: FooterPlan; facts: ConfirmFacts; onDo?: (label: string, variant?: string) => void; onMessage?: (m: { channel: "text" | "email"; body: string }) => void; intercept?: string[]; collect?: JobPageData["collect"]; handlers?: CollectHandlers }) {
+export function Actions({ plan, facts, onDo, onMessage, intercept = [], collect, handlers, onSchedule }: { plan: FooterPlan; facts: ConfirmFacts; onDo?: (label: string, variant?: string) => void; onMessage?: (m: { channel: "text" | "email"; body: string }) => void; intercept?: string[]; collect?: JobPageData["collect"]; handlers?: CollectHandlers; onSchedule?: (r: ScheduleResult) => void }) {
+  const [scheduling, setScheduling] = useState<"Schedule" | "Move" | null>(null)
   const [composing, setComposing] = useState(false)
   const [collecting, setCollecting] = useState(false)
   const [doneDay, setDoneDay] = useState<string>("")
@@ -236,6 +238,7 @@ export function Actions({ plan, facts, onDo, onMessage, intercept = [], collect,
   const wrap = (a: FooterAction): FooterAction => {
     if (a.disabled) return a
     if (a.label === "Send a message") return { ...a, onClick: () => setComposing(true) }
+    if ((a.label === "Schedule" || a.label === "Move") && !intercept.includes(a.label)) return { ...a, onClick: () => setScheduling(a.label as "Schedule" | "Move") }
     if (a.label === "Collect payment" && collect) return { ...a, onClick: () => setCollecting(true) }
     if (intercept.includes(a.label)) return { ...a, onClick: () => onDo?.(a.label) }
     if (confirms[a.label]) return { ...a, onClick: () => (setDoneDay(confirms[a.label]!.doneOn?.[0] ?? ""), setAsking({ ...confirms[a.label]!, label: a.label })) }
@@ -279,6 +282,7 @@ export function Actions({ plan, facts, onDo, onMessage, intercept = [], collect,
           <CollectBlock bare collect={collect} facts={facts} handlers={{ ...handlers, onClose: () => setCollecting(false), onLater: () => setCollecting(false), onDone: (way) => (setCollecting(false), handlers?.onDone?.(way)) }} />
         </ConfirmDialog>
       )}
+      {scheduling && <ScheduleForFacts verb={scheduling} facts={facts} onClose={() => setScheduling(null)} onDo={onDo} onSchedule={onSchedule} />}
       {composing && <MessageDialog facts={facts} onClose={() => setComposing(false)} onSend={(m) => onMessage?.(m)} />}
     </>
   )

@@ -25,6 +25,17 @@ export function paidTotal(payments: readonly Pick<MoneyPayment, "amount" | "stat
 }
 
 /**
+ * The word a job reads after a refund (Hannah, Nov 19 2026: after a refund a job must read Refunded, never Unpaid): "Refunded" when its payments
+ * net to zero after a refund row, "Paid, $50 refunded" when some of it came back and some stays paid, null when nothing was refunded.
+ */
+export function refundWord(payments: readonly Pick<MoneyPayment, "amount" | "status">[]): string | null {
+  const ok = payments.filter((p) => p.status === "succeeded")
+  const refunded = -ok.filter((p) => p.amount < 0).reduce((n, p) => n + p.amount, 0)
+  if (refunded <= 0) return null
+  return paidTotal(ok) <= 0 ? "Refunded" : `Paid, $${refunded} refunded`
+}
+
+/**
  * Whether a visit's money is settled: its rows net above zero and, for a priced visit, at least the price. A visit nothing has
  * priced yet is paid by any positive payment (the payment is its price). The one rule every screen and the API read.
  */

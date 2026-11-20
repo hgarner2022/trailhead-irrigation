@@ -112,20 +112,19 @@ describe("customer page", () => {
     expect(within(sectionOf("Jobs")).getByRole("link", { name: "New job" })).toBeInTheDocument()
   })
 
-  it("names the customer's own channel in the Collect payment confirmation and offers a notify-free way", () => {
+  it("says the effect under the chosen way, with the dialog's own button as the confirm and no second dialog", () => {
     render(<CustomerPage customer={customerPageOf("pass-holder")} initialDialog="collect" />)
     const dialog = screen.getByRole("dialog")
-    expect(within(dialog).getByRole("heading", { name: "How is this paid?" })).toBeInTheDocument()
+    expect(within(dialog).getAllByRole("heading", { name: "How is this paid?" })).toHaveLength(1)
     expect(within(dialog).getByRole("radio", { name: /Charge the Visa ending 4242/ })).toBeChecked()
     expect(within(dialog).queryByRole("radio", { name: /Send an invoice/ })).toBeNull()
     fireEvent.click(within(dialog).getByRole("radio", { name: /Check/ }))
     expect(within(dialog).getByLabelText("Check number (optional)")).toHaveValue("")
-    fireEvent.click(within(dialog).getByRole("button", { name: "Continue" }))
-    const ask = screen.getAllByRole("dialog").at(-1)!
-    expect(within(ask).getByText(/and notify the customer by text at \(970\) 555-0123/)).toBeInTheDocument()
-    expect(within(ask).getByText(/Invoice INV-2026-0042 is settled and its pay link stops working/)).toBeInTheDocument()
-    expect(within(ask).getByRole("button", { name: "Record the payment" })).toBeInTheDocument()
-    expect(within(ask).getByRole("button", { name: "More ways" })).toBeInTheDocument()
+    expect(within(dialog).getByText(/Andrea gets a receipt by text\./)).toBeInTheDocument()
+    expect(within(dialog).getByText(/Invoice INV-2026-0042 is settled and its pay link stops working/)).toBeInTheDocument()
+    expect(within(dialog).getByRole("button", { name: "Record the check" })).toBeInTheDocument()
+    expect(within(dialog).queryByRole("button", { name: /More ways|without notifying/ })).toBeNull()
+    expect(screen.getAllByRole("dialog")).toHaveLength(1)
   })
 
   it("uses the email channel when that is the preference", () => {

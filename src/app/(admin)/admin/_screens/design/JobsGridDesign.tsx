@@ -14,8 +14,8 @@ import { StatusPill, type PillStatus } from "@/components/blocks/StatusPill"
 // ("Invoice sent, due Dec 2", "Past due since Nov 17", "$145 unpaid", "Paid, Venmo") and is empty while nothing is due. The Job filter lists
 // the services. A row opens the job page. Pure props.
 
-export type BillingState = "owed" | "bill-sent" | "overdue" | "paid"
-export const BILLING_WORDS: Record<BillingState, string> = { owed: "Unpaid", "bill-sent": "Invoice sent", overdue: "Past due", paid: "Paid" }
+export type BillingState = "owed" | "bill-sent" | "overdue" | "paid" | "refunded"
+export const BILLING_WORDS: Record<BillingState, string> = { owed: "Unpaid", "bill-sent": "Invoice sent", overdue: "Past due", paid: "Paid", refunded: "Refunded" }
 
 export type GridStatus = "today" | "active" | "unscheduled" | "scheduled" | "late" | "done" | "cancelled"
 export const GRID_WORDS: Record<GridStatus, string> = { today: "Today", active: "Active", unscheduled: "Unscheduled", scheduled: "Scheduled", late: "Late", done: "Done", cancelled: "Canceled" }

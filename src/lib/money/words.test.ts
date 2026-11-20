@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { NO_TAX } from "@/lib/jobs/tax"
-import { allocateJobPayments, isPaid, jobOwed, jobMoney, METHOD_WORDS, paidTotal, visitMoney, type MoneyPayment } from "./words"
+import { allocateJobPayments, isPaid, jobOwed, jobMoney, METHOD_WORDS, paidTotal, refundWord, visitMoney, type MoneyPayment } from "./words"
 
 const line = (unitPrice: number, cancelledAt: Date | null = null) => ({ quantity: 1, unitPrice, taxable: false, cancelledAt })
 const pay = (over: Partial<MoneyPayment> = {}): MoneyPayment => ({ id: "p", visitId: "v1", amount: 145, method: "cash", status: "succeeded", ...over })
@@ -172,5 +172,19 @@ describe("visitMoney", () => {
 describe("METHOD_WORDS", () => {
   it("names how money came", () => {
     expect(METHOD_WORDS).toMatchObject({ card_on_file: "card", card_now: "card", check: "check", venmo: "Venmo", cash: "cash", bill: "invoice" })
+  })
+})
+
+describe("refundWord", () => {
+  const row = (amount: number, status: "succeeded" | "failed" = "succeeded") => ({ amount, status })
+  it("reads Refunded when the payments net to zero after a refund", () => {
+    expect(refundWord([row(145), row(-145)])).toBe("Refunded")
+  })
+  it("reads Paid with the amount refunded when some stays paid", () => {
+    expect(refundWord([row(145), row(-50)])).toBe("Paid, $50 refunded")
+  })
+  it("says nothing when nothing was refunded", () => {
+    expect(refundWord([row(145)])).toBeNull()
+    expect(refundWord([row(145), row(-145, "failed")])).toBeNull()
   })
 })

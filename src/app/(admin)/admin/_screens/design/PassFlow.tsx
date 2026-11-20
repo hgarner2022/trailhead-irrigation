@@ -1,12 +1,15 @@
 "use client"
 
 import { useState } from "react"
+import type { Message } from "@/lib/admin/types"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { ToastProvider } from "@/components/blocks/Toast"
 import { Button } from "@/components/ui/button"
 import { TripsPage } from "./JobPageTrips"
 import { CollectBlock } from "./JobPageParts"
 import { tripFacts } from "./TripBody"
+import { crewText } from "./crew-copy"
+import type { ScheduleResult } from "./ScheduleDialog"
 import { FALL, SPRING, passPageFromTrips, tripOf, type TripState } from "./trip-fixtures"
 
 // The Season Pass branch of the clickable flow (Hannah, Nov 19 2026): trip 1 goes Scheduled, Today, Active, Done, Charged with the same
@@ -16,8 +19,9 @@ import { FALL, SPRING, passPageFromTrips, tripOf, type TripState } from "./trip-
 
 const STEPS: [string, TripState[]][] = [["Scheduled", ["scheduled"]], ["Today", ["today"]], ["Active", ["active"]], ["Done", ["done"]], ["Charged", ["charged"]]]
 type Stages = { t1: TripState; t2: TripState }
+type Crew = { people: string[]; instructions: string }
 const START: Stages = { t1: "scheduled", t2: "scheduled" }
-const NEXT: Partial<Record<string, TripState>> = { Move: "today", "On my way": "active", "Mark done": "done" }
+const NEXT: Partial<Record<string, TripState>> = { "On my way": "active", "Mark done": "done" }
 
 function Strip({ stage, onReset }: { stage: TripState; onReset: () => void }) {
   const at = STEPS.findIndex(([, s]) => s.includes(stage))
@@ -40,8 +44,18 @@ function Strip({ stage, onReset }: { stage: TripState; onReset: () => void }) {
 export function PassFlow() {
   const [st, setSt] = useState<Stages>(START)
   const [collecting, setCollecting] = useState<"t1" | "t2" | null>(null)
-  const trips = [tripOf(SPRING, "t1", st.t1, { day: st.t1 === "scheduled" ? undefined : "Today, Wed Nov 18" }), tripOf(FALL, "t2", st.t2)]
+  const [crew, setCrew] = useState<Record<string, Crew>>({})
+  const [crewMessages, setCrewMessages] = useState<Message[]>([])
+  const trips = [tripOf(SPRING, "t1", st.t1, { day: st.t1 === "scheduled" ? undefined : "Today, Wed Nov 18", ...crew.t1 }), tripOf(FALL, "t2", st.t2, crew.t2)]
   const data = passPageFromTrips(trips)
+  data.messages = [...crewMessages, ...data.messages]
+  // Schedule or Move: the trip takes its people and instructions; a crew text is a Messages row to that person, never to the customer
+  const onTripSchedule = (id: string, r: ScheduleResult) => {
+    setCrew((c) => ({ ...c, [id]: { people: r.people, instructions: r.instructions } }))
+    moveTo(id as "t1" | "t2", id === "t1" ? "today" : st.t2)
+    if (r.crewText)
+      setCrewMessages((m) => [...r.people.filter((p) => p !== "Ryan Garner").map((p, i): Message => ({ id: `crew-${m.length + i}`, clientId: "c-1", passId: "pass-1", channel: "sms", kind: "note", body: crewText({ day: r.day, time: r.time, address: "480 Briggs St", service: id === "t1" ? SPRING.title : FALL.title, instructions: r.instructions }), at: new Date(Date.UTC(2026, 10, 18, 17, 10 + m.length + i)).toISOString(), status: "delivered", toName: p })), ...m])
+  }
   const moveTo = (id: "t1" | "t2", state: TripState) => setSt((s) => ({ ...s, [id]: state }))
   const onTripDo = (id: string, label: string) => {
     const next = NEXT[label]
@@ -56,7 +70,7 @@ export function PassFlow() {
   return (
     <ToastProvider>
       <Strip stage={st.t1} onReset={() => (setSt(START), setCollecting(null))} />
-      <TripsPage key={key} data={data} onTripDo={onTripDo} tripHandlers={handlers} />
+      <TripsPage key={key} data={data} onTripDo={onTripDo} tripHandlers={handlers} onTripSchedule={onTripSchedule} />
       {open && collecting && st[collecting] === "done" && open.collect && (
         <ConfirmDialog open onOpenChange={(o) => !o && setCollecting(null)} title="How is this paid?" actions="none" size="md" slot="flow-collect">
           <CollectBlock bare collect={open.collect} facts={tripFacts(open)} handlers={handlers(collecting)} />

@@ -17,7 +17,7 @@ import { JOB_WORDS, REASON_WORDS, WORK_WORDS, type Job, type JobState, type Mone
 // only reach 4.2 to 4.4 on their tints, which is why they are not used here. Gold: warning-ink #854D0E on bg-warning/14 (gold #A16207 at 14%) is
 // 5.70 over white, 5.49 over cream and 5.24 over stone; navy #2B3544 on bg-navy/10 is 10.4, 9.9 and 9.5.
 
-export type PillStatus = PassStatus | JobState | WorkState | MoneyState | "overdue" | "waiting" | "today" | "job-active"
+export type PillStatus = PassStatus | JobState | WorkState | MoneyState | "overdue" | "waiting" | "today" | "job-active" | "refunded"
 
 const LABELS: Record<PillStatus, string> = {
   ...JOB_WORDS,
@@ -34,6 +34,7 @@ const LABELS: Record<PillStatus, string> = {
   waiting: "Waiting on customer",
   today: "Today",
   "job-active": "Active",
+  refunded: "Refunded",
 }
 
 const GOOD = "bg-positive/10 text-positive-deep border-positive/30"
@@ -68,6 +69,7 @@ const TONES: Record<PillStatus, string> = {
   waiting: GOLD,
   today: INFO,
   "job-active": PROGRESS,
+  refunded: OVER,
 }
 
 /** The word shown for a status: "Past due" for overdue, "Unscheduled" for a job with no day, else the status in sentence case. */

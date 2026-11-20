@@ -22,7 +22,7 @@ export interface ConfirmCopy {
 export interface ConfirmFacts {
   first: string
   /** how the customer wants to hear from us: a text by default */
-  channel?: "text" | "email"
+  channel?: "text" | "email" | "both"
   email?: string
   /** no text has gone to this number yet, so the next one carries the opt-out line */
   firstText?: boolean
@@ -56,6 +56,8 @@ export type Reach = Pick<ConfirmFacts, "first" | "channel" | "phone" | "email">
 
 /** "by text at (970) 555-0123" or "by email at andrea@example.com": the customer's own channel. */
 export const via = (c: Reach): string => (c.channel === "email" ? `by email at ${c.email ?? "the address on file"}` : `by text at ${c.phone}`)
+/** A receipt is not a notification: every payment sends one, by the customer's own channel(s), so no payment has a "without notifying". */
+export const receiptBy = (c: { channel?: "text" | "email" | "both" }): string => (c.channel === "email" ? "by email" : c.channel === "both" ? "by text and email" : "by text")
 const notify = (c: Reach) => `and notify the customer ${via(c)}`
 
 /** The toast after the money has gone through or the invoice has gone out: the page already shows the new state in Billing. */
@@ -71,23 +73,24 @@ export function doneToast(way: string, f: ConfirmFacts): string {
 }
 
 /**
- * The confirmation for each way of paying. A card charge or a recorded payment sends a receipt, so each states the customer's channel and has
- * a `quiet` twin under the caret ("without notifying"); recording a payment against an open invoice also settles it and closes its pay link.
- * Sending the invoice is itself the notification, so it has no twin.
+ * The effect of each way of paying, said under the chosen option of "How is this paid?" (that dialog's own button is the confirm). A card
+ * charge or a recorded payment sends a receipt by the customer's own channel(s); a receipt is not a notification, so there is no
+ * "without notifying" on any of them. Recording a payment against an open invoice also settles it and closes its pay link. Sending the
+ * invoice is itself the notification.
  */
 export function collectConfirm(way: string, f: ConfirmFacts, reference = ""): ConfirmCopy | null {
   const ref = reference.trim()
   const settles = f.invoiceOpen ? ` ${f.invoiceNumber ? `Invoice ${f.invoiceNumber}` : "The open invoice"} is settled and its pay link stops working.` : ""
-  const sentence = (what: string) => `${what} ${notify(f)} a receipt.${settles}`
+  const sentence = (what: string) => `${what}. ${f.first} gets a receipt ${receiptBy(f)}.${settles}`
   switch (way) {
     case "card":
-      return { title: `Charge ${f.amount}`, message: sentence(`Charge ${f.amount} to the ${f.cardWords ?? "card on file"}`), confirmLabel: `Charge ${f.amount}`, quiet: "Charge without notifying" }
+      return { title: `Charge ${f.amount}`, message: sentence(`Charge ${f.amount} to the ${f.cardWords ?? "card on file"}`), confirmLabel: `Charge ${f.amount}` }
     case "check":
-      return { title: "Record the payment", message: sentence(`Record a ${f.amount} check${ref ? `, number ${ref}` : ""}`), confirmLabel: "Record the payment", quiet: "Record without notifying" }
+      return { title: "Record the payment", message: sentence(`Record a ${f.amount} check${ref ? `, number ${ref}` : ""}`), confirmLabel: "Record the payment" }
     case "venmo":
-      return { title: "Record the payment", message: sentence(`Record a ${f.amount} Venmo payment${ref ? ` from ${ref}` : ""}`), confirmLabel: "Record the payment", quiet: "Record without notifying" }
+      return { title: "Record the payment", message: sentence(`Record a ${f.amount} Venmo payment${ref ? ` from ${ref}` : ""}`), confirmLabel: "Record the payment" }
     case "cash":
-      return { title: "Record the payment", message: sentence(`Record ${f.amount} in cash`), confirmLabel: "Record the payment", quiet: "Record without notifying" }
+      return { title: "Record the payment", message: sentence(`Record ${f.amount} in cash`), confirmLabel: "Record the payment" }
     case "invoice":
       return { title: "Send the invoice", message: `Send the invoice for ${f.amount} ${via(f)}, due ${f.dueOn}.`, confirmLabel: "Send the invoice", reportOption: { label: "Include the visit report (the checklist and photos)", with: `Send the invoice for ${f.amount} ${via(f)}, due ${f.dueOn}, with the visit report.`, without: `Send the invoice for ${f.amount} ${via(f)}, due ${f.dueOn}.` } }
     default:

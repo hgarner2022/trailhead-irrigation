@@ -38,6 +38,8 @@ export interface TripData {
     day: string
     time: string
     who: string
+    /** everyone on the trip; the first is the one the customer hears */
+    people: string[]
     price: number
     checklist: ChecklistItem[]
     photos: PhotoItem[]
@@ -128,13 +130,14 @@ const photosOf = (s: Svc, state: TripState, first: boolean): PhotoItem[] => {
 }
 
 /** One trip of a pass, in a state. The first trip of the pass has the customer's photos. */
-export function tripOf(s: Svc, id: string, state: TripState, opts: { day?: string } = {}): TripData {
+export function tripOf(s: Svc, id: string, state: TripState, opts: { day?: string; people?: string[]; instructions?: string } = {}): TripData {
   const day = opts.day ?? s.day
+  const people = opts.people ?? ["Ryan Garner"]
   const done = state === "done" || state === "charged" ? 99 : state === "active" ? 2 : 0
   return {
     id,
     title: s.title,
-    detail: state === "canceled" ? "Canceled with the pass" : `${day} · Ryan · ${TIME[state]}`,
+    detail: state === "canceled" ? "Canceled with the pass" : `${day} · ${people.map((p) => p.split(" ")[0]).join(" and ")} · ${TIME[state]}`,
     pills: PILLS[state],
     money: MONEY(state, s.price),
     actions: [],
@@ -143,11 +146,12 @@ export function tripOf(s: Svc, id: string, state: TripState, opts: { day?: strin
       service: s.service,
       day,
       time: TIME[state],
-      who: "Ryan Garner",
+      who: people[0]!,
+      people,
       price: s.price,
       checklist: checklistOf(s.service, done),
       photos: photosOf(s, state, id === "t1"),
-      notes: trailOf(s, state),
+      notes: [...(opts.instructions ? [event(`${s.service}-instr`, "2026-11-18T17:05:00Z", `Instructions for the crew: ${opts.instructions}`)] : []), ...trailOf(s, state)],
       footer: footerOf(state, s.price),
       // a pass trip with a card: "Charge the card as agreed" is chosen, the cash ways are behind "Paid another way"
       collect: state === "done" ? { plan: collectPlan({ amount: s.price, card: visa, isPass: true, invoiceOpen: false, canInvoice: true, declined: false, charging: false }), summary: `${s.title} · $${s.price} unpaid` } : undefined,

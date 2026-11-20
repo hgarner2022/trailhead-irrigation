@@ -480,6 +480,8 @@ export interface Message {
   deliveryStatus?: string
   /** Twilio's error code on an undelivered or failed report */
   deliveryError?: string
+  /** a text to a crew member, not the customer ("Tech Two"): the Messages table's To column names them */
+  toName?: string
 }
 
 /** How invoices are due and taxed (Settings › Billing). With the switch on, sales tax is part of every job's total, its visits' prices and its invoice. */

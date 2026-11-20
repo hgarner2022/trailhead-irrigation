@@ -27,6 +27,7 @@ const JOBS: GridJob[] = [
   job("j8", "Tom Becker", "New sprinkler system installation", "New sprinkler system installation", "600 Hill Rd, Broomfield", "unscheduled", "0 of 1 done", 0, null, "", "Unscheduled", "No one yet"),
   job("j9", "Lena Park", "Christmas lights", "Christmas lights", "7 Oak Ct, Lafayette", "unscheduled", "0 of 1 done", 600, null, "", "Unscheduled", "No one yet"),
   job("j10", "Greg Olsen", "Core aeration", "Core aeration", "5 Birch Ln, Erie", "cancelled", "0 of 1 done", 95, null, "", "None", "No one yet"),
+  job("j12", "Kim Ortega", "Sprinkler repair", "Sprinkler repair", "12 Oak St, Erie", "done", "1 of 1 done", 145, "refunded", "Refunded", "None", RYAN),
   job("j11", "Ana Ruiz", "Sprinkler repair", "Sprinkler repair", "9 Laurel St, Louisville", "late", "0 of 1 done", 145, null, "", "Mon, Nov 16", RYAN),
 ]
 

@@ -67,7 +67,7 @@ export function CollectDialog({ who, amount, card, invoice, onClose, onPaid }: C
         onClose={onClose}
         onSettled={() => (onPaid?.(), onClose())}
         notNow
-        buttonLabel={(o) => (o.value === "card" ? `Charge ${dollars(amount)} to the ${plan.cardWords}` : "Continue")}
+        buttonLabel={(o) => (o.value === "card" ? `Charge ${dollars(amount)} to the ${plan.cardWords}` : ({ check: "Record the check", venmo: "Record the Venmo payment", cash: "Record the cash", invoice: "Send the invoice" } as Record<string, string>)[o.value] ?? o.button)}
         confirmFor={(o, reference) => collectConfirm(o.value, { ...who, service: "job", amount: dollars(amount), address: "", dueOn: "14 days from today", cardWords: plan.cardWords, invoiceOpen: Boolean(invoice), invoiceNumber: invoice?.number }, reference)}
       />
     </ConfirmDialog>

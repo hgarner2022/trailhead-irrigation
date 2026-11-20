@@ -2,11 +2,11 @@
 
 import { useReducer, useRef, useState } from "react"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
-import { SplitButton } from "@/components/blocks/SplitButton"
 import { ToastProvider } from "@/components/blocks/Toast"
 import { Button } from "@/components/ui/button"
 import type { Message } from "@/lib/admin/types"
-import { SchedulePicker, type Pick } from "./SchedulePicker"
+import { ScheduleDialog, type ScheduleResult } from "./ScheduleDialog"
+import { crewText } from "./crew-copy"
 import { JobPage } from "./JobPage"
 import { reminderBody } from "./confirm-copy"
 import { CollectBlock, factsOfJob } from "./JobPageParts"
@@ -29,11 +29,15 @@ interface Flow {
   /** the payment settled an invoice that was out */
   hadInvoice?: boolean
   refunded?: boolean
+  /** everyone on the trip, the first heard by the customer */
+  people?: string[]
+  /** the crew's one line of instructions, shown on the trip */
+  instructions?: string
   extra: Message[]
 }
 type Act =
   | { type: "reset" }
-  | { type: "schedule"; day: string; time: string; text: boolean }
+  | { type: "schedule"; day: string; time: string; text: boolean; people: string[]; instructions: string; crew: Message[] }
   | { type: "active"; text: boolean }
   | { type: "done" }
   | { type: "paid"; by: string; ref?: string }
@@ -51,7 +55,7 @@ type Ctx = { ch: Via; inv: { id: string; number: string } }
 function reduce(f: Flow, a: Act, c: Ctx): Flow {
   switch (a.type) {
     case "reset": return START
-    case "schedule": return { ...f, day: a.day, time: a.time, stage: a.day === TODAY ? "today" : "scheduled", extra: !a.text ? f.extra : [...f.extra, ...sayVia(c.ch, a.day === TODAY ? "day-before" : "date-set", `Trailhead: your repair is ${a.day === TODAY ? "today" : a.day}${a.time === "Any time" ? "" : ` at ${a.time}`}.`)] }
+    case "schedule": return { ...f, day: a.day, time: a.time, people: a.people, instructions: a.instructions, stage: a.day === TODAY ? "today" : "scheduled", extra: !a.text ? f.extra : [...f.extra, ...sayVia(c.ch, a.day === TODAY ? "day-before" : "date-set", `Trailhead: your repair is ${a.day === TODAY ? "today" : a.day}${a.time === "Any time" ? "" : ` at ${a.time}`}.`)].concat(a.crew) }
     case "active": return { ...f, stage: "active", extra: a.text ? [...f.extra, ...sayVia(c.ch, "on-the-way", "Trailhead: Ryan is on the way to 480 Briggs St.")] : f.extra }
     case "done": return { ...f, stage: "done" }
     case "refund": return { ...f, refunded: true, extra: [...f.extra, say("email", "note", "Your $145 payment was refunded."), ...(c.ch === "both" || c.ch === "sms" ? [say("sms", "note", "Trailhead: your $145 payment was refunded.")] : [])] }
@@ -92,7 +96,7 @@ const OLD_INV = { id: "inv-1", number: "INV-2026-0001" }
 function rawView(f: Flow): JobPageData {
   const job = jobPageOf(FIXTURE[f.stage])
   const messages = [...f.extra].reverse().concat(f.stage === "unscheduled" ? [] : job.messages.filter((m) => !f.extra.some((x) => x.kind === m.kind)))
-  const when = f.day && f.stage !== "done" && f.stage !== "paid" && f.stage !== "invoice" && f.stage !== "canceled" ? job.when.map((r) => (r[0] === "Day" ? ["Day", f.day] : r[0] === "Time" ? ["Time", f.time] : r[0] === "Who" ? ["Who", "Ryan Garner"] : r)) : job.when
+  const when = f.day && f.stage !== "done" && f.stage !== "paid" && f.stage !== "invoice" && f.stage !== "canceled" ? job.when.map((r) => (r[0] === "Day" ? ["Day", f.day] : r[0] === "Time" ? ["Time", f.time] : r[0] === "Who" ? ["Who", (f.people ?? ["Ryan Garner"]).join(", ")] : r)) : job.when
   const out: JobPageData = { ...job, when: when as JobPageData["when"], messages: f.stage === "unscheduled" ? f.extra : messages }
   if (f.stage === "paid" && f.paidBy) {
     const by = f.paidBy as "card" | "check" | "venmo" | "cash"
@@ -103,6 +107,7 @@ function rawView(f: Flow): JobPageData {
     out.billing = paidBilling(by, f.ref, f.hadInvoice)
   }
   if (f.stage === "invoice") out.billing = { ...job.billing, invoices: job.billing.invoices?.map((i) => ({ ...i, note: f.report === false ? undefined : "Includes the visit report" })) }
+  if (f.instructions) out.notes = [{ id: "crew-instructions", at: "2026-11-18T17:05:00Z", actor: "Ryan", what: `Instructions for the crew: ${f.instructions}`, kind: "event" }, ...out.notes]
   return out
 }
 
@@ -131,7 +136,6 @@ export function JobFlow({ channel = "text", embedded = false, invoice = OLD_INV 
   const pageChannel = channel === "email" ? "email" : "text"
   const [f, dispatch] = useReducer((state: Flow, act: Act) => reduce(state, act, { ch: via, inv: invoice }), START)
   const [ask, setAsk] = useState<Ask>(null)
-  const [pick, setPick] = useState<Pick>({ day: "Tue, Nov 24", time: "Any time", person: "Ryan Garner" })
   const [collecting, setCollecting] = useState(false)
   const view = viewOf(f, invoice)
   const handlers = {
@@ -144,8 +148,13 @@ export function JobFlow({ channel = "text", embedded = false, invoice = OLD_INV 
   }
   const paying = useRef<{ by: string; ref?: string } | null>(null)
   const invoiceReport = useRef<boolean | null>(null)
+  // the crew text is a Messages row to the person, not to the customer
+  const onSchedule = (r: ScheduleResult) => {
+    const crew = r.crewText ? r.people.filter((p) => p !== "Ryan Garner").map((p) => ({ ...say("sms", "note", crewText({ day: r.day, time: r.time, address: "480 Briggs St", service: "Sprinkler repair", instructions: r.instructions })), toName: p })) : []
+    dispatch({ type: "schedule", day: r.day, time: r.time, text: r.notify, people: r.people, instructions: r.instructions, crew })
+  }
   const onDo = (label: string, variant?: string, how?: string) => {
-    if (label === "Schedule" || label === "Move") { setPick({ day: "Tue, Nov 24", time: "Any time", person: "Ryan Garner" }); setAsk("schedule") }
+    if (label === "Schedule" || label === "Move") setAsk("schedule")
     else if (label === "Mark done") (dispatch({ type: "done" }), setCollecting(true))
     else if (label === "Refund $145") dispatch({ type: "refund" })
     else if (label === "On my way") dispatch({ type: "active", text: variant !== "quiet" })
@@ -169,20 +178,7 @@ export function JobFlow({ channel = "text", embedded = false, invoice = OLD_INV 
         handlers={handlers}
       />
       {ask === "schedule" && (
-        <ConfirmDialog
-          open
-          size="md"
-          onOpenChange={(o) => !o && setAsk(null)}
-          title={f.stage === "unscheduled" ? "Schedule the job" : "Move the job"}
-          slot="flow-schedule"
-          onConfirm={async (variant) => (dispatch({ type: "schedule", day: pick.day, time: pick.time, text: variant !== "quiet" }), { ok: true })}
-          renderConfirm={({ confirm, pending }) => {
-            const verb = f.stage === "unscheduled" ? "Schedule" : "Move"
-            return <SplitButton label={`${verb} and notify the customer`} onClick={() => confirm("text")} disabled={pending} menuLabel={`More ways to ${verb.toLowerCase()}`} menu={[{ label: `${verb} without notifying`, disabled: pick.time !== "Any time", onSelect: () => confirm("quiet") }]} />
-          }}
-        >
-          <SchedulePicker firstName={view.customer.split(" ")[0]!} channel={pageChannel} onChange={setPick} />
-        </ConfirmDialog>
+        <ScheduleDialog verb={f.stage === "unscheduled" ? "Schedule" : "Move"} first={view.customer.split(" ")[0]!} channel={pageChannel} address="480 Briggs St" service="Sprinkler repair" onClose={() => setAsk(null)} onConfirm={onSchedule} />
       )}
       {collecting && f.stage === "done" && view.collect && (
         <ConfirmDialog open onOpenChange={(o) => !o && setCollecting(false)} title="How is this paid?" actions="none" size="md" slot="flow-collect">

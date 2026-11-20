@@ -4,6 +4,8 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { FormRow } from "@/components/blocks/FormRow"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { CREW_LINE_MAX, crewText, notices, type Remind } from "./crew-copy"
 
 // The Schedule and Move dialog's body (docs/plans/2026-11-18-scheduling-engine-design.md section 4, the offer rule, and the customer's
 // day-and-time choice): three day cards, the soonest open days, each labelled with what is already booked ("Tue, Nov 24 · 3 stops ·
@@ -46,19 +48,52 @@ export function slotsOf(day: Day, person: string, minutes: number, town = "Erie"
   return { starts, best: next ?? starts[0], stops }
 }
 
-export interface Pick { day: string; time: string; person: string }
+export interface Pick {
+  day: string
+  time: string
+  /** the first person chosen (the customer hears this one's first name, and the offered times are theirs) */
+  person: string
+  /** everyone on the trip, in the order chosen */
+  people: string[]
+  /** text the assigned people (not the signed-in user) that it is assigned */
+  crewText: boolean
+  /** remind the crew the morning of */
+  remind: Remind
+  /** one optional line for the crew: in the assigned text and on the trip */
+  instructions: string
+}
 
-export function SchedulePicker({ minutes = 60, firstName, channel = "text", onChange }: { minutes?: number; firstName: string; channel?: "text" | "email"; onChange: (p: Pick) => void }) {
+export interface SchedulePickerProps {
+  minutes?: number
+  firstName: string
+  channel?: "text" | "email"
+  onChange: (p: Pick) => void
+  /** the signed-in user: assigning yourself needs no text */
+  signedIn?: string
+  address?: string
+  service?: string
+  /** stories: who is chosen and whether the crew text box is on to begin with */
+  initialPeople?: string[]
+  initialCrewText?: boolean
+}
+
+export function SchedulePicker({ minutes = 60, firstName, channel = "text", onChange, signedIn = "Ryan Garner", address = "480 Briggs St", service = "Sprinkler repair", initialPeople = [PEOPLE[0]], initialCrewText = false }: SchedulePickerProps) {
   const [more, setMore] = useState(false)
   const [custom, setCustom] = useState<Day | null>(null)
   const [dayKey, setDayKey] = useState("d24")
-  const [person, setPerson] = useState<string>(PEOPLE[0])
+  const [people, setPeople] = useState<string[]>(initialPeople)
+  const [crew, setCrew] = useState(initialCrewText)
+  const [remind, setRemind] = useState<Remind>("none")
+  const [instructions, setInstructions] = useState("")
+  const person = people[0]!
   const [at, setAt] = useState<number | "any">("any")
   const shown = [...DAYS.slice(0, more ? 5 : 3), ...(custom ? [custom] : [])]
   const day = shown.find((d) => d.key === dayKey) ?? shown[0]!
   const { starts, best, stops } = slotsOf(day, person, minutes)
-  const emit = (d: Day, p: string, t: number | "any") => onChange({ day: d.label, time: t === "any" ? "Any time" : time(t), person: p })
-  const pickDay = (d: Day) => (setDayKey(d.key), setAt("any"), emit(d, person, "any"))
+  const others = people.filter((p) => p !== signedIn)
+  const emit = (d: Day, ps: string[], t: number | "any", extra: Partial<Pick> = {}) =>
+    onChange({ day: d.label, time: t === "any" ? "Any time" : time(t), person: ps[0]!, people: ps, crewText: crew && ps.some((p) => p !== signedIn), remind, instructions, ...extra })
+  const pickDay = (d: Day) => (setDayKey(d.key), setAt("any"), emit(d, people, "any"))
   const pickCustom = (iso: string) => {
     if (!iso) return
     const when = new Date(`${iso}T12:00:00`)
@@ -82,21 +117,55 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
         </div>
       </fieldset>
 
-      <PersonAndTimes day={day} person={person} setPerson={(p) => (setPerson(p), setAt("any"), emit(day, p, "any"))} stops={stops} starts={starts} best={best} at={at} minutes={minutes} pick={(t) => (setAt(t), emit(day, person, t))} />
+      <PersonAndTimes day={day} people={people} setPeople={(ps) => (setPeople(ps), setAt("any"), emit(day, ps, "any"))} stops={stops} starts={starts} best={best} at={at} minutes={minutes} pick={(t) => (setAt(t), emit(day, people, t))} />
 
-      <p className="text-muted-foreground">{firstName} gets {channel === "email" ? "an email" : "a text"} with the day and time.</p>
+      <div data-slot="crew-options" className="flex flex-col gap-3">
+        {others.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <div className="flex min-h-11 items-center gap-3 font-medium">
+              <input id="crew-text-box" type="checkbox" checked={crew} aria-labelledby="crew-text-label" onChange={(e) => (setCrew(e.target.checked), emit(day, people, at, { crewText: e.target.checked }))} className="size-5 shrink-0 cursor-pointer accent-primary" />
+              <span id="crew-text-label" className="cursor-pointer" onClick={() => (setCrew(!crew), emit(day, people, at, { crewText: !crew }))}>{`Text ${others.map((o) => o.split(" ")[0] === "Tech" ? o : o.split(" ")[0]).join(" and ")} that it's assigned`}</span>
+            </div>
+            <p data-slot="crew-text" className="pl-8 text-muted-foreground">{crewText({ day: day.label, time: at === "any" ? "Any time" : time(at), address, service, instructions })}</p>
+          </div>
+        )}
+        <FormRow label="Remind the crew the morning of">
+          <select value={remind} onChange={(e) => (setRemind(e.target.value as Remind), emit(day, people, at, { remind: e.target.value as Remind }))} className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm">
+            <option value="none">None</option>
+            <option value="7am">7:00 am</option>
+          </select>
+        </FormRow>
+        <FormRow label="Instructions for the crew (optional)" hint={`${instructions.length} of ${CREW_LINE_MAX}. In the text to the crew and on the trip.`}>
+          <Input value={instructions} maxLength={CREW_LINE_MAX} onChange={(e) => (setInstructions(e.target.value), emit(day, people, at, { instructions: e.target.value }))} className="min-h-11" />
+        </FormRow>
+      </div>
+
+      <p data-slot="schedule-sentence" className="text-muted-foreground">{notices({ first: firstName, channel, others: crew ? others : [] })}</p>
     </div>
   )
 }
 
-function PersonAndTimes({ day, person, setPerson, stops, starts, best, at, minutes, pick }: { day: Day; person: string; setPerson: (p: string) => void; stops: Stop[]; starts: number[]; best?: number; at: number | "any"; minutes: number; pick: (t: number | "any") => void }) {
+function PersonAndTimes({ day, people, setPeople, stops, starts, best, at, minutes, pick }: { day: Day; people: string[]; setPeople: (ps: string[]) => void; stops: Stop[]; starts: number[]; best?: number; at: number | "any"; minutes: number; pick: (t: number | "any") => void }) {
   return (
     <>
-      <FormRow label="Who"><select value={person} onChange={(e) => setPerson(e.target.value)} className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm">{PEOPLE.map((p) => <option key={p}>{p}</option>)}</select></FormRow>
+      <fieldset className="flex flex-col gap-1">
+        <legend className="mb-1 font-medium">Who</legend>
+        <div className="flex flex-wrap gap-2">
+          {PEOPLE.map((p) => {
+            const on = people.includes(p)
+            return (
+              <button key={p} type="button" role="checkbox" aria-checked={on} onClick={() => setPeople(on ? (people.length > 1 ? people.filter((x) => x !== p) : people) : [...people, p])} className={cn("min-h-11 rounded-full border px-3 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", on ? "border-primary bg-primary/10" : "border-input text-muted-foreground")}>
+                {p}
+              </button>
+            )
+          })}
+        </div>
+        {people.length > 1 && <p className="text-muted-foreground">The customer hears about {people[0]!.split(" ")[0]}, the first one chosen.</p>}
+      </fieldset>
       <div className="flex flex-col gap-2">
         <p className="font-medium">Start time <span className="font-normal text-muted-foreground">({minutes} minutes)</span></p>
         <p data-slot="day-timeline" className="rounded-lg bg-stone px-3 py-2 text-muted-foreground">
-          {stops.length ? `${person.split(" ")[0]} is booked: ${stops.map((x) => `${time(x.start)} ${x.name}, ${x.town}`).join(" · ")}` : `${person.split(" ")[0]} has nothing booked ${day.label.startsWith("Today") ? "today" : "that day"}.`}
+          {stops.length ? `${people[0]!.split(" ")[0]} is booked: ${stops.map((x) => `${time(x.start)} ${x.name}, ${x.town}`).join(" · ")}` : `${people[0]!.split(" ")[0]} has nothing booked ${day.label.startsWith("Today") ? "today" : "that day"}.`}
         </p>
         <div role="radiogroup" aria-label="Start time" className="flex flex-wrap gap-2">
           {starts.length === 0 && <p className="text-muted-foreground">No open time that fits. Pick Any time or another day.</p>}

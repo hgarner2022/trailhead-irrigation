@@ -3,12 +3,10 @@
 import { useId, useState, useTransition, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
-import { ConfirmDialog } from "./ConfirmDialog"
 import { Input } from "@/components/ui/input"
 import { chargingWords, paidWords, receiptLine, type CollectPlan, type PayChoice, type PayOption } from "@/lib/money/collect"
 import { cn } from "@/lib/utils"
 import { FormRow } from "./FormRow"
-import { SplitButton } from "./SplitButton"
 import { useFooterSlot } from "./record-slot"
 
 // "How is this paid?": the second beat of a finished visit, in one block for the visit panel and the job panel. Pure props. The
@@ -37,7 +35,7 @@ export interface CollectPaymentProps {
   onClose: () => void
   /** the words on the one button for the chosen way; the plan's own when left out */
   buttonLabel?: (picked: PayOption) => string
-  /** the words of the confirmation the button opens (what happens, to whom, how much); no dialog when left out or when it answers null */
+  /** the exact effect of the chosen way (what happens, to whom, how much), said under that option; the dialog's own button is the confirm, so no second dialog opens (a payment's receipt is not a notification: there is no "without notifying") */
   confirmFor?: (picked: PayOption, reference: string) => AskCopy | null
   /** a quiet "Not now" beside the button: leaves the job Done and unpaid, writes nothing */
   notNow?: boolean
@@ -50,7 +48,7 @@ export interface CollectPaymentProps {
 
 const RADIO = "flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border border-input px-3 py-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:disabled]:cursor-not-allowed has-[:disabled]:border-dashed"
 
-function Choice({ option, checked, disabled, onPick }: { option: PayOption; checked: boolean; disabled: boolean; onPick: () => void }) {
+function Choice({ option, checked, disabled, onPick, effect }: { option: PayOption; checked: boolean; disabled: boolean; onPick: () => void; effect?: ReactNode }) {
   const title = useId()
   const line = useId()
   return (
@@ -63,6 +61,7 @@ function Choice({ option, checked, disabled, onPick }: { option: PayOption; chec
         <span id={line} className="text-navy-light">
           {option.line}
         </span>
+        {effect}
       </span>
     </div>
   )
@@ -86,7 +85,6 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
   const [problem, setProblem] = useState(plan.declined ? "The card didn't go through. Choose another way." : "")
   const [result, setResult] = useState<{ title: string; line: string } | null>(null)
   const [pending, start] = useTransition()
-  const [asking, setAsking] = useState<AskCopy | null>(null)
   const [report, setReport] = useState(true)
   const shown = [...plan.options, ...(more ? plan.anotherWay : [])]
   const picked = shown.find((o) => o.value === choice) ?? shown[0]!
@@ -102,18 +100,28 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
     } else setProblem(answer.message)
   }
   // The one button: in the footer of the panel it is in, else under the choices.
+  const ask = confirmFor?.(picked, reference) ?? null
+  const effectFor = ask && (
+    <span data-slot="collect-effect" className="mt-1 flex flex-col gap-1 text-foreground" onClick={(e) => e.stopPropagation()}>
+      <span>{ask.reportOption ? (report ? ask.reportOption.with : ask.reportOption.without) : ask.message}</span>
+      {ask.reportOption && (
+        <span className="flex min-h-11 items-center gap-3 font-medium">
+          <input id="collect-report" type="checkbox" checked={report} onChange={(e) => setReport(e.target.checked)} aria-labelledby="collect-report-l" className="size-5 shrink-0 cursor-pointer accent-primary" />
+          <span id="collect-report-l" className="cursor-pointer" onClick={() => setReport((r) => !r)}>{ask.reportOption.label}</span>
+        </span>
+      )}
+    </span>
+  )
   const slot = useFooterSlot()
   const place = (button: ReactNode) => (slot ? createPortal(button, slot) : button)
   const press = () => {
     setProblem("")
     if (picked.value === "later") return onLater()
-    const ask = confirmFor?.(picked, reference)
-    if (ask) return setAsking(ask)
     run()
   }
-  const run = (notify?: boolean) => {
+  const run = () => {
     start(async () => {
-      const quiet = notify === false
+      const quiet = false
       if (picked.value === "card") settle(await onCharge(quiet ? { notify: false } : undefined), { title: paidWords("card_on_file"), line: receiptLine(firstName) })
       else if (picked.value === "invoice") settle(await onInvoice({ report, ...(quiet ? { notify: false } : {}) }), { title: "Invoice sent", line: `A pay link went to ${firstName}.` })
       else if (handed) {
@@ -145,10 +153,10 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
         </p>
       )}
       <fieldset className="flex flex-col gap-2" disabled={busy}>
-        {/* In a panel the panel's own heading says it, so the legend is for a screen reader only. */}
-        <legend className={cn("mb-1 text-sm font-medium text-foreground", slot && "sr-only")}>How is this paid?</legend>
+        {/* The panel's or dialog's own heading says it once, so the legend is for a screen reader only. */}
+        <legend className="sr-only">How is this paid?</legend>
         {shown.map((o) => (
-          <Choice key={o.value} option={o} checked={picked.value === o.value} disabled={busy || Boolean(o.disabled)} onPick={() => setChoice(o.value)} />
+          <Choice key={o.value} option={o} checked={picked.value === o.value} disabled={busy || Boolean(o.disabled)} onPick={() => setChoice(o.value)} effect={picked.value === o.value ? effectFor : undefined} />
         ))}
       </fieldset>
       {plan.anotherWay.length > 0 && !more && (
@@ -182,29 +190,6 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
             </Button>
           )}
         </div>,
-      )}
-      {asking && (
-        <ConfirmDialog
-          open
-          onOpenChange={(o) => !o && setAsking(null)}
-          title={asking.title}
-          message={asking.reportOption ? (report ? asking.reportOption.with : asking.reportOption.without) : asking.message}
-          confirmLabel={asking.confirmLabel}
-          slot="collect-confirm"
-          onConfirm={async (variant) => {
-            setAsking(null)
-            run(variant === "quiet" ? false : undefined)
-            return { ok: true }
-          }}
-          renderConfirm={asking.quiet ? ({ confirm, pending: busyNow }) => <SplitButton label={asking.confirmLabel} onClick={() => confirm("notify")} disabled={busyNow} menuLabel="More ways" menu={[{ label: asking.quiet!, onSelect: () => confirm("quiet") }]} /> : undefined}
-        >
-          {asking.reportOption && (
-            <div className="flex min-h-11 items-center gap-3 text-sm font-medium">
-              <input id="collect-report" type="checkbox" checked={report} onChange={(e) => setReport(e.target.checked)} aria-labelledby="collect-report-l" className="size-5 shrink-0 cursor-pointer accent-primary" />
-              <span id="collect-report-l" className="cursor-pointer" onClick={() => setReport((r) => !r)}>{asking.reportOption.label}</span>
-            </div>
-          )}
-        </ConfirmDialog>
       )}
     </div>
   )

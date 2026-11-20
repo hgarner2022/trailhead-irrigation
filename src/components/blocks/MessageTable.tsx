@@ -90,7 +90,7 @@ export function MessageTable({ messages, to, compact, toolbar = true }: MessageT
           title: KIND_NAMES[m.kind],
           preview: firstLine(m.body),
           channel: m.channel,
-          to: m.channel === "sms" ? to.sms : to.email,
+          to: m.toName ?? (m.channel === "sms" ? to.sms : to.email),
           status: pillOf(m),
           statusLabel: statusWords(m),
           message: m,
