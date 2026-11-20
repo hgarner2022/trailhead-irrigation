@@ -89,12 +89,13 @@ export function toPaymentRows(rows: readonly CustomerPaymentRow[], customer: str
   return sortPayments(rows).map((r) => {
     const method = methodOf(r.how)
     const [word, ...rest] = r.how.replace(", kept on file", "").split(" ")
+    const handle = rest.join(" ")
     return {
       id: r.id,
       at: `${r.sortDay}T17:00:00Z`,
       method,
-      methodLabel: method === "card" ? (r.how.includes("kept") ? `${cardWords}, kept on file` : cardWords) : word!,
-      reference: r.refund ? "Recorded by Ryan" : r.note ? `${r.note} · Ryan` : method === "card" ? "Online" : rest.join(" ") || "Recorded by Ryan",
+      methodLabel: method === "card" ? (r.how.includes("kept") ? `${cardWords}, kept on file` : cardWords) : handle ? `${word} ${/^[@#]/.test(handle) ? handle : `#${handle}`}` : word!,
+      reference: r.refund ? "Recorded by Ryan" : r.note ? `${r.note} · Ryan` : method === "card" ? "Online" : undefined,
       amount: r.amount,
       by: method === "card" && !r.refund ? "online" : "Ryan",
       receiptHref: `/admin/payments?payment=${r.id}`,

@@ -145,7 +145,8 @@ describe("customer page", () => {
     render(<CustomerPage customer={customerPageOf("pass-holder")} />)
     // the Venmo payment has no invoice, so it is the Payments table's one row; the card payment is part of its paid invoice's row
     const pay = within(document.querySelector("[data-slot=payment-table]") as HTMLElement)
-    expect(pay.getByText("@andrea-d")).toBeInTheDocument()
+    expect(pay.getByText("Venmo @andrea-d")).toBeInTheDocument()
+    expect(pay.getByText("Oct 12 · Ryan")).toBeInTheDocument()
     expect(pay.getAllByRole("link", { name: "View receipt" }).length).toBe(1)
     expect(pay.queryByRole("link", { name: /Open in Stripe/ })).toBeNull()
     expect(pay.getAllByRole("link", { name: /Job:/ }).length).toBe(1)
@@ -286,7 +287,7 @@ describe("Billing on the customer page says each fact once", () => {
     render(<CustomerPage customer={customerPageOf("deposit")} />)
     const pay = within(document.querySelector("[data-slot=payment-table]") as HTMLElement)
     expect(pay.getByText("$50")).toBeInTheDocument()
-    expect(pay.getByText("Deposit · Ryan")).toBeInTheDocument()
+    expect(pay.getByText("Nov 10 · Deposit · Ryan")).toBeInTheDocument()
     const inv = within(document.querySelector("[data-slot=invoice-table]") as HTMLElement)
     expect(inv.getByText("$145 less the $50 deposit")).toBeInTheDocument()
     expect(inv.getAllByRole("row")).toHaveLength(2)
