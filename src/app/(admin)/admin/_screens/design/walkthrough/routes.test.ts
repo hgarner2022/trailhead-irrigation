@@ -18,7 +18,8 @@ describe("parseHref", () => {
     expect(parseHref("/admin/invoices")).toEqual({ screen: "invoices" })
     expect(parseHref("/admin/reports")).toEqual({ screen: "reports" })
     expect(parseHref("/admin/settings")).toEqual({ screen: "settings" })
-    expect(parseHref("/admin/jobs?new=1&customer=c1")).toEqual({ screen: "jobs", newJob: true })
+    expect(parseHref("/admin/jobs?new=1&customer=c1")).toEqual({ screen: "jobs", newJob: true, id: "c1" })
+    expect(parseHref("/admin/jobs?new=1")).toEqual({ screen: "jobs", newJob: true })
   })
   it("leaves the prototype for anything else", () => {
     for (const href of ["tel:+19705550123", "mailto:a@b.co", "https://dashboard.stripe.com", "https://trailheadirrigation.com/pay/1", "/account/receipts/r1", "/admin/payments?payment=p1", "#billing", ""]) expect(parseHref(href)).toBeNull()

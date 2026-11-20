@@ -113,6 +113,21 @@ export const Receipt: Story = {
   },
 }
 
+/** New job from Andrea's page: she is already chosen (with Change), her property and her last job are under her name, the zones are filled in, and the new job opens as Unscheduled on her page. */
+export const NewJobFromCustomer: Story = {
+  name: "New job from a customer",
+  globals: laptop,
+  args: { start: { screen: "customer", id: "andrea" } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await userEvent.click(await c.findByRole("link", { name: "New job" }))
+    await expect(await body.findByText("Last job: Sprinkler repair, Nov 12. $145 unpaid.")).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "Change" })).toBeInTheDocument()
+    await expect(body.getByText("4417")).toBeInTheDocument()
+  },
+}
+
 /** New job is the real sheet: pick a customer, a service, Add job, and the new job opens as Unscheduled. */
 export const NewJobSheet: Story = {
   name: "New job",

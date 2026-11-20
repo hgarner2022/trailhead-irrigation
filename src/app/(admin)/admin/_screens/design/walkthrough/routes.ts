@@ -6,7 +6,7 @@ export type Screen = "home" | "schedule" | "jobs" | "customers" | "invoices" | "
 export interface Route {
   screen: Screen
   id?: string
-  /** the New job sheet is open on the Jobs screen */
+  /** the New job sheet is open on the Jobs screen; `id` is the customer it was started from */
   newJob?: boolean
 }
 
@@ -36,7 +36,10 @@ export function parseHref(href: string): Route | null {
   const id = KEY[section] ? url.searchParams.get(KEY[section]!) : null
   const record = RECORD[section]
   if (record && id) return { screen: record, id }
-  if (section === "jobs" && url.searchParams.get("new") === "1") return { screen: "jobs", newJob: true }
+  if (section === "jobs" && url.searchParams.get("new") === "1") {
+    const customer = url.searchParams.get("customer")
+    return customer ? { screen: "jobs", newJob: true, id: customer } : { screen: "jobs", newJob: true }
+  }
   if (section === "schedule") {
     const day = url.searchParams.get("day")
     return day ? { screen: "schedule", id: day } : { screen }

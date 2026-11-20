@@ -22,6 +22,8 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import { HomeScreen } from "../../HomeScreen"
 import { NewJob } from "../../NewJob"
+import { EMPTY_PERSON } from "../../CustomerPicker"
+import { NewJobContext } from "./new-job-context"
 import { ReportsScreen } from "../../ReportsScreen"
 import { ScheduleScreen } from "../../ScheduleScreen"
 import { SettingsScreen } from "../../SettingsScreen"
@@ -73,9 +75,17 @@ export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen:
 }
 
 /** The real New job sheet (`_screens/NewJob.tsx`) over the walkthrough's customers and catalogue; Add job makes a row and opens its page. */
-export function NewJobSheet({ open, onClose, onCreated, onMade }: { open: boolean; onClose: () => void; onCreated: (jobId: string) => void; onMade: () => void }) {
+export function NewJobSheet({ sheet, onClose, onCreated, onMade }: { sheet: { customer?: string; key: number } | null; onClose: () => void; onCreated: (jobId: string) => void; onMade: () => void }) {
   const actions = useMemo(() => makeNewJobActions(onMade), [onMade])
-  return <NewJob data={WALK_DATA} today={WALK_TODAY} open={open} onOpenChange={(o) => !o && onClose()} actions={actions} onCreated={(made) => onCreated(made.jobId)} />
+  if (!sheet) return null
+  // Started from a customer: the customer is already chosen (with Change), as if picked from the list. Opened empty from the Jobs grid, the header or search.
+  const initial = sheet.customer ? { customer: { chosen: sheet.customer, isNew: false, person: EMPTY_PERSON, query: "", email: "" } } : undefined
+  return (
+    <>
+      <NewJob key={sheet.key} data={WALK_DATA} today={WALK_TODAY} open onOpenChange={(o) => !o && onClose()} actions={actions} initial={initial} onCreated={(made) => onCreated(made.jobId)} />
+      <NewJobContext focusWhat={Boolean(sheet.customer)} />
+    </>
+  )
 }
 
 const customerColumns: GridColumnDef<CustomerListRow>[] = [
@@ -84,6 +94,7 @@ const customerColumns: GridColumnDef<CustomerListRow>[] = [
   { id: "next", accessorKey: "next", header: "Next visit" },
   { id: "unpaid", accessorKey: "unpaid", header: "Unpaid", cell: ({ row }) => <MoneyCell end text={row.original.unpaid ? money(row.original.unpaid) : null} />, meta: { align: "right", csv: (r) => String((r as CustomerListRow).unpaid) } },
   { id: "pass", accessorKey: "pass", header: "Season Pass", cell: ({ row }) => (row.original.pass ? <StatusPill status="active" label={row.original.pass} /> : null) },
+  { id: "newjob", header: "", enableSorting: false, cell: ({ row }) => <Button asChild variant="outline" size="sm" className="min-h-8"><a href={`/admin/jobs?new=1&customer=${row.original.id}`} aria-label={`New job for ${row.original.name}`}>New job</a></Button> },
 ]
 const customerCard: GridCardSlots = { title: "name", line: ["street"], state: "pass", when: ["next"], money: "unpaid" }
 

@@ -85,7 +85,7 @@ export function Walkthrough({ start = START }: { start?: Route }) {
   useInvoicesInNav()
   const [stack, setStack] = useState<Route[]>([start])
   const [epoch, setEpoch] = useState(0)
-  const [sheet, setSheet] = useState(false)
+  const [sheet, setSheet] = useState<{ customer?: string; key: number } | null>(null)
   const [made, setMade] = useState(0)
   const [message, setMessage] = useState<{ channel: "text" | "email"; paid: Paid } | null>(null)
   const receiptToast = useReceiptToast()
@@ -97,11 +97,12 @@ export function Walkthrough({ start = START }: { start?: Route }) {
 
   const go = useCallback((parsed: Route) => {
     if (parsed.newJob) {
-      setSheet(true)
+      const who = parsed.id ? resolveRoute({ screen: "customer", id: parsed.id }).id : undefined
+      setSheet({ customer: who, key: Date.now() })
       setStack((s) => (s[s.length - 1]!.screen === "jobs" ? s : [START]))
       return
     }
-    setSheet(false)
+    setSheet(null)
     setStack((s) => {
       const cur = s[s.length - 1]!
       const owner = ownerOf(cur)
@@ -165,11 +166,11 @@ export function Walkthrough({ start = START }: { start?: Route }) {
   }
 
   const openReceipt = (paid: Paid) => {
-    setSheet(false)
+    setSheet(null)
     setStack((s) => navigate(s, { screen: "receipt", id: `${paid.way}|${paid.ref ?? ""}` }))
   }
   const startOver = () => {
-    setSheet(false)
+    setSheet(null)
     resetExtras()
     setMade((n) => n + 1)
     setStack([START])
@@ -185,7 +186,7 @@ export function Walkthrough({ start = START }: { start?: Route }) {
         <div key={`${epoch}-${top.screen}-${top.id ?? ""}`}>
           <RouteScreen route={top} rows={rows} onBack={() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))} onOpenJob={(id) => go({ screen: "job", id })} onOpenCustomer={(id) => go({ screen: "customer", id })} onNew={() => go({ screen: "jobs", newJob: true })} />
         </div>
-        <NewJobSheet open={sheet} onClose={() => setSheet(false)} onMade={() => setMade((n) => n + 1)} onCreated={(id) => go({ screen: "job", id })} />
+        <NewJobSheet sheet={sheet} onClose={() => setSheet(null)} onMade={() => setMade((n) => n + 1)} onCreated={(id) => go({ screen: "job", id })} />
       </AdminShell>
       {receiptToast.toast && <ReceiptToast text={receiptToast.toast.text} onView={() => (openReceipt(receiptToast.toast!.paid), receiptToast.clear())} />}
       {message && <MessageView channel={message.channel} paid={message.paid} onClose={() => setMessage(null)} />}
