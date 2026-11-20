@@ -31,6 +31,8 @@ export interface CustomerJobRow {
   who?: string
   status: PillStatus
   statusLabel: string
+  /** a job waiting on its quote: it is not yet a job that makes a customer (`customerStatusOf`) */
+  quote?: "needs-a-quote" | "quote-sent"
   /** what has happened so far; null when nothing is due yet */
   money: MoneyWord | null
   /** a quiet line under the money word, or under the dash when nothing is due: "Charged after each visit" */

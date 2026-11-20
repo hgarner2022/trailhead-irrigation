@@ -174,6 +174,32 @@ export const CustomersByStatusTest: Story = {
   },
 }
 
+/** Every customer of the world is on the list and opens a real page: Beth Orr (a quote is out, nothing else yet, so New), then Reese Holloway from a job's chip (Active, the invoice past due). Nothing is a placeholder. */
+export const EveryCustomerOpens: Story = { name: "Every customer opens", globals: laptop, args: { start: { screen: "customers" } } }
+export const EveryCustomerOpensTest: Story = {
+  name: "Every customer opens (test)",
+  globals: laptop,
+  tags: HIDDEN,
+  args: { start: { screen: "customers" } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await expect(await c.findByRole("heading", { level: 1, name: "Customers" })).toBeInTheDocument()
+    await userEvent.click(await c.findByText("Beth Orr"))
+    await waitFor(() => expect(route(canvasElement)).toBe("customer:other-beth-orr"))
+    await expect(await c.findByRole("heading", { level: 1, name: "Beth Orr" })).toBeInTheDocument()
+    await expect(c.queryByText(/Not part of this prototype/)).toBeNull()
+    await expect(await c.findByText("No messages yet")).toBeInTheDocument()
+    // a job's chip opens its customer: Quotes is not needed, Jobs has Reese's blowout
+    await userEvent.click(await c.findByRole("link", { name: "Jobs" }))
+    await userEvent.click((await c.findAllByRole("button", { name: "Reese Holloway" }))[0]!)
+    await waitFor(() => expect(route(canvasElement)).toBe("job:g-reese"))
+    await userEvent.click((await c.findAllByRole("link", { name: /Reese Holloway/ }))[0]!)
+    await waitFor(() => expect(route(canvasElement)).toBe("customer:other-reese-holloway"))
+    await expect(await c.findByRole("heading", { level: 1, name: "Reese Holloway" })).toBeInTheDocument()
+    await expect((await c.findAllByText("INV-2026-0038")).length).toBeGreaterThan(0)
+  },
+}
+
 /** Gus Pratt is archived, so his page has the banner. New job for him brings him back: a toast says so on the job that opens, and his page reads Active with no banner. */
 export const NewJobUnarchives: Story = { name: "New job for an archived customer", globals: laptop, args: { start: { screen: "customer", id: "gus" } } }
 export const NewJobUnarchivesTest: Story = {

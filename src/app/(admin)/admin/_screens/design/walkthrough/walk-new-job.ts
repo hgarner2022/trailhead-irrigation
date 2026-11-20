@@ -3,7 +3,8 @@ import { SERVICE_LIST } from "@/lib/services"
 import type { GridJob } from "../JobsGridDesign"
 import { visitsData, VISITS_TODAY } from "../../visits-fixture"
 import type { NewPassInput, NewVisitInput, VisitActions } from "../../visit-actions-types"
-import { markActiveAgain, registerJob } from "./jobs-data"
+import { customerIdOf, markActiveAgain, registerJob } from "./jobs-data"
+import { registerWorldCustomer, WORLD_CUSTOMERS } from "./world-customers"
 import { customerPage } from "./data"
 import { walkQuotes } from "../quotes/quote-store"
 import { setLanding } from "./WalkRequests"
@@ -27,6 +28,12 @@ export const WALK_CLIENTS: Client[] = [
   client("gus", "Gus", "Pratt", "70 Ridge Rd", "Lafayette", "(970) 555-0123", "gus.pratt@example.com", false),
 ]
 
+/** Everyone else of the world is on the sheet's type-ahead too, so a job can be made for any customer a chip opens. */
+for (const [id, w] of Object.entries(WORLD_CUSTOMERS)) {
+  const [first = "", ...rest] = w.name.split(" ")
+  WALK_CLIENTS.push(client(id, first, rest.join(" "), w.street, w.town as Client["town"], w.phone, w.email, false))
+}
+
 /** The sheet's data: the repo's fixture (settings, people, services) with this world's customers. */
 export const WALK_DATA: AdminData = { ...visitsData, clients: WALK_CLIENTS }
 
@@ -34,7 +41,12 @@ const DAY = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short",
 let seq = 0
 
 function whoFor(customerId?: string, fresh?: NewVisitInput["newCustomer"]) {
-  if (fresh) return { name: `${fresh.firstName} ${fresh.lastName}`.trim(), property: `${fresh.property.address}, ${fresh.property.town}` }
+  if (fresh) {
+    // a person made here has a customer page from the moment their job exists: their contact details and property are kept for it
+    const name = `${fresh.firstName} ${fresh.lastName}`.trim()
+    registerWorldCustomer(customerIdOf(name), { name, phone: fresh.phone ?? "", email: fresh.email ?? "", channel: fresh.email && !fresh.phone ? "email" : "text", street: fresh.property.address, town: fresh.property.town, since: "2026-11-20" })
+    return { name, property: `${fresh.property.address}, ${fresh.property.town}` }
+  }
   const c = WALK_CLIENTS.find((x) => x.id === customerId)
   return { name: c ? `${c.firstName} ${c.lastName}` : "New customer", property: c ? `${c.address}, ${c.town}` : "" }
 }
@@ -68,7 +80,7 @@ export function makeNewJobActions(onMade: () => void, onActiveAgain?: (name: str
         const [first = "", ...rest] = name.split(" ")
         const job: QuoteJob = {
           jobId: id,
-          customerId: input.customerId ?? `new-${first}-${rest.join("-")}`.toLowerCase(),
+          customerId: input.customerId ?? customerIdOf(name),
           customer: name,
           first,
           phone: c?.phone ?? fresh?.phone ?? "",

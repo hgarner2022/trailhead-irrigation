@@ -20,7 +20,7 @@ export const BILLING_WORDS: Record<BillingState, string> = { owed: "Unpaid", "bi
 // Needs a quote and Quote sent are the two stages a job has before it is sold (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.1): the quote is a document on the job, so these are Status filter values and there is no Quotes item in the nav
 export type GridStatus = "needs-a-quote" | "quote-sent" | "today" | "active" | "unscheduled" | "scheduled" | "late" | "done" | "cancelled"
 export const GRID_WORDS: Record<GridStatus, string> = { "needs-a-quote": "Needs a quote", "quote-sent": "Quote sent", today: "Today", active: "Active", unscheduled: "Unscheduled", scheduled: "Scheduled", late: "Late", done: "Done", cancelled: "Canceled" }
-const GRID_TONE: Record<GridStatus, PillStatus> = { "needs-a-quote": "needs-a-day", "quote-sent": "waiting", today: "today", active: "job-active", unscheduled: "needs-a-day", scheduled: "scheduled", late: "overdue", done: "done", cancelled: "cancelled" }
+export const GRID_TONE: Record<GridStatus, PillStatus> = { "needs-a-quote": "needs-a-day", "quote-sent": "waiting", today: "today", active: "job-active", unscheduled: "needs-a-day", scheduled: "scheduled", late: "overdue", done: "done", cancelled: "cancelled" }
 export const WHO_OPTIONS = ["Ryan Garner", "Hannah Garner", "No one yet"].map((w) => ({ value: w, label: w }))
 
 export interface GridJob {
