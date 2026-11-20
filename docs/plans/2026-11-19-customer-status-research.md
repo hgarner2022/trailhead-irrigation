@@ -67,19 +67,19 @@ A customer's status describes where they stand with Trailhead, and it is read fr
 | Status | Rule, in order (the first rule that matches wins) | Typed or derived |
 |---|---|---|
 | Archived | `archived_at` is set. | Typed fact, set by the office. |
-| Active | Any one of: a job is open (stage Open); a visit is ahead (scheduled or unscheduled, not canceled, not skipped); a Season Pass is in force (`passStatus` active for the current season); or the last visit was done within the last 14 months. | Derived. |
-| Past customer | They have at least one done visit, nothing is ahead, no pass is in force, and the last done visit is more than 14 months ago. | Derived. |
+| Active | Any one of: a job is open (stage Open); a visit is ahead (scheduled or unscheduled, not canceled, not skipped); a Season Pass is in force (`passStatus` active for the current season); or they have had a job (a done visit, or one sold or booked) within the last 24 months. | Derived. |
+| Past customer | They have at least one done visit, nothing is ahead, no pass is in force, and they have had no job in the last 24 months. | Derived. |
 | New | None of the above: no done visit ever and nothing sold and open. A canceled job and a pending pass (`sold_on` empty) do not count. A job whose stage is Needs a quote or Quote sent does not count either. | Derived. |
 
 The rules read only facts the model already holds: job stage (`stageOf`), visit status and `completed_on`, pass status (`passStatus`), and the date. They take an `asOf` date so Hannah's counts can be recomputed for any past day from the same rows.
 
-### Why 14 months
+### Why 24 months (Hannah's rule, Nov 20 2026)
 
 Trailhead's work comes twice a year. A customer served in the October blowout is quiet in November and still a customer in February. Their next visit is the April turn-on, six months out, and if they miss that, the next natural one is the October after, twelve months out. A rule like Square's six weeks (right for a salon) would label every winter customer lapsed.
 
-So Past customer should mean "missed a whole year". Fourteen months is the October blowout plus twelve months for the next one plus two months of slack for a late booking. A customer who last had a turn-on in April 2026 turns Past customer in June 2027, after the full 2027 turn-on window has gone by. Someone served in a past season is still a customer until then, and nobody who is simply between seasons ever reads as lapsed.
+Hannah's rule: a customer is always Active if they have had a job in the last 24 months, so Past customer means two full years with nothing. Her reasoning fits a seasonal business: someone served in spring 2026 is still Active in the winter of 2027 and the spring of 2028, and a homeowner who skips one season is not gone. The first draft of this doc said 14 months; that is replaced.
 
-I used the word "Past customer", not "Lapsed", for two reasons. "Lapsed" carries the marketing sense of a win-back target before it is true, and "Past" alone would sit next to "Past due" in the same panel. Fourteen months is my default, and it is open question 2 below.
+I used the word "Past customer", not "Lapsed", for two reasons. "Lapsed" carries the marketing sense of a win-back target before it is true, and "Past" alone would sit next to "Past due" in the same panel. The 24 months is Hannah's answer to question 2 below.
 
 ### Where a Lead belongs
 
@@ -128,7 +128,7 @@ Each flag has a date and an optional reason, and every set or clear writes an ev
 
 Nothing is run here. This describes what a build would add.
 
-- **A pure function in `src/lib/`** only: `customerStatusOf(facts, asOf)` in `src/lib/customers/status.ts`, returning `"new" | "active" | "past" | "archived"`. It reads job stage, visit rows, the pass status and `archived_at`, and nothing is stored. The list row (`CustomerRow.status`), the panel header, the Cmd+K hit (`search-hit.ts`) and the counts all call it. A test table lists each rule's boundary, including exactly 14 months, a canceled-only customer, a pending pass and a Needs a quote job.
+- **A pure function in `src/lib/`** only: `customerStatusOf(facts, asOf)` in `src/lib/customers/status.ts`, returning `"new" | "active" | "past" | "archived"`. It reads job stage, visit rows, the pass status and `archived_at`, and nothing is stored. The list row (`CustomerRow.status`), the panel header, the Cmd+K hit (`search-hit.ts`) and the counts all call it. A test table lists each rule's boundary, including exactly 24 months, a canceled-only customer, a pending pass and a Needs a quote job.
 - **Three nullable columns on `customer`:** `archived_at`, `do_not_service_at` and `do_not_contact_at` (all timestamps, null for every row). The migration is additive only, with no backfill, so it is safe under the rule that a pushed branch migrates production.
 - **Events:** `customer.archived`, `customer.unarchived`, `customer.flagged` and `customer.unflagged` in `src/lib/events/kinds.ts`, with the flag name and the optional reason in `detail`, and words in `eventWords` so the Notes and history block reads "Ryan marked Do not service, reason: unpaid repairs".
 - **Consent:** setting Do not contact appends a marketing opt-out `consent` row (source `admin`). Nothing in `consent` changes shape.
@@ -140,7 +140,7 @@ Nothing is run here. This describes what a build would add.
 In the order to ask them, one at a time. My default is in bold.
 
 1. **Is a customer's status a word the system works out from their jobs, with Archive as the only thing Ryan sets by hand?** **Yes. Active, Past customer and New are always read from facts, and only Archive is typed.**
-2. **How long should someone go with no visit before they read Past customer instead of Active?** **14 months, so a winter customer between seasons is still Active and only someone who missed a whole year is Past customer.**
+2. **How long should someone go with no visit before they read Past customer instead of Active?** **Answered by Hannah: 24 months. A customer with a job in the last 24 months is always Active.**
 3. **Should a person Ryan added who has no job yet show as New, with no separate Lead word until quotes exist?** **Yes. New is the lead for now, and when quotes arrive a New customer with a Quote sent job is the lead.**
 4. **May Ryan archive a customer who still has an unpaid invoice, after a confirm that names the amount?** **Yes with the confirm, but never while a job, a visit or a pass is still open.**
 5. **Should Do not service be a typed flag with a red tag that stops new jobs and online booking but still lets Ryan move or cancel visits already booked?** **Yes, with an optional reason kept in the history and never shown to the customer.**
