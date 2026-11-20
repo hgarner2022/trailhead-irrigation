@@ -1,4 +1,4 @@
-// The Docs page of "Start here: the customer, clickable": three lines. Plain JSX so the page needs no MDX in the Storybook config.
+// The Docs page of "Customer / Walkthrough (clickable)": three lines. Plain JSX so the page needs no MDX in the Storybook config.
 
 export function CustomerDocs() {
   return (

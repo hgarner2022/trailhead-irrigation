@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect } from "storybook/test"
+import { expect, userEvent, waitFor, within } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
+import { JobFlow } from "./JobFlow"
 import { JobPage } from "./JobPage"
 import { STATE_NOTES, jobPageOf, type JobState } from "./job-fixtures"
 
@@ -8,9 +9,9 @@ import { STATE_NOTES, jobPageOf, type JobState } from "./job-fixtures"
 // the one primary action is. Pure screens over fixtures: no handlers, no API.
 
 const meta = {
-  title: "Design/Job page, one trip",
+  title: "Admin/Job page, one trip",
   component: JobPage,
-  parameters: { layout: "fullscreen", docs: { description: { component: "Every state of a one-trip job on its page: the header with its badges and actions, the summary band, What's included, Billing and Messages. Click through the states; the clickable one is under Start here." } } },
+  parameters: { layout: "fullscreen", docs: { description: { component: "Every state of a one-trip job on its page: the header with its badges and actions, the summary band, What's included, Billing and Messages. Click through the states; the clickable one is Admin / Walkthrough (clickable)." } } },
   args: { job: jobPageOf("scheduled") },
   render: (args) => (
     <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>
@@ -108,3 +109,54 @@ export const NotDeletablePhone: Story = { ...story("scheduled", phone), name: "N
 export const Canceled: Story = { ...story("canceled", laptop), name: "Canceled" }
 export const CanceledPhone: Story = { ...story("canceled", phone), name: "Canceled, phone" }
 
+
+const shell = (node: React.ReactNode) => <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>{node}</AdminShell>
+
+/** The same flow for a customer who wants email: the dialogs say email and the sentences name the channel. The same flow is clickable inside the admin walkthrough. */
+export const FlowEmailCustomer: Story = { name: "Flow, email customer", globals: laptop, render: () => shell(<JobFlow channel="email" />) }
+
+/** A customer who wants both: every notice is two rows in Messages, a text and an email, never only a text. */
+export const FlowBothChannels: Story = {
+  name: "Flow, both channels",
+  globals: laptop,
+  render: () => shell(<JobFlow channel="both" />),
+  play: async ({ canvasElement }) => {
+    const body = within(document.body)
+    const c = within(canvasElement)
+    await userEvent.click(await c.findByRole("button", { name: "Schedule" }))
+    await userEvent.click(await body.findByRole("button", { name: /Schedule and notify the customer/ }))
+    const rows = await c.findAllByText("Date set")
+    await expect(rows).toHaveLength(2)
+    await expect(await c.findAllByText("Email")).not.toHaveLength(0)
+  },
+}
+
+/** Schedule, Mark done, charge the card on file, then Refund: Billing reads Paid, card and then Refunded. */
+export const FlowCardChargeAndRefund: Story = {
+  name: "Flow, card charge and refund",
+  globals: laptop,
+  render: () => shell(<JobFlow />),
+  play: async ({ canvasElement }) => {
+    const body = within(document.body)
+    const c = within(canvasElement)
+    const inDialog = async (name: string | RegExp) => userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name }))
+    await userEvent.click(await c.findByRole("button", { name: "Schedule" }))
+    await userEvent.click(await body.findByRole("button", { name: /Schedule and notify the customer/ }))
+    await userEvent.click(await c.findByRole("button", { name: "Mark done" }))
+    await inDialog("Mark done")
+    await inDialog(/^Charge \$145/)
+    await expect((await c.findAllByText(/Paid/, {}, { timeout: 4000 })).length).toBeGreaterThan(0)
+    // Refund sits under a More menu
+    for (const more of await c.findAllByRole("button", { name: /^More/ })) {
+      await userEvent.click(more)
+      const item = await body.findByRole("menuitem", { name: /Refund \$145/ }, { timeout: 500 }).catch(() => null)
+      if (item) {
+        await userEvent.click(item)
+        break
+      }
+      await userEvent.keyboard("{Escape}")
+    }
+    await inDialog(/^Refund \$145/)
+    await waitFor(async () => expect((await c.findAllByText(/Refunded/)).length).toBeGreaterThan(0))
+  },
+}

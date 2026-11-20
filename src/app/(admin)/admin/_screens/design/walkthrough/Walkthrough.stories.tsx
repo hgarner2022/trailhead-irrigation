@@ -3,11 +3,11 @@ import { expect, userEvent, waitFor, within } from "storybook/test"
 import { Walkthrough } from "./Walkthrough"
 import { WalkthroughDocs } from "./WalkthroughDocs"
 
-// Start here (Hannah, Nov 19 2026): one clickable admin prototype. Jobs, a job and its flow, the customer, Invoices and an invoice, joined by the
+// The admin walkthrough (Hannah, Nov 19 2026): one clickable admin prototype. Jobs, a job and its flow, the customer, Invoices and an invoice, joined by the
 // links the pages already draw. Nothing is wired to the API; Start over resets it.
 
 const meta = {
-  title: "Design/Start here: the admin, clickable",
+  title: "Admin/Walkthrough (clickable)",
   component: Walkthrough,
   parameters: {
     layout: "fullscreen",

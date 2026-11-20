@@ -15,7 +15,7 @@ import { SidePanel } from "./SidePanel"
 import { StatusPill } from "./StatusPill"
 import { SummaryBand } from "./SummaryBand"
 
-// Design / Navigation (docs/plans/2026-11-19-navigation-design.md): the admin's top bar, account menu, phone More and the way back, for Hannah to review.
+// Admin / Navigation (docs/plans/2026-11-19-navigation-design.md): the admin's top bar, account menu, phone More and the way back, for Hannah to review.
 // Stories only, nothing wired. Every state is shown at 1280 (laptop) and at 375 (phone).
 
 const LAPTOP = { viewport: { value: "laptop", isRotated: false } }
@@ -25,7 +25,7 @@ const noop = () => {}
 const search = async () => []
 
 const meta = {
-  title: "Design/Navigation",
+  title: "Admin/Navigation",
   parameters: { layout: "fullscreen", docs: { description: { component: "The admin's top bar, account menu, the phone's More menu and the way back from a record, at 1280 and 375. Stories only, nothing wired." } } },
   globals: LAPTOP,
 } satisfies Meta

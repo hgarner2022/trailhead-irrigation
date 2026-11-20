@@ -9,7 +9,7 @@ import { INVOICE_NOTES, INVOICE_ROWS, invoicePageOf, type InvoiceFixture } from 
 // (each a filter), past due first; and the invoice sent, past due, paid by card (card kept), paid by check and canceled. Pure screens over
 // fixtures: nothing is sent.
 
-const meta = { title: "Design/Invoices", parameters: { layout: "fullscreen", docs: { description: { component: "Invoices as a nav item and the invoice as a page: the list with its tiles, and the invoice sent, past due, paid by card, paid by check and canceled, with the reminder and cancel dialogs." } } } } satisfies Meta
+const meta = { title: "Admin/Invoices", parameters: { layout: "fullscreen", docs: { description: { component: "Invoices as a nav item and the invoice as a page: the list with its tiles, and the invoice sent, past due, paid by card, paid by check and canceled, with the reminder and cancel dialogs." } } } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
 
@@ -39,8 +39,8 @@ export const InvoicePaidByCard: Story = { ...page("paid-card", laptop), name: "I
 export const InvoicePaidByCardPhone: Story = { ...page("paid-card", phone), name: "Invoice paid by card, phone" }
 export const InvoicePaidByCheck: Story = { ...page("paid-check", laptop), name: "Invoice paid by check" }
 export const InvoicePaidByCheckPhone: Story = { ...page("paid-check", phone), name: "Invoice paid by check, phone" }
-export const InvoiceRefunded: Story = page("refunded", laptop)
-export const InvoiceRefundedPhone: Story = page("refunded", phone)
+export const InvoiceRefunded: Story = { ...page("refunded", laptop), name: "Invoice refunded" }
+export const InvoiceRefundedPhone: Story = { ...page("refunded", phone), name: "Invoice refunded, phone" }
 export const InvoiceCanceled: Story = { ...page("canceled", laptop), name: "Invoice canceled" }
 export const InvoiceCanceledPhone: Story = { ...page("canceled", phone), name: "Invoice canceled, phone" }
 

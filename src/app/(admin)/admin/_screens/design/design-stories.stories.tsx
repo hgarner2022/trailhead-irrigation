@@ -5,7 +5,7 @@ import { JobsGridDesign, type GridJob } from "./JobsGridDesign"
 // D of the job object design (docs/plans/2026-11-19-job-object-design.md): the Jobs grid with its Billing column, at 1280 (Laptop) and 375 (Phone).
 // The Invoices page and the invoice page are in InvoicesPage.stories.tsx and the customer's Billing in CustomerPage.stories.tsx. Pure screens over fixtures.
 
-const meta = { title: "Design/Jobs grid", parameters: { layout: "fullscreen", docs: { description: { component: "The Jobs grid with its Billing column at 1280 and 375, empty and with the filters hiding every row. Open a row for its job page; the whole path is under Start here." } } } } satisfies Meta
+const meta = { title: "Admin/Jobs grid", parameters: { layout: "fullscreen", docs: { description: { component: "The Jobs grid with its Billing column at 1280 and 375, empty and with the filters hiding every row. Open a row for its job page; the whole path is Admin / Walkthrough (clickable)." } } } } satisfies Meta
 export default meta
 type Story = StoryObj<typeof meta>
 

@@ -28,14 +28,14 @@ const pass = snapshot.passes[0] as Pass
 type Args = Partial<BookingFormProps>
 
 const meta = {
-  title: "Design/Booking form",
+  title: "Customer/Booking form",
   component: BookingForm,
   parameters: {
     layout: "fullscreen",
     docs: {
       description: {
         component:
-          "The booking form a customer sees at Book Online, every step at 375 (Phone) and 1280 (Laptop). Click Continue through a Sprinkler repair: zip code 80516, the service, the address, the details (zones, access, a note, photos), a day and an exact start time, then who we reach and how, then Confirm and book. Nothing is kept until the contact step is submitted. Zip 80302 shows the way out; \"Need a quote? Request one\" shows the request path, which has no day. Nothing is sent. The whole clickable customer path is under Design / Start here: the customer, clickable.",
+          "The booking form a customer sees at Book Online, every step at 375 (Phone) and 1280 (Laptop). Click Continue through a Sprinkler repair: zip code 80516, the service, the address, the details (zones, access, a note, photos), a day and an exact start time, then who we reach and how, then Confirm and book. Nothing is kept until the contact step is submitted. Zip 80302 shows the way out; \"Need a quote? Request one\" shows the request path, which has no day. Nothing is sent. The whole clickable customer path is under Customer / Walkthrough (clickable).",
       },
     },
   },
@@ -50,12 +50,12 @@ const on = (args: Args, name: string, extra: Partial<Story> = {}): { phone: Stor
 
 /** 1. Zip code, the first question (Jobber starts here too). */
 const zip = on({}, "Zip code")
-export const ZipPhone = zip.phone
-export const ZipLaptop = zip.laptop
+export const ZipPhone: Story = { ...zip.phone, name: "Zip code, phone" }
+export const ZipLaptop: Story = { ...zip.laptop, name: "Zip code, laptop" }
 /** A zip we serve says so in one green line and Continue goes on. */
 const zipServed = on({ initial: { zip: "80516" } }, "Zip code served")
-export const ZipServedPhone = zipServed.phone
-export const ZipServedLaptop = zipServed.laptop
+export const ZipServedPhone: Story = { ...zipServed.phone, name: "Zip code served, phone" }
+export const ZipServedLaptop: Story = { ...zipServed.laptop, name: "Zip code served, laptop" }
 /** A zip we do not serve: the six towns, Call Ryan, and Continue stays off. */
 const zipOut = on({ initial: { zip: "80302" } }, "Zip code not served, the way out", {
   play: async ({ canvas }) => {
@@ -64,26 +64,26 @@ const zipOut = on({ initial: { zip: "80302" } }, "Zip code not served, the way o
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
   },
 })
-export const ZipNotServedPhone = zipOut.phone
-export const ZipNotServedLaptop = zipOut.laptop
+export const ZipNotServedPhone: Story = { ...zipOut.phone, name: "Zip code not served, the way out, phone" }
+export const ZipNotServedLaptop: Story = { ...zipOut.laptop, name: "Zip code not served, the way out, laptop" }
 
 /** 2. Services with their lengths: only what we book online; the turn-on and blowout show when they open. */
 const services = on({ initial: { step: "service", zip: "80516" } }, "Services")
-export const ServicesPhone = services.phone
-export const ServicesLaptop = services.laptop
+export const ServicesPhone: Story = { ...services.phone, name: "Services, phone" }
+export const ServicesLaptop: Story = { ...services.laptop, name: "Services, laptop" }
 /** The repair chosen: Continue is on. */
 const serviceChosen = on({ initial: { step: "service", zip: "80516", service: "repair" } }, "Service chosen")
-export const ServiceChosenPhone = serviceChosen.phone
+export const ServiceChosenPhone: Story = { ...serviceChosen.phone, name: "Service chosen, phone" }
 
 /** 2b. "Need a quote? Request one": what we quote, with no prices. Same first screens, no day. */
 const quote = on({ initial: { step: "quote-service", zip: "80516", quote: true, service: "new-system" } }, "Request a quote, services")
-export const QuotePathServicesPhone = quote.phone
-export const QuotePathServicesLaptop = quote.laptop
+export const QuotePathServicesPhone: Story = { ...quote.phone, name: "Request a quote, services, phone" }
+export const QuotePathServicesLaptop: Story = { ...quote.laptop, name: "Request a quote, services, laptop" }
 
 /** 3. The address (type-ahead, "Can't find it? Type your address"). */
 const address = on({ initial: { step: "address", zip: "80516", service: "repair" } }, "Address")
-export const AddressPhone = address.phone
-export const AddressLaptop = address.laptop
+export const AddressPhone: Story = { ...address.phone, name: "Address, phone" }
+export const AddressLaptop: Story = { ...address.laptop, name: "Address, laptop" }
 /** A Boulder address: the out-of-area line, and Continue stays off. */
 const outside = on({ initial: { step: "address", zip: "80516", service: "repair" } }, "Address outside the area", {
   play: async ({ canvas, userEvent }) => {
@@ -93,29 +93,29 @@ const outside = on({ initial: { step: "address", zip: "80516", service: "repair"
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
   },
 })
-export const AddressOutsideAreaPhone = outside.phone
-export const AddressOutsideAreaLaptop = outside.laptop
+export const AddressOutsideAreaPhone: Story = { ...outside.phone, name: "Address outside the area, phone" }
+export const AddressOutsideAreaLaptop: Story = { ...outside.laptop, name: "Address outside the area, laptop" }
 
 /** 4. Service details: zones with the price under them as it changes, access, a note for the crew, photos. */
 const detailsZones = on({ entries: open, initial: { step: "details", zip: "80516", service: "spring-turn-on", fields: { ...home, zones: 10 } } }, "Service details, zones")
-export const DetailsZonesPhone = detailsZones.phone
-export const DetailsZonesLaptop = detailsZones.laptop
+export const DetailsZonesPhone: Story = { ...detailsZones.phone, name: "Service details, zones, phone" }
+export const DetailsZonesLaptop: Story = { ...detailsZones.laptop, name: "Service details, zones, laptop" }
 /** A repair has no zones; the access answer, a note and two photos are filled in. */
 const detailsRepair = on({ initial: { step: "details", zip: "80516", service: "repair", fields: details, photos } }, "Service details, repair with photos")
-export const DetailsRepairPhone = detailsRepair.phone
-export const DetailsRepairLaptop = detailsRepair.laptop
+export const DetailsRepairPhone: Story = { ...detailsRepair.phone, name: "Service details, repair with photos, phone" }
+export const DetailsRepairLaptop: Story = { ...detailsRepair.laptop, name: "Service details, repair with photos, laptop" }
 /** Continue pressed with the access question unanswered. */
 const detailsMissing = on({ initial: { step: "details", zip: "80516", service: "repair", fields: home, attempted: true } }, "Service details, access not answered", {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Tell us whether we can get to the system without you.")).toBeInTheDocument()
   },
 })
-export const DetailsAccessMissingPhone = detailsMissing.phone
+export const DetailsAccessMissingPhone: Story = { ...detailsMissing.phone, name: "Service details, access not answered, phone" }
 
 /** 4b. The request path's details: what to quote, in their words, and photos. */
 const quoteDetails = on({ initial: { step: "details", zip: "80516", quote: true, service: "new-system", fields: { ...home, accessNote: "A new system for the back yard, about a quarter acre." }, photos } }, "Request a quote, tell Ryan about it")
-export const QuotePathDetailsPhone = quoteDetails.phone
-export const QuotePathDetailsLaptop = quoteDetails.laptop
+export const QuotePathDetailsPhone: Story = { ...quoteDetails.phone, name: "Request a quote, tell Ryan about it, phone" }
+export const QuotePathDetailsLaptop: Story = { ...quoteDetails.laptop, name: "Request a quote, tell Ryan about it, laptop" }
 
 /** 5. Day and exact time: the best day selected ("We're already in Erie that day"), its start times under it, none selected, Continue off. */
 const day = on({ initial: { step: "day", zip: "80516", service: "repair", fields: details } }, "Day and time", {
@@ -124,11 +124,11 @@ const day = on({ initial: { step: "day", zip: "80516", service: "repair", fields
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
   },
 })
-export const DayPhone = day.phone
-export const DayLaptop = day.laptop
+export const DayPhone: Story = { ...day.phone, name: "Day and time, phone" }
+export const DayLaptop: Story = { ...day.laptop, name: "Day and time, laptop" }
 /** A time tapped: Continue is on. */
 const dayTapped = on({ initial: { step: "day", zip: "80516", service: "repair", fields: details, picks: picked } }, "Day and time, a time tapped")
-export const DayTimeTappedPhone = dayTapped.phone
+export const DayTimeTappedPhone: Story = { ...dayTapped.phone, name: "Day and time, a time tapped, phone" }
 /** "Show more days" opens the fourth and fifth day. */
 const dayMore = on({ initial: { step: "day", zip: "80516", service: "repair", fields: details } }, "Day and time, more days", {
   play: async ({ canvas, userEvent }) => {
@@ -136,22 +136,22 @@ const dayMore = on({ initial: { step: "day", zip: "80516", service: "repair", fi
     await expect(canvas.getAllByRole("radio", { name: /day, April/ })).toHaveLength(5)
   },
 })
-export const DayMoreDaysPhone = dayMore.phone
-export const DayMoreDaysLaptop = dayMore.laptop
+export const DayMoreDaysPhone: Story = { ...dayMore.phone, name: "Day and time, more days, phone" }
+export const DayMoreDaysLaptop: Story = { ...dayMore.laptop, name: "Day and time, more days, laptop" }
 /** No open day in the window: "These days are full. We'll call you to find one." and Continue is on, ending in a call. */
 const dayFull = on({ initial: { step: "day", zip: "80516", service: "repair", fields: details }, offersFor: () => [] }, "Day and time, no open day")
-export const DayNoOpenDayPhone = dayFull.phone
-export const DayNoOpenDayLaptop = dayFull.laptop
+export const DayNoOpenDayPhone: Story = { ...dayFull.phone, name: "Day and time, no open day, phone" }
+export const DayNoOpenDayLaptop: Story = { ...dayFull.laptop, name: "Day and time, no open day, laptop" }
 /** The Season Pass picks a day and a time for each of its two visits. */
 const passDays = on({ initial: { step: "day", zip: "80516", service: "season-pass", fields: { ...details, zones: 8 } } }, "Season Pass, two visits")
-export const PassDaysPhone = passDays.phone
+export const PassDaysPhone: Story = { ...passDays.phone, name: "Season Pass, two visits, phone" }
 
 /** 6. Contact with how we reach you, after the day: four fields, text, email or both, the terms, and the separate unticked marketing box. */
 const contact = on({ initial: { step: "contact", zip: "80516", service: "repair", fields: details, picks: picked } }, "Contact")
-export const ContactPhone = contact.phone
-export const ContactLaptop = contact.laptop
+export const ContactPhone: Story = { ...contact.phone, name: "Contact, phone" }
+export const ContactLaptop: Story = { ...contact.laptop, name: "Contact, laptop" }
 const contactFilled = on({ initial: { step: "contact", zip: "80516", service: "repair", fields: { ...details, ...person, email: "andrea.dalton@gmail.con", termsAccepted: false }, picks: picked, channel: "both" } }, "Contact filled, a slip in the email")
-export const ContactFilledPhone = contactFilled.phone
+export const ContactFilledPhone: Story = { ...contactFilled.phone, name: "Contact filled, a slip in the email, phone" }
 /** Continue pressed with nothing filled in: each problem is written as help under its field. */
 const contactMissing = on({ initial: { step: "contact", zip: "80516", service: "repair", fields: { ...details, firstName: "Andrea", lastName: "Dalton", email: "andrea.dalton@example.com" }, picks: picked, attempted: true } }, "Contact, missing phone and terms", {
   play: async ({ canvas }) => {
@@ -159,13 +159,13 @@ const contactMissing = on({ initial: { step: "contact", zip: "80516", service: "
     await expect(canvas.getByText("Tick the box to accept the terms.")).toBeInTheDocument()
   },
 })
-export const ContactMissingPhonePhone = contactMissing.phone
-export const ContactMissingPhoneLaptop = contactMissing.laptop
+export const ContactMissingPhonePhone: Story = { ...contactMissing.phone, name: "Contact, missing phone and terms, phone" }
+export const ContactMissingPhoneLaptop: Story = { ...contactMissing.laptop, name: "Contact, missing phone and terms, laptop" }
 
 /** 6b. The request path ends on contact: no terms line, no confirm, and the button says Send to Ryan. */
 const quoteContact = on({ initial: { step: "contact", zip: "80516", quote: true, service: "new-system", fields: { ...home, accessNote: "A new system for the back yard, about a quarter acre." } } }, "Request a quote, contact")
-export const QuotePathContactPhone = quoteContact.phone
-export const QuotePathContactLaptop = quoteContact.laptop
+export const QuotePathContactPhone: Story = { ...quoteContact.phone, name: "Request a quote, contact, phone" }
+export const QuotePathContactLaptop: Story = { ...quoteContact.laptop, name: "Request a quote, contact, laptop" }
 
 /** 7. Confirm, after contact: every answer with its Change link, and one sentence that says what happens. */
 const confirm = on({ initial: { step: "confirm", zip: "80516", service: "repair", fields: full, picks: picked, channel: "text", photos } }, "Confirm", {
@@ -174,10 +174,10 @@ const confirm = on({ initial: { step: "confirm", zip: "80516", service: "repair"
     await expect(canvas.getByRole("button", { name: "Confirm and book" })).toBeEnabled()
   },
 })
-export const ConfirmPhone = confirm.phone
-export const ConfirmLaptop = confirm.laptop
+export const ConfirmPhone: Story = { ...confirm.phone, name: "Confirm, phone" }
+export const ConfirmLaptop: Story = { ...confirm.laptop, name: "Confirm, laptop" }
 const confirmBoth = on({ initial: { step: "confirm", zip: "80516", service: "repair", fields: full, picks: picked, channel: "both" } }, "Confirm, text and email")
-export const ConfirmBothPhone = confirmBoth.phone
+export const ConfirmBothPhone: Story = { ...confirmBoth.phone, name: "Confirm, text and email, phone" }
 
 /** 8. Booked: the holographic card with the exact time, "You added 2 photos", what happens next, Add to calendar, your Trailhead account. */
 const booked = on({ initial: { step: "done", zip: "80516", service: "repair", fields: full, picks: picked, channel: "text", photos } }, "Booked", {
@@ -187,15 +187,15 @@ const booked = on({ initial: { step: "done", zip: "80516", service: "repair", fi
     await expect(canvas.getByRole("link", { name: "your Trailhead account" })).toBeInTheDocument()
   },
 })
-export const BookedPhone = booked.phone
-export const BookedLaptop = booked.laptop
+export const BookedPhone: Story = { ...booked.phone, name: "Booked, phone" }
+export const BookedLaptop: Story = { ...booked.laptop, name: "Booked, laptop" }
 const bookedCall = on({ initial: { step: "done", zip: "80516", service: "repair", fields: full, channel: "text" }, offersFor: () => [] }, "Booked with no open day, Ryan calls")
-export const BookedCallPhone = bookedCall.phone
+export const BookedCallPhone: Story = { ...bookedCall.phone, name: "Booked with no open day, Ryan calls, phone" }
 const quoteDone = on({ initial: { step: "done", zip: "80516", quote: true, service: "new-system", fields: { ...home, ...person, termsAccepted: false }, photos } }, "Request sent")
-export const QuotePathDonePhone = quoteDone.phone
-export const QuotePathDoneLaptop = quoteDone.laptop
+export const QuotePathDonePhone: Story = { ...quoteDone.phone, name: "Request sent, phone" }
+export const QuotePathDoneLaptop: Story = { ...quoteDone.laptop, name: "Request sent, laptop" }
 const passBooked = on({ pass, initial: { step: "done", zip: "80516", service: "season-pass", fields: { ...full, zones: 8 } } }, "Season Pass booked")
-export const PassBookedPhone = passBooked.phone
+export const PassBookedPhone: Story = { ...passBooked.phone, name: "Season Pass booked, phone" }
 
 /** The whole path on a phone, clicked: zip, repair, address, details with the access answer and two sample photos, a time, contact with Text and email, confirm, booked. */
 export const WholePathPhone: Story = {

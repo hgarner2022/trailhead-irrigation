@@ -1,19 +1,21 @@
 # The one admin prototype: implementation spec
 
+**Sidebar as of Nov 20 2026 (supersedes the "Design" group named below).** The sidebar is: `Start here` (the review guide, `src/app/_review/`, its link list is `review-steps.ts` and a unit test checks every id), `Admin` (Walkthrough (clickable), Jobs grid, Job page one trip, Job page Season Pass and return trip, Customer page, Invoices, Confirmations with the payment reminder and Schedule dialog stories, Navigation), `Customer` (Walkthrough (clickable), Booking form), then Screens, Emails, Blocks and UI. The old `Design/Customer side: booking, account, texts`, `Design/Job flow (clickable)`, `Design/Payment reminder` and `Design/Schedule dialog` groups are gone; story ids now start `admin-` or `customer-`, and the customer walkthrough's phone loads `customer-walkthrough-clickable--phone-screens`.
+
 Nov 19 2026. Hannah: "I want one holistic prototype of all this, in Storybook. Clean it up. Make sure it's easy to walk through." This is the spec a designer builds from, on a branch off `origin/review-prototypes`, with a PR into `review-prototypes`. Nothing here is wired to the API; it is the prototype step of the workflow (research, requirements and data model, Storybook prototype, build).
 
 ## 1. What exists (on `review-prototypes`, `src/app/(admin)/admin/_screens/design/`)
 
 | Piece | File | Stories (Storybook ids) |
 |---|---|---|
-| Job page, one trip (every state) | `JobPage.tsx`, `JobPageParts.tsx`, `job-fixtures.ts` | `design-job-page-one-trip--*` |
-| Job page, Season Pass and return trip | `JobPageTrips.tsx`, `trip-fixtures.ts` | `design-job-page-season-pass-and-return-trip--*` |
-| Job flow, clickable (Schedule → Scheduled → Today → Active → Done → Billed) | `JobFlow.tsx`, `confirm-copy.ts`, `MessageDialog.tsx`, `ReminderDialog.tsx` | `design-job-flow-clickable--*` |
-| Jobs grid | `JobsGridDesign.tsx` | `design-jobs-invoices-and-billing--jobs-grid*` |
-| Customer page | `CustomerPage.tsx`, `CustomerBilling.tsx`, `customer-fixtures.ts` | `design-customer-page--*` |
-| Invoices list and invoice page | `InvoicesPage.tsx`, `InvoicePanel.tsx`, `invoice-fixtures.ts` | `design-invoices--*` |
-| Confirmations catalogue | `ConfirmActions.stories.tsx` | `design-confirmations--*` |
-| Navigation (shell, account menu, More, record from Home/search/list) | `design-navigation--*` (the blocks `TopBar`, `AdminAccountMenu`, `MoreMenu`, `AdminShell`) | |
+| Job page, one trip (every state) | `JobPage.tsx`, `JobPageParts.tsx`, `job-fixtures.ts` | `admin-job-page-one-trip--*` |
+| Job page, Season Pass and return trip | `JobPageTrips.tsx`, `trip-fixtures.ts` | `admin-job-page-season-pass-and-return-trip--*` (the Season Pass flow story is here) |
+| Job flow, clickable (Schedule → Scheduled → Today → Active → Done → Billed) | `JobFlow.tsx`, `confirm-copy.ts`, `MessageDialog.tsx`, `ReminderDialog.tsx` | the flow runs inside `admin-walkthrough-clickable--*`; its email, both-channels and card charge and refund stories are in `admin-job-page-one-trip--flow-*` |
+| Jobs grid | `JobsGridDesign.tsx` | `admin-jobs-grid--*` |
+| Customer page | `CustomerPage.tsx`, `CustomerBilling.tsx`, `customer-fixtures.ts` | `admin-customer-page--*` |
+| Invoices list and invoice page | `InvoicesPage.tsx`, `InvoicePanel.tsx`, `invoice-fixtures.ts` | `admin-invoices--*` |
+| Confirmations catalogue | `ConfirmActions.stories.tsx` | `admin-confirmations--*` (with the payment reminder and Schedule dialog stories) |
+| Navigation (shell, account menu, More, record from Home/search/list) | `admin-navigation--*` (the blocks `TopBar`, `AdminAccountMenu`, `MoreMenu`, `AdminShell`) | |
 | Schedule picker (design only) | `SchedulePicker.tsx` | |
 | Blocks | `src/components/blocks/`: `RecordPage`, `SectionCard`, `SummaryBand` (tiles link), `AsideCard`, `StatusPill` (colour table applied), `RecordChip` + `RecordPreview`, `DataGrid` (embedded mode) + `DataGridCards`, `BillingTables`, `Toast`, `ConfirmDialog`, `SplitButton`, `MessageTable` | each has a story under Blocks |
 

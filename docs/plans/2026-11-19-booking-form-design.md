@@ -1,6 +1,6 @@
 # Design in Storybook: the customer booking form
 
-Nov 19 2026. Design only, as stories over fixtures; nothing is wired. Hannah, twice: "I want the booking form designed in here too." Open `npm run storybook` and look under **Design / Booking form** (every step at 375 and 1280), **Blocks / ZipCheck, ZoneChips, AccessChoice, PhotoPicker, BookingReview, ContactPreference**, and step 1 of **Design / Start here: the customer, clickable**, which now runs this same form. It builds on `2026-11-18-online-booking-design.md` (the flow and its rules), `docs/research/jobber-booking-2026-11-18/` (Hannah's live Jobber form, the content reference) and `2026-11-19-customer-side-design.md` (the day-and-time picker, the holographic card).
+Nov 19 2026. Design only, as stories over fixtures; nothing is wired. Hannah, twice: "I want the booking form designed in here too." Open `npm run storybook` and look under **Customer / Booking form** (every step at 375 and 1280), **Blocks / ZipCheck, ZoneChips, AccessChoice, PhotoPicker, BookingReview, ContactPreference**, and step 1 of **Design / Start here: the customer, clickable**, which now runs this same form. It builds on `2026-11-18-online-booking-design.md` (the flow and its rules), `docs/research/jobber-booking-2026-11-18/` (Hannah's live Jobber form, the content reference) and `2026-11-19-customer-side-design.md` (the day-and-time picker, the holographic card).
 
 ## The job to be done
 

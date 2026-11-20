@@ -21,27 +21,25 @@ const preview: Preview = {
       },
     },
     layout: "fullscreen",
-    // The two Start here walkthroughs first (Hannah, Nov 19), then the catalogue stories under them, then the screens, emails and the library.
+    // The review guide first (Hannah, Nov 20), then the admin and the customer side, each its clickable walkthrough first, then the reference
+    // groups; then the shipped screens, the email renderers and the library.
     options: {
       storySort: {
         order: [
-          "Design",
+          "Start here",
+          "Admin",
           [
-            "Start here: the admin, clickable",
-            ["Docs", "Laptop", "Phone", "From home", "From search"],
-            "Start here: the customer, clickable",
-            ["Docs", "Phone", "Laptop"],
-            "Booking form",
-            "Job flow (clickable)",
+            "Walkthrough (clickable)",
+            "Jobs grid",
             "Job page, one trip",
             "Job page, Season Pass and return trip",
             "Customer page",
             "Invoices",
             "Confirmations",
             "Navigation",
-            "Jobs grid",
-            "Customer side: booking, account, texts",
           ],
+          "Customer",
+          ["Walkthrough (clickable)", "Booking form"],
           "Screens",
           "Emails",
           "Blocks",

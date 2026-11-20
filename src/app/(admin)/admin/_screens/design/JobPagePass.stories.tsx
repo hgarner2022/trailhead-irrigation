@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import { expect, userEvent, waitFor, within } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
+import { PassFlow } from "./PassFlow"
 import { JobPagePass, JobPageReturnTrip } from "./JobPageTrips"
 import { passPageOf, returnTripOf, type PassState } from "./trip-fixtures"
 
@@ -7,7 +9,7 @@ import { passPageOf, returnTripOf, type PassState } from "./trip-fixtures"
 // repair with a return trip, at 1280 and 375. The trips are rows with Move and Mark done on the row. Pure screens over fixtures.
 
 const meta = {
-  title: "Design/Job page, Season Pass and return trip",
+  title: "Admin/Job page, Season Pass and return trip",
   component: JobPagePass,
   parameters: { layout: "fullscreen", docs: { description: { component: "A Season Pass job and a repair with a return trip: the Visits card with one row per trip, each with its own badge, money word and Move or Mark done. Compare the four pass states and the renewal link." } } },
   args: { data: passPageOf("ahead") },
@@ -65,3 +67,36 @@ export const RenewedAs: Story = { name: "Renewed as", ...renewedAs, globals: lap
 /** Ryan sees a repair with its first trip done and paid and a return trip scheduled, as two rows. The action is Mark done on the second row. */
 export const ReturnTrip: Story = { ...back(laptop), name: "Return trip" }
 export const ReturnTripPhone: Story = { ...back(phone), name: "Return trip, phone" }
+
+const flowShell = () => (
+  <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>
+    <PassFlow />
+  </AdminShell>
+)
+
+/** The Season Pass branch, clickable: trip 1 goes Scheduled, Today, Active, Done and Charged ("Charge the card as agreed"), then trip 2 is next ahead and opens by itself. */
+export const SeasonPassFlow: Story = {
+  name: "Season Pass flow",
+  globals: laptop,
+  render: flowShell,
+  play: async ({ canvasElement }) => {
+    const body = within(document.body)
+    const c = within(canvasElement)
+    const confirm = async (name: string | RegExp) => {
+      await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name }))
+      await waitFor(() => expect(body.queryByRole("dialog")).toBeNull())
+    }
+    await userEvent.click(await c.findByRole("button", { name: "Move" }))
+    await confirm(/Move and notify the customer/)
+    await userEvent.click(await c.findByRole("button", { name: "On my way" }))
+    await confirm("Send and start")
+    await waitFor(() => expect(c.getAllByRole("button", { name: "Mark done" }).length).toBeGreaterThan(0))
+    await userEvent.click(c.getAllByRole("button", { name: "Mark done" })[0]!)
+    await confirm("Mark done")
+    await expect(within(await body.findByRole("dialog")).getByText(/Andrea gets a receipt by text\./)).toBeInTheDocument()
+    await userEvent.click(within(await body.findByRole("dialog")).getByRole("button", { name: /^Charge \$145/ }))
+    await waitFor(() => expect(canvasElement.querySelectorAll("[data-slot=trip-row]")[0]).toHaveTextContent("Paid, card"))
+    await expect(canvasElement.querySelectorAll("[data-slot=trip-row]")[1]).toHaveAttribute("data-open", "true")
+  },
+}
+export const SeasonPassFlowPhone: Story = { name: "Season Pass flow, phone", globals: phone, render: flowShell }

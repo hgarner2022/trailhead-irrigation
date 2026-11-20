@@ -10,7 +10,7 @@ import { STEP_COPY } from "./step-copy"
 // phone's. The Steps column is the only navigation: the list, Back and Next, Start over. It sends the phone a message and is told which step
 // is lit, derived by the phone from the screen it is showing. Nothing is sent anywhere.
 
-const PHONE_ID = "design-start-here-the-customer-clickable--phone-screens"
+const PHONE_ID = "customer-walkthrough-clickable--phone-screens"
 const PHONE_SRC = `iframe.html?id=${PHONE_ID}&viewMode=story`
 const FRAME_W = 399
 const FRAME_H = 836

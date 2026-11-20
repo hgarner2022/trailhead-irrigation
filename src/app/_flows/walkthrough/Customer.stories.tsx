@@ -4,11 +4,11 @@ import { CustomerDocs } from "./CustomerDocs"
 import { CustomerPhone } from "./CustomerPhone"
 import { CustomerWalkthrough } from "./CustomerWalkthrough"
 
-// Start here, the customer side (Hannah, Nov 19 2026): booking, the messages, the account, paying, the Season Pass and Details in one clickable
+// The customer walkthrough, the customer side (Hannah, Nov 19 2026): booking, the messages, the account, paying, the Season Pass and Details in one clickable
 // prototype, starting on a phone. Nothing is sent; Start over resets it.
 
 const meta = {
-  title: "Design/Start here: the customer, clickable",
+  title: "Customer/Walkthrough (clickable)",
   component: CustomerWalkthrough,
   parameters: {
     layout: "fullscreen",
@@ -99,3 +99,19 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
   },
 }
 
+/** The invoice path end to end (moved from the old Account and paying story): Pay now on the account, the pay page, the card button, "paid", the receipt. */
+export const PayPath: StoryObj<typeof CustomerPhone> = {
+  name: "Pay path",
+  tags: ["!dev", "!autodocs"],
+  render: () => <CustomerPhone />,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await expect(await c.findByText("What's your zip code?")).toBeInTheDocument()
+    window.postMessage({ walk: "cmd", cmd: "go", step: "account" }, "*")
+    await userEvent.click(await c.findByRole("link", { name: /Pay now/ }))
+    await userEvent.click(await c.findByRole("button", { name: /Pay \$115 by card/ }))
+    await expect(await c.findByText(/your payment went through/)).toBeInTheDocument()
+    await userEvent.click(await c.findByRole("link", { name: "View the receipt" }))
+    await expect(await c.findByText(/Receipt/i, { selector: "h1" })).toBeInTheDocument()
+  },
+}
