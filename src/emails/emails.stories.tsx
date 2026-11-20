@@ -19,7 +19,7 @@ function EmailFrame({ subject, html, width }: { subject: string; html: string; w
 }
 
 const meta = {
-  title: "Emails/All emails",
+  title: "Messages/Archive of every live email",
   component: EmailFrame,
   parameters: { layout: "padded" },
 } satisfies Meta<typeof EmailFrame>
