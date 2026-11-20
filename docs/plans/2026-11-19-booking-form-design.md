@@ -30,6 +30,28 @@ When no day is open, or the customer says when instead, the day step passes and 
 
 A request for a quote is the address, services (what we quote, with no prices), "Tell Ryan about it" (words and photos) and contact ("How can Ryan reach you?", no terms line, the button "Send to Ryan"), then "Thanks. We've got your request." Four counted steps (it had five): no day, no confirm, no card. It lists only what is not booked online: Christmas lights and Larger sprinkler repair. The Season Pass keeps its place first in the list and asks a day and time for each of its two visits.
 
+## The Season Pass path (Nov 20 2026)
+
+Hannah's decisions, final: the pass can be bought whenever; a buyer gets only the visits still ahead this season; it auto-renews each season until the customer cancels, and they pay only per visit done, after the visit. Research and the five causes of the old bug are in `docs/plans/2026-11-20-season-pass-booking-research.md`. Stories: **Customer / Booking form, Season Pass** (January, April, July, November at 375 and 1280) and **Screens / Account, Season Pass purchase**.
+
+**One model.** `src/lib/booking/pass-visits.ts` is pure: given today it returns the visits still ahead, each with a mode and its window, and next season for a buyer after the last window. A visit **opens within two weeks or is open now: `exact`** (an exact day and time from the open slots, as the rest of the form does). A visit **months away: `preference`** (Early, Mid or Late in its window, no day). The windows live in one place, `PASS_WINDOWS`: the spring turn-on opens Apr 25 and closes May 31, the fall blowout opens Oct 1 and closes Oct 31 (the booking fixture's opening days, the seed's closing days). A buyer in November or December has no visit this season, so the pass starts next season with both visits as preferences. `pass-entry.ts` builds the list the form shows for the date (the pass card, and the single turn-on and blowout cards opening by the same windows). The test table is `pass-visits.test.ts`, every month and the edge days.
+
+| Buys in | Visits on the pass | How each gets its day |
+|---|---|---|
+| Jan 1 to Apr 10 | Turn-on, blowout (this season) | Both preferences |
+| Apr 11 to May 31 | Turn-on, blowout | Turn-on exact (open now or within two weeks); blowout a preference |
+| Jun 1 to Sep 16 | Blowout | Preference |
+| Sep 17 to Oct 31 | Blowout | Exact |
+| Nov 1 to Dec 31 | Next season's turn-on and blowout | Both preferences |
+
+**The steps for a pass** are address, services, details, then a Day and time step only when a visit is exact (headed "Your spring turn-on" or "Your fall blowout", the visit's own length: 60 minutes for the turn-on, 30 for the blowout, days from tomorrow or the day its window opens), then **"When would you like it?"** only when a visit is a preference (Early, Mid or Late with the window's real dates, "Oct 1 to Oct 10", Mid pressed, and "We'll schedule it about two weeks before and tell you the day."), contact, **the agreement**, confirm, booked. The services step shows the pass with only the visits ahead, each with its length, its price and "Opens Apr 25", and "From $" the sum for those visits only.
+
+**The agreement step** holds one marked placeholder, "[Wording from Hannah]", never terms, and the renewal as stated facts: Renews (auto-renews each season until you cancel), Reminder (before each renewal), Cancel (in your Trailhead account), You pay (for each visit done, after the visit). The Season Pass terms box stays on the contact step.
+
+**What the customer reads afterwards.** The confirm step has one row per visit: the exact day and time, or "Preference: Early October. We'll schedule it about two weeks before and tell you the day." The booked holographic card lists every visit the same way (`BookedCard` `visits`). The account's Home and Season Pass page show the next visit exact and each other visit with its preference and a Change control (`PassVisitRows`). The admin job page shows a visit that has only a preference as "Preference: Early October · No day yet" with Schedule on the row, and Next visit reads the preference when no visit has a day (`preferenceTripOf`).
+
+**The only sentences that are not from the catalogue or the fixtures** are the two Hannah allowed: "We'll schedule it about two weeks before and tell you the day." and the preference words (`preferenceLabel`). Everything else in the pass path is a label of a decision above.
+
 ## The words
 
 | Where | Words |

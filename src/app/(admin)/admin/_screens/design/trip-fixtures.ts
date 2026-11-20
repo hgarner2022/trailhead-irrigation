@@ -31,6 +31,8 @@ export interface TripData {
   money: string | null
   /** the row's own buttons, for a trip that does not open (the repair's return trip) */
   actions: FooterAction[]
+  /** a Season Pass visit that is months away and has only the customer's preference: "Early October". It has no day yet, so it does not open; Ryan schedules it from the row. */
+  preference?: string
   /** a Season Pass trip opens in place into its own content */
   trip?: {
     state: TripState
@@ -130,14 +132,14 @@ const photosOf = (s: Svc, state: TripState, first: boolean): PhotoItem[] => {
 }
 
 /** One trip of a pass, in a state. The first trip of the pass has the customer's photos. */
-export function tripOf(s: Svc, id: string, state: TripState, opts: { day?: string; people?: string[]; instructions?: string } = {}): TripData {
+export function tripOf(s: Svc, id: string, state: TripState, opts: { day?: string; time?: string; people?: string[]; instructions?: string } = {}): TripData {
   const day = opts.day ?? s.day
   const people = opts.people ?? ["Ryan Garner"]
   const done = state === "done" || state === "charged" ? 99 : state === "active" ? 2 : 0
   return {
     id,
     title: s.title,
-    detail: state === "canceled" ? "Canceled with the pass" : `${day} · ${people.map((p) => p.split(" ")[0]).join(" and ")} · ${TIME[state]}`,
+    detail: state === "canceled" ? "Canceled with the pass" : `${day} · ${people.map((p) => p.split(" ")[0]).join(" and ")} · ${opts.time ?? TIME[state]}`,
     pills: PILLS[state],
     money: MONEY(state, s.price),
     actions: [],
@@ -145,7 +147,7 @@ export function tripOf(s: Svc, id: string, state: TripState, opts: { day?: strin
       state,
       service: s.service,
       day,
-      time: TIME[state],
+      time: opts.time ?? TIME[state],
       who: people[0]!,
       people,
       price: s.price,
@@ -157,6 +159,14 @@ export function tripOf(s: Svc, id: string, state: TripState, opts: { day?: strin
       collect: state === "done" ? { plan: collectPlan({ amount: s.price, card: visa, isPass: true, invoiceOpen: false, canInvoice: true, declined: false, charging: false }), summary: `${s.title} · $${s.price} unpaid` } : undefined,
     },
   }
+}
+
+/**
+ * A Season Pass visit that is months away: the customer gave only a preference ("Early October"), so there is no day, no person and no time. The row says the preference and that there is no day
+ * yet, Schedule is on the row, and the money word is the pass's. Ryan sees what to schedule (Hannah, Nov 20 2026).
+ */
+export function preferenceTripOf(s: Svc, id: string, preference: string): TripData {
+  return { id, title: s.title, detail: `Preference: ${preference} · No day yet`, pills: [{ status: "needs-a-day" }], money: "Charged after this visit", actions: [act("Schedule")], preference }
 }
 
 const passColumns: RecordPageColumn[] = [
@@ -218,6 +228,17 @@ export function passPageOf(state: PassState, renewal?: MultiTripData["renewal"])
   const spring = tripOf(SPRING, "t1", state === "ahead" ? "scheduled" : state === "canceled" ? "canceled" : "charged")
   const fall = tripOf(FALL, "t2", state === "both-done" ? "charged" : state === "canceled" ? "canceled" : "scheduled")
   return passPageFromTrips([spring, fall], { canceled: state === "canceled", renewal })
+}
+
+/**
+ * The Season Pass right after an April purchase: the spring turn-on has its exact day and time and the fall blowout has only the customer's preference, so Ryan sees what to schedule. With
+ * `january`, both visits have only a preference.
+ */
+export function passPageBoughtOf(when: "april" | "january"): MultiTripData {
+  const spring = when === "april" ? tripOf(SPRING, "t1", "scheduled", { day: "Thu, Apr 29", time: "10:30 am" }) : preferenceTripOf(SPRING, "t1", "Early May")
+  const fall = preferenceTripOf(FALL, "t2", when === "april" ? "Early October" : "Late October")
+  const data = passPageFromTrips([spring, fall])
+  return { ...data, subtitle: `Andrea Dalton · Sold ${when === "april" ? "Apr 14" : "Jan 12"}, website`, columns: data.columns.map((c) => (c.heading === "Season Pass" ? { ...c, rows: c.rows.filter(([k]) => k !== "Timing") } : c)) }
 }
 
 export function returnTripOf(): MultiTripData {

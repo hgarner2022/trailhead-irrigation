@@ -3,6 +3,21 @@
 // ("Need a quote? Request one"), "off" appears nowhere. The real list will come from `pickerEntries(catalogue, today)`; this file is the fixture the stories use, with the same shape, and its facts
 // (names, minutes, prices) are the ones in src/lib/services.ts. A price the catalogue does not have is never invented: it reads "Price set at the visit". Pure.
 
+import { opensLabel, type PassVisitKind, type VisitMode } from "@/lib/booking/pass-visits"
+
+/** One visit on the Season Pass card in the service list: its name, its length, its price, its opening day and how it gets its day (an exact day and time now, or a preference). */
+export interface PassVisitLine {
+  kind: PassVisitKind
+  name: string
+  /** "About 1 hour" */
+  length: string
+  /** "$145" */
+  price: string
+  /** "Apr 25"; absent when the visit's window is already open */
+  opens?: string
+  mode: VisitMode
+}
+
 export type ServiceKind =
   /** the Season Pass: two visits, priced per zone */
   | "pass"
@@ -41,12 +56,14 @@ export interface ServiceEntry {
   details?: DetailsKind
   /** "Opens Apr 25": out of season, shown and not selectable */
   opens?: string
+  /** the Season Pass only: the visits still ahead for the date, each with its length, price and opening day */
+  passVisits?: PassVisitLine[]
 }
 
 export const CATALOGUE: readonly ServiceEntry[] = [
   { key: "season-pass", name: "Season Pass 2027", online: "bookable", line: "Both visits, and your days held when you reserve.", price: "From $240", length: "Spring turn-on and fall blowout", included: "A spring turn-on and a fall blowout at the standard per-zone price, your days held, the same schedule every year and priority for repairs. Add a July inspection at checkout.", kind: "pass", minutes: 60, perZone: true },
-  { key: "spring-turn-on", name: "Spring turn-on", online: "bookable", line: "Start the system up, run every zone and check each head.", price: "From $145", length: "About 1 hour", included: "Complete system activation and check: sprinkler head adjustments, minor leak fixes where possible, controller programming and a water efficiency evaluation. Larger repairs are quoted separately and may need a return visit.", kind: "day", minutes: 60, perZone: true, opens: "Apr 25" },
-  { key: "fall-blowout", name: "Fall blowout", online: "bookable", line: "Clear the water out of the lines before the first hard freeze.", price: "From $95", length: "About 30 minutes", included: "Compressor hookup and a blowout of every zone to clear water from the lines, valves and heads, and the backflow and controller readied for winter. We need access to the system, the controller and the backflow.", kind: "day", minutes: 30, perZone: true, opens: "Oct 1" },
+  { key: "spring-turn-on", name: "Spring turn-on", online: "bookable", line: "Start the system up, run every zone and check each head.", price: "From $145", length: "About 1 hour", included: "Complete system activation and check: sprinkler head adjustments, minor leak fixes where possible, controller programming and a water efficiency evaluation. Larger repairs are quoted separately and may need a return visit.", kind: "day", minutes: 60, perZone: true, opens: opensLabel("turn-on") },
+  { key: "fall-blowout", name: "Fall blowout", online: "bookable", line: "Clear the water out of the lines before the first hard freeze.", price: "From $95", length: "About 30 minutes", included: "Compressor hookup and a blowout of every zone to clear water from the lines, valves and heads, and the backflow and controller readied for winter. We need access to the system, the controller and the backflow.", kind: "day", minutes: 30, perZone: true, opens: opensLabel("blowout") },
   { key: "repair", name: "Sprinkler repair", online: "bookable", line: "Find the fault and fix what we can.", price: "$145", length: "About 2 hours", included: "A visit to find the fault and fix what can be fixed on the spot. Larger repairs are quoted and may need a return visit.", kind: "day", minutes: 120, amount: 145 },
   { key: "consult", name: "Free consultation", online: "bookable", line: "A visit to look at the property and talk over what you have in mind.", price: "Free", length: "About 30 minutes", kind: "day", minutes: 30, amount: 0 },
   { key: "rachio-install", name: "Rachio smart controller install", online: "bookable", line: "A Rachio 3 for your zone count, mounted and wired to your existing valves.", price: "From $350", length: "About 2 hours", included: "A Rachio 3 for your zone count, mounted and wired to your existing valves, with the Wi-Fi set up, the zones named, the schedules built and a walkthrough of the app before we leave.", kind: "day", minutes: 120, perZone: true, amount: (zones) => (zones <= 8 ? 350 : 420), details: "rachio" },

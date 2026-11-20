@@ -3,6 +3,9 @@
 // services with their lengths, the service details, the day and an exact start time, contact with how we reach you, and a confirm step that says what happens. A request for a quote is the address,
 // what we quote, "Tell Ryan about it" and contact, with no day. Nothing here knows about the server.
 import { SEASON_PASS_VISITS, seasonPassPrice, visitPrice } from "@/lib/season-pass"
+import type { TimingPreference } from "@/lib/admin/types"
+import { exactVisits, preferenceVisits, type PassPlan } from "@/lib/booking/pass-visits"
+import { passReviewRows } from "./booking-pass-model"
 import { emailProblem } from "@/lib/email-check"
 import { SERVICE_ZIPS, serviceability, type PlaceSuggestion } from "@/lib/places"
 import { STREET_PROBLEM, TOWN_PROBLEM } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-address-typed"
@@ -13,7 +16,7 @@ import type { ContactChannel } from "@/components/blocks/ContactPreference"
 import type { ReviewRow } from "@/components/blocks/BookingReview"
 import type { CheckoutFields } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
 
-export type FormStep = "address" | "service" | "quote-service" | "details" | "day" | "contact" | "confirm" | "done"
+export type FormStep = "address" | "service" | "quote-service" | "details" | "day" | "preference" | "agreement" | "contact" | "confirm" | "done"
 
 export const QUESTIONS: Record<FormStep, string> = {
   address: "Where is the yard?",
@@ -21,6 +24,8 @@ export const QUESTIONS: Record<FormStep, string> = {
   "quote-service": "What do you need a quote for?",
   details: "A few details about the visit",
   day: "Pick your day and time",
+  preference: "When would you like it?",
+  agreement: "How the Season Pass renews",
   contact: "Who should we reach?",
   confirm: "Look it over and confirm.",
   done: "Booked",
@@ -29,15 +34,19 @@ export const QUESTIONS: Record<FormStep, string> = {
 export const QUOTE_QUESTIONS: Partial<Record<FormStep, string>> = { details: "Tell Ryan about it", contact: "How can Ryan reach you?" }
 
 /** The steps a service goes through, in order; the last is the confirmation, which is not counted ("Step 3 of 6"). The address is first and qualifies the area, so nothing after it is offered outside the six towns. */
-export function stepsFor(entry: ServiceEntry | null, quote = false): FormStep[] {
+export function stepsFor(entry: ServiceEntry | null, quote = false, plan: PassPlan | null = null): FormStep[] {
   if (quote || entry?.kind === "quote") return ["address", "quote-service", "details", "contact", "done"]
+  // A Season Pass bought on a date: an exact day and time for a visit that is open now, a preference for a visit months away, then the agreement before the look-over.
+  if (entry?.kind === "pass" && plan) {
+    return ["address", "service", "details", ...(exactVisits(plan).length ? (["day"] as const) : []), ...(preferenceVisits(plan).length ? (["preference"] as const) : []), "contact", "agreement", "confirm", "done"]
+  }
   return ["address", "service", "details", "day", "contact", "confirm", "done"]
 }
 export const stepTotal = (steps: readonly FormStep[]) => steps.length - 1
 
 export const SEND_REQUEST = "Send to Ryan"
 export const CONFIRM_BOOK = "Confirm and book"
-export const ACTIONS: Partial<Record<FormStep, string>> = { address: "Continue", service: "Continue", "quote-service": "Continue", details: "Continue", day: "Continue", contact: "Continue", confirm: CONFIRM_BOOK }
+export const ACTIONS: Partial<Record<FormStep, string>> = { address: "Continue", service: "Continue", "quote-service": "Continue", details: "Continue", day: "Continue", preference: "Continue", agreement: "Continue", contact: "Continue", confirm: CONFIRM_BOOK }
 
 export const DAY_HINT = "Tap a start time to continue."
 export const SERVICE_HINT = "Pick a service to continue."
@@ -45,8 +54,8 @@ export const SERVICE_HINT = "Pick a service to continue."
 export const money = (n: number) => `$${n.toLocaleString("en-US")}`
 
 /** The one service price for a zone count: the Season Pass total, the turn-on or the blowout at the standard per-zone rates, or the catalogue's own price. Null when the catalogue has none (the visit sets it). */
-export function priceFor(entry: ServiceEntry, zones: number): number | null {
-  if (entry.kind === "pass") return seasonPassPrice(zones)
+export function priceFor(entry: ServiceEntry, zones: number, plan: PassPlan | null = null): number | null {
+  if (entry.kind === "pass") return plan ? plan.visits.reduce((sum, v) => sum + visitPrice(SEASON_PASS_VISITS[v.kind === "turn-on" ? 0 : 2], zones), 0) : seasonPassPrice(zones)
   if (entry.key === "spring-turn-on") return visitPrice(SEASON_PASS_VISITS[0], zones)
   if (entry.key === "fall-blowout") return visitPrice(SEASON_PASS_VISITS[2], zones)
   if (typeof entry.amount === "function") return entry.amount(zones)
@@ -54,8 +63,8 @@ export function priceFor(entry: ServiceEntry, zones: number): number | null {
 }
 
 /** "About $145, charged after the visit." for a priced service; "Price set at the visit" when the catalogue has no price; nothing is said for a service that is only requested. */
-export function priceWords(entry: ServiceEntry, zones: number): string {
-  const price = priceFor(entry, zones)
+export function priceWords(entry: ServiceEntry, zones: number, plan: PassPlan | null = null): string {
+  const price = priceFor(entry, zones, plan)
   if (price === null) return entry.kind === "quote" ? "" : `${PRICE_AT_VISIT}.`
   if (price === 0) return "Free."
   return `About ${money(price)}${entry.kind === "pass" ? " for the season, charged after each visit." : ", charged after the visit."}`
@@ -123,11 +132,13 @@ export interface FormAnswers {
   fields: CheckoutFields
   /** the typed fields are open under the address box, so a missing town is asked for by name */
   addressTyped?: boolean
-  /** one pick per visit: "visit" for a day service, "turn-on" and "blowout" for a pass */
+  /** one pick per visit: "visit" for a day service, "turn-on" and "blowout" for a pass (only for a visit that takes an exact day now) */
   picks: Record<string, DayTimePick>
   offers: Record<string, DayTimeOffer[]>
   /** "None of these work? Tell us when": the customer's own words */
   when: string
+  /** a Season Pass: Early, Mid or Late for each visit that is months away */
+  prefs?: Record<string, TimingPreference>
 }
 
 /** Whether the day step ends in a call or a text from Ryan: no open day, or no time tapped and the customer said when instead. */
@@ -204,6 +215,10 @@ export interface ReviewInput {
   fields: CheckoutFields
   town: string | null
   pick: DayTimePick | undefined
+  /** a Season Pass bought on a date: what it holds, the day and time of each exact visit and the preference of each other one */
+  plan?: PassPlan | null
+  picks?: Record<string, DayTimePick>
+  prefs?: Record<string, TimingPreference>
   when: string
   callback: boolean
   channel: ContactChannel
@@ -225,17 +240,19 @@ export function reviewRows(i: ReviewInput): ReviewRow[] {
       : i.pick?.day && i.pick.start
         ? [dayAtTime(i.pick.day, i.pick.start)]
         : null
+  const passRows: ReviewRow[] = i.plan ? passReviewRows(i.plan, i.picks ?? {}, i.prefs ?? {}, i.go) : []
   const rows: (ReviewRow | null)[] = [
     { label: "Service", value: [serviceLine, ...(i.service.length ? [i.service.length] : [])], onChange: () => i.go(i.quote ? "quote-service" : "service") },
     { label: "Where", value: [street, `${i.town ?? ""}${i.town ? ", CO " : ""}${f.place?.zip ?? ""}`.trim()], onChange: () => i.go("address") },
-    when ? { label: "When", value: when, onChange: () => i.go("day") } : null,
+    when && !i.plan ? { label: "When", value: when, onChange: () => i.go("day") } : null,
+    ...passRows,
     { label: "You", value: [`${f.firstName} ${f.lastName}`.trim(), phoneWords(f.phone), f.email], onChange: () => i.go("contact") },
     { label: "We reach you", value: channelLine(i.channel), onChange: () => i.go("contact") },
     i.quote ? null : { label: "Access", value: f.access === "yes" ? "We can reach the controller and shut-off without you." : "You'll be there.", onChange: () => i.go("details") },
     ...(i.quote ? [] : extraRows(i.service, i.extras ?? NO_EXTRAS, () => i.go("details"))),
     i.photos > 0 ? { label: "Photos", value: `${i.photos} photo${i.photos === 1 ? "" : "s"}`, onChange: () => i.go("details") } : null,
     f.accessNote.trim() ? { label: i.quote ? "What you wrote" : "Note for the crew", value: f.accessNote.trim(), onChange: () => i.go("details") } : null,
-    priceWords(i.service, f.zones) ? { label: "Price", value: priceWords(i.service, f.zones) } : null,
+    priceWords(i.service, f.zones, i.plan ?? null) ? { label: "Price", value: priceWords(i.service, f.zones, i.plan ?? null) } : null,
   ]
   return rows.filter((r): r is ReviewRow => r !== null)
 }

@@ -3,17 +3,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { PassCard } from "@/components/blocks/PassCard"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
-import { StatusPill } from "@/components/blocks/StatusPill"
 import type { Pass, TimingPreference } from "@/lib/admin/types"
-import { preferenceOf } from "@/lib/admin/format"
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { CancelPassDialog, type ActionResult } from "./CancelPassDialog"
 import { EarlierSeasons } from "./EarlierSeasons"
 import { PassActions } from "@/components/blocks/PassActions"
-import { PreferenceDialog } from "@/components/blocks/PreferenceDialog"
-import { AddToCalendar } from "./AddToCalendar"
+import { PassVisitRows } from "./PassVisitRows"
+import type { BookedTimes } from "@/lib/portal/booked-time"
 import { PickDayButtons, type PickDayButtonsProps } from "./PickDayButtons"
-import { bookedWhen, canChange, canReserveNext, reserveNextHref, cardAction, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption, visitLineInfo, visitRows } from "./pass-page-model"
+import { canReserveNext, reserveNextHref, cardAction, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption } from "./pass-page-model"
 
 // The customer's pass page: a season card, not a dashboard. The pass card at
 // the top, the season line with the visits and their state, the card
@@ -46,6 +44,8 @@ export interface PassPageScreenProps {
   onUpdateCard?: () => void | Promise<void>
   /** the area days the scheduler offers, when the page has them; the prototype's stand-in days are used when absent */
   pickDays?: Partial<Record<"turn-on" | "blowout", string[]>>
+  /** the booked start of each visit by visit id ("10:30"), so the next visit reads its exact time */
+  times?: BookedTimes
 }
 
 function UpdateCardButton({ onUpdateCard, variant, className, label = "Update card" }: { onUpdateCard?: () => void | Promise<void>; variant?: "outline"; className?: string; label?: string }) {
@@ -61,7 +61,7 @@ function Title({ children }: { children: string }) {
   return <h2 className="font-display text-2xl font-semibold leading-none text-navy">{children}</h2>
 }
 
-export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChangePreference, onAddInspection, onSkip, onPickDay, onUpdateCard, pickDays }: PassPageScreenProps) {
+export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChangePreference, onAddInspection, onSkip, onPickDay, onUpdateCard, pickDays, times }: PassPageScreenProps) {
   const cancelled = pass.status === "cancelled"
   const earlier = earlierSeasons(passes, pass)
   const headline = passHeadline(pass, today, pickDays ? Object.keys(pickDays) : ["turn-on", "blowout"])
@@ -126,28 +126,7 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
               </CardHeader>
               <CardContent className="space-y-6">
                 <SeasonLine mode="customer" season={pass.season} visits={pass.visits} preferences={pass} today={today} caption={seasonCaption(pass)} />
-                <ul className="divide-y divide-border">
-                  {pass.visits.map((visit) => {
-                    const row = visitRows(pass).find((r) => r.kind === visit.kind)!
-                    const info = visitLineInfo(visit)
-                    const preference = canChange(visit) ? preferenceOf(pass, visit.kind) : null
-                    return (
-                      <li key={row.kind} data-slot="pass-visit-row" className="flex flex-wrap items-center gap-3 py-3">
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-base font-semibold text-foreground">
-                            {row.name}
-                            <span className="font-normal text-muted-foreground">{` · ${info.price}`}</span>
-                          </span>
-                          <span className="block text-sm text-muted-foreground">{bookedWhen(visit) ?? row.when}</span>
-                          {info.description && <span className="block text-sm text-muted-foreground">{info.description}</span>}
-                        </span>
-                        {preference && canChange(visit) && <PreferenceDialog kind={visit.kind} value={preference} onSave={onChangePreference} />}
-                        <StatusPill status={row.status} label={row.label} />
-                        <AddToCalendar pass={pass} visit={visit} name={row.name} />
-                      </li>
-                    )
-                  })}
-                </ul>
+                <PassVisitRows pass={pass} onChangePreference={onChangePreference} times={times} />
               </CardContent>
             </Card>
 

@@ -3,7 +3,7 @@ import { expect, userEvent, waitFor, within } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { PassFlow } from "./PassFlow"
 import { JobPagePass, JobPageReturnTrip } from "./JobPageTrips"
-import { passPageOf, returnTripOf, type PassState } from "./trip-fixtures"
+import { passPageBoughtOf, passPageOf, returnTripOf, type PassState } from "./trip-fixtures"
 
 // The job page for a job with more than one trip: Andrea's Season Pass in four states (Season Pass TH-2027-0008, the 2027 season) and a
 // repair with a return trip, at 1280 and 375. The trips are rows with Move and Mark done on the row. Pure screens over fixtures.
@@ -41,6 +41,24 @@ const back = (globals: typeof laptop): Story => ({
 /** Both visits ahead. Each row opens in place, one at a time, and the first is open: When and Who as chips, the trip's actions (Move is the primary), its checklist from the spring turn-on template, its photos (From Andrea, Ours), its notes, and "Charged after this visit" under the pill. */
 export const BothAhead: Story = { ...pass("ahead", laptop), name: "Both ahead" }
 export const BothAheadPhone: Story = { ...pass("ahead", phone), name: "Both ahead, phone" }
+
+/** Bought in April: the spring turn-on has its exact day and time, and the fall blowout shows "Preference: Early October" with "No day yet" and Schedule on the row, so Ryan sees what to schedule. */
+export const BoughtApril: Story = { args: { data: passPageBoughtOf("april") }, globals: laptop, name: "Bought in April, one visit to schedule" }
+export const BoughtAprilPhone: Story = { args: { data: passPageBoughtOf("april") }, globals: phone, name: "Bought in April, one visit to schedule, phone" }
+
+/** Bought in January: both visits show only the customer's preference and no day; Next visit reads "Preference: Early May, No day yet". */
+export const BoughtJanuary: Story = {
+  args: { data: passPageBoughtOf("january") },
+  globals: laptop,
+  name: "Bought in January, two visits to schedule",
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await expect(c.getByText("Preference: Early May · No day yet")).toBeInTheDocument()
+    await expect(c.getByText("Preference: Late October · No day yet")).toBeInTheDocument()
+    await expect(c.getAllByRole("button", { name: "Schedule" })).toHaveLength(2)
+  },
+}
+export const BoughtJanuaryPhone: Story = { args: { data: passPageBoughtOf("january") }, globals: phone, name: "Bought in January, two visits to schedule, phone" }
 
 /** The spring turn-on is Paid, card, and the fall blowout is ahead and open by itself. The Payments table has one row, the spring charge. */
 export const OneDone: Story = { ...pass("one-done", laptop), name: "One done" }

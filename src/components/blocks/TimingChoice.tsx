@@ -12,6 +12,8 @@ import { TIMING_PREFERENCES, preferenceLabel, preferenceReason } from "@/lib/adm
 // preference before the day is set. No capacity sits behind any choice.
 
 const CHOICE_NAMES: Record<TimingPreference, string> = { earlier: "Earlier", recommended: "Recommended", later: "Later" }
+/** The booking form's names for the same three answers, with the window's real dates under each. */
+const SHORT_NAMES: Record<TimingPreference, string> = { earlier: "Early", recommended: "Mid", later: "Late" }
 /** The only place the recommendation's detail is spelled out; everywhere else says Mid. */
 const MID_MEANS: Record<"turn-on" | "blowout", string> = { "turn-on": "Mid May means the first two weeks of May.", blowout: "Mid October means the second week of October." }
 
@@ -22,12 +24,14 @@ export interface TimingChoiceProps {
   label?: string
   value: TimingPreference
   onChange: (value: TimingPreference) => void
+  /** the booking form: the names Early, Mid and Late with each one's dates under it ("Oct 1 to Oct 10"), in place of the month and the "Mid means" line */
+  ranges?: Record<TimingPreference, string>
   /** the pressed button takes the step's focus (the checkout shell reads `data-autofocus`) */
   autofocus?: boolean
   className?: string
 }
 
-export function TimingChoice({ kind, labelledBy, label, value, onChange, autofocus, className }: TimingChoiceProps) {
+export function TimingChoice({ kind, labelledBy, label, value, onChange, ranges, autofocus, className }: TimingChoiceProps) {
   const id = useId()
   return (
     <div className={className}>
@@ -49,14 +53,14 @@ export function TimingChoice({ kind, labelledBy, label, value, onChange, autofoc
                 pressed ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40",
               )}
             >
-              <span className="font-display text-2xl leading-none">{CHOICE_NAMES[preference]}</span>
-              <span className={cn("mt-1.5 text-sm", pressed ? "text-white/80" : "text-muted-foreground")}>{preferenceLabel(kind, preference)}</span>
+              <span className="font-display text-2xl leading-none">{(ranges ? SHORT_NAMES : CHOICE_NAMES)[preference]}</span>
+              <span className={cn("mt-1.5 text-sm", pressed ? "text-white/80" : "text-muted-foreground")}>{ranges ? ranges[preference] : preferenceLabel(kind, preference)}</span>
             </button>
           )
         })}
       </div>
       <p id={`${id}-reason`} className="mt-3 text-base text-muted-foreground">
-        {`${MID_MEANS[kind]} ${preferenceReason(kind)}`}
+        {ranges ? preferenceReason(kind) : `${MID_MEANS[kind]} ${preferenceReason(kind)}`}
       </p>
     </div>
   )

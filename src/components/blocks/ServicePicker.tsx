@@ -34,6 +34,17 @@ function Entry({ entry, name, checked, onChange }: { entry: ServiceEntry; name: 
             {!quote && <span className="shrink-0 text-base font-semibold tabular-nums">{off ? `Opens ${entry.opens}` : entry.price}</span>}
           </span>
           <span className={cn("text-base", checked ? "text-white/90" : "text-foreground")}>{entry.line}</span>
+          {entry.passVisits && (
+            <ul data-slot="pass-visits" className={cn("mt-2 divide-y rounded-md border", checked ? "divide-white/20 border-white/25" : "divide-border border-border")}>
+              {entry.passVisits.map((v) => (
+                <li key={v.kind} data-slot="pass-visit" data-kind={v.kind} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 px-3 py-2">
+                  <span className="text-base font-semibold">{v.name}</span>
+                  <span className={cn("text-sm tabular-nums", checked ? "text-white/90" : "text-foreground")}>{v.price}</span>
+                  <span className={cn("basis-full text-sm", checked ? "text-white/85" : "text-muted-foreground")}>{[v.length, v.opens ? `Opens ${v.opens}` : null].filter(Boolean).join(" · ")}</span>
+                </li>
+              ))}
+            </ul>
+          )}
           {entry.length && (
             <span data-slot="service-length" className={cn("mt-1 flex items-center gap-1.5 text-sm", checked ? "text-white/85" : "text-muted-foreground")}>
               <Clock aria-hidden className="size-4 shrink-0" />
@@ -54,7 +65,11 @@ function Entry({ entry, name, checked, onChange }: { entry: ServiceEntry; name: 
 
 export function ServicePicker({ entries, value, onChange, onRequestQuote, className }: ServicePickerProps) {
   const name = useId()
-  const closed = entries.some((e) => e.opens)
+  // The note points at the pass, so it shows only when the pass is on the list and holds a visit whose single card is closed (a pass with no visit list is the old catalogue card and holds both).
+  const pass = entries.find((e) => e.kind === "pass")
+  const heldKinds = pass?.passVisits?.map((v) => v.kind)
+  const SINGLE: Record<string, string> = { "spring-turn-on": "turn-on", "fall-blowout": "blowout" }
+  const closed = Boolean(pass) && entries.some((e) => e.opens && (!heldKinds || heldKinds.includes(SINGLE[e.key] as "turn-on" | "blowout")))
   return (
     <div data-slot="service-picker" className={cn("space-y-4", className)}>
       <fieldset className="min-w-0">

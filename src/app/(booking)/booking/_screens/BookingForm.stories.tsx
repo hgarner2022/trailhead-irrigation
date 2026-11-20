@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, waitFor, within } from "storybook/test"
-import snapshot from "@/lib/admin/fixtures/snapshot.json"
-import type { Pass } from "@/lib/admin/types"
 import { SERVICES, type ServiceEntry } from "@/lib/booking/services"
 import { typedPlace } from "@/lib/places"
 import { FIXTURE_HOME, FIXTURE_PLACES } from "@/lib/places/fixture"
@@ -29,7 +27,6 @@ const photos = [
   { name: "garden-bed.jpg", src: "/images/micro-spray-garden-bed.jpg" },
 ]
 const open: ServiceEntry[] = SERVICES.map(({ opens: _opens, ...e }) => e as ServiceEntry)
-const pass = snapshot.passes[0] as Pass
 type Args = Partial<BookingFormProps>
 
 const meta = {
@@ -198,9 +195,6 @@ export const DayMoreDaysLaptop: Story = { ...dayMore.laptop, name: "Day and time
 const dayFull = on({ initial: { step: "day", service: "repair", fields: details }, offersFor: () => [] }, "Day and time, no open day")
 export const DayNoOpenDayPhone: Story = { ...dayFull.phone, name: "Day and time, no open day, phone" }
 export const DayNoOpenDayLaptop: Story = { ...dayFull.laptop, name: "Day and time, no open day, laptop" }
-/** The Season Pass picks a day and a time for each of its two visits. */
-const passDays = on({ initial: { step: "day", service: "season-pass", fields: { ...details, zones: 8 } } }, "Season Pass, two visits")
-export const PassDaysPhone: Story = { ...passDays.phone, name: "Season Pass, two visits, phone" }
 
 /** 5. Contact with how we reach you, after the day: four fields, text, email or both, the terms, and the separate unticked marketing box. */
 const contact = on({ initial: { step: "contact", service: "repair", fields: details, picks: picked } }, "Contact")
@@ -250,8 +244,6 @@ export const BookedCallPhone: Story = { ...bookedCall.phone, name: "Request sent
 const quoteDone = on({ initial: { step: "done", quote: true, service: "lights", fields: { ...home, ...person, termsAccepted: false }, photos } }, "Request sent")
 export const QuotePathDonePhone: Story = { ...quoteDone.phone, name: "Request sent, phone" }
 export const QuotePathDoneLaptop: Story = { ...quoteDone.laptop, name: "Request sent, laptop" }
-const passBooked = on({ pass, initial: { step: "done", service: "season-pass", fields: { ...full, zones: 8 } } }, "Season Pass booked")
-export const PassBookedPhone: Story = { ...passBooked.phone, name: "Season Pass booked, phone" }
 
 /** The whole path on a phone, clicked: address, repair, details with the access answer and two sample photos, a time, contact with Text and email, confirm, booked. */
 export const WholePathPhone: Story = {

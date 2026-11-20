@@ -6,7 +6,7 @@ import { PassFlow } from "./PassFlow"
 import { ScheduleDialog } from "./ScheduleDialog"
 import { JobPagePass, JobPageReturnTrip } from "./JobPageTrips"
 import { JOB_STATES, jobPageOf } from "./job-fixtures"
-import { FALL, PASS_STATES, SPRING, passPageOf, returnTripOf, tripOf } from "./trip-fixtures"
+import { FALL, PASS_STATES, SPRING, passPageBoughtOf, passPageOf, returnTripOf, tripOf } from "./trip-fixtures"
 
 // The design screens render in every state, with one primary action where the design says there is one.
 
@@ -216,6 +216,22 @@ describe("job page, more than one trip", () => {
       expect(container.querySelectorAll("[data-slot=trip-row]")).toHaveLength(2)
     })
   }
+
+  it("shows a visit that has only a preference as the preference with no day, and Schedule on the row", () => {
+    render(<JobPagePass data={passPageBoughtOf("april")} />)
+    const rows = document.querySelectorAll<HTMLElement>("[data-slot=trip-row]")
+    expect(within(rows[0]!).getByText(/Thu, Apr 29 · Ryan · 10:30 am/)).toBeInTheDocument()
+    expect(within(rows[1]!).getByText("Preference: Early October · No day yet")).toBeInTheDocument()
+    expect(within(rows[1]!).getByRole("button", { name: "Schedule" })).toBeInTheDocument()
+    expect(rows[1]!.querySelector("[data-slot=trip-body]")).toBeNull()
+  })
+
+  it("reads the next visit as the preference when no visit has a day", () => {
+    render(<JobPagePass data={passPageBoughtOf("january")} />)
+    const band = document.querySelector("[data-slot=summary-band]") as HTMLElement
+    expect(within(band).getByText("Preference: Early May")).toBeInTheDocument()
+    expect(within(band).getByText("No day yet")).toBeInTheDocument()
+  })
 
   it("opens one trip at a time, the next ahead first, into its checklist, photos, notes and actions", () => {
     render(<JobPagePass data={passPageOf("ahead")} />)

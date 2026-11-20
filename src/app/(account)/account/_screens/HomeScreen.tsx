@@ -15,7 +15,7 @@ import { nextRow, portalTimeline } from "@/lib/portal/timeline"
 import { visitPageOf } from "@/lib/portal/visit-page"
 import { withBookedTime, type BookedTimes } from "@/lib/portal/booked-time"
 import type { DayTimeOffer } from "@/lib/booking/day-time"
-import { seasonCaption } from "../pass/_screens/pass-page-model"
+import { PassVisitRows, type PassVisitRowsProps } from "../pass/_screens/PassVisitRows"
 import { openInvoices } from "./account-model"
 import { VisitControls, type VisitActions } from "./VisitControls"
 
@@ -37,9 +37,11 @@ export interface HomeScreenProps extends VisitActions {
   /** with slots: the booked start of each visit ("10:30"), and the open days with their start times for the next visit's Reschedule */
   times?: BookedTimes
   offers?: Record<string, readonly DayTimeOffer[]>
+  /** the customer saved a new preference for a pass visit that has no day yet */
+  onChangePreference?: PassVisitRowsProps["onChangePreference"]
 }
 
-export function HomeScreen({ customer, jobs, today, pass, days = {}, times, offers, onReschedule, onRescheduleTime, onCancel }: HomeScreenProps) {
+export function HomeScreen({ customer, jobs, today, pass, days = {}, times, offers, onReschedule, onRescheduleTime, onCancel, onChangePreference }: HomeScreenProps) {
   const invoices = openInvoices(jobs)
   const timeline = portalTimeline(customer, jobs, today)
   const next = nextRow(timeline)
@@ -94,7 +96,8 @@ export function HomeScreen({ customer, jobs, today, pass, days = {}, times, offe
                         </a>
                       </p>
                     )}
-                    <SeasonLine mode="customer" season={pass.season} visits={pass.visits} preferences={pass} today={today} caption={seasonCaption(pass)} />
+                    <SeasonLine mode="customer" season={pass.season} visits={pass.visits} preferences={pass} today={today} />
+                    {pass.status !== "cancelled" && <PassVisitRows pass={pass} onChangePreference={onChangePreference} times={times} compact />}
                     <Button asChild variant="outline">
                       <Link href="/account/pass">See your pass</Link>
                     </Button>

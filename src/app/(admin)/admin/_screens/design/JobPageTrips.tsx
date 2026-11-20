@@ -31,7 +31,7 @@ function bandOf(data: MultiTripData) {
   const canceled = data.pills.some((p) => p.status === "cancelled")
   const where = data.columns.find((c) => c.heading === "Where")?.rows.find(([k]) => k === "Address")?.[1] as string | undefined
   return bandItems({
-    when: { label: "Next visit", value: canceled ? "None" : next ? (day ?? "") : "All done", sub: canceled ? "Canceled" : time },
+    when: { label: "Next visit", value: canceled ? "None" : next ? (day ?? "") : "All done", sub: canceled ? "Canceled" : next?.preference ? "No day yet" : time },
     who: canceled ? "No one" : "Ryan Garner",
     address: where,
     total: data.billing.summary[0]?.[1] ?? "$0",

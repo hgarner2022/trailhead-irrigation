@@ -2,7 +2,7 @@ import type { ContactChannel } from "@/components/blocks/ContactPreference"
 import type { PickedPhoto } from "@/components/blocks/PhotoPicker"
 import type { DayTimeOffer, DayTimePick } from "@/lib/booking/day-time"
 import type { ServiceEntry } from "@/lib/booking/services"
-import type { Pass } from "@/lib/admin/types"
+import type { TimingPreference } from "@/lib/admin/types"
 import type { PlaceProvider } from "@/lib/places"
 import type { CheckoutState } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
 import type { Extras, FormStep } from "./booking-form-model"
@@ -57,11 +57,9 @@ export interface BookingFormProps {
   entries?: readonly ServiceEntry[]
   today?: string
   /** open on a step with earlier answers filled in; stories use it */
-  initial?: { step?: FormStep; service?: string; quote?: boolean; fields?: Partial<CheckoutState>; picks?: Record<string, DayTimePick>; when?: string; channel?: ContactChannel; photos?: PickedPhoto[]; extras?: Partial<Extras>; attempted?: boolean; leaving?: boolean }
-  /** the open days for a visit; the fixture days by default, `[]` for a full calendar */
-  offersFor?: (key: string, minutes: number, town: string | null) => DayTimeOffer[]
-  /** the pass the booked step shows for a Season Pass */
-  pass?: Pass
+  initial?: { step?: FormStep; service?: string; quote?: boolean; fields?: Partial<CheckoutState>; picks?: Record<string, DayTimePick>; prefs?: Record<string, TimingPreference>; when?: string; channel?: ContactChannel; photos?: PickedPhoto[]; extras?: Partial<Extras>; attempted?: boolean; leaving?: boolean }
+  /** the open days for a visit, from `from` (the first day it may be offered: tomorrow, or the day its window opens); the fixture days by default, `[]` for a full calendar */
+  offersFor?: (key: string, minutes: number, town: string | null, from?: string) => DayTimeOffer[]
   places?: PlaceProvider
   /** told once when a day is booked */
   onBooked?: (booked: Booked) => void

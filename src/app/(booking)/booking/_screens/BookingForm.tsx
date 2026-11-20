@@ -10,18 +10,23 @@ import { FlowShell } from "@/components/blocks/FlowShell"
 import type { PickedPhoto } from "@/components/blocks/PhotoPicker"
 import { ServicePicker } from "@/components/blocks/ServicePicker"
 import { clock12, fixtureDayTimes, startDay, type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
+import { bookingEntries, visitMinutes } from "@/lib/booking/pass-entry"
+import { exactVisits, passPlanFor, preferenceVisits } from "@/lib/booking/pass-visits"
 import { QUOTE_SERVICES, SERVICES } from "@/lib/booking/services"
+import type { TimingPreference } from "@/lib/admin/types"
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { fixturePlaces } from "@/lib/places/fixture"
 import { shortDay } from "@/lib/portal/words"
 import { AddressStep } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-address"
-import { DoneStep } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-done"
 import type { CheckoutFields } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
 import { useCheckoutState } from "@/app/(checkout)/season-pass/checkout/_screens/use-checkout-state"
-import { BookingBooked } from "./booking-booked"
+import { BookingAgreement } from "./booking-agreement"
+import { BookingBooked, type BookedPass } from "./booking-booked"
 import { BookingContact } from "./booking-contact"
 import { DayTimeGroups, type DayGroup } from "./booking-day"
 import { BookingDetails, QuoteDetails } from "./booking-details"
+import { bookedPassOf } from "./booking-pass-model"
+import { PreferenceGroups, VISIT_HEADINGS } from "./booking-preference"
 import { StepProblems } from "./booking-problems"
 import type { BookingFormProps } from "./booking-form-types"
 import { useStepHistory } from "./use-step-history"
@@ -37,20 +42,24 @@ import { ACTIONS, CONFIRM_BOOK, DAY_HINT, NO_EXTRAS, QUESTIONS, QUOTE_QUESTIONS,
 
 export type { Booked, BookingFormProps, BookingProgress, Requested } from "./booking-form-types"
 
-const PASS_VISITS = [{ key: "turn-on", heading: "Your spring turn-on" }, { key: "blowout", heading: "Your fall blowout" }] as const
+const addDay = (iso: string, n: number) => new Date(new Date(`${iso}T12:00:00Z`).getTime() + n * 86_400_000).toISOString().slice(0, 10)
 const TYPING = new Set(["text", "email", "tel", "radio"])
 
-export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial = {}, offersFor = (_k, m, t) => fixtureDayTimes(m, t ?? "Erie"), pass, places = fixturePlaces, onBooked, onRequested, onOpenAccount, onStep }: BookingFormProps) {
+export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial = {}, offersFor = (_k, m, t, from) => fixtureDayTimes(m, t ?? "Erie", from), places = fixturePlaces, onBooked, onRequested, onOpenAccount, onStep }: BookingFormProps) {
   const [fields, dispatch] = useCheckoutState({ today, ...initial.fields })
   const [quote, setQuote] = useState(initial.quote ?? false)
   const [serviceKey, setServiceKey] = useState<string | null>(initial.service ?? null)
-  const service = [...entries, ...QUOTE_SERVICES].find((e) => e.key === serviceKey) ?? null
-  const steps = stepsFor(service, quote)
+  // The list for the date: the Season Pass holds only the visits still ahead, and a single turn-on or blowout opens by the same windows.
+  const listed = useMemo(() => bookingEntries(entries, today), [entries, today])
+  const service = [...listed, ...QUOTE_SERVICES].find((e) => e.key === serviceKey) ?? null
+  const plan = useMemo(() => (service?.kind === "pass" ? passPlanFor(today) : null), [service, today])
+  const steps = stepsFor(service, quote, plan)
   const [step, setStep] = useState<FormStep>(initial.step ?? "address")
   const [attempted, setAttempted] = useState(initial.attempted ?? false)
   const [presses, setPresses] = useState(initial.attempted ? 1 : 0)
   const [picks, setPicks] = useState<Record<string, DayTimePick>>(initial.picks ?? {})
   const [when, setWhen] = useState(initial.when ?? "")
+  const [prefs, setPrefs] = useState<Record<string, TimingPreference>>(initial.prefs ?? {})
   const [channel, setChannel] = useState<ContactChannel>(initial.channel ?? "text")
   const [photos, setPhotos] = useState<PickedPhoto[]>(initial.photos ?? [])
   const [extras, setExtras] = useState<Extras>({ ...NO_EXTRAS, ...initial.extras })
@@ -63,12 +72,16 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
 
   const groups: DayGroup[] = useMemo(() => {
     if (!service || service.kind === "quote") return []
+    const tomorrow = addDay(today, 1)
+    // A pass asks a day only for a visit that is open now: its own length, and days from tomorrow or the day its window opens, to the day it closes.
+    if (plan) return exactVisits(plan).map((v) => ({ key: v.kind, heading: VISIT_HEADINGS[v.kind], minutes: visitMinutes(v.kind), offers: offersFor(v.kind, visitMinutes(v.kind), town, v.opens > tomorrow ? v.opens : tomorrow).filter((o) => o.day <= v.closes) }))
     const minutes = service.minutes ?? 60
-    return service.kind === "pass" ? PASS_VISITS.map((v) => ({ key: v.key, heading: v.heading, minutes, offers: offersFor(v.key, minutes, town) })) : [{ key: "visit", minutes, offers: offersFor("visit", minutes, town) }]
-  }, [service, town, offersFor])
+    return [{ key: "visit", minutes, offers: offersFor("visit", minutes, town, tomorrow) }]
+  }, [service, plan, town, today, offersFor])
   // The best day starts selected on each visit; a time is never selected for the customer.
   const heldPicks = Object.fromEntries(groups.map((g) => [g.key, picks[g.key] ?? { day: startDay(g.offers), start: null }]))
-  const answers = { service, fields, addressTyped, picks: heldPicks, offers: Object.fromEntries(groups.map((g) => [g.key, g.offers as DayTimeOffer[]])), when }
+  const heldPrefs = Object.fromEntries((plan ? preferenceVisits(plan) : []).map((v) => [v.kind, prefs[v.kind] ?? "recommended"])) as Record<string, TimingPreference>
+  const answers = { service, fields, addressTyped, picks: heldPicks, offers: Object.fromEntries(groups.map((g) => [g.key, g.offers as DayTimeOffer[]])), when, prefs: heldPrefs }
   const valid = canContinue(step, answers)
   const callback = !quote && callbackMode(answers)
   const at = steps.indexOf(step)
@@ -137,6 +150,7 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
   const choose = (key: string) => {
     setServiceKey(key)
     setPicks({})
+    setPrefs({})
     setExtras(NO_EXTRAS)
   }
   const startQuote = () => {
@@ -154,6 +168,7 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
   }
 
   const dayPart = pick?.day && pick.start && !callback ? `${shortDay(pick.day)} at ${clock12(pick.start)}` : null
+  const bookedPass: BookedPass | undefined = service?.kind === "pass" && plan ? bookedPassOf(service.name, plan, heldPicks, heldPrefs) : undefined
   const parts: SummaryPart[] = [
     ...(service && at > steps.indexOf(quote ? "quote-service" : "service") ? [{ label: service.name, what: "service", onChange: () => go(quote ? "quote-service" : "service") }] : []),
     ...(street && at > steps.indexOf("address") ? [{ label: [street, town].filter(Boolean).join(", "), what: "address", onChange: () => go("address") }] : []),
@@ -172,7 +187,7 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
   switch (step) {
     case "service":
     case "quote-service":
-      body = <ServicePicker entries={quote ? QUOTE_SERVICES : entries} value={serviceKey} onChange={choose} onRequestQuote={quote ? undefined : startQuote} />
+      body = <ServicePicker entries={quote ? QUOTE_SERVICES : listed} value={serviceKey} onChange={choose} onRequestQuote={quote ? undefined : startQuote} />
       break
     case "address":
       body = (
@@ -198,6 +213,12 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
     case "day":
       body = <DayTimeGroups groups={groups} picks={heldPicks} onPick={(k, p) => setPicks((prev) => ({ ...prev, [k]: p }))} town={town} note={when} onNote={setWhen} />
       break
+    case "preference":
+      body = plan && <PreferenceGroups visits={preferenceVisits(plan)} prefs={heldPrefs} onPref={(k, p) => setPrefs((prev) => ({ ...prev, [k]: p }))} />
+      break
+    case "agreement":
+      body = <BookingAgreement />
+      break
     case "contact":
       body = (
         <>
@@ -213,18 +234,13 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
     case "confirm":
       body = service && (
         <BookingReview
-          rows={reviewRows({ service, fields, town, pick, when, callback, channel, photos: photos.length, quote, extras, go })}
+          rows={reviewRows({ service, fields, town, pick, plan, picks: heldPicks, prefs: heldPrefs, when, callback, channel, photos: photos.length, quote, extras, go })}
           happens={happensWords({ channel, phone: fields.phone, email: fields.email, quote, callback })}
         />
       )
       break
     default:
-      body =
-        service?.kind === "pass" && pass && !callback ? (
-          <DoneStep pass={pass} email={fields.email} onDone={onOpenAccount} />
-        ) : (
-          <BookingBooked service={service?.name ?? "Visit"} where={[street, town].filter(Boolean).join(", ")} channel={channel} phone={fields.phone} email={fields.email} pick={quote || callback ? undefined : pick} photos={photos.length} callback={callback} quote={quote} onOpenAccount={onOpenAccount} />
-        )
+      body = <BookingBooked service={service?.name ?? "Visit"} where={[street, town].filter(Boolean).join(", ")} channel={channel} phone={fields.phone} email={fields.email} pick={quote || callback ? undefined : pick} photos={photos.length} callback={callback} quote={quote} onOpenAccount={onOpenAccount} pass={bookedPass} />
   }
 
   return (

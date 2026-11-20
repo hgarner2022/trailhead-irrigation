@@ -4,10 +4,12 @@
  * screen so the wording can be unit tested.
  */
 import type { Pass, PassVisit } from "@/lib/admin/types"
-import { TIME_ZONE, preferenceLabel, preferenceOf, preferencePhrase, writtenDate } from "@/lib/admin/format"
+import { TIME_ZONE, preferenceOf, preferencePhrase, writtenDate } from "@/lib/admin/format"
 import { formatMoney } from "@/lib/admin/metrics"
 import { customerFacingFirstName } from "@/lib/portal/words"
 import { passVisitJob, visitPaidTotal, type JobState } from "@/lib/admin/jobs"
+import { SCHEDULE_NOTE, preferenceStatement } from "@/lib/booking/pass-words"
+import { clock12 } from "@/lib/booking/day-time"
 
 export const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Spring turn-on", inspection: "Mid-season inspection", blowout: "Fall blowout" }
 
@@ -32,7 +34,7 @@ const HAS_DAY: readonly RowStatus[] = ["scheduled", "routed"]
 /** The pass's preference for a visit in the customer's words; the inspection has none. */
 function preferenceWords(visit: PassVisit, pass: Pass): string | null {
   const preference = preferenceOf(pass, visit.kind)
-  return preference && visit.kind !== "inspection" ? preferenceLabel(visit.kind, preference) : null
+  return preference && visit.kind !== "inspection" ? preferenceStatement(visit.kind, preference) : null
 }
 
 export function visitRow(visit: PassVisit, pass: Pass): VisitRow {
@@ -46,11 +48,11 @@ export function visitRow(visit: PassVisit, pass: Pass): VisitRow {
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
 /** "Tuesday, May 5" for a booked visit, with the first name of who is coming when it has someone: "Tuesday, May 5 with Ryan". Null before a day is set or once the visit is done. */
-export function bookedWhen(visit: PassVisit): string | null {
+export function bookedWhen(visit: PassVisit, start?: string): string | null {
   if (!visit.scheduledAt || visit.completedAt) return null
   const weekday = WEEKDAYS[new Date(`${visit.scheduledAt.slice(0, 10)}T12:00:00Z`).getUTCDay()]
   const who = customerFacingFirstName(visit.personName)
-  return `${weekday}, ${writtenDate(visit.scheduledAt)}${who ? ` with ${who}` : ""}`
+  return `${weekday}, ${writtenDate(visit.scheduledAt)}${start ? ` at ${clock12(start)}` : ""}${who ? ` with ${who}` : ""}`
 }
 
 /** The visit's price ("$145") and what it includes, both from its line; the description is absent when the line has none. */
@@ -100,8 +102,10 @@ export function passHeadline(pass: Pass, today: string, pickable: readonly strin
   const last = done[done.length - 1]
   const lastWords = last ? `${VISIT_NAMES[last.kind]} done ${writtenDate(last.completedAt!)}. ` : ""
   const when = next.kind === "inspection" ? "in July" : preferencePhrase(next.kind, preferenceOf(pass, next.kind) ?? "recommended")
-  const tell = next.kind === "blowout" ? "We'll text your date in September." : next.kind === "inspection" ? "We'll text your date in June." : "We'll text your date in April."
-  return { title: last ? `${lastWords}Next up: ${row.name.toLowerCase()}, ${when}.` : `Your ${pass.season} season is reserved.`, line: last ? tell : `${row.name} ${when}. ${tell}`, action: null, kind: next.kind }
+  // A visit with a preference and no day says the preference and when it is scheduled (Hannah, Nov 20 2026); the July inspection, an add-on, keeps its own line.
+  const tell = next.kind === "inspection" ? "We'll text your date in June." : SCHEDULE_NOTE
+  const asked = next.kind === "inspection" ? `${row.name} ${when}. ${tell}` : `${preferenceStatement(next.kind, preferenceOf(pass, next.kind) ?? "recommended")}. ${tell}`
+  return { title: last ? `${lastWords}Next up: ${row.name.toLowerCase()}, ${when}.` : `Your ${pass.season} season is reserved.`, line: last ? tell : asked, action: null, kind: next.kind }
 }
 
 /** Three days we are in the customer's town inside the visit's window, Tuesday and Thursday first, as YYYY-MM-DD. The prototype's stand-in for the scheduler's area days. */
@@ -155,7 +159,7 @@ export function seasonCaption(pass: Pass): string {
   if (!next) return `Every visit is done. We'll email you in January about ${pass.season + 1}.`
   const row = visitRow(next, pass)
   if (next.scheduledAt) return `Next up: ${row.name.toLowerCase()} on ${row.when}.`
-  if (next.kind === "blowout") return `You asked for ${preferencePhrase("blowout", pass.blowoutPreference)} for your blowout. Ryan sets the day in September.`
-  if (next.kind === "turn-on") return `Next up: ${row.name.toLowerCase()}. You asked for ${preferencePhrase("turn-on", pass.turnOnPreference)}.`
+  if (next.kind === "blowout") return `${preferenceStatement("blowout", pass.blowoutPreference)}. ${SCHEDULE_NOTE}`
+  if (next.kind === "turn-on") return `${preferenceStatement("turn-on", pass.turnOnPreference)}. ${SCHEDULE_NOTE}`
   return `Next up: ${row.name.toLowerCase()} in ${row.when}.`
 }

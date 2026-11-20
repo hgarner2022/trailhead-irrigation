@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { AddToCalendarLinks } from "@/components/blocks/AddToCalendarLinks"
-import { BookedCard } from "@/components/blocks/BookedCard"
+import { BookedCard, type BookedVisitLine } from "@/components/blocks/BookedCard"
 import { channelWords, type ContactChannel } from "@/components/blocks/ContactPreference"
 import { photoCount } from "@/components/blocks/PhotoPicker"
 import { clock12, type DayTimePick } from "@/lib/booking/day-time"
@@ -43,6 +43,13 @@ function Trail({ lines }: { lines: { key: string; lead: string; text: string }[]
   )
 }
 
+/** A Season Pass bought on a date: its name, one card line per visit (the exact day and time or the preference), and the visits that have an exact day for the reminder and the calendar. */
+export interface BookedPass {
+  name: string
+  lines: BookedVisitLine[]
+  exact: { name: string; day: string; start: string }[]
+}
+
 export interface BookingBookedProps {
   service: string
   where: string
@@ -56,9 +63,11 @@ export interface BookingBookedProps {
   callback?: boolean
   quote?: boolean
   onOpenAccount?: () => void
+  /** a Season Pass: the card lists every visit */
+  pass?: BookedPass
 }
 
-export function BookingBooked({ service, where, channel, phone, email, pick, photos, callback, quote, onOpenAccount }: BookingBookedProps) {
+export function BookingBooked({ service, where, channel, phone, email, pick, photos, callback, quote, onOpenAccount, pass }: BookingBookedProps) {
   const links = (
     <div data-slot="done-links" className="mt-8 flex flex-col items-start">
       <p data-slot="done-account" className="text-base text-muted-foreground">
@@ -74,6 +83,29 @@ export function BookingBooked({ service, where, channel, phone, email, pick, pho
     </div>
   )
   const photoLine = photos > 0 && <p data-slot="done-photos" className="mt-4 text-base text-foreground">{`You added ${photoCount(photos)}.`}</p>
+  if (pass && !quote && !callback) {
+    const sent = channel === "text" ? `We're texting your confirmation to ${phoneWords(phone)}.` : channel === "email" ? `We're emailing your confirmation to ${email}.` : `We're texting your confirmation to ${phoneWords(phone)} and emailing it to ${email}.`
+    return (
+      <div>
+        <h2 className="mb-5 font-display text-4xl leading-none text-navy">{`Your ${pass.name} is booked.`}</h2>
+        <BookedCard service={pass.name} visits={pass.lines} where={where} />
+        {photoLine}
+        <Trail
+          lines={[
+            { key: "now", lead: "Now", text: sent },
+            ...pass.exact.map((v) => ({ key: v.name, lead: longDay(dayBefore(v.day)), text: `A reminder by ${channelWords(channel)}: Ryan is coming tomorrow at ${clock12(v.start)} for your ${v.name.toLowerCase()}.` })),
+            { key: "after", lead: "After each visit", text: "You pay by card, check, Venmo or cash. We email your receipt." },
+          ]}
+        />
+        {pass.exact.length > 0 && (
+          <div className="mt-6">
+            <AddToCalendarLinks googleHref="https://calendar.google.com/calendar/render?action=TEMPLATE" icsHref="/api/visits/v1/calendar.ics?token=t" />
+          </div>
+        )}
+        {links}
+      </div>
+    )
+  }
   if (quote || callback || !pick?.day || !pick.start) {
     const dest = channel === "email" ? email : channel === "text" ? phoneWords(phone) : `${phoneWords(phone)} and ${email}`
     return (

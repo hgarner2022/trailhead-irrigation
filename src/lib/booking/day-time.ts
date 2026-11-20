@@ -53,17 +53,30 @@ function timesFor(minutes: number, taken: readonly string[], best: string | null
   return out
 }
 
+/** The five route days a fixture offers from `from`: Tuesdays and Thursdays on or after it, as YYYY-MM-DD. */
+function routeDays(from: string): string[] {
+  const out: string[] = []
+  const d = new Date(`${from}T12:00:00Z`)
+  while (out.length < 5) {
+    if (d.getUTCDay() === 2 || d.getUTCDay() === 4) out.push(d.toISOString().slice(0, 10))
+    d.setUTCDate(d.getUTCDate() + 1)
+  }
+  return out
+}
+
 /**
- * Five days for the stories: Erie's route days (Tuesdays and Thursdays) from tomorrow, the second marked best with "We're already in Erie that day" and its best time
- * "10:30 am", the first nearly full. `minutes` sizes the times to the service (a 60 minute turn-on has more starts than a 120 minute repair).
+ * Five days for the stories: Erie's route days (Tuesdays and Thursdays) from `from` (the first day the visit may be offered: tomorrow, or the day its window opens, whichever is later),
+ * the second marked best with "We're already in Erie that day" and its best time "10:30 am", the first nearly full. `minutes` sizes the times to the service (a 60 minute turn-on has more
+ * starts than a 120 minute repair). With no `from` they are the April days of 2027 the stories open on.
  */
-export function fixtureDayTimes(minutes = 120, town = "Erie"): DayTimeOffer[] {
+export function fixtureDayTimes(minutes = 120, town = "Erie", from = "2027-04-15"): DayTimeOffer[] {
   const busy = ["08:30", "09:30", "11:30", "13:00", "14:30"]
+  const [d1, d2, d3, d4, d5] = routeDays(from) as [string, string, string, string, string]
   return [
-    { day: "2027-04-15", times: timesFor(minutes, [...busy, "08:00", "09:00", "10:00", "10:30", "11:00", "12:00", "12:30", "13:30", "14:00"], null) },
-    { day: "2027-04-20", best: true, note: `We're already in ${town} that day`, times: timesFor(minutes, ["08:00", "12:00"], "10:30") },
-    { day: "2027-04-22", times: timesFor(minutes, busy, null) },
-    { day: "2027-04-27", times: timesFor(minutes, ["09:00"], null) },
-    { day: "2027-04-29", times: timesFor(minutes, [], null) },
+    { day: d1, times: timesFor(minutes, [...busy, "08:00", "09:00", "10:00", "10:30", "11:00", "12:00", "12:30", "13:30", "14:00"], null) },
+    { day: d2, best: true, note: `We're already in ${town} that day`, times: timesFor(minutes, ["08:00", "12:00"], "10:30") },
+    { day: d3, times: timesFor(minutes, busy, null) },
+    { day: d4, times: timesFor(minutes, ["09:00"], null) },
+    { day: d5, times: timesFor(minutes, [], null) },
   ]
 }

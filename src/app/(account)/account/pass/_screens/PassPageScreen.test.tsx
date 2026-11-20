@@ -17,7 +17,7 @@ describe("PassPageScreen", () => {
     expect(rows().map((r) => r.textContent)).toEqual([
       "Spring turn-on · $145May 3Done",
       "Mid-season inspection · $145JulyJuly",
-      "Fall blowout · $95Mid OctoberChangePreferred",
+      "Fall blowout · $95Preference: Mid OctoberWe'll schedule it about two weeks before and tell you the day.ChangePreferred",
     ])
     expect(document.body.textContent).not.toMatch(/Not scheduled|Scheduled|Completed|Reserved|Week of/)
     expect(screen.getByText("Visa ending 4242, expires 08/28")).toBeInTheDocument()

@@ -48,6 +48,10 @@ export const REVIEW_PARTS: ReviewPart[] = [
       { id: "customer-booking-form--address-outside-area-phone", label: "An address we don't serve", look: "It says so under the address with the six towns and Ryan's number, and Continue stays off." },
       { id: "customer-booking-form--day-phone", label: "The booking form", look: "The day and exact time come first and contact comes after, so an abandoned booking leaves nothing." },
       { id: "customer-booking-form--contact-filled-phone", label: "The marketing box on contact", look: "Tips and offers by email and by text are unticked until the customer ticks them." },
+      { id: "customer-booking-form-season-pass--april-services-phone", label: "The Season Pass in the booking form", look: "In April the pass lists the spring turn-on (opens Apr 25, 1 hour) and the fall blowout (opens Oct 1, 30 minutes) with each price, and the total only for the visits still ahead." },
+      { id: "customer-booking-form-season-pass--april-preference-phone", label: "A pass visit that is months away", look: "The fall blowout asks Early, Mid or Late with the window's real dates instead of a day, and says it is scheduled about two weeks before." },
+      { id: "customer-booking-form-season-pass--april-booked-phone", label: "The Season Pass booked card", look: "The card lists every visit, the turn-on with its exact day and time and the blowout as a preference." },
+      { id: "screens-account-season-pass-purchase--home-april-phone", label: "The Season Pass in the account", look: "Home and the pass page show the next visit exact and the other visit with its preference and a Change control." },
       { id: "customer-walkthrough-clickable--walkthrough", label: "The texts and emails", look: "Step 2 of the walkthrough shows every text and email in the order a customer meets them." },
       { id: "customer-walkthrough-clickable--walkthrough", label: "The account, reschedule and cancel", look: "Steps 3 and 4: Home, a visit, Reschedule with a few days to pick from, Cancel and the canceled page." },
       { id: "customer-walkthrough-clickable--walkthrough", label: "Paying", look: "Steps 5 and 6: Pay now, the pay page, the card button and the receipt in each way of paying." },
@@ -105,6 +109,6 @@ export const CHANGED_SINCE_LAST_REVIEW: string[] = [
   "Quotes: sent from the job, approved from a link with Approve and Decline. A deposit is optional, paid at Approve, and Ryan can mark a quote approved by hand.",
   "Booking form: the zip step is gone. It opens on the address, which qualifies the yard, so it is six steps instead of seven (four instead of five for a request for a quote). No Call Ryan in the header, a Close button and a Back button on every step, and Rachio, water efficiency and installation are bookable. Only Christmas lights and the larger repair are requests.",
   "Messages: every email and text the customer can get is in one section, with a redesigned layout shown next to the current one.",
-  "Customer account: the invoice to pay is the first thing on Home.",
+  "Season Pass booking: the pass can be bought any month. It holds only the visits still ahead; a visit that is open now gets an exact day and time and one months away gets Early, Mid or Late, scheduled about two weeks before. The pass auto-renews each season until the customer cancels, and the agreement wording is a placeholder for you to write. Customer account: the invoice to pay is still the first thing on Home.",
   "Status colours, Collect payment and receipts, Refunded, customer status, consent, and the account menu at the bottom left of the rail are all in, as before.",
 ]
