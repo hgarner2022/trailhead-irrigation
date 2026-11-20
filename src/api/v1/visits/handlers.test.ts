@@ -201,7 +201,7 @@ describe("visits.move texts, Ryan's line and Waiting on customer (step 4)", () =
     expect(await textsOf("p4-blowout")).toHaveLength(0)
     await expect(move({ id: "p4-blowout", personId: "person_truck-1", scheduledOn: "2027-10-13", startTime: "10:00" })).resolves.toMatchObject({ scheduledOn: "2027-10-13", startTime: "10:00" })
     // a chosen time is in the text: the window and who is coming
-    expect((await textsOf("p4-blowout")).at(-1)!.body).toContain("moved to Wed, Oct 13, 10 am to 12 pm.")
+    expect((await textsOf("p4-blowout")).at(-1)!.body).toContain("moved to Wed, Oct 13 at 10:00 am.")
   })
 
   it("asks a must-be-home property to reply YES and reads Waiting on customer until a confirmation, a later move or the customer's own pick", async () => {
@@ -255,7 +255,7 @@ describe("visits.move texts, Ryan's line and Waiting on customer (step 4)", () =
     await move({ id: "p8-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-24", startTime: "10:00" })
     const texts = await textsOf("p8-turn-on")
     expect(texts).toHaveLength(before + 1)
-    expect(texts.at(-1)!.body).toMatch(/^Trailhead: your spring turn-on is still Mon, May 24, now 10 am to 12 pm\. /)
+    expect(texts.at(-1)!.body).toMatch(/^Trailhead: your spring turn-on is still Mon, May 24, now at 10:00 am\. /)
     const evs = await eventsOf(db, { kind: "visit.moved", aboutId: "p8-turn-on" })
     expect(evs.at(-1)!.detail).toMatchObject({ texted: true, sameDay: true, startTime: "10:00", day: "2027-05-24" })
     // the same time again is nothing new: no second text
