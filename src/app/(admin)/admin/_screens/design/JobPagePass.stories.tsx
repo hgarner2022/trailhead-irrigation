@@ -118,8 +118,9 @@ export const SeasonPassFlowTest: Story = {
     await confirm("Send and start")
     await waitFor(() => expect(c.getAllByRole("button", { name: "Mark done" }).length).toBeGreaterThan(0))
     await userEvent.click(c.getAllByRole("button", { name: "Mark done" })[0]!)
-    await confirm("Mark done")
-    await expect(within(await body.findByRole("dialog")).getByText(/Andrea gets a receipt by text\./)).toBeInTheDocument()
+    // Mark done opens "How is this paid?" at once, so there is no moment with no dialog to wait for.
+    await userEvent.click(within(await body.findByRole("dialog")).getByRole("button", { name: "Mark done" }))
+    await waitFor(() => expect(within(body.getByRole("dialog")).getByText(/Andrea gets a receipt by text\./)).toBeInTheDocument())
     await userEvent.click(within(await body.findByRole("dialog")).getByRole("button", { name: /^Charge \$145/ }))
     await waitFor(() => expect(canvasElement.querySelectorAll("[data-slot=trip-row]")[0]).toHaveTextContent("Paid, card"))
     await expect(canvasElement.querySelectorAll("[data-slot=trip-row]")[1]).toHaveAttribute("data-open", "true")
