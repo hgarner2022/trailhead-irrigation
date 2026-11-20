@@ -92,10 +92,10 @@ export const REVIEW_PARTS: ReviewPart[] = [
 ]
 
 export const CHANGED_SINCE_LAST_REVIEW: string[] = [
-  "Status colours: one colour for each status word on every pill, in one place.",
-  "Collect payment and receipts: How is this paid? is one dialog, and the customer always gets a receipt.",
-  "Customer status: Active, Past customer, Do not service and Archived are read from the customer's jobs.",
-  "Consent: a Consent card with a history, and marketing off until the customer says yes.",
-  "Booking: the day and time come first and contact after, with the marketing box on contact.",
-  "The account menu moved to the bottom left of the rail, with your name, Profile, Help and Sign out.",
+  "Requests: a new Requests item in the left menu. A website request waits there until Ryan accepts it, and only then becomes a customer and a job.",
+  "Quotes: sent from the job, approved from a link with Approve and Decline. A deposit is optional, paid at Approve, and Ryan can mark a quote approved by hand.",
+  "Booking form: no Call Ryan in the header, a Close button and a Back button on every step, and Rachio, water efficiency and installation are bookable. Only Christmas lights and the larger repair are requests.",
+  "Messages: every email and text the customer can get is in one section, with a redesigned layout shown next to the current one.",
+  "Customer account: the invoice to pay is the first thing on Home.",
+  "Status colours, Collect payment and receipts, Refunded, customer status, consent, and the account menu at the bottom left of the rail are all in, as before.",
 ]
