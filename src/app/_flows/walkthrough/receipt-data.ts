@@ -36,7 +36,7 @@ export function receiptOf(way: Exclude<Way, "refund">, ref?: string): ReceiptOut
     business: { name: BUSINESS.name, phone: BUSINESS.phone },
     customerName: "Andrea Dalton",
     address: STREET,
-    jobName: "Sprinkler repair visit",
+    jobName: "Sprinkler repair",
     lines: [{ name: "Repair", quantity: 1, unitPrice: 145 }],
     amount: 145,
     method: way === "card" ? "card_now" : way,

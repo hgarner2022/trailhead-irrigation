@@ -22,6 +22,9 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+// A story that plays a whole path is two: the visible one opens still on its first step; its hidden twin (`!dev`, `!autodocs`: not in the sidebar, still run by `test:stories`) holds the play.
+const HIDDEN = ["!dev", "!autodocs"]
+
 const laptop = { viewport: { value: "laptop", isRotated: false } }
 const phone = { viewport: { value: "phone", isRotated: false } }
 const pass = (state: PassState, globals: typeof laptop, defaultOpen?: string): Story => ({ args: { data: passPageOf(state), defaultOpen }, globals })
@@ -77,6 +80,11 @@ const flowShell = () => (
 /** The Season Pass branch, clickable: trip 1 goes Scheduled, Today, Active, Done and Charged ("Charge the card as agreed"), then trip 2 is next ahead and opens by itself. */
 export const SeasonPassFlow: Story = {
   name: "Season Pass flow",
+  globals: laptop,
+  render: flowShell,
+}
+export const SeasonPassFlowTest: Story = {
+  name: "Season Pass flow (test)", tags: HIDDEN,
   globals: laptop,
   render: flowShell,
   play: async ({ canvasElement }) => {

@@ -43,6 +43,9 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+// A story that plays a whole path is two: the visible one opens still on its first step; its hidden twin (`!dev`, `!autodocs`: not in the sidebar, still run by `test:stories`) holds the play.
+const HIDDEN = ["!dev", "!autodocs"]
+
 const on = (args: Args, name: string, extra: Partial<Story> = {}): { phone: Story; laptop: Story } => ({
   phone: { ...phone, name: `${name}, phone`, args, ...extra },
   laptop: { ...laptop, name: `${name}, laptop`, args, ...extra },
@@ -201,6 +204,10 @@ export const PassBookedPhone: Story = { ...passBooked.phone, name: "Season Pass 
 export const WholePathPhone: Story = {
   ...phone,
   name: "Whole path, phone",
+}
+export const WholePathPhoneTest: Story = {
+  ...phone,
+  name: "Whole path, phone (test)", tags: HIDDEN,
   play: async ({ canvasElement, userEvent }) => {
     const c = within(canvasElement)
     const next = async (name: string | RegExp = "Continue") => userEvent.click(await c.findByRole("button", { name }))
@@ -234,6 +241,10 @@ export const WholePathPhone: Story = {
 export const QuotePathPhone: Story = {
   ...phone,
   name: "Request a quote path, phone",
+}
+export const QuotePathPhoneTest: Story = {
+  ...phone,
+  name: "Request a quote path, phone (test)", tags: HIDDEN,
   play: async ({ canvasElement, userEvent }) => {
     const c = within(canvasElement)
     const next = async (name: string | RegExp = "Continue") => userEvent.click(await c.findByRole("button", { name }))

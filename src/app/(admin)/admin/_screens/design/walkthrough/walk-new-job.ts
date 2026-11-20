@@ -43,6 +43,9 @@ function bringBack(customerId: string | undefined, onActiveAgain?: (name: string
   onActiveAgain?.(page.name)
 }
 
+/** A job is named by its service: the catalogue's "Sprinkler repair visit" is a job called "Sprinkler repair". */
+const jobName = (name?: string) => name?.replace(/ visit$/, "")
+
 /** The two actions the sheet calls: they make a row and answer its id, as the API would. */
 export function makeNewJobActions(onMade: () => void, onActiveAgain?: (name: string) => void): VisitActions {
   const actions = {
@@ -51,8 +54,8 @@ export function makeNewJobActions(onMade: () => void, onActiveAgain?: (name: str
       const { name, property } = whoFor(input.customerId, input.newCustomer)
       bringBack(input.customerId, onActiveAgain)
       const id = `new-${++seq}`
-      const title = service?.name ?? "Job"
-      const row: GridJob = { id, name, service: service?.name ?? "Sprinkler repair visit", title, property, stage: input.scheduledOn ? "scheduled" : "unscheduled", who: "No one yet", season: "", visits: "0 of 1 done", total: input.price ?? 0, billingState: null, billing: "", next: input.scheduledOn ? DAY.format(new Date(`${input.scheduledOn}T12:00:00Z`)) : "Unscheduled" }
+      const title = jobName(service?.name) ?? "Job"
+      const row: GridJob = { id, name, service: jobName(service?.name) ?? "Sprinkler repair", title, property, stage: input.scheduledOn ? "scheduled" : "unscheduled", who: "No one yet", season: "", visits: "0 of 1 done", total: input.price ?? 0, billingState: null, billing: "", next: input.scheduledOn ? DAY.format(new Date(`${input.scheduledOn}T12:00:00Z`)) : "Unscheduled" }
       registerJob(row)
       onMade()
       return { ok: true as const, data: { id: `v-${id}`, jobId: id } }

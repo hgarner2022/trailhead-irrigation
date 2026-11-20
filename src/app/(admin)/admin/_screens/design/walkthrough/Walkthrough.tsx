@@ -86,11 +86,12 @@ function Strip({ stack, onJump, onStartOver }: { stack: Route[]; onJump: (index:
 const INTERACTIVE = "a, button, input, select, textarea, label, [role=checkbox], [role=menuitem], [role=combobox]"
 const KIND_ORDER = ["invoice", "job", "customer"]
 
-export function Walkthrough({ start = START }: { start?: Route }) {
+/** `start` is the first screen; `startStack` is a whole way in (so Back has somewhere to go); `startSearch` opens Cmd+K and `startSheet` the New job sheet, so a story can show either with no script. */
+export function Walkthrough({ start = START, startStack, startSearch = false, startSheet }: { start?: Route; startStack?: Route[]; startSearch?: boolean; startSheet?: { customer?: string } }) {
   useInvoicesInNav()
-  const [stack, setStack] = useState<Route[]>([start])
+  const [stack, setStack] = useState<Route[]>(startStack ?? [start])
   const [epoch, setEpoch] = useState(0)
-  const [sheet, setSheet] = useState<{ customer?: string; key: number } | null>(null)
+  const [sheet, setSheet] = useState<{ customer?: string; key: number } | null>(startSheet ? { customer: startSheet.customer, key: 1 } : null)
   const [made, setMade] = useState(0)
   const [message, setMessage] = useState<{ channel: "text" | "email"; paid: Paid } | null>(null)
   const receiptToast = useReceiptToast()
@@ -188,7 +189,7 @@ export function Walkthrough({ start = START }: { start?: Route }) {
 
   return (
     <div data-slot="walkthrough" data-route={`${top.screen}${top.id ? `:${top.id}` : ""}`} style={{ display: "contents" }} onClickCapture={onClickCapture} onKeyDownCapture={onKeyDownCapture}>
-      <AdminShell key={`${top.screen}:${top.id ?? ""}`} current={SECTION_OF[top.screen]} user={USER} onSearch={async (q) => searchWorld(q)} profileHref="/admin/profile" helpHref="/admin/help">
+      <AdminShell key={`${top.screen}:${top.id ?? ""}`} current={SECTION_OF[top.screen]} user={USER} defaultSearchOpen={startSearch} onSearch={async (q) => searchWorld(q)} profileHref="/admin/profile" helpHref="/admin/help">
         <ToastBridge toastRef={toastRef} later={laterToast} />
         <Strip stack={stack} onJump={jump} onStartOver={startOver} />
         <div key={`${epoch}-${top.screen}-${top.id ?? ""}`}>

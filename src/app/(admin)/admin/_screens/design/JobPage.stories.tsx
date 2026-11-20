@@ -22,6 +22,9 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+// A story that plays a whole path is two: the visible one opens still on its first step; its hidden twin (`!dev`, `!autodocs`: not in the sidebar, still run by `test:stories`) holds the play.
+const HIDDEN = ["!dev", "!autodocs"]
+
 const laptop = { viewport: { value: "laptop", isRotated: false } }
 const phone = { viewport: { value: "phone", isRotated: false } }
 const story = (state: JobState, globals: typeof laptop): Story => ({ args: { job: jobPageOf(state) }, globals, parameters: { docs: { description: { story: STATE_NOTES[state] } } } })
@@ -120,6 +123,11 @@ export const FlowBothChannels: Story = {
   name: "Flow, both channels",
   globals: laptop,
   render: () => shell(<JobFlow channel="both" />),
+}
+export const FlowBothChannelsTest: Story = {
+  name: "Flow, both channels (test)", tags: HIDDEN,
+  globals: laptop,
+  render: () => shell(<JobFlow channel="both" />),
   play: async ({ canvasElement }) => {
     const body = within(document.body)
     const c = within(canvasElement)
@@ -134,6 +142,11 @@ export const FlowBothChannels: Story = {
 /** Schedule, Mark done, charge the card on file, then Refund: Billing reads Paid, card and then Refunded. */
 export const FlowCardChargeAndRefund: Story = {
   name: "Flow, card charge and refund",
+  globals: laptop,
+  render: () => shell(<JobFlow />),
+}
+export const FlowCardChargeAndRefundTest: Story = {
+  name: "Flow, card charge and refund (test)", tags: HIDDEN,
   globals: laptop,
   render: () => shell(<JobFlow />),
   play: async ({ canvasElement }) => {

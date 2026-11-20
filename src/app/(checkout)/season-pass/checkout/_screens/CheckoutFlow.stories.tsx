@@ -38,6 +38,9 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+// A story that plays a whole path is two: the visible one opens still on its first step; its hidden twin (`!dev`, `!autodocs`: not in the sidebar, still run by `test:stories`) holds the play.
+const HIDDEN = ["!dev", "!autodocs"]
+
 /** One box; type "123" to see the fixture's matches. */
 export const Address: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
@@ -212,6 +215,11 @@ export const Done: Story = {
 
 /** Every question answered from the first screen through to the pass card. */
 export const Walkthrough: Story = {
+  args: { onComplete: fn() },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+export const WalkthroughTest: Story = {
+  name: "Walkthrough (test)", tags: HIDDEN,
   args: { onComplete: fn() },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent, args }) => {

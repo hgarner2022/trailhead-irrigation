@@ -62,6 +62,8 @@ export interface AdminShellProps {
   helpHref?: string
   /** set when the signed-in email is also a customer's: Open as customer */
   customerHref?: string
+  /** the search box starts open (a story that shows Cmd+K without a script) */
+  defaultSearchOpen?: boolean
   /** whether the rail starts expanded on a laptop; under 1024px it starts collapsed either way */
   defaultOpen?: boolean
   children: ReactNode
@@ -137,14 +139,14 @@ function Rail({ current, switcher, user, profileHref, helpHref, customerHref, on
   )
 }
 
-export function AdminShell({ current: initial, user, switcher, onSignOut, onSearch, profileHref, helpHref, customerHref, defaultOpen = true, children }: AdminShellProps) {
+export function AdminShell({ current: initial, user, switcher, onSignOut, onSearch, profileHref, helpHref, customerHref, defaultSearchOpen = false, defaultOpen = true, children }: AdminShellProps) {
   // The rail follows the address, not the server's first render: the layout stays mounted while the reader moves between
   // pages, so a section chosen once on the server would stay lit (Home on every page). Outside the app, in the catalog, `current` is used.
   const pathname = usePathname()
   const current = pathname?.startsWith("/admin") ? sectionOf(pathname) : initial
   const router = useRouter()
   const phone = useMedia("(max-width: 767px)")
-  const [searching, setSearching] = useState(false)
+  const [searching, setSearching] = useState(defaultSearchOpen)
   // Cmd or Ctrl+K opens the search from anywhere in the admin.
   useEffect(() => {
     if (!onSearch) return

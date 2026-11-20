@@ -100,7 +100,7 @@ const customerColumns: GridColumnDef<ListRow>[] = [
   { id: "next", accessorKey: "next", header: "Next visit" },
   { id: "unpaid", accessorKey: "unpaid", header: "Unpaid", cell: ({ row }) => <MoneyCell end text={row.original.unpaid ? money(row.original.unpaid) : null} />, meta: { align: "right", csv: (r) => String((r as CustomerListRow).unpaid) } },
   { id: "pass", accessorKey: "pass", header: "Season Pass", cell: ({ row }) => (row.original.pass ? <StatusPill status="active" label={row.original.pass} /> : null) },
-  { id: "newjob", header: "", enableSorting: false, cell: ({ row }) => <Button asChild variant="outline" size="sm" className="min-h-8"><a href={`/admin/jobs?new=1&customer=${row.original.id}`} aria-label={`New job for ${row.original.name}`}>New job</a></Button> },
+  { id: "newjob", header: () => <span className="sr-only">Actions</span>, enableSorting: false, cell: ({ row }) => <Button asChild variant="outline" size="sm" className="min-h-8"><a href={`/admin/jobs?new=1&customer=${row.original.id}`} aria-label={`New job for ${row.original.name}`}>New job</a></Button> },
 ]
 const customerCard: GridCardSlots = { title: "name", line: ["street"], state: "status", when: ["next"], money: "unpaid" }
 

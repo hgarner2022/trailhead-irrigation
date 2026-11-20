@@ -5,6 +5,9 @@ import { WalkthroughDocs } from "./WalkthroughDocs"
 
 // The admin walkthrough (Hannah, Nov 19 2026): one clickable admin prototype. Jobs, a job and its flow, the customer, Invoices and an invoice, joined by the
 // links the pages already draw. Nothing is wired to the API; Start over resets it.
+//
+// Every visible story here opens still, in its clean start state, with no script: a reviewer clicks. Each path that used to play itself is a hidden twin
+// named like the story plus " (test)" (tagged `!dev` and `!autodocs`, so it is not in the sidebar but still runs in `test:stories`).
 
 const meta = {
   title: "Admin/Walkthrough (clickable)",
@@ -22,63 +25,68 @@ type Story = StoryObj<typeof meta>
 
 const laptop = { viewport: { value: "laptop", isRotated: false } }
 const phone = { viewport: { value: "phone", isRotated: false } }
+const HIDDEN = ["!dev", "!autodocs"]
 
 const route = (canvasElement: HTMLElement) => canvasElement.querySelector("[data-slot=walkthrough]")?.getAttribute("data-route")
 
-/** Jobs is the start. Open Andrea Dalton's repair, run the flow to Billed, go to the customer from the chip, open an invoice from Billing, then Invoices in the rail and back to Jobs. */
-export const Laptop: Story = {
-  name: "Laptop",
-  globals: laptop,
-  play: async ({ canvasElement }) => {
-    const c = within(canvasElement)
-    await expect(await c.findByRole("heading", { level: 1, name: "Jobs" })).toBeInTheDocument()
-    // a job opens from its grid row
-    await userEvent.click((await c.findAllByRole("button", { name: "Andrea Dalton" }))[0]!)
-    await waitFor(() => expect(route(canvasElement)).toBe("job:andrea-repair"))
-    // the flow: Schedule, Mark done, send the invoice
-    const body = within(document.body)
-    await userEvent.click(await c.findByRole("button", { name: "Schedule" }))
-    await userEvent.click(await body.findByRole("button", { name: /Schedule and notify the customer/ }))
-    await userEvent.click(await c.findByRole("button", { name: "Mark done" }))
-    await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Mark done" }))
-    await userEvent.click(await body.findByRole("radio", { name: /Send an invoice/ }))
-    await userEvent.click(await body.findByRole("button", { name: "Send the invoice" }))
-    // Billing names the invoice: it opens inside the prototype
-    await userEvent.click((await c.findAllByRole("link", { name: /INV-2026-0042/ }))[0]!)
-    await waitFor(() => expect(route(canvasElement)).toBe("invoice:inv-42"))
-    // the customer opens from its chip
-    await userEvent.click((await c.findAllByRole("link", { name: /Andrea Dalton/ }))[0]!)
-    await waitFor(() => expect(route(canvasElement)).toBe("customer:andrea"))
-    await expect(await c.findByRole("heading", { level: 1, name: "Andrea Dalton" })).toBeInTheDocument()
-    // Invoices in the rail, then an invoice, then back to Jobs
-    await userEvent.click(await c.findByRole("link", { name: "Invoices" }))
-    await waitFor(() => expect(route(canvasElement)).toBe("invoices"))
-    await userEvent.click((await c.findAllByRole("link", { name: /INV-2026-0042/ }))[0]!)
-    await waitFor(() => expect(route(canvasElement)).toBe("invoice:inv-42"))
-    await expect(await c.findByRole("heading", { level: 1, name: /INV-2026-0042/ })).toBeInTheDocument()
-    await userEvent.click(await c.findByRole("link", { name: "Jobs" }))
-    await waitFor(() => expect(route(canvasElement)).toBe("jobs"))
-  },
+/** Open Andrea Dalton's repair, run the flow to Billed, go to the customer from the chip, open an invoice from Billing, then Invoices in the rail and back to Jobs. */
+const laptopPath: Story["play"] = async ({ canvasElement }) => {
+  const c = within(canvasElement)
+  await expect(await c.findByRole("heading", { level: 1, name: "Jobs" })).toBeInTheDocument()
+  // a job opens from its grid row
+  await userEvent.click((await c.findAllByRole("button", { name: "Andrea Dalton" }))[0]!)
+  await waitFor(() => expect(route(canvasElement)).toBe("job:andrea-repair"))
+  // the flow: Schedule, Mark done, send the invoice
+  const body = within(document.body)
+  await userEvent.click(await c.findByRole("button", { name: "Schedule" }))
+  await userEvent.click(await body.findByRole("button", { name: /Schedule and notify the customer/ }))
+  await userEvent.click(await c.findByRole("button", { name: "Mark done" }))
+  await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Mark done" }))
+  await userEvent.click(await body.findByRole("radio", { name: /Send an invoice/ }))
+  await userEvent.click(await body.findByRole("button", { name: "Send the invoice" }))
+  // Billing names the invoice: it opens inside the prototype
+  await userEvent.click((await c.findAllByRole("link", { name: /INV-2026-0042/ }))[0]!)
+  await waitFor(() => expect(route(canvasElement)).toBe("invoice:inv-42"))
+  // the customer opens from its chip
+  await userEvent.click((await c.findAllByRole("link", { name: /Andrea Dalton/ }))[0]!)
+  await waitFor(() => expect(route(canvasElement)).toBe("customer:andrea"))
+  await expect(await c.findByRole("heading", { level: 1, name: "Andrea Dalton" })).toBeInTheDocument()
+  // Invoices in the rail, then an invoice, then back to Jobs
+  await userEvent.click(await c.findByRole("link", { name: "Invoices" }))
+  await waitFor(() => expect(route(canvasElement)).toBe("invoices"))
+  await userEvent.click((await c.findAllByRole("link", { name: /INV-2026-0042/ }))[0]!)
+  await waitFor(() => expect(route(canvasElement)).toBe("invoice:inv-42"))
+  await expect(await c.findByRole("heading", { level: 1, name: /INV-2026-0042/ })).toBeInTheDocument()
+  await userEvent.click(await c.findByRole("link", { name: "Jobs" }))
+  await waitFor(() => expect(route(canvasElement)).toBe("jobs"))
 }
 
-/** The same path at 375: the tab bar and the record pages' phone layouts. */
+/** Jobs is the start. Nothing plays: click Andrea Dalton's repair and go. */
+export const Laptop: Story = { name: "Laptop", globals: laptop }
+export const LaptopTest: Story = { name: "Laptop (test)", globals: laptop, tags: HIDDEN, play: laptopPath }
+
+/** The same start at 375: the tab bar and the record pages' phone layouts. */
 export const Phone: Story = { name: "Phone", globals: phone }
 
 /** Starts on Home, the live screen over the repo's own fixture: the day's stops, the money strip and what needs you. */
-export const FromHome: Story = {
-  name: "From home",
+export const FromHome: Story = { name: "From home", args: { start: { screen: "home" } }, globals: laptop }
+export const FromHomeTest: Story = {
+  name: "From home (test)",
   args: { start: { screen: "home" } },
   globals: laptop,
+  tags: HIDDEN,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
     await expect(await c.findByRole("heading", { level: 1, name: "Today" })).toBeInTheDocument()
   },
 }
 
-/** Starts with Cmd+K open: type a name, street, phone or pass number and a hit opens its page. */
-export const FromSearch: Story = {
-  name: "From search",
+/** Cmd+K is open on Jobs: type a name, street, phone or pass number and a hit opens its page. */
+export const FromSearch: Story = { name: "From search", args: { startSearch: true }, globals: laptop }
+export const FromSearchTest: Story = {
+  name: "From search (test)",
   globals: laptop,
+  tags: HIDDEN,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
     await userEvent.click(await c.findByRole("button", { name: "Search" }))
@@ -90,34 +98,37 @@ export const FromSearch: Story = {
 }
 
 /** Record a check on Andrea's repair: the toast offers the receipt, and the receipt page is what Andrea would see, with the method and the check number. */
-export const Receipt: Story = {
-  name: "Receipt",
-  globals: laptop,
-  play: async ({ canvasElement }) => {
-    const c = within(canvasElement)
-    const body = within(document.body)
-    await userEvent.click((await c.findAllByRole("button", { name: "Andrea Dalton" }))[0]!)
-    await userEvent.click(await c.findByRole("button", { name: "Schedule" }))
-    await userEvent.click(await body.findByRole("button", { name: /Schedule and notify the customer/ }))
-    await userEvent.click(await c.findByRole("button", { name: "Mark done" }))
-    await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Mark done" }))
-    await userEvent.click(await body.findByRole("radio", { name: /Check/ }))
-    await userEvent.type(await body.findByLabelText(/Check number/), "2210")
-    await userEvent.click(await body.findByRole("button", { name: "Record the check" }))
-    // some versions of the dialog ask once more before the payment is recorded
-    const more = await body.findAllByRole("button", { name: /Record the payment/ }, { timeout: 800 }).catch(() => [])
-    if (more.length) await userEvent.click(more[more.length - 1]!)
-    await expect(await body.findByText("Recorded. Andrea gets a receipt by text.")).toBeInTheDocument()
-    await userEvent.click(await body.findByRole("button", { name: "View the receipt" }))
-    await waitFor(() => expect(route(canvasElement)).toMatch(/^receipt:check\|2210/))
-    await expect(await c.findByText("Check number")).toBeInTheDocument()
-  },
+const receiptPath: Story["play"] = async ({ canvasElement }) => {
+  const c = within(canvasElement)
+  const body = within(document.body)
+  await userEvent.click((await c.findAllByRole("button", { name: "Andrea Dalton" }))[0]!)
+  await userEvent.click(await c.findByRole("button", { name: "Schedule" }))
+  await userEvent.click(await body.findByRole("button", { name: /Schedule and notify the customer/ }))
+  await userEvent.click(await c.findByRole("button", { name: "Mark done" }))
+  await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Mark done" }))
+  await userEvent.click(await body.findByRole("radio", { name: /Check/ }))
+  await userEvent.type(await body.findByLabelText(/Check number/), "2210")
+  await userEvent.click(await body.findByRole("button", { name: "Record the check" }))
+  // some versions of the dialog ask once more before the payment is recorded
+  const more = await body.findAllByRole("button", { name: /Record the payment/ }, { timeout: 800 }).catch(() => [])
+  if (more.length) await userEvent.click(more[more.length - 1]!)
+  await expect(await body.findByText("Recorded. Andrea gets a receipt by text.")).toBeInTheDocument()
+  await userEvent.click(await body.findByRole("button", { name: "View the receipt" }))
+  await waitFor(() => expect(route(canvasElement)).toMatch(/^receipt:check\|2210/))
+  await expect(await c.findByText("Check number")).toBeInTheDocument()
 }
+const receiptStack = [{ screen: "jobs" }, { screen: "job", id: "andrea-repair" }, { screen: "receipt", id: "check|2210" }] as const
+
+/** The receipt Andrea gets after a check (number 2210) is recorded on her repair, with Back to the job. */
+export const Receipt: Story = { name: "Receipt", args: { startStack: [...receiptStack] }, globals: laptop }
+export const ReceiptTest: Story = { name: "Receipt (test)", globals: laptop, tags: HIDDEN, play: receiptPath }
 
 /** New job from Andrea's page: she is already chosen (with Change), her property and her last job are under her name, the zones are filled in, and the new job opens as Unscheduled on her page. */
-export const NewJobFromCustomer: Story = {
-  name: "New job from a customer",
+export const NewJobFromCustomer: Story = { name: "New job from a customer", globals: laptop, args: { start: { screen: "customer", id: "andrea" }, startSheet: { customer: "andrea" } } }
+export const NewJobFromCustomerTest: Story = {
+  name: "New job from a customer (test)",
   globals: laptop,
+  tags: HIDDEN,
   args: { start: { screen: "customer", id: "andrea" } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
@@ -129,10 +140,12 @@ export const NewJobFromCustomer: Story = {
   },
 }
 
-/** New job is the real sheet: pick a customer, a service, Add job, and the new job opens as Unscheduled. */
-export const NewJobSheet: Story = {
-  name: "New job",
+/** New job is the real sheet, open on Jobs with no customer chosen: pick a customer, a service, Add job, and the new job opens as Unscheduled. */
+export const NewJobSheet: Story = { name: "New job", globals: laptop, args: { startSheet: {} } }
+export const NewJobSheetTest: Story = {
+  name: "New job (test)",
   globals: laptop,
+  tags: HIDDEN,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
     await userEvent.click((await c.findAllByRole("button", { name: "New job" }))[0]!)
@@ -141,9 +154,11 @@ export const NewJobSheet: Story = {
 }
 
 /** Starts on Customers: Andrea, Marcus, Dale, Hal (Active), Priya (New) and Ivy (Past customer, Do not service). Show archived adds Gus; each name opens its page. */
-export const CustomersByStatus: Story = {
-  name: "Customers by status",
+export const CustomersByStatus: Story = { name: "Customers by status", globals: laptop, args: { start: { screen: "customers" } } }
+export const CustomersByStatusTest: Story = {
+  name: "Customers by status (test)",
   globals: laptop,
+  tags: HIDDEN,
   args: { start: { screen: "customers" } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
@@ -159,9 +174,11 @@ export const CustomersByStatus: Story = {
 }
 
 /** Gus Pratt is archived, so his page has the banner. New job for him brings him back: a toast says so on the job that opens, and his page reads Active with no banner. */
-export const NewJobUnarchives: Story = {
-  name: "New job for an archived customer",
+export const NewJobUnarchives: Story = { name: "New job for an archived customer", globals: laptop, args: { start: { screen: "customer", id: "gus" } } }
+export const NewJobUnarchivesTest: Story = {
+  name: "New job for an archived customer (test)",
   globals: laptop,
+  tags: HIDDEN,
   args: { start: { screen: "customer", id: "gus" } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)

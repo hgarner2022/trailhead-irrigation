@@ -51,7 +51,7 @@ export function RefundPage() {
             <dt className="text-sm font-medium text-muted-foreground">Refunded to</dt>
             <dd className="text-base text-foreground">{CARD}</dd>
             <dt className="text-sm font-medium text-muted-foreground">For</dt>
-            <dd className="text-base text-foreground">Sprinkler repair visit, 480 Briggs St, Erie</dd>
+            <dd className="text-base text-foreground">Sprinkler repair, 480 Briggs St, Erie</dd>
           </dl>
           <p className="flex items-baseline justify-between gap-4 text-xl font-semibold text-foreground">
             <span>Amount refunded</span>
