@@ -5,7 +5,7 @@ import { AdminShell } from "@/components/blocks/AdminShell"
 import { JobsGridDesign } from "../JobsGridDesign"
 import { allRows } from "../walkthrough/jobs-data"
 import { QuoteJobPage, type QuoteJobPageProps } from "./QuoteJobPage"
-import { QUOTES_NOW, QUOTE_JOB_FIXTURES, fixtureJob, type QuoteJob } from "./quote-model"
+import { DESIGN_VISIT_JOB, QUOTES_NOW, QUOTE_JOB_FIXTURES, fixtureJob, jobFromRequest, type QuoteJob } from "./quote-model"
 import { createQuoteStore } from "./quote-store"
 
 // The quote on the job (Hannah, Nov 20 2026): a job from a request reads Needs a quote, Ryan prices its lines and sends a quote with an optional deposit, the
@@ -88,6 +88,15 @@ const s = (job: () => QuoteJob, globals: typeof laptop, extra: Omit<QuoteJobPage
 /** A job from a request: one unpriced line holds the customer's words. The primary, Send a quote, is off until a line has a price. */
 export const NeedsAQuote: Story = { ...s(dana, laptop), name: "Needs a quote" }
 export const NeedsAQuotePhone: Story = { ...s(dana, phone), name: "Needs a quote, phone" }
+
+/** An installation booked online as a design visit: the visit is on the job and done, the price reads "Set at the visit", the job needs a quote, and Ryan sends the quote from the job once he has priced the line. The Quote section is first. */
+const install = (): QuoteJob => structuredClone(DESIGN_VISIT_JOB)
+export const InstallAfterDesignVisit: Story = { ...s(install, laptop), name: "Installation after its design visit" }
+export const InstallAfterDesignVisitPhone: Story = { ...s(install, phone), name: "Installation after its design visit, phone" }
+
+/** Create job on a priced service (a $145 repair): the job is ready to schedule, Unscheduled, with no quote. The customer's words are its first note and it reads "Created from a request". */
+const direct = (): QuoteJob => jobFromRequest({ jobId: "q-tom", requestId: "rq-tom", customerId: "other-tom-ellis", customer: "Tom Ellis", first: "Tom", phone: "(970) 555-0133", email: "tom.ellis@example.com", contact: "text", service: "Sprinkler repair", street: "64 Hollis Ct", town: "Louisville", words: "Two heads in the side yard are spraying the fence. Hoping someone can come this week.", receivedAt: "2026-11-17T15:00:00Z", at: QUOTES_NOW, price: 145, quote: false })
+export const CreatedFromARequest: Story = { ...s(direct, laptop), name: "Created from a request, ready to schedule" }
 
 /** Priced lines: Send a quote is the one primary action. */
 export const ReadyToSend: Story = { ...s(priced, laptop), name: "Ready to send" }

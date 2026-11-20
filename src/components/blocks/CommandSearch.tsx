@@ -25,7 +25,7 @@ export interface CommandSearchProps {
 
 const GROUPS: { kind: RecordKey | "request"; heading: string; icon: typeof Users }[] = [
   { kind: "customer", heading: "Customers", icon: Users },
-  // a request not yet accepted (New and Seen) is found here and nowhere else; once accepted its customer and job are (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.7)
+  // a request still waiting (New and Seen) is found here and nowhere else; once a job is made of it, its customer and job are (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.7)
   { kind: "request", heading: "Requests", icon: Inbox },
   { kind: "job", heading: "Jobs", icon: Briefcase },
   { kind: "visit", heading: "Days", icon: CalendarDays },

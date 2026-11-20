@@ -37,7 +37,16 @@ export function decisionFact(job: QuoteJob): string {
   return `Declined by ${job.first} on ${on}`
 }
 
-export const historyLines = (job: QuoteJob): TimelineLine[] => [...job.history].reverse().map((h, i) => ({ id: `h${i}`, at: h.at, actor: h.actor, what: h.what, kind: "event" as const }))
+export const historyLines = (job: QuoteJob): TimelineLine[] => [...job.history].reverse().map((h, i) => ({ id: `h${i}`, at: h.at, actor: h.actor, what: h.what, kind: "event" as const, ...(h.note ? { note: h.note } : {}) }))
+
+/** The visit already on the job: an installation booked online starts with its design visit, and the price is set at it. */
+export function VisitCard({ visit }: { visit: NonNullable<QuoteJob["visit"]> }) {
+  return (
+    <SectionCard title="Visit" id="visit-h">
+      <RecordFacts divided rows={[["Visit", visit.name], ["Day", dayOf(visit.day)], ["Who", visit.who], ["Status", visit.done ? "Done" : "Scheduled"]]} />
+    </SectionCard>
+  )
+}
 
 /** The summary band: the quote, the total, the deposit and where. */
 export function quoteBand(job: QuoteJob): SummaryItem[] {
@@ -45,7 +54,7 @@ export function quoteBand(job: QuoteJob): SummaryItem[] {
   const total = q ? q.total : linesTotal(job.lines)
   const go = (id: string) => () => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
   return [
-    { label: "Quote", value: q ? QUOTE_PILL[q.state].label : "Not sent yet", sub: q ? `${q.id}, ${dayOf(q.sentOn)}` : "Price the lines first", icon: FileText, onClick: go("quote-h") },
+    { label: "Quote", value: q ? QUOTE_PILL[q.state].label : job.direct ? "None" : "Not sent yet", sub: q ? `${q.id}, ${dayOf(q.sentOn)}` : job.direct ? "Not needed" : "Price the lines first", icon: FileText, onClick: go("quote-h") },
     { label: "Total", value: total > 0 ? money(total) : "No price yet", sub: q ? "Frozen in the quote" : "From the lines", icon: Receipt, onClick: go("included-h") },
     { label: "Deposit", value: q?.deposit ? money(q.deposit.amount) : "None", sub: q?.deposit ? (q.deposit.paid ? (q.deposit.paid.refundedOn ? "Refunded" : `Paid by ${HOW_WORDS[q.deposit.paid.how]}`) : `Due when ${job.first} approves`) : q ? "Not asked for" : "Set when you send", icon: Banknote },
     { label: "Where", value: job.street, sub: `${job.town}, CO`, icon: MapPin },
@@ -89,7 +98,7 @@ export function LinesCard({ job, onAdd, onEdit }: { job: QuoteJob; onAdd: () => 
                   {l.description && <span className="block text-muted-foreground">{l.description}</span>}
                 </span>
                 <RecordRowEnd>
-                  <span className={cn("font-medium tabular-nums", l.amount === 0 && "text-muted-foreground")}>{l.amount ? money(l.amount) : "No price yet"}</span>
+                  <span className={cn("font-medium tabular-nums", l.amount === 0 && "text-muted-foreground")}>{l.amount ? money(l.amount) : job.visit ? "Set at the visit" : "No price yet"}</span>
                   <button type="button" className={cn(QUIET, "ml-3 text-sm")} aria-label={`Edit ${l.name}`} onClick={() => onEdit(l.id)}>
                     Edit
                   </button>
@@ -101,12 +110,12 @@ export function LinesCard({ job, onAdd, onEdit }: { job: QuoteJob; onAdd: () => 
             <dt className="text-right font-semibold">Total</dt>
             <dd className="text-right font-semibold tabular-nums">{money(total)}</dd>
           </dl>
-          {total === 0 && <p className="mt-3 text-sm text-muted-foreground">No line has a price yet. A quote can be sent once one does.</p>}
+          {total === 0 && <p className="mt-3 text-sm text-muted-foreground">{job.visit ? `The price is set at the visit. Edit the line with what Ryan priced, then send the quote.` : "No line has a price yet. A quote can be sent once one does."}</p>}
         </>
       ) : (
         <>
           <LineItemList lines={(q?.lines ?? job.lines).map((l) => ({ name: l.name, description: l.description, amount: money(l.amount) }))} totals={[["Total", money(total), "strong"]]} />
-          <p className="mt-3 text-sm text-muted-foreground">{stage === "quote-sent" ? `Locked while quote ${q!.id} is out. Revise the quote to change them.` : `These are the lines of quote ${q?.id ?? ""}.`}</p>
+          <p className="mt-3 text-sm text-muted-foreground">{stage === "quote-sent" ? `Locked while quote ${q!.id} is out. Revise the quote to change them.` : q ? `These are the lines of quote ${q.id}.` : "This job is ready to schedule."}</p>
         </>
       )}
     </SectionCard>
@@ -133,7 +142,7 @@ export function QuoteCard({ job, now }: { job: QuoteJob; now: string }) {
           ]}
         />
       ) : (
-        <p className="text-sm text-muted-foreground">No quote sent yet. Price the lines, then send a quote.</p>
+        <p className="text-sm text-muted-foreground">{job.direct ? "No quote. This job is ready to schedule." : "No quote sent yet. Price the lines, then send a quote."}</p>
       )}
       {earlier.length > 0 && (
         <div className="mt-4 border-t border-border pt-4">

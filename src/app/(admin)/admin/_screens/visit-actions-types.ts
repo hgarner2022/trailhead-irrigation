@@ -37,6 +37,8 @@ export interface NewVisitInput {
   personId?: string
   price?: number
   notes?: string
+  /** "Add and send a quote": the job is made as Needs a quote, with no day, and its page opens on the quote */
+  sendQuote?: boolean
 }
 
 /** What New pass sends: the customer as New visit gives it, the zones and the add-on, a day per visit, how the money comes. */

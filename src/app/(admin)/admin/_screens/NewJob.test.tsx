@@ -33,6 +33,39 @@ function open() {
 }
 const choose = (value: string) => userEvent.selectOptions(screen.getByLabelText("What are we doing?"), value)
 
+function openWithQuotes() {
+  const actions = {
+    createVisit: vi.fn(async () => ({ ok: true as const, data: { id: "v1", jobId: "j1" } })),
+    sellPass: vi.fn(),
+  }
+  const onCreated = vi.fn()
+  render(<NewJob data={data} today={TODAY} open onOpenChange={() => undefined} customerId="c100" actions={actions as unknown as VisitActions} quotes onCreated={onCreated} />)
+  return { actions, onCreated }
+}
+const actionNames = () => Array.from(document.querySelectorAll("[data-slot=new-job-actions] button")).map((b) => b.textContent)
+
+describe("New job and quotes", () => {
+  it("leads with Add job for a priced service and offers Add and send a quote beside it", async () => {
+    const { actions, onCreated } = openWithQuotes()
+    await choose("repair")
+    expect(actionNames()).toEqual(["Add job", "Add and send a quote"])
+    await userEvent.click(screen.getByRole("button", { name: "Add and send a quote" }))
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith({ visitId: "v1", jobId: "j1", quote: true }))
+    expect(actions.createVisit).toHaveBeenCalledWith(expect.objectContaining({ serviceKey: "repair", sendQuote: true }))
+  })
+  it("leads with Add and send a quote for a service with no catalogue price, and says it needs a price", async () => {
+    openWithQuotes()
+    await choose("lights")
+    expect(actionNames()).toEqual(["Add and send a quote", "Add job"])
+    expect(screen.getByText(/Needs a price before it can be scheduled\./)).toBeInTheDocument()
+  })
+  it("has only Add job when the host has no quotes", async () => {
+    open()
+    await choose("lights")
+    expect(actionNames()).toEqual(["Add job"])
+  })
+})
+
 describe("New job", () => {
   it("lists Season Pass first, then the services", () => {
     open()

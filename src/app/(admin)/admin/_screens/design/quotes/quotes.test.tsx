@@ -53,10 +53,24 @@ describe("a job and its quotes", () => {
     dana.lines[0]!.amount = 380
     expect(canSend(dana)).toBe(true)
   })
-  it("makes a job from a request with one unpriced line that holds the customer's words", () => {
-    const j = jobFromRequest({ jobId: "q-x", requestId: "rq-x", customerId: "c", customer: "X Y", first: "X", phone: "", email: "", contact: "text", service: "Christmas lights", street: "1 A St", town: "Erie", words: "Roofline please.", at: QUOTES_NOW })
-    expect(j.lines).toEqual([{ id: "l1", name: "Christmas lights", amount: 0, description: "Roofline please." }])
+  const from = (o: Partial<Parameters<typeof jobFromRequest>[0]>) => jobFromRequest({ jobId: "q-x", requestId: "rq-x", customerId: "c", customer: "X Y", first: "X", phone: "", email: "", contact: "text", service: "Christmas lights", street: "1 A St", town: "Erie", words: "Roofline please.", receivedAt: "2026-11-18T16:00:00Z", at: QUOTES_NOW, quote: false, ...o })
+  it("makes a job from a request: its words are the first note and the history says where it came from", () => {
+    const j = from({})
+    expect(j.history[0]).toMatchObject({ actor: "X", note: "Roofline please." })
+    expect(j.history[1]!.what).toMatch(/^Created from a request on Nov \d+$/)
+    expect(JSON.stringify(j)).not.toMatch(/ccept/)
+  })
+  it("reads Needs a quote when the service has no price, and Unscheduled when Create job is on a priced one", () => {
+    expect(stageOf(from({}))).toBe("needs-a-quote")
+    const priced = from({ service: "Sprinkler repair", price: 145 })
+    expect(priced.lines).toEqual([{ id: "l1", name: "Sprinkler repair", amount: 145 }])
+    expect(stageOf(priced)).toBe("open")
+    expect(canSend(priced)).toBe(false)
+  })
+  it("Send a quote on a priced service leaves the job in Needs a quote, ready to send", () => {
+    const j = from({ service: "Sprinkler repair", price: 145, quote: true })
     expect(stageOf(j)).toBe("needs-a-quote")
+    expect(canSend(j)).toBe(true)
   })
   it("numbers quotes one after another", () => {
     expect(nextNumber(QUOTE_JOB_FIXTURES)).toBe("Q-2026-0009")

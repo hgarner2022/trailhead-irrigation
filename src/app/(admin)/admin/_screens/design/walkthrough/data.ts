@@ -262,10 +262,10 @@ export function searchWorld(query: string): SearchHit[] {
     .filter((c) => `${c.name} ${c.street}`.toLowerCase().includes(q) || (qd.length >= 3 && digits(c.phone).includes(qd)))
     .map((c) => ({ kind: "customer", id: c.id, title: c.name, detail: statusDetail(c.id, c.street), href: `/admin/customers?customer=${c.id}`, contact: c.phone }))
   const jobs: SearchHit[] = allRows().filter((r) => `${r.name} ${r.property} ${r.title}`.toLowerCase().includes(q)).map((r) => ({ kind: "job", id: r.id, title: r.title === r.service && r.service !== "Season Pass" ? `${r.name}, ${r.title}` : `${r.name}, ${r.title}`, detail: r.property, href: `/admin/jobs?job=${r.id}` }))
-  // a request that is New or Seen is found here and nowhere else; once accepted its customer and job are
+  // a request that is New or Seen is found here and nowhere else; once a job is made of it its customer and job are
   const requests: SearchHit[] = requestStore
     .getSnapshot()
-    .filter((r) => ["new", "seen"].includes(stateOf(r)))
+    .filter((r) => !r.becameJob && ["new", "seen"].includes(stateOf(r)))
     .filter((r) => `${fullName(r)} ${r.street} ${r.email} ${r.service}`.toLowerCase().includes(q) || (qd.length >= 3 && digits(r.phone).includes(qd)))
     .map((r) => ({ kind: "request" as const, id: r.id, title: fullName(r), detail: [serviceWords(r), r.town].filter((x) => x !== "Not said" && x).join(" · "), href: `/admin/requests?request=${r.id}`, contact: r.phone }))
   return [...requests, ...customers, ...jobs]

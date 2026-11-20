@@ -5,11 +5,12 @@ import type { PhotoItem } from "@/lib/photos/types"
 
 // A request, as the admin holds it (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.3 to 4.5; Hannah's answers of Nov 20 2026): a held record of
 // someone who is not yet a customer. It keeps the person's own words and contact on its own row and never touches a customer, a property or a job until
-// Ryan presses Accept, even when the email matches a customer already (the page shows the match). Spam never becomes a customer. Archived, with a reason,
-// is the one typed state; New, Seen and Accepted are read from facts. Pure data and functions, nothing fetched.
+// Ryan makes a job of it (Create job, or Send a quote), even when the email matches a customer already (the page shows the match). Spam never becomes a
+// customer. Hannah, Nov 20 2026: a request has three states only, New, Seen and Archived; making the job MOVES the request into the job, so it leaves the
+// Requests list and is never "accepted". Archived, with a reason, is the one typed state; New and Seen are read from facts. Pure data and functions.
 
-export type RequestState = "new" | "seen" | "accepted" | "archived"
-export const REQUEST_STATES: readonly RequestState[] = ["new", "seen", "accepted", "archived"]
+export type RequestState = "new" | "seen" | "archived"
+export const REQUEST_STATES: readonly RequestState[] = ["new", "seen", "archived"]
 
 /** The reasons Ryan picks when he archives a request (the research, 4.4). */
 export const ARCHIVE_REASONS = ["Spam", "Question answered", "Not a fit", "Duplicate"] as const
@@ -38,24 +39,25 @@ export interface RequestData {
   photos: PhotoItem[]
   /** a staff event exists (the page was opened, or a note was written) */
   seen: boolean
-  /** set when accepted: the job it became and the customer it was added to */
-  accepted?: { jobId: string; customerId: string; at: string }
+  /** set when Ryan made a job of it: the job it became and the customer it was added to. The request has left the list; its address says where it went. */
+  becameJob?: { jobId: string; customerId: string; at: string }
   archived?: { reason: ArchiveReason; at: string }
 }
 
 export const fullName = (r: Pick<RequestData, "first" | "last">) => `${r.first} ${r.last}`.trim()
 
-/** New, Seen, Accepted or Archived, read from the facts: archived wins, then a job, then whether anyone has looked. */
+/** New, Seen or Archived, read from the facts: archived wins, then whether anyone has looked. */
 export function stateOf(r: RequestData): RequestState {
   if (r.archived) return "archived"
-  if (r.accepted) return "accepted"
-  return r.seen ? "seen" : "new"
+  return r.seen || r.becameJob ? "seen" : "new"
 }
+
+/** The requests that are still requests: one that became a job has left. */
+export const openRequests = <T extends Pick<RequestData, "becameJob">>(list: readonly T[]): T[] => list.filter((r) => !r.becameJob)
 
 export const REQUEST_PILL: Record<RequestState, { status: PillStatus; label: string }> = {
   new: { status: "request-new", label: "New" },
   seen: { status: "request-seen", label: "Seen" },
-  accepted: { status: "request-accepted", label: "Accepted" },
   archived: { status: "request-archived", label: "Archived" },
 }
 
@@ -111,11 +113,11 @@ export const cameInOn = (iso: string) => `${DAY.format(new Date(iso))} at ${CLOC
 export const REQUESTS_NOW = "2026-11-18T18:00:00Z"
 
 /** The number badge on the rail and in More: the requests that are New. */
-export const newCount = (list: readonly RequestData[]) => list.filter((r) => stateOf(r) === "new").length
+export const newCount = (list: readonly RequestData[]) => openRequests(list).filter((r) => stateOf(r) === "new").length
 
-/** The order of the Requests list: New first, then Seen, Accepted and Archived, newest first inside each. */
+/** The order of the Requests list: New first, then Seen and Archived, newest first inside each. */
 export function listOrder(list: readonly RequestData[]): RequestData[] {
-  const rank: Record<RequestState, number> = { new: 0, seen: 1, accepted: 2, archived: 3 }
+  const rank: Record<RequestState, number> = { new: 0, seen: 1, archived: 2 }
   return [...list].sort((a, b) => rank[stateOf(a)] - rank[stateOf(b)] || b.receivedAt.localeCompare(a.receivedAt))
 }
 
@@ -178,6 +180,22 @@ export const REQUEST_FIXTURES: RequestData[] = [
     seen: true,
   },
   {
+    id: "rq-tom",
+    receivedAt: "2026-11-17T15:00:00Z",
+    source: "contact-form",
+    first: "Tom",
+    last: "Ellis",
+    phone: "(970) 555-0133",
+    email: "tom.ellis@example.com",
+    contact: "text",
+    street: "64 Hollis Ct",
+    town: "Louisville",
+    service: "Sprinkler repair",
+    words: "Two heads in the side yard are spraying the fence. Hoping someone can come this week.",
+    photos: [],
+    seen: true,
+  },
+  {
     id: "rq-beth",
     receivedAt: "2026-11-09T19:45:00Z",
     source: "booking-quote",
@@ -192,7 +210,7 @@ export const REQUEST_FIXTURES: RequestData[] = [
     words: "Front of the house and the porch columns, please. We are away until the 20th of December.",
     photos: [theirs(4, "2026-11-09T19:45:00Z")],
     seen: true,
-    accepted: { jobId: "q-beth", customerId: "other-beth-orr", at: "2026-11-10T15:00:00Z" },
+    becameJob: { jobId: "q-beth", customerId: "other-beth-orr", at: "2026-11-10T15:00:00Z" },
   },
   {
     id: "rq-dana",
@@ -209,7 +227,7 @@ export const REQUEST_FIXTURES: RequestData[] = [
     words: "Zone 3 has a geyser by the driveway after the blowout. I would like a price to redo that line.",
     photos: [],
     seen: true,
-    accepted: { jobId: "q-dana", customerId: "other-dana-cho", at: "2026-11-13T17:00:00Z" },
+    becameJob: { jobId: "q-dana", customerId: "other-dana-cho", at: "2026-11-13T17:00:00Z" },
   },
   {
     id: "rq-ben",
