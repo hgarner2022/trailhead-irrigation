@@ -17,17 +17,17 @@ import { depositOf, linesTotal, money, type Channel, type DepositHow, type Depos
 // above the total. Pure props: the page keeps the state.
 
 const SELECT = "min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
-const CHANNEL_OPTIONS = (job: QuoteJob) => [
+export const CHANNEL_OPTIONS = (job: QuoteJob) => [
   { value: "text", label: "Text", disabled: !job.phone, reason: "No mobile number on file" },
   { value: "email", label: "Email", disabled: !job.email, reason: "No email on file" },
   { value: "both", label: "Both", disabled: !job.phone || !job.email, reason: job.phone ? "No email on file" : "No mobile number on file" },
 ]
-const channelWords = (job: QuoteJob, c: Channel) => (c === "text" ? `by text at ${job.phone}` : c === "email" ? `by email at ${job.email}` : "by text and email")
+export const channelWords = (job: QuoteJob, c: Channel) => (c === "text" ? `by text at ${job.phone}` : c === "email" ? `by email at ${job.email}` : "by text and email")
 
 /** The facts the customer's words are built from. */
 export const factsOf = (job: QuoteJob, number: string, total: number, deposit?: number) => ({ first: job.first, service: job.service, address: job.street, total: money(total), ...(deposit ? { deposit: money(deposit) } : {}), number, link: quoteLink(number) })
 
-function Preview({ job, channel, text, subject, lead }: { job: QuoteJob; channel: Channel; text: string; subject: string; lead: string }) {
+export function Preview({ job, channel, text, subject, lead }: { job: QuoteJob; channel: Channel; text: string; subject: string; lead: string }) {
   return (
     <div className="flex flex-col gap-2 text-sm">
       <p className="text-muted-foreground">What {job.first} will {channel === "text" ? "read" : channel === "email" ? "get" : "read and get"}</p>
@@ -239,10 +239,12 @@ export interface LineDialogProps {
   onClose: () => void
   onSave: (line: { name: string; description: string; amount: number }) => void
   onRemove?: () => void
+  /** the customer already approved the quote: the lines can still change, a line is canceled rather than removed, and the total moves */
+  approved?: boolean
 }
 
-/** Add or edit one line of the job: a name, an optional description and a price in whole dollars. */
-export function LineDialog({ line, onClose, onSave, onRemove }: LineDialogProps) {
+/** Add or edit one line of the job: a name, an optional description and a price in whole dollars. After approval the same dialog changes the approved job's lines. */
+export function LineDialog({ line, onClose, onSave, onRemove, approved }: LineDialogProps) {
   const [name, setName] = useState(line?.name ?? "")
   const [description, setDescription] = useState(line?.description ?? "")
   const [price, setPrice] = useState(line && line.amount ? String(line.amount) : "")
@@ -253,7 +255,7 @@ export function LineDialog({ line, onClose, onSave, onRemove }: LineDialogProps)
       open
       onOpenChange={(o) => !o && onClose()}
       title={line ? "Edit the line" : "Add a line"}
-      message="A line is what the quote charges for. The customer reads its name, its description and its price."
+      message={approved ? "The customer approved this job. A change here changes its total, and Notes and history records it." : "A line is what the quote charges for. The customer reads its name, its description and its price."}
       confirmLabel={line ? "Save the line" : "Add the line"}
       confirmDisabled={!name.trim() || bad}
       slot="line-dialog"
@@ -271,7 +273,7 @@ export function LineDialog({ line, onClose, onSave, onRemove }: LineDialogProps)
         </FormRow>
         {onRemove && (
           <button type="button" onClick={onRemove} className="min-h-11 self-start rounded-sm text-destructive underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
-            Remove this line
+            {approved ? "Cancel this line" : "Remove this line"}
           </button>
         )}
       </div>

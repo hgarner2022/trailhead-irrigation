@@ -46,6 +46,22 @@ export const quoteReminderLead = (f: QuoteFacts) => `This is a reminder about yo
 export const quoteApprovedLead = (f: QuoteFacts & { depositPaid?: boolean }) => `You approved your quote for ${OF(f)}, ${f.total}.${f.depositPaid && f.deposit ? ` We received your ${f.deposit} deposit.` : ""}`
 export const quoteDeclinedLead = (f: QuoteFacts) => `You declined your quote for ${OF(f)}, ${f.total}.`
 
+/**
+ * A price change after the customer approved (Hannah, Nov 20 2026): Ryan tells them, there is no second approval. Only the facts: the job, the street, what
+ * the total was and what it is now. No reason, no apology, no promise, no link to approve anything.
+ */
+export interface PriceChangeFacts {
+  service: string
+  address: string
+  /** "$1,500" */
+  total: string
+  /** "$1,200" */
+  was: string
+}
+export const priceChangeText = (f: PriceChangeFacts) => `Trailhead: The total for your ${f.service} at ${f.address} changed from ${f.was} to ${f.total}.`
+export const priceChangeSubject = (f: PriceChangeFacts) => `New total: ${f.total} for ${f.service} at ${f.address}`
+export const priceChangeLead = (f: PriceChangeFacts) => `The total for your ${f.service} at ${f.address} changed from ${f.was} to ${f.total}.`
+
 /** The one line after a request: Hannah's answer 9. Nothing about when, nothing promised. */
 export const REQUEST_THANKS = "Thanks. We've got your request."
 

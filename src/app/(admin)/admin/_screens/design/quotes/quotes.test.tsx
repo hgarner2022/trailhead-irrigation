@@ -1,7 +1,9 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { quoteApprovedText, quoteDeclinedText, quoteLead, quoteReminderText, quoteSubject, quoteText } from "@/lib/portal/quote-words"
+import { priceChangeLead, priceChangeSubject, priceChangeText, quoteApprovedText, quoteDeclinedText, quoteLead, quoteReminderText, quoteSubject, quoteText } from "@/lib/portal/quote-words"
+import { approvedTotal, currentTotal, isApproved, untoldChange } from "./price-change"
+import { finalInvoiceOf } from "./price-change-invoice"
 import { QuoteJobPage } from "./QuoteJobPage"
 import { QUOTES_NOW, QUOTE_JOB_FIXTURES, canSend, depositOf, fixtureJob, jobFromRequest, liveQuote, nextNumber, stageOf } from "./quote-model"
 import { createQuoteStore } from "./quote-store"
@@ -192,5 +194,112 @@ describe("the quote on the job page", () => {
     expect(within(screen.getByRole("dialog")).getByText("This job has a payment. Refund it first.")).toBeInTheDocument()
     expect(within(screen.getByRole("dialog")).queryByRole("button", { name: "Cancel job" })).toBeNull()
     expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Keep it" })).toBeInTheDocument()
+  })
+})
+
+describe("a price change after the customer approved (Hannah, Nov 20 2026)", () => {
+  const approved = (deposit = true) => {
+    const store = createQuoteStore()
+    store.approve("q-beth", { by: "customer", ...(deposit ? { deposit: { how: "card" as const } } : {}), at: QUOTES_NOW })
+    return store
+  }
+
+  it("changes the total with the lines once approved, and writes the history line with who and when", () => {
+    const s = approved()
+    expect(currentTotal(s.getSnapshot()["q-beth"]!)).toBe(1200)
+    const moved = s.updateLine("q-beth", "b1", { amount: 1200 }, "2026-11-18T18:20:00Z")
+    expect(moved).toEqual({ from: 1200, to: 1500 })
+    const job = s.getSnapshot()["q-beth"]!
+    expect(currentTotal(job)).toBe(1500)
+    // the approved quote itself is not rewritten: there is no second approval and no change-order quote
+    expect(liveQuote(job)).toMatchObject({ total: 1200, state: "approved" })
+    expect(job.quotes).toHaveLength(1)
+    expect(job.history[job.history.length - 1]).toMatchObject({ at: "2026-11-18T18:20:00Z", actor: "Ryan", what: "Price changed from $1,200 to $1,500", kind: "price-changed" })
+    expect(approvedTotal(job)).toBe(1200)
+  })
+
+  it("adds a line and cancels a line: a canceled line is out of the total and stays on the job", () => {
+    const s = approved()
+    expect(s.addLine("q-beth", { name: "Shrub wrap", amount: 200 })).toEqual({ from: 1200, to: 1400 })
+    expect(s.cancelLine("q-beth", "b2")).toEqual({ from: 1200, to: 1100 })
+    const job = s.getSnapshot()["q-beth"]!
+    expect(job.lines.find((l) => l.id === "b2")).toMatchObject({ canceled: true })
+    expect(currentTotal(job)).toBe(1100)
+    expect(job.history.filter((h) => h.kind === "price-changed").map((h) => h.what)).toEqual(["Price changed from $1,200 to $1,400", "Price changed from $1,400 to $1,100"])
+  })
+
+  it("records nothing when the total does not move, and nothing before approval or while a quote is out", () => {
+    const s = approved()
+    expect(s.updateLine("q-beth", "b1", { name: "Roofline" })).toBeNull()
+    expect(s.getSnapshot()["q-beth"]!.history.some((h) => h.kind === "price-changed")).toBe(false)
+    const out = createQuoteStore()
+    expect(out.updateLine("q-beth", "b1", { amount: 1000 })).toBeNull()
+    expect(out.getSnapshot()["q-beth"]!.history.some((h) => h.kind === "price-changed")).toBe(false)
+    expect(isApproved(out.getSnapshot()["q-beth"]!)).toBe(false)
+  })
+
+  it("remembers what the customer has not been told, from the last telling, and ends it when told or kept quiet", () => {
+    const s = approved()
+    s.updateLine("q-beth", "b1", { amount: 1200 })
+    s.updateLine("q-beth", "b2", { amount: 100 })
+    expect(untoldChange(s.getSnapshot()["q-beth"]!)).toEqual({ from: 1200, to: 1300 })
+    s.tellPrice("q-beth", { via: "email", at: QUOTES_NOW })
+    expect(untoldChange(s.getSnapshot()["q-beth"]!)).toBeNull()
+    expect(s.getSnapshot()["q-beth"]!.history.at(-1)!.what).toBe("Told Beth the new total, $1,300, by email")
+    s.updateLine("q-beth", "b2", { amount: 300 })
+    s.tellPrice("q-beth", { via: "none", at: QUOTES_NOW })
+    expect(s.getSnapshot()["q-beth"]!.history.at(-1)!.what).toBe("Kept the new total, $1,500, without notifying Beth")
+    expect(untoldChange(s.getSnapshot()["q-beth"]!)).toBeNull()
+  })
+
+  it("says nothing when the total comes back to what it was", () => {
+    const s = approved()
+    s.updateLine("q-beth", "b1", { amount: 1200 })
+    s.updateLine("q-beth", "b1", { amount: 900 })
+    expect(untoldChange(s.getSnapshot()["q-beth"]!)).toBeNull()
+  })
+
+  it("the words to the customer are the job, the street and the two totals, and nothing else", () => {
+    const f = { service: "Christmas lights", address: "33 Aspen Ct", total: "$1,500", was: "$1,200" }
+    expect(priceChangeText(f)).toBe("Trailhead: The total for your Christmas lights at 33 Aspen Ct changed from $1,200 to $1,500.")
+    expect(priceChangeSubject(f)).toBe("New total: $1,500 for Christmas lights at 33 Aspen Ct")
+    expect(priceChangeLead(f)).toBe("The total for your Christmas lights at 33 Aspen Ct changed from $1,200 to $1,500.")
+    const all = [priceChangeText(f), priceChangeSubject(f), priceChangeLead(f)].join(" ")
+    for (const word of [/\bfree\b/i, /guarantee/i, /sorry/i, /approve/i, /within/i, /refund/i, /because/i, /\bhttp|trailheadirrigation/i]) expect(all).not.toMatch(word)
+  })
+
+  it("opens Tell the customer when a saved price moves the total, with the channel from the contact preference", async () => {
+    const store = approved()
+    render(<QuoteJobPage store={store} jobId="q-beth" now={QUOTES_NOW} />)
+    expect(screen.getByRole("button", { name: "Edit Roofline lights" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Edit Roofline lights" }))
+    fireEvent.change(screen.getByRole("textbox", { name: "Price in dollars" }), { target: { value: "1200" } })
+    fireEvent.click(screen.getByRole("button", { name: "Save the line" }))
+    const dialog = await screen.findByRole("dialog", { name: "Tell Beth the new total" })
+    expect(within(dialog).getByText(/The total for Christmas lights at 33 Aspen Ct is now \$1,500\. It was \$1,200\. Tell Beth by email at beth\.orr@example\.com\./)).toBeInTheDocument()
+    expect(within(dialog).getByRole("radio", { name: "Email" })).toBeChecked()
+    expect(within(dialog).getByText("New total: $1,500 for Christmas lights at 33 Aspen Ct")).toBeInTheDocument()
+    expect(within(dialog).getByRole("button", { name: "More ways" })).toBeInTheDocument()
+    fireEvent.click(within(dialog).getByRole("button", { name: "Tell Beth" }))
+    expect(await screen.findByText("Price changed from $1,200 to $1,500")).toBeInTheDocument()
+    expect(screen.getByText(/The invoice will show the new total, \$1,500 and the \$300 deposit as already paid\./)).toBeInTheDocument()
+    expect(screen.getByText("$1,200 unpaid.")).toBeInTheDocument()
+  })
+
+  it("keeps the lines locked while the quote is out and waiting", () => {
+    render(<QuoteJobPage store={createQuoteStore()} jobId="q-beth" now={QUOTES_NOW} />)
+    expect(screen.getByText(/Locked while quote Q-2026-0007 is out/)).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Edit Roofline lights" })).toBeNull()
+    expect(screen.queryByRole("button", { name: "Add a line" })).toBeNull()
+  })
+
+  it("the final invoice shows the new total on its lines, with the deposit credited", () => {
+    const s = approved()
+    s.updateLine("q-beth", "b1", { amount: 1200 })
+    s.cancelLine("q-beth", "b2")
+    const inv = finalInvoiceOf(s.getSnapshot()["q-beth"]!, { number: "INV-2026-0045", sentOn: "2026-11-24", dueOn: "2026-12-08" })
+    expect(inv.lines.map((l) => [l.name, l.amount])).toEqual([["Roofline lights", "$1,200"]])
+    expect(inv.totals).toEqual([["Subtotal", "$1,200"], ["Tax", "$0"], ["Total", "$1,200", "strong"], ["Deposit paid Nov 18", "-$300"], ["Paid", "$0"], ["Unpaid", "$900", "alert"]])
+    expect(inv.amount).toBe("$900")
   })
 })

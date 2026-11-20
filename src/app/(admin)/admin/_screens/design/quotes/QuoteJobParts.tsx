@@ -10,6 +10,7 @@ import { StatusPill } from "@/components/blocks/StatusPill"
 import type { SummaryItem } from "@/components/blocks/SummaryBand"
 import type { TimelineLine } from "@/lib/events/timeline"
 import { cn } from "@/lib/utils"
+import { approvedTotal, currentTotal, isApproved, untoldChange } from "./price-change"
 import { ago, dayOf, linesTotal, liveQuote, money, QUOTE_PILL, stageOf, VIA_WORDS, type DepositHow, type QuoteJob } from "./quote-model"
 
 // The cards of the job page in its quote states (QuoteJobPage.tsx): What's included (its lines, editable until a quote is sent, then locked), Quote (its
@@ -52,11 +53,12 @@ export function VisitCard({ visit }: { visit: NonNullable<QuoteJob["visit"]> }) 
 /** The summary band: the quote, the total, the deposit and where. */
 export function quoteBand(job: QuoteJob): SummaryItem[] {
   const q = liveQuote(job)
-  const total = q ? q.total : linesTotal(job.lines)
+  const total = currentTotal(job)
+  const was = approvedTotal(job)
   const go = (id: string) => () => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
   return [
     { label: "Quote", value: q ? QUOTE_PILL[q.state].label : job.direct ? "None" : "Not sent yet", sub: q ? `${q.id}, ${dayOf(q.sentOn)}` : job.direct ? "Not needed" : "Price the lines first", icon: FileText, onClick: go("quote-h") },
-    { label: "Total", value: total > 0 ? money(total) : "No price yet", sub: q ? "Frozen in the quote" : "From the lines", icon: Receipt, onClick: go("included-h") },
+    { label: "Total", value: total > 0 ? money(total) : "No price yet", sub: was !== undefined ? `Was ${money(was)}` : q ? "Frozen in the quote" : "From the lines", icon: Receipt, onClick: go("included-h") },
     { label: "Deposit", value: q?.deposit ? money(q.deposit.amount) : "None", sub: q?.deposit ? (q.deposit.paid ? (q.deposit.paid.refundedOn ? "Refunded" : `Paid by ${HOW_WORDS[q.deposit.paid.how]}`) : `Due when ${job.first} approves`) : q ? "Not asked for" : "Set when you send", icon: Banknote },
     { label: "Where", value: job.street, sub: `${job.town}, CO`, icon: MapPin },
   ]
@@ -82,27 +84,35 @@ export function depositPayments(job: QuoteJob): PaymentRowData[] {
 }
 
 /** What's included: the job's lines. While the job needs a quote each has Edit and the card has Add a line; once a quote is out they are locked. */
-export function LinesCard({ job, onAdd, onEdit }: { job: QuoteJob; onAdd: () => void; onEdit: (id: string) => void }) {
+export function LinesCard({ job, onAdd, onEdit, onTell }: { job: QuoteJob; onAdd: () => void; onEdit: (id: string) => void; /** after approval: tell the customer a total they have not been told */ onTell?: () => void }) {
   const stage = stageOf(job)
   const q = liveQuote(job)
-  const open = stage === "needs-a-quote"
-  const total = q ? q.total : linesTotal(job.lines)
+  const approved = isApproved(job)
+  // the lines are Ryan's to change while the job needs a quote and, once the customer approved, whenever the work needs it; locked while a quote is out
+  const open = stage === "needs-a-quote" || approved
+  const total = currentTotal(job)
+  const was = approvedTotal(job)
+  const untold = approved ? untoldChange(job) : null
   return (
     <SectionCard title="What's included" id="included-h" action={open ? <button type="button" className={QUIET} onClick={onAdd}>Add a line</button> : undefined}>
       {open ? (
         <>
           <RecordList data-slot="quote-lines">
             {job.lines.map((l) => (
-              <li key={l.id} className={cn("flex items-start", RECORD_ROW)}>
+              <li key={l.id} data-canceled={l.canceled ? "true" : undefined} className={cn("flex items-start", RECORD_ROW)}>
                 <span className="block min-w-0 flex-1">
-                  <span className="block font-medium">{l.name}</span>
-                  {l.description && <span className="block text-muted-foreground">{l.description}</span>}
+                  <span className={cn("block font-medium", l.canceled && "text-muted-foreground line-through")}>{l.name}</span>
+                  {l.description && <span className={cn("block text-muted-foreground", l.canceled && "line-through")}>{l.description}</span>}
                 </span>
                 <RecordRowEnd>
-                  <span className={cn("font-medium tabular-nums", l.amount === 0 && "text-muted-foreground")}>{l.amount ? money(l.amount) : job.visit ? "Set at the visit" : "No price yet"}</span>
-                  <button type="button" className={cn(QUIET, "ml-3 text-sm")} aria-label={`Edit ${l.name}`} onClick={() => onEdit(l.id)}>
-                    Edit
-                  </button>
+                  <span className={cn("font-medium tabular-nums", (l.amount === 0 || l.canceled) && "text-muted-foreground", l.canceled && "line-through")}>{l.amount ? money(l.amount) : job.visit ? "Set at the visit" : "No price yet"}</span>
+                  {l.canceled ? (
+                    <span className="ml-3 text-sm text-muted-foreground">Canceled</span>
+                  ) : (
+                    <button type="button" className={cn(QUIET, "ml-3 text-sm")} aria-label={`Edit ${l.name}`} onClick={() => onEdit(l.id)}>
+                      Edit
+                    </button>
+                  )}
                 </RecordRowEnd>
               </li>
             ))}
@@ -111,6 +121,15 @@ export function LinesCard({ job, onAdd, onEdit }: { job: QuoteJob; onAdd: () => 
             <dt className="text-right font-semibold">Total</dt>
             <dd className="text-right font-semibold tabular-nums">{money(total)}</dd>
           </dl>
+          {approved && q && <p className="mt-3 text-sm text-muted-foreground">{was !== undefined ? `The approved quote ${q.id} was ${money(was)}.` : `Quote ${q.id} was approved at ${money(q.total)}.`} A change to the total is recorded in Notes and history.</p>}
+          {untold && onTell && (
+            <p data-slot="untold-price" className="mt-2 flex flex-wrap items-center gap-x-3 text-sm">
+              <span>{job.first} has not been told the new total, {money(untold.to)}.</span>
+              <button type="button" className={QUIET} onClick={onTell}>
+                Tell {job.first}
+              </button>
+            </p>
+          )}
           {total === 0 && <p className="mt-3 text-sm text-muted-foreground">{job.visit ? `The price is set at the visit. Edit the line with what Ryan priced, then send the quote.` : "No line has a price yet. A quote can be sent once one does."}</p>}
         </>
       ) : (
@@ -135,7 +154,7 @@ export function QuoteCard({ job, now }: { job: QuoteJob; now: string }) {
           rows={[
             ["Quote", q.id],
             ["Sent", `${dayOf(q.sentOn)}, ${q.sentVia === "none" ? "without notifying" : `by ${VIA_WORDS[q.sentVia]}`}`],
-            ["Total", money(q.total)],
+            ...(approvedTotal(job) !== undefined ? ([["Total when approved", money(q.total)], ["Total now", money(currentTotal(job))]] as [string, string][]) : ([["Total", money(q.total)]] as [string, string][])),
             ["Deposit", depositFact(job)],
             ["Decision", decisionFact(job)],
             ["Reminders", q.reminders.length ? `${q.reminders.length} sent, the last ${ago(q.reminders[q.reminders.length - 1]!.at, now)}` : "None sent"],
@@ -170,10 +189,15 @@ export function QuoteCard({ job, now }: { job: QuoteJob; now: string }) {
 /** Billing once the deposit is paid, on the shared `BillingBody`: the balance is the headline (with what the final invoice will show), the three figures (a deposit and a balance are worth explaining) and the deposit as a payment with no invoice. */
 export function QuoteBilling({ job, onRefund }: { job: QuoteJob; onRefund: () => void }) {
   const q = liveQuote(job)
-  if (q?.state !== "approved" || !q.deposit?.paid) return null
-  const paid = q.deposit.paid.refundedOn ? 0 : q.deposit.amount
-  const line: BillingLine = { tone: "unpaid", title: `${money(q.total - paid)} unpaid`, text: q.deposit.paid.refundedOn ? undefined : `The invoice will show the ${money(q.deposit.amount)} deposit as already paid.` }
-  const facts: [string, string][] = [["Total", money(q.total)], ["Paid", money(paid)], ["Unpaid", money(q.total - paid)]]
+  const changed = approvedTotal(job) !== undefined
+  if (q?.state !== "approved" || (!q.deposit?.paid && !changed)) return null
+  // the total is the job's total now, so a price change shows here, with the deposit already paid credited
+  const total = currentTotal(job)
+  const dep = q.deposit?.paid && !q.deposit.paid.refundedOn ? q.deposit.amount : 0
+  const credit = dep ? ` and the ${money(dep)} deposit as already paid` : ""
+  const text = changed ? `The invoice will show the new total, ${money(total)}${credit}.` : dep ? `The invoice will show the ${money(dep)} deposit as already paid.` : undefined
+  const line: BillingLine = { tone: "unpaid", title: `${money(total - dep)} unpaid`, text }
+  const facts: [string, string][] = [["Total", money(total)], ["Paid", money(dep)], ["Unpaid", money(total - dep)]]
   return (
     <SectionCard title="Billing" id="billing-h">
       <BillingBody line={line} facts={facts} payments={depositPayments(job)} onRefund={onRefund} />
