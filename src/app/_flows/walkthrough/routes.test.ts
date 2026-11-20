@@ -31,6 +31,7 @@ describe("stepOf", () => {
     expect(stepOf("account", "receipt")).toBe("pay")
     expect(stepOf("account", "details")).toBe("details")
     expect(stepOf("renew")).toBe("pass")
+    expect(stepOf("receipts")).toBe("receipts")
     expect(stepOf("placeholder")).toBeNull()
   })
 })

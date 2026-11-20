@@ -18,7 +18,18 @@ const RYAN = "Ryan Garner"
 
 const swapContact = (d: CustomerPageData, over: Partial<CustomerPageData>): CustomerPageData => ({ ...d, ...over })
 
+/** The jobs made in the prototype for this customer, as rows of their Jobs table: open, with no day yet. */
+const madeHere = (id: string): CustomerPageData["jobs"] =>
+  allRows()
+    .filter((r) => r.id.startsWith("new-") && customerIdOf(r.name) === id)
+    .map((r) => ({ id: r.id, name: r.title, open: true, sortDay: "2026-11-19", status: r.stage === "scheduled" ? ("scheduled" as const) : ("needs-a-day" as const), statusLabel: r.stage === "scheduled" ? "Scheduled" : "Unscheduled", money: null }))
+
 export function customerPage(id: string): CustomerPageData | null {
+  const page = customerPageBase(id)
+  return page ? { ...page, jobs: [...madeHere(id), ...page.jobs] } : null
+}
+
+function customerPageBase(id: string): CustomerPageData | null {
   if (id === "andrea") {
     const d = customerPageOf("pass-holder")
     return swapContact(d, {

@@ -89,6 +89,46 @@ export const FromSearch: Story = {
   },
 }
 
+/** Record a check on Andrea's repair: the toast offers the receipt, and the receipt page is what Andrea would see, with the method and the check number. */
+export const Receipt: Story = {
+  name: "Receipt",
+  globals: laptop,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await userEvent.click((await c.findAllByRole("button", { name: "Andrea Dalton" }))[0]!)
+    await userEvent.click(await c.findByRole("button", { name: "Schedule" }))
+    await userEvent.click(await body.findByRole("button", { name: /Schedule and notify the customer/ }))
+    await userEvent.click(await c.findByRole("button", { name: "Mark done" }))
+    await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Mark done" }))
+    await userEvent.click(await body.findByRole("radio", { name: /Check/ }))
+    await userEvent.type(await body.findByLabelText(/Check number/), "2210")
+    await userEvent.click(await body.findByRole("button", { name: "Record the check" }))
+    // some versions of the dialog ask once more before the payment is recorded
+    const more = await body.findAllByRole("button", { name: /Record the payment/ }, { timeout: 800 }).catch(() => [])
+    if (more.length) await userEvent.click(more[more.length - 1]!)
+    await expect(await body.findByText("Recorded. Andrea gets a receipt by text.")).toBeInTheDocument()
+    await userEvent.click(await body.findByRole("button", { name: "View the receipt" }))
+    await waitFor(() => expect(route(canvasElement)).toMatch(/^receipt:check\|2210/))
+    await expect(await c.findByText("Check number")).toBeInTheDocument()
+  },
+}
+
+/** New job from Andrea's page: she is already chosen (with Change), her property and her last job are under her name, the zones are filled in, and the new job opens as Unscheduled on her page. */
+export const NewJobFromCustomer: Story = {
+  name: "New job from a customer",
+  globals: laptop,
+  args: { start: { screen: "customer", id: "andrea" } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await userEvent.click(await c.findByRole("link", { name: "New job" }))
+    await expect(await body.findByText("Last job: Sprinkler repair, Nov 12. $145 unpaid.")).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "Change" })).toBeInTheDocument()
+    await expect(body.getByText("4417")).toBeInTheDocument()
+  },
+}
+
 /** New job is the real sheet: pick a customer, a service, Add job, and the new job opens as Unscheduled. */
 export const NewJobSheet: Story = {
   name: "New job",

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, userEvent, waitFor, within } from "storybook/test"
 import { CustomerDocs } from "./CustomerDocs"
+import { CustomerPhone } from "./CustomerPhone"
 import { CustomerWalkthrough } from "./CustomerWalkthrough"
 
 // Start here, the customer side (Hannah, Nov 19 2026): booking, the messages, the account, paying, the Season Pass and Details in one clickable
@@ -13,47 +14,57 @@ const meta = {
     layout: "fullscreen",
     docs: {
       page: CustomerDocs,
-      description: { component: "The customer side in one story: book online, the texts and emails, the account, Reschedule and Cancel, paying an invoice to its receipt, the Season Pass and Details. Phone first. The Docs page lists the order." },
+      description: { component: "You are Andrea Dalton, a customer, on your phone. The steps are on the left; click Next, or tap anything in the phone." },
     },
   },
 } satisfies Meta<typeof CustomerWalkthrough>
 export default meta
 type Story = StoryObj<typeof meta>
 
-const phone = { viewport: { value: "phone", isRotated: false } }
 const laptop = { viewport: { value: "laptop", isRotated: false } }
 const where = (el: HTMLElement) => el.querySelector("[data-slot=flow-screen]")?.getAttribute("data-where")
 const page = (el: HTMLElement) => el.querySelector("[data-slot=flow-screen]")?.getAttribute("data-page")
+const step = (el: HTMLElement) => el.querySelector("[data-slot=flow-screen]")?.getAttribute("data-step")
+const tell = (cmd: string) => window.postMessage({ walk: "cmd", cmd }, "*")
 
-/** Starts on Book online. Next in the strip walks the seven steps; the booking's confirmation opens the account. */
-export const Phone: Story = {
-  name: "Phone",
-  globals: phone,
+/** The presentation: the Steps column, the phone frame, Back and Next. */
+export const Walkthrough: Story = { name: "Walkthrough", globals: laptop }
+
+/** The phone alone, the page inside the frame (not in the sidebar). It has no play: the presentation loads it. */
+export const PhoneScreens: StoryObj<typeof CustomerPhone> = {
+  name: "Phone screens",
+  tags: ["!dev", "!autodocs"],
+  render: () => <CustomerPhone />,
+}
+
+/** The phone walked through its eight steps with Next and Back, and the receipt's chips (not in the sidebar). */
+export const PhoneSteps: StoryObj<typeof CustomerPhone> = {
+  name: "Phone steps",
+  tags: ["!dev", "!autodocs"],
+  render: () => <CustomerPhone />,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
     await expect(await c.findByText("What can we do for you?")).toBeInTheDocument()
-    // the steps strip jumps: texts, then the account, then a visit
-    await userEvent.click(await c.findByRole("button", { name: "Next: Texts and emails" }))
-    await waitFor(() => expect(where(canvasElement)).toBe("texts"))
-    await userEvent.click(await c.findByRole("button", { name: "Next: Account" }))
-    await waitFor(() => expect(page(canvasElement)).toBe("home"))
-    await userEvent.click(await c.findByRole("button", { name: "Next: Visits" }))
-    await waitFor(() => expect(page(canvasElement)).toBe("visits"))
-    await userEvent.click(await c.findByRole("button", { name: "Next: Pay an invoice" }))
-    await waitFor(() => expect(page(canvasElement)).toBe("pay"))
-    await userEvent.click(await c.findByRole("button", { name: "Next: Season Pass" }))
-    await waitFor(() => expect(where(canvasElement)).toBe("pass"))
-    await userEvent.click(await c.findByRole("button", { name: "Next: Details" }))
-    await waitFor(() => expect(page(canvasElement)).toBe("details"))
+    const order = [["texts", "texts"], ["account", "home"], ["visits", "visit"], ["pay", "pay"], ["receipts", null], ["pass", null], ["details", "details"]] as const
+    for (const [lit, shown] of order) {
+      tell("next")
+      await waitFor(() => expect(step(canvasElement)).toBe(lit))
+      if (shown) await waitFor(() => expect([where(canvasElement), page(canvasElement)]).toContain(shown))
+      if (lit === "receipts") {
+        await userEvent.click(await c.findByRole("button", { name: "Check" }))
+        await expect(await c.findByText(/Check number/)).toBeInTheDocument()
+      }
+    }
+    tell("back")
+    await waitFor(() => expect(step(canvasElement)).toBe("pass"))
   },
 }
 
-export const Laptop: Story = { name: "Laptop", globals: laptop }
-
 /** Book online end to end: service, address, a day and an exact time, contact with how we reach you, two photos, Confirm and book, and the holographic card. */
-export const BookingPath: Story = {
+export const BookingPath: StoryObj<typeof CustomerPhone> = {
   name: "Booking path",
-  globals: phone,
+  tags: ["!dev", "!autodocs"],
+  render: () => <CustomerPhone />,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
     const next = async (name: string | RegExp = "Continue") => userEvent.click(await c.findByRole("button", { name }))
@@ -83,5 +94,3 @@ export const BookingPath: Story = {
   },
 }
 
-/** Starts on the account, for the path after booking. */
-export const FromTheAccount: Story = { name: "From the account", args: { start: "account" }, globals: phone }
