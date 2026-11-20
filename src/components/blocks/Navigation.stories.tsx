@@ -15,7 +15,7 @@ import { SidePanel } from "./SidePanel"
 import { StatusPill } from "./StatusPill"
 import { SummaryBand } from "./SummaryBand"
 
-// Design / Navigation (docs/plans/2026-11-19-navigation-design.md): the admin's top bar, account menu, phone More and the way back, for Hannah to review.
+// Design / Navigation (docs/plans/2026-11-19-navigation-design.md): the admin's top bar, the account menu in the rail's footer, phone More and the way back, for Hannah to review.
 // Stories only, nothing wired. Every state is shown at 1280 (laptop) and at 375 (phone).
 
 const LAPTOP = { viewport: { value: "laptop", isRotated: false } }
@@ -26,7 +26,7 @@ const search = async () => []
 
 const meta = {
   title: "Design/Navigation",
-  parameters: { layout: "fullscreen", docs: { description: { component: "The admin's top bar, account menu, the phone's More menu and the way back from a record, at 1280 and 375. Stories only, nothing wired." } } },
+  parameters: { layout: "fullscreen", docs: { description: { component: "The admin's top bar, the account menu (bottom left of the rail on a laptop, the initials in the bar on a phone), the phone's More menu and the way back from a record, at 1280 and 375. Stories only, nothing wired." } } },
   globals: LAPTOP,
 } satisfies Meta
 export default meta
@@ -59,16 +59,47 @@ function Shell({ children = <JobsPlaceholder />, current = "jobs" }: { children?
   )
 }
 
-/** 1280: the rail has no Sign out; the bar reads toggle, title, page action, Search, then the account at the far right. No bell: nothing in the app yet has a notification to show. */
+/** 1280: the bar reads toggle, title, page action, Search; the account (avatar and first name) is the footer of the navy rail, bottom left, under a hairline. No bell: nothing in the app yet has a notification to show. */
 export const ShellLaptop: Story = { name: "Shell, laptop", render: () => <Shell /> }
 
-/** The account menu open: name, Profile, Help, Open as customer (only for a staff member whose email is also a customer's) and Sign out. */
+/** The rail footer's menu open, opening upward: name, Profile, Help, Open as customer (only for a staff member whose email is also a customer's) and Sign out. */
 export const AccountMenuOpen: Story = { name: "Account menu open",
   render: () => <Shell />,
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole("button", { name: "Account, Hannah" }))
+    const menuEl = await within(document.body).findByRole("menu")
+    const menu = within(menuEl)
+    await expect(menu.getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Profile", "Help", "Open as customer", "Sign out"])
+    // upward: the menu sits above the trigger, at the rail's left edge
+    await expect(menuEl.getBoundingClientRect().bottom).toBeLessThanOrEqual(canvas.getByRole("button", { name: "Account, Hannah" }).getBoundingClientRect().top + 1)
+    await expect(canvas.getByRole("button", { name: "Account, Hannah" }).closest("[data-slot=sidebar-footer]")).not.toBeNull()
+  },
+}
+
+/** The rail collapsed to icons with the toggle: the footer is the avatar alone, and its menu still opens upward with the same items. */
+export const AccountMenuCollapsed: Story = { name: "Account menu, rail collapsed",
+  render: () => <Shell />,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole("button", { name: /toggle sidebar/i }))
+    const trigger = await canvas.findByRole("button", { name: "Account, Hannah" })
+    await expect(within(trigger).getByText("Hannah")).not.toBeVisible()
+    await userEvent.click(trigger)
     const menu = within(await within(document.body).findByRole("menu"))
     await expect(menu.getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Profile", "Help", "Open as customer", "Sign out"])
+  },
+}
+
+/** Keyboard: Enter opens the rail menu, Escape closes it and focus is back on the avatar button. */
+export const AccountMenuKeyboard: Story = { name: "Account menu, keyboard",
+  render: () => <Shell />,
+  play: async ({ canvas, userEvent }) => {
+    const trigger = await canvas.findByRole("button", { name: "Account, Hannah" })
+    trigger.focus()
+    await userEvent.keyboard("{Enter}")
+    await expect(await within(document.body).findByRole("menu")).toBeInTheDocument()
+    await userEvent.keyboard("{Escape}")
+    await expect(within(document.body).queryByRole("menu")).toBeNull()
+    await expect(trigger).toHaveFocus()
   },
 }
 

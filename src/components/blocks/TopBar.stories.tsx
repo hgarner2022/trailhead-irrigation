@@ -15,14 +15,14 @@ const meta = {
   component: TopBar,
   parameters: { layout: "fullscreen" },
   globals: { viewport: { value: "laptop", isRotated: false } },
-  args: { leading: <Button variant="ghost" size="icon" aria-label="Toggle sidebar" />, search, account: <AdminAccountMenu user={user} /> },
+  args: { leading: <Button variant="ghost" size="icon" aria-label="Toggle sidebar" /> , search },
 } satisfies Meta<typeof TopBar>
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 1280: toggle, title and action slots, Search, account. */
+/** 1280: toggle, title and action slots, Search. The account menu is the rail's footer, not here. */
 export const Default: Story = {}
-/** No Search (the catalog): the account stays at the far right. */
+/** No Search (the catalog): the bar holds the toggle, title and actions only. */
 export const Empty: Story = { args: { search: undefined } }
 /** 375: logo, the page's one primary slot, Search, initials. */
 export const Phone: Story = {

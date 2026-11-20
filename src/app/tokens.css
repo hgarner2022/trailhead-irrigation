@@ -51,6 +51,7 @@
   --color-sidebar-accent-foreground: #FFFFFF;
   --color-sidebar-border: #3D4F63;
   --color-sidebar-ring: #F59E0B;
+  --color-sidebar-muted: #A8B3C2;        /* quiet second lines in the rail: 5.9:1 on the navy */
 
   --color-chart-1: #D97706;              /* this year */
   --color-chart-2: #2B3544;              /* last year */

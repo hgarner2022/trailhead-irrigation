@@ -5,7 +5,7 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 
 // The admin's top bar (docs/plans/2026-11-19-navigation-design.md): 56px, sticky, cream. On a laptop, left to right: the rail toggle, the page title and
-// its context, the page's actions, Search, the account menu. On a phone: the logo, the switcher, the page's one primary ("+ New job", which stays in
+// its context, the page's actions, Search (the account menu is the rail's footer on a laptop, not here). On a phone: the logo, the switcher, the page's one primary ("+ New job", which stays in
 // the bar on every screen that has it), Search as an icon, the account's initials. The title and action slots are refs so `PageHeader` can portal
 // into them; the controls are passed in, so the bar is pure layout.
 
@@ -19,6 +19,7 @@ export interface TopBarProps {
   primaryRef?: Ref<HTMLDivElement>
   switcher?: ReactNode
   search?: ReactNode
+  /** the shell passes it on a phone only (the initials); on a laptop the account menu is the rail's footer */
   account?: ReactNode
   logo?: string
 }
