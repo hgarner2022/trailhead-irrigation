@@ -42,11 +42,16 @@ function useInvoicesInNav() {
   )
 }
 
-function ToastBridge({ toastRef }: { toastRef: { current: (m: string) => void } }) {
+// The shell is keyed by route, so a toast raised while a record is being left would go with the old shell: `later` holds one until the new shell mounts.
+function ToastBridge({ toastRef, later }: { toastRef: { current: (m: string) => void }; later: { current: string | null } }) {
   const toast = useToast()
   useEffect(() => {
     toastRef.current = toast
-  }, [toast, toastRef])
+    if (later.current) {
+      toast(later.current)
+      later.current = null
+    }
+  }, [toast, toastRef, later])
   return null
 }
 
@@ -93,6 +98,9 @@ export function Walkthrough({ start = START }: { start?: Route }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const rows = useMemo(() => allRows(), [made])
   const toastRef = useRef<(m: string) => void>(() => undefined)
+  const laterToast = useRef<string | null>(null)
+  // New work for an archived customer brings them back; the toast shows on the job's page that opens next
+  const onActiveAgain = useCallback((name: string) => { laterToast.current = `${name} is active again.` }, [])
   const top = stack[stack.length - 1]!
 
   const go = useCallback((parsed: Route) => {
@@ -181,12 +189,12 @@ export function Walkthrough({ start = START }: { start?: Route }) {
   return (
     <div data-slot="walkthrough" data-route={`${top.screen}${top.id ? `:${top.id}` : ""}`} style={{ display: "contents" }} onClickCapture={onClickCapture} onKeyDownCapture={onKeyDownCapture}>
       <AdminShell key={`${top.screen}:${top.id ?? ""}`} current={SECTION_OF[top.screen]} user={USER} onSearch={async (q) => searchWorld(q)} profileHref="/admin/profile" helpHref="/admin/help">
-        <ToastBridge toastRef={toastRef} />
+        <ToastBridge toastRef={toastRef} later={laterToast} />
         <Strip stack={stack} onJump={jump} onStartOver={startOver} />
         <div key={`${epoch}-${top.screen}-${top.id ?? ""}`}>
           <RouteScreen route={top} rows={rows} onBack={() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))} onOpenJob={(id) => go({ screen: "job", id })} onOpenCustomer={(id) => go({ screen: "customer", id })} onNew={() => go({ screen: "jobs", newJob: true })} />
         </div>
-        <NewJobSheet sheet={sheet} onClose={() => setSheet(null)} onMade={() => setMade((n) => n + 1)} onCreated={(id) => go({ screen: "job", id })} />
+        <NewJobSheet sheet={sheet} onClose={() => setSheet(null)} onMade={() => setMade((n) => n + 1)} onCreated={(id) => go({ screen: "job", id })} onActiveAgain={onActiveAgain} />
       </AdminShell>
       {receiptToast.toast && <ReceiptToast text={receiptToast.toast.text} onView={() => (openReceipt(receiptToast.toast!.paid), receiptToast.clear())} />}
       {message && <MessageView channel={message.channel} paid={message.paid} onClose={() => setMessage(null)} />}

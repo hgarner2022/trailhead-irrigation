@@ -6,10 +6,13 @@ import type { PageCustomer } from "../JobPageTrips"
 
 // The walkthrough's jobs (see data.ts for the world): the Jobs grid's rows and the page each one opens.
 
-export const REAL_CUSTOMERS = ["andrea", "marcus", "dale"] as const
+// Andrea, Marcus and Dale are the three with full histories; Priya, Hal, Ivy and Gus are the four of the customer-status design (New, Active by a job
+// 20 months ago with a past-due invoice, Past customer marked Do not service, Archived), so the Customers list shows every status.
+export const REAL_CUSTOMERS = ["andrea", "marcus", "dale", "priya", "hal", "ivy", "gus"] as const
 export type RealCustomer = (typeof REAL_CUSTOMERS)[number]
 const slug = (name: string) => name.toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "")
-export const customerIdOf = (name: string) => (name === "Andrea Dalton" ? "andrea" : name === "Marcus Bell" ? "marcus" : name === "Dale Whitaker" ? "dale" : `other-${slug(name)}`)
+const REAL_NAMES: Record<string, RealCustomer> = { "Andrea Dalton": "andrea", "Marcus Bell": "marcus", "Dale Whitaker": "dale", "Priya Nair": "priya", "Hal Reed": "hal", "Ivy Lund": "ivy", "Gus Pratt": "gus" }
+export const customerIdOf = (name: string) => REAL_NAMES[name] ?? `other-${slug(name)}`
 export const isRealCustomer = (id: string): id is RealCustomer => (REAL_CUSTOMERS as readonly string[]).includes(id)
 
 // ---------------------------------------------------------------------------------------------------------------- jobs
@@ -36,6 +39,9 @@ export const GRID_ROWS: GridJob[] = [
   g("g-tom", "Tom Becker", "Sprinkler repair", "Sprinkler repair visit", "600 Hill Rd, Broomfield", "cancelled", "0 of 1 done", 145, null, "", "None", NOONE),
   g("g-tom-install", "Tom Becker", "New sprinkler system installation", "New sprinkler system installation", "600 Hill Rd, Broomfield", "unscheduled", "0 of 1 done", 0, null, "", "Unscheduled", NOONE),
   g("g-lena-lights", "Lena Park", "Christmas lights", "Christmas lights", "7 Oak Ct, Lafayette", "unscheduled", "0 of 1 done", 600, null, "", "Unscheduled", NOONE),
+  g("hal-turn-on", "Hal Reed", "Spring turn-on", "Spring turn-on", "41 Cottonwood Dr, Erie", "done", "1 of 1 done", 145, "overdue", "Past due since Apr 3, 2025", "None", RYAN, "2025"),
+  g("ivy-repair", "Ivy Lund", "Sprinkler repair", "Sprinkler repair visit", "9 Meadow Ln, Louisville", "done", "1 of 1 done", 145, "paid", "Paid, check", "None", RYAN, "2024"),
+  g("gus-blowout", "Gus Pratt", "Fall blowout", "Fall blowout", "70 Ridge Rd, Lafayette", "done", "1 of 1 done", 95, "paid", "Paid, card", "None", RYAN, "2023"),
   g("g-ana", "Ana Ruiz", "Sprinkler repair", "Sprinkler repair visit", "9 Laurel St, Louisville", "late", "0 of 1 done", 145, null, "", "Mon, Nov 16", RYAN),
 ]
 
@@ -57,7 +63,11 @@ const OLD = "INV-2026-0001"
 const EXTRA: GridJob[] = []
 export const allRows = (): GridJob[] => [...GRID_ROWS, ...EXTRA]
 export const registerJob = (row: GridJob) => void EXTRA.push(row)
-export const resetExtras = () => void (EXTRA.length = 0)
+/** Customers brought back by new work in the prototype (Archived until a job is made for them); Start over clears it. */
+const BROUGHT_BACK = new Set<string>()
+export const markActiveAgain = (customerId: string) => void BROUGHT_BACK.add(customerId)
+export const isActiveAgain = (customerId: string) => BROUGHT_BACK.has(customerId)
+export const resetExtras = () => (EXTRA.length = 0, BROUGHT_BACK.clear(), undefined)
 export const rowOf = (id: string) => allRows().find((r) => r.id === id)
 export const customerOfJob = (id: string) => customerIdOf(rowOf(id)?.name ?? "")
 
@@ -73,6 +83,10 @@ const STATE_OF = (r: GridJob): JobState => {
 const CONTACTS: Record<string, { text: string; href: string; email: string }> = {
   andrea: { text: "(970) 555-0123", href: "tel:+19705550123", email: "andrea.dalton@example.com" },
   marcus: { text: "(970) 555-0188", href: "tel:+19705550188", email: "marcus.bell@example.com" },
+  priya: { text: "(970) 555-0123", href: "tel:+19705550123", email: "priya.nair@example.com" },
+  hal: { text: "(970) 555-0123", href: "tel:+19705550123", email: "hal.reed@example.com" },
+  ivy: { text: "(970) 555-0123", href: "tel:+19705550123", email: "ivy.lund@example.com" },
+  gus: { text: "(970) 555-0123", href: "tel:+19705550123", email: "gus.pratt@example.com" },
 }
 export const contactOf = (name: string) => {
   const id = customerIdOf(name)
