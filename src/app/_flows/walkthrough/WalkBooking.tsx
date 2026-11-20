@@ -49,6 +49,8 @@ export interface Booked {
   phone: string
   channel: ContactChannel
   photos: number
+  /** ticked "Send me tips and offers from Trailhead by email" */
+  marketing: boolean
 }
 
 /** The steps for a service: the booking's, with Add photos before the confirm step of a visit (not a pass, not a quote). */
@@ -95,6 +97,7 @@ export function WalkBooking({ onBooked, onOpenAccount, today = "2027-04-14" }: {
   const [files, setFiles] = useState<string[]>([])
   const [photos, setPhotos] = useState<{ name: string; src: string }[]>([])
   const [channel, setChannel] = useState<ContactChannel>("text")
+  const [marketing, setMarketing] = useState(false)
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
   const town = townOf(fields)
 
@@ -115,7 +118,7 @@ export function WalkBooking({ onBooked, onOpenAccount, today = "2027-04-14" }: {
   // Told once, when Done is reached: the booking, so the texts step can show what this customer got.
   useEffect(() => {
     if (step === "done" && !quote && service && pick?.day && pick.start) {
-      onBooked({ service: service.name, day: pick.day, start: pick.start, street: fields.place?.line1 ?? fields.address ?? "480 Briggs St", town: town ?? "Erie", firstName: fields.firstName || "Andrea", email: fields.email, phone: fields.phone, channel, photos: photos.length })
+      onBooked({ service: service.name, day: pick.day, start: pick.start, street: fields.place?.line1 ?? fields.address ?? "480 Briggs St", town: town ?? "Erie", firstName: fields.firstName || "Andrea", email: fields.email, phone: fields.phone, channel, photos: photos.length, marketing })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
@@ -178,6 +181,10 @@ export function WalkBooking({ onBooked, onOpenAccount, today = "2027-04-14" }: {
         <>
           <ContactStep state={fields} set={set} attempted={attempted} terms={quote ? "none" : "booking"} />
           <ContactPreference value={channel} onChange={setChannel} />
+          <label data-slot="marketing-optin" className="mt-6 flex min-h-11 cursor-pointer items-start gap-3 text-base text-foreground">
+            <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} className="mt-1 size-5 shrink-0 accent-primary" />
+            Send me tips and offers from Trailhead by email
+          </label>
         </>
       )
       break

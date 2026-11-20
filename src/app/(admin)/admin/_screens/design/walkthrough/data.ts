@@ -3,6 +3,7 @@ import { type CustomerPageData, customerPageOf } from "../customer-fixtures"
 import { INVOICE_ROWS, dayWords, invoicePageOf, money, type InvoiceFixture, type InvoiceListRow, type InvoicePageData } from "../invoice-fixtures"
 import { allRows, GRID_ROWS, contactOf, customerIdOf, customerOfJob, isRealCustomer, rowOf } from "./jobs-data"
 import type { Route } from "./routes"
+import { readChoice } from "@/app/_flows/walkthrough/marketing-choice"
 
 export * from "./jobs-data"
 
@@ -24,9 +25,17 @@ const madeHere = (id: string): CustomerPageData["jobs"] =>
     .filter((r) => r.id.startsWith("new-") && customerIdOf(r.name) === id)
     .map((r) => ({ id: r.id, name: r.title, open: true, sortDay: "2026-11-19", status: r.stage === "scheduled" ? ("scheduled" as const) : ("needs-a-day" as const), statusLabel: r.stage === "scheduled" ? "Scheduled" : "Unscheduled", money: null }))
 
+/** Andrea's Consent card follows what she chose in the customer walkthrough (the booking's box, Details' switches), when she chose anything. */
+function withChoice(page: CustomerPageData): CustomerPageData {
+  if (page.id !== "andrea") return page
+  const c = typeof window === "undefined" ? {} : readChoice()
+  const line = (on: boolean | undefined, was: { on: boolean; note?: string }) => (on === undefined ? was : { on, note: `${on ? "Opted in" : "Opted out"} today by the customer on the website` })
+  return { ...page, consent: { ...page.consent, email: line(c.email, page.consent.email), text: line(c.text, page.consent.text) } }
+}
+
 export function customerPage(id: string): CustomerPageData | null {
   const page = customerPageBase(id)
-  return page ? { ...page, jobs: [...madeHere(id), ...page.jobs] } : null
+  return page ? withChoice({ ...page, jobs: [...madeHere(id), ...page.jobs] }) : null
 }
 
 function customerPageBase(id: string): CustomerPageData | null {

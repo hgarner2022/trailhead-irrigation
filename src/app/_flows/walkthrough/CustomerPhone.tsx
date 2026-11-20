@@ -23,6 +23,8 @@ import { classifyHref, STEPS, stepOf, type StepKey, type Target, type Where } fr
 
 import { allMessages, DEFAULT_FACTS, type TextFacts } from "./walk-texts"
 import { PhoneInbox } from "./PhoneInbox"
+import { MarketingSwitches } from "./MarketingSwitches"
+import { MARKETING_MAIL, readChoice, writeChoice } from "./marketing-choice"
 import { WalkBooking, type Booked } from "./WalkBooking"
 import { WAYS, type Way } from "./receipt-data"
 import { ReceiptSet } from "./ReceiptViews"
@@ -76,6 +78,16 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   const [placeholder, setPlaceholder] = useState<{ title: string; path: string } | null>(null)
   const [booked, setBooked] = useState<Booked | null>(null)
   const [channel, setChannel] = useState<ContactChannel>("text")
+  // Marketing is off until the customer says so: by the box in the booking, or the switches in Details. The admin walkthrough reads the same choice.
+  const [marketing, setMarketing] = useState<{ email: boolean; text: boolean }>(() => {
+    writeChoice({})
+    return { email: false, text: false }
+  })
+  const choose = (kind: "email" | "text", on: boolean) => {
+    setMarketing((m) => ({ ...m, [kind]: on }))
+    writeChoice({ ...readChoice(), [kind]: on })
+    setNotice(`Marketing ${kind === "email" ? "emails" : "texts"} ${on ? "on" : "off"}`)
+  }
   const [bookRun, setBookRun] = useState(0)
   const [notice, setNotice] = useState<string | null>(null)
   const [way, setWay] = useState<Way>("card")
@@ -140,6 +152,7 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
             <div className="mx-auto max-w-3xl pb-10 container-padding-x">
               <ContactPreference value={channel} onChange={setChannel} name="details-preference" />
               <p className="mt-2 text-sm text-muted-foreground">{`We reach you by ${channelWords(channel)}.`}</p>
+              <MarketingSwitches email={marketing.email} text={marketing.text} onEmail={(on) => choose("email", on)} onText={(on) => choose("text", on)} />
             </div>
           </>,
           "/account/details",
@@ -160,10 +173,10 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   let body: ReactNode
   switch (where) {
     case "book":
-      body = <WalkBooking key={bookRun} onBooked={setBooked} onOpenAccount={() => open("/account")} />
+      body = <WalkBooking key={bookRun} onBooked={(b) => (setBooked(b), b.marketing && (setMarketing((m) => ({ ...m, email: true })), writeChoice({ ...readChoice(), email: true })))} onOpenAccount={() => open("/account")} />
       break
     case "texts":
-      body = <PhoneInbox texts={allMessages(facts, pref)} onLink={open} />
+      body = <PhoneInbox texts={[...allMessages(facts, pref), ...(marketing.email ? [MARKETING_MAIL] : [])]} onLink={open} onUnsubscribe={() => choose("email", false)} />
       break
     case "receipts": {
       const choice = WAYS.find((w) => w.way === way)!

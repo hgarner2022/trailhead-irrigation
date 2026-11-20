@@ -35,11 +35,13 @@ function Words({ body, onLink }: { body: string; onLink: (url: string) => void }
   )
 }
 
-export function PhoneInbox({ texts, onLink }: { texts: FlowText[]; onLink: (url: string) => void }) {
+export function PhoneInbox({ texts, onLink, onUnsubscribe }: { texts: FlowText[]; onLink: (url: string) => void; onUnsubscribe?: () => void }) {
   const messages = texts.filter((t) => t.channel === "text")
   const mail = texts.filter((t) => t.channel === "email")
   const [tab, setTab] = useState<"messages" | "mail">(messages.length ? "messages" : "mail")
-  const [open, setOpen] = useState<FlowText | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
+  const open = mail.find((m) => m.id === openId) ?? null
+  const setOpen = (t: FlowText | null) => setOpenId(t?.id ?? null)
   return (
     <div data-slot="phone-inbox" className="flex min-h-svh flex-col bg-white">
       <header className="border-b border-border bg-stone/70 px-4 pb-3 pt-4 text-center">
@@ -68,6 +70,12 @@ export function PhoneInbox({ texts, onLink }: { texts: FlowText[]; onLink: (url:
             <h2 className="text-lg font-semibold text-foreground">{open.subject}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">From Trailhead Lawn &amp; Irrigation</p>
             <p className="mt-4 whitespace-pre-wrap break-words text-[15px] leading-snug text-foreground"><Words body={open.body} onLink={onLink} /></p>
+            {open.id === "marketing-email" && (
+              <p data-slot="mail-footer" className="mt-6 border-t border-border pt-3 text-sm text-muted-foreground">
+                You get this because you chose marketing emails.{" "}
+                <button type="button" onClick={onUnsubscribe} className="min-h-9 font-medium text-[#0a66c2] underline underline-offset-2">Unsubscribe</button>
+              </p>
+            )}
           </article>
         ) : mail.length === 0 ? (
           <p className="px-2 text-sm text-muted-foreground">No emails. You chose text.</p>

@@ -81,6 +81,7 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.type(await c.findByLabelText("Last name"), "Dalton")
     await userEvent.type(await c.findByLabelText("Email"), "andrea.dalton@example.com")
     await userEvent.type(await c.findByLabelText(/Mobile|Phone/), "9705550123")
+    await expect(await c.findByLabelText("Send me tips and offers from Trailhead by email")).not.toBeChecked()
     for (const box of await c.findAllByRole("checkbox")) await userEvent.click(box)
     await userEvent.click(await c.findByRole("radio", { name: /Text and email/ }))
     await next()
@@ -91,6 +92,8 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await expect(await c.findByRole("article", { name: /booked/ })).toBeInTheDocument()
     await userEvent.click(await c.findByRole("link", { name: "your Trailhead account" }))
     await waitFor(() => expect(where(canvasElement)).toBe("account"))
+    // the box was ticked: marketing email is on, and the admin walkthrough reads it
+    await expect(JSON.parse(window.localStorage.getItem("trailhead-walkthrough-marketing") ?? "{}").email).toBe(true)
   },
 }
 
