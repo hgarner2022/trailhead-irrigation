@@ -19,8 +19,8 @@ import { seasonCaption } from "../pass/_screens/pass-page-model"
 import { openInvoices } from "./account-model"
 import { VisitControls, type VisitActions } from "./VisitControls"
 
-// Home: the account's one screen most customers ever open (docs/plans/2026-11-19-customer-side-polish-research.md, section 1a). In order: the next visit with its exact time
-// as the headline and Reschedule as the one filled button (Cancel visit a quiet link, or Text Ryan inside 24 hours), the invoice waiting to be paid under it, the Season Pass
+// Home: the account's one screen most customers ever open (docs/plans/2026-11-19-customer-side-polish-research.md, section 1a). In order: the invoice waiting to be paid on top (Hannah, Nov 20 2026: what the customer must act on comes first), then the next visit with its exact
+// time as the headline and Reschedule as the one filled button (Cancel visit a quiet link, or Text Ryan inside 24 hours), the Season Pass
 // card over its season line for someone who holds one or the pass sell card for someone who does not, and the three latest visits. On a laptop it is a 12-column grid: the
 // visit and invoice take seven columns, the pass or the sell card five, recent visits the full width under both; one column on a phone. Spacing is the 8-point scale through
 // `Stack` and `Grid`. Pure composition over the data the page loads; the server actions arrive through `VisitActions`.
@@ -53,6 +53,15 @@ export function HomeScreen({ customer, jobs, today, pass, days = {}, times, offe
         <Grid cols={{ base: 1, lg: 12 }} gap="lg">
           <GridCol span={{ base: "full", lg: 7 }}>
             <Stack gap="lg">
+              {invoices.length > 0 && (
+                <section aria-label={invoices.length > 1 ? "Invoices" : "Invoice"} data-slot="home-invoices">
+                  <Stack gap="sm">
+                    {invoices.map((i) => (
+                      <InvoiceBanner key={i.id} jobName={i.jobName} total={i.total} dueOn={i.dueOn} status={i.status} payHref={i.payHref} />
+                    ))}
+                  </Stack>
+                </section>
+              )}
               <NextVisitCard
                 visit={
                   next && model
@@ -69,15 +78,6 @@ export function HomeScreen({ customer, jobs, today, pass, days = {}, times, offe
                     : null
                 }
               />
-              {invoices.length > 0 && (
-                <section aria-label={invoices.length > 1 ? "Invoices" : "Invoice"} data-slot="home-invoices">
-                  <Stack gap="sm">
-                    {invoices.map((i) => (
-                      <InvoiceBanner key={i.id} jobName={i.jobName} total={i.total} dueOn={i.dueOn} status={i.status} payHref={i.payHref} />
-                    ))}
-                  </Stack>
-                </section>
-              )}
             </Stack>
           </GridCol>
           <GridCol span={{ base: "full", lg: 5 }}>
