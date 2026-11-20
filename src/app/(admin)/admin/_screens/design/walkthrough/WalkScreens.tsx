@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
 import type { GridCardSlots } from "@/components/blocks/DataGridCard"
@@ -9,6 +9,9 @@ import { PageHeader } from "@/components/blocks/PageHeader"
 import { RecordChip } from "@/components/blocks/RecordChip"
 import { recordHref } from "@/components/blocks/record-preview-model"
 import { StatusPill } from "@/components/blocks/StatusPill"
+import { DoNotServiceTag } from "@/components/blocks/DoNotServiceTag"
+import { CUSTOMER_STATUS_WORDS, type CustomerStatus } from "@/lib/customers/status"
+import { STATUS_PILL } from "../customer-fixtures"
 import { useToast } from "@/components/blocks/Toast"
 import { CustomerPage } from "../CustomerPage"
 import { InvoicePage } from "../InvoicePanel"
@@ -88,27 +91,38 @@ export function NewJobSheet({ sheet, onClose, onCreated, onMade }: { sheet: { cu
   )
 }
 
-const customerColumns: GridColumnDef<CustomerListRow>[] = [
-  { id: "name", accessorFn: (r) => `${r.name} ${r.street}`, header: "Customer", cell: ({ row }) => row.original.name, meta: { csv: (r) => (r as CustomerListRow).name } },
+/** A row of the Customers list with the status read from the customer's jobs by `customerStatusOf`, and the Do not service mark. */
+type ListRow = CustomerListRow & { status: CustomerStatus; dns?: { reason?: string } }
+const customerColumns: GridColumnDef<ListRow>[] = [
+  { id: "name", accessorFn: (r) => `${r.name} ${r.street}`, header: "Customer", cell: ({ row }) => <span className="inline-flex items-center gap-2">{row.original.name}{row.original.dns && <DoNotServiceTag size="sm" reason={row.original.dns.reason} />}</span>, meta: { csv: (r) => (r as CustomerListRow).name } },
+  { id: "status", accessorFn: (r) => r.status, header: "Status", cell: ({ row }) => <StatusPill status={STATUS_PILL[row.original.status].status} label={STATUS_PILL[row.original.status].label} />, meta: { csv: (r) => CUSTOMER_STATUS_WORDS[(r as ListRow).status] } },
   { id: "street", accessorKey: "street", header: "Property", cell: ({ row }) => <RecordChip kind="property" name={row.original.street} href={`/admin/customers?customer=${row.original.id}#property-h`} className="text-sm font-medium md:min-h-8" /> },
   { id: "next", accessorKey: "next", header: "Next visit" },
   { id: "unpaid", accessorKey: "unpaid", header: "Unpaid", cell: ({ row }) => <MoneyCell end text={row.original.unpaid ? money(row.original.unpaid) : null} />, meta: { align: "right", csv: (r) => String((r as CustomerListRow).unpaid) } },
   { id: "pass", accessorKey: "pass", header: "Season Pass", cell: ({ row }) => (row.original.pass ? <StatusPill status="active" label={row.original.pass} /> : null) },
   { id: "newjob", header: "", enableSorting: false, cell: ({ row }) => <Button asChild variant="outline" size="sm" className="min-h-8"><a href={`/admin/jobs?new=1&customer=${row.original.id}`} aria-label={`New job for ${row.original.name}`}>New job</a></Button> },
 ]
-const customerCard: GridCardSlots = { title: "name", line: ["street"], state: "pass", when: ["next"], money: "unpaid" }
+const customerCard: GridCardSlots = { title: "name", line: ["street"], state: "status", when: ["next"], money: "unpaid" }
 
-/** The three customers of the prototype, on the embedded DataGrid recipe: name, street, next visit, unpaid, pass. */
+const STATUS_OPTIONS = (["active", "new", "past", "archived"] as const).map((value) => ({ value, label: CUSTOMER_STATUS_WORDS[value] }))
+const SHOWN_BY_DEFAULT = ["active", "new", "past"]
+
+/** The three customers of the prototype, on the embedded DataGrid recipe: name, status, street, next visit, unpaid, pass. Archived customers are hidden until "Show archived" is pressed; Cmd+K still finds them. */
 export function CustomersList({ onOpen }: { onOpen: (id: string) => void }) {
+  const [showArchived, setShowArchived] = useState(false)
+  const data = useMemo<ListRow[]>(() => CUSTOMER_ROWS.map((r) => { const p = customerPage(r.id); return { ...r, status: p?.status ?? "active", dns: p?.doNotService } }), [])
   return (
     <div data-slot="walkthrough-customers">
-      <PageHeader title="Customers" context="3 customers" />
+      <PageHeader title="Customers" context={`${data.filter((r) => showArchived || r.status !== "archived").length} customers`} actions={<Button type="button" variant={showArchived ? "default" : "outline"} aria-pressed={showArchived} className="min-h-11" onClick={() => setShowArchived((v) => !v)}>Show archived</Button>} />
       <DataGrid
+        key={String(showArchived)}
         columns={customerColumns}
         card={customerCard}
-        data={CUSTOMER_ROWS}
-        getRowId={(r: CustomerListRow) => r.id}
+        data={data}
+        getRowId={(r: ListRow) => r.id}
         search={{ column: "name", placeholder: "Search by name or street" }}
+        filters={[{ column: "status", label: "Status", options: STATUS_OPTIONS }]}
+        defaultFilters={showArchived ? [] : [{ column: "status", values: SHOWN_BY_DEFAULT }]}
         onOpen={(r) => onOpen(r.id)}
         noMatchTitle="No customers match."
         emptyTitle="No customers yet"

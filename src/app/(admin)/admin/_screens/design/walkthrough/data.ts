@@ -1,5 +1,6 @@
 import type { SearchHit } from "@/lib/admin/search-hit"
-import { type CustomerPageData, customerPageOf } from "../customer-fixtures"
+import { CUSTOMER_STATUS_WORDS } from "@/lib/customers/status"
+import { type CustomerPageData, customerPageOf, withStatus } from "../customer-fixtures"
 import { INVOICE_ROWS, dayWords, invoicePageOf, money, type InvoiceFixture, type InvoiceListRow, type InvoicePageData } from "../invoice-fixtures"
 import { allRows, GRID_ROWS, contactOf, customerIdOf, customerOfJob, isRealCustomer, rowOf } from "./jobs-data"
 import type { Route } from "./routes"
@@ -35,7 +36,8 @@ function withChoice(page: CustomerPageData): CustomerPageData {
 
 export function customerPage(id: string): CustomerPageData | null {
   const page = customerPageBase(id)
-  return page ? withChoice({ ...page, jobs: [...madeHere(id), ...page.jobs] }) : null
+  // the status is read from the jobs by `customerStatusOf`, never typed here
+  return page ? withChoice(withStatus({ ...page, jobs: [...madeHere(id), ...page.jobs] })) : null
 }
 
 function customerPageBase(id: string): CustomerPageData | null {
@@ -216,6 +218,13 @@ export function nameOfRoute(route: Route): string | undefined {
 
 const digits = (s: string) => s.replace(/\D/g, "")
 /** Cmd+K over the walkthrough data: customers, then jobs, by name, street, phone or pass number. */
+/** A Cmd+K customer hit reads "street · Active" (and "· Do not service" when marked); an archived customer is still found. */
+function statusDetail(id: string, street: string): string {
+  const page = customerPage(id)
+  if (!page) return street
+  return [street, CUSTOMER_STATUS_WORDS[page.status], ...(page.doNotService ? ["Do not service"] : [])].join(" · ")
+}
+
 export function searchWorld(query: string): SearchHit[] {
   const q = query.trim().toLowerCase()
   if (q.length < 2) return []
@@ -227,7 +236,7 @@ export function searchWorld(query: string): SearchHit[] {
   }
   const customers: SearchHit[] = [...names.values()]
     .filter((c) => `${c.name} ${c.street}`.toLowerCase().includes(q) || (qd.length >= 3 && digits(c.phone).includes(qd)))
-    .map((c) => ({ kind: "customer", id: c.id, title: c.name, detail: c.street, href: `/admin/customers?customer=${c.id}`, contact: c.phone }))
+    .map((c) => ({ kind: "customer", id: c.id, title: c.name, detail: statusDetail(c.id, c.street), href: `/admin/customers?customer=${c.id}`, contact: c.phone }))
   const jobs: SearchHit[] = allRows().filter((r) => `${r.name} ${r.property} ${r.title}`.toLowerCase().includes(q)).map((r) => ({ kind: "job", id: r.id, title: r.title === r.service && r.service !== "Season Pass" ? `${r.name}, ${r.title}` : `${r.name}, ${r.title}`, detail: r.property, href: `/admin/jobs?job=${r.id}` }))
   return [...customers, ...jobs]
 }

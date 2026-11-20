@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
+import { DoNotServiceLine } from "@/components/blocks/DoNotServiceTag"
+import { customerPage } from "./data"
+import { customerIdOf } from "./jobs-data"
 
 // What the real New job sheet does not say yet, put under its customer (Hannah, Nov 19 2026): once a customer is chosen, from a customer's page, a
 // job, an invoice, the Customers list or by typing a name, the sheet shows their property (street, zones, access note, gate code), how to reach
@@ -71,6 +74,7 @@ export function NewJobContext({ focusWhat }: { focusWhat: boolean }) {
   }, [focusWhat])
   const facts = CUSTOMER_FACTS.find((f) => f.name === name)
   if (!host || !facts) return null
+  const dns = customerPage(customerIdOf(facts.name))?.doNotService
   return createPortal(
     <section data-slot="new-job-customer" aria-label={`${facts.name}'s property`} className="mt-3 rounded-lg bg-stone p-3 text-sm">
       <dl className="grid grid-cols-[6.5rem_1fr] gap-x-3 gap-y-1">
@@ -85,6 +89,7 @@ export function NewJobContext({ focusWhat }: { focusWhat: boolean }) {
         <dt className="text-navy-light">Contact by</dt>
         <dd className="font-medium text-foreground">{facts.contactBy}</dd>
       </dl>
+      {dns && <DoNotServiceLine reason={dns.reason} className="mt-2" />}
       <p data-slot="new-job-last" className="mt-2 text-navy-light">{`Last job: ${facts.lastJob}`}</p>
     </section>,
     host,
