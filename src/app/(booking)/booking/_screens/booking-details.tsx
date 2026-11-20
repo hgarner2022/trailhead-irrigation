@@ -63,7 +63,7 @@ export function BookingDetails({ service, zones, onZones, access, onAccess, atte
       </FormRow>
       <section aria-labelledby="photos-heading">
         <h2 id="photos-heading" className="font-display text-2xl leading-tight text-navy">
-          Add photos
+          Photos
         </h2>
         <PhotoPicker className="mt-4" photos={shared.photos} onAdd={shared.onAddPhotos} onRemove={shared.onRemovePhoto} samples={SAMPLES} />
       </section>
@@ -80,7 +80,7 @@ export function QuoteDetails(shared: Shared) {
       </FormRow>
       <section aria-labelledby="photos-heading">
         <h2 id="photos-heading" className="font-display text-2xl leading-tight text-navy">
-          Add photos
+          Photos
         </h2>
         <PhotoPicker className="mt-4" photos={shared.photos} onAdd={shared.onAddPhotos} onRemove={shared.onRemovePhoto} samples={SAMPLES} />
       </section>

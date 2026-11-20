@@ -49,12 +49,10 @@ export function ZipCheck({ value, onChange, attempted, className }: ZipCheckProp
           <MapPinOff aria-hidden className="mt-0.5 size-5 shrink-0 text-navy" />
           <div className="space-y-2 text-base text-foreground">
             <p>{zipOutside(result.zip)}</p>
-            <p>
-              {`${ZIP_WAY_OUT} `}
-              <a href={PHONE_TEL} className="inline-flex min-h-11 items-center font-semibold text-primary-deep underline underline-offset-2">
-                {`Call ${PHONE_DISPLAY}`}
-              </a>
-            </p>
+            <p>{ZIP_WAY_OUT}</p>
+            <a href={PHONE_TEL} className="flex min-h-11 items-center font-semibold text-primary-deep underline underline-offset-2">
+              {`Call ${PHONE_DISPLAY}`}
+            </a>
           </div>
         </div>
       )}
