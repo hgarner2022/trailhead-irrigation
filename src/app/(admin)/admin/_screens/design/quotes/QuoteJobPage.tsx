@@ -14,7 +14,9 @@ import { SummaryBand } from "@/components/blocks/SummaryBand"
 import { useToast } from "@/components/blocks/Toast"
 import type { PhotoItem } from "@/lib/photos/types"
 import { NOW, noteOk } from "../job-fixtures"
+import { PriceChangeDialog } from "./PriceChangeDialog"
 import { ApproveByHandDialog, LineDialog, QuoteReminderDialog, ReviseDialog, SendQuoteDialog } from "./QuoteDialogs"
+import { isApproved, type PriceChange, untoldChange } from "./price-change"
 import { HOW_WORDS, LinesCard, QuoteBilling, QuoteCard, VisitCard, historyLines, quoteBand } from "./QuoteJobParts"
 import { canSend, liveQuote, money, nextNumber, QUOTES_NOW, STAGE_PILL, stageOf, VIA_WORDS } from "./quote-model"
 import { useQuoteJob, useQuoteJobs, type QuoteStore } from "./quote-store"
@@ -40,13 +42,17 @@ export interface QuoteJobPageProps {
   sendInitial?: { mode: "none" | "dollars" | "percent"; value: string }
   /** "Schedule" on an approved job: the schedule dialog is the one every job has */
   onSchedule?: () => void
+  /** the Tell the customer dialog open on first render (the story that shows it) */
+  initialTell?: PriceChange | null
 }
 
-export function QuoteJobPage({ store, jobId, now = QUOTES_NOW, photos, initialDialog = null, sendInitial, onSchedule }: QuoteJobPageProps) {
+export function QuoteJobPage({ store, jobId, now = QUOTES_NOW, photos, initialDialog = null, sendInitial, onSchedule, initialTell = null }: QuoteJobPageProps) {
   const toast = useToast()
   const job = useQuoteJob(store, jobId)
   const all = useQuoteJobs(store)
   const [dialog, setDialog] = useState<Dialog>(initialDialog)
+  // the Tell the customer step after a price change: its own state, so the line dialog closing never closes it
+  const [tell, setTell] = useState<PriceChange | null>(initialTell)
   if (!job) return null
   const stage = stageOf(job)
   const q = liveQuote(job)
@@ -64,7 +70,7 @@ export function QuoteJobPage({ store, jobId, now = QUOTES_NOW, photos, initialDi
     ) : stage === "quote-sent" ? (
       <RecordFooter primary={act(remindedToday ? "Reminded today" : "Send a quote reminder", () => setDialog("remind"), remindedToday)} secondary={[act("Mark approved", () => setDialog("approve")), act("Revise", () => setDialog("revise"))]} destructive={act("Cancel job", () => setDialog("cancel"))} destructiveInMenu />
     ) : stage === "open" ? (
-      <RecordFooter primary={act("Schedule", () => (onSchedule ? onSchedule() : toast("The schedule dialog is the one every job has")))} destructive={act("Cancel job", () => setDialog("cancel"))} destructiveInMenu />
+      <RecordFooter primary={act("Schedule", () => (onSchedule ? onSchedule() : toast("The schedule dialog is the one every job has")))} more={isApproved(job) ? [act("Add a line", () => setDialog({ line: "new" }))] : undefined} destructive={act("Cancel job", () => setDialog("cancel"))} destructiveInMenu />
     ) : undefined
 
   const refundWords = q?.deposit?.paid ? `${job.first} is told by ${job.contact === "email" ? "email" : "text"}.` : ""
@@ -91,7 +97,7 @@ export function QuoteJobPage({ store, jobId, now = QUOTES_NOW, photos, initialDi
         {/* a job that needs a quote leads with the Quote section: pricing and sending is what its page is for */}
         {stage === "needs-a-quote" && <QuoteCard job={job} now={now} />}
         {job.visit && <VisitCard visit={job.visit} />}
-        <LinesCard job={job} onAdd={() => setDialog({ line: "new" })} onEdit={(id) => setDialog({ line: id })} />
+        <LinesCard job={job} onAdd={() => setDialog({ line: "new" })} onEdit={(id) => setDialog({ line: id })} onTell={() => setTell(untoldChange(job))} />
         {stage !== "needs-a-quote" && <QuoteCard job={job} now={now} />}
         <QuoteBilling job={job} onRefund={() => setDialog("refund")} />
         {photos && photos.length > 0 && (
@@ -171,17 +177,40 @@ export function QuoteJobPage({ store, jobId, now = QUOTES_NOW, photos, initialDi
           onConfirm={async () => (store.cancelJob(job.jobId, now), toast("Job canceled"), { ok: true })}
         />
       )}
+      {tell && (
+        <PriceChangeDialog
+          job={job}
+          change={tell}
+          onClose={() => setTell(null)}
+          onSend={({ via }) => {
+            store.tellPrice(job.jobId, { via, at: now })
+            toast(via === "none" ? `The new total, ${money(tell.to)}, is kept. ${job.first} was not told.` : `${job.first} was told the new total, ${money(tell.to)}, by ${VIA_WORDS[via]}`)
+          }}
+        />
+      )}
       {lineId && (
         <LineDialog
           line={editLine}
+          approved={isApproved(job)}
           onClose={close}
           onSave={(l) => {
             const next = { name: l.name, description: l.description || undefined, amount: l.amount }
-            if (editLine) store.updateLine(job.jobId, editLine.id, next)
-            else store.addLine(job.jobId, next)
+            // after approval a change that moves the total opens the Tell the customer step; before, a line is only a line
+            const moved = editLine ? store.updateLine(job.jobId, editLine.id, next, now) : store.addLine(job.jobId, next, now)
             toast(editLine ? "Line saved" : "Line added")
+            if (moved) setTell(moved)
           }}
-          onRemove={editLine ? () => (store.removeLine(job.jobId, editLine.id), toast("Line removed"), close()) : undefined}
+          onRemove={editLine ? () => {
+            if (isApproved(job)) {
+              const moved = store.cancelLine(job.jobId, editLine.id, now)
+              toast("Line canceled")
+              if (moved) setTell(moved)
+            } else {
+              store.removeLine(job.jobId, editLine.id)
+              toast("Line removed")
+            }
+            close()
+          } : undefined}
         />
       )}
     </>

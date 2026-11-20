@@ -5,6 +5,7 @@ import { passPageOf, type MultiTripData } from "../trip-fixtures"
 import type { PageCustomer } from "../JobPageTrips"
 import { quoteGridRow } from "../quotes/quote-grid"
 import { walkQuotes } from "../quotes/quote-store"
+import { clearWorldCustomers, worldCustomer } from "./world-customers"
 
 // The walkthrough's jobs (see data.ts for the world): the Jobs grid's rows and the page each one opens.
 
@@ -81,7 +82,7 @@ export const registerJob = (row: GridJob) => void EXTRA.push(row)
 const BROUGHT_BACK = new Set<string>()
 export const markActiveAgain = (customerId: string) => void BROUGHT_BACK.add(customerId)
 export const isActiveAgain = (customerId: string) => BROUGHT_BACK.has(customerId)
-export const resetExtras = () => (EXTRA.length = 0, BROUGHT_BACK.clear(), undefined)
+export const resetExtras = () => (EXTRA.length = 0, BROUGHT_BACK.clear(), clearWorldCustomers(), undefined)
 export const rowOf = (id: string) => allRows().find((r) => r.id === id)
 export const customerOfJob = (id: string) => customerIdOf(rowOf(id)?.name ?? "")
 
@@ -97,6 +98,7 @@ const STATE_OF = (r: GridJob): JobState => {
 const CONTACTS: Record<string, { text: string; href: string; email: string }> = {
   andrea: { text: "(970) 555-0123", href: "tel:+19705550123", email: "andrea.dalton@example.com" },
   marcus: { text: "(970) 555-0188", href: "tel:+19705550188", email: "marcus.bell@example.com" },
+  dale: { text: "(970) 555-0140", href: "tel:+19705550140", email: "dale.whitaker@example.com" },
   priya: { text: "(970) 555-0123", href: "tel:+19705550123", email: "priya.nair@example.com" },
   hal: { text: "(970) 555-0123", href: "tel:+19705550123", email: "hal.reed@example.com" },
   ivy: { text: "(970) 555-0123", href: "tel:+19705550123", email: "ivy.lund@example.com" },
@@ -104,7 +106,10 @@ const CONTACTS: Record<string, { text: string; href: string; email: string }> = 
 }
 export const contactOf = (name: string) => {
   const id = customerIdOf(name)
-  return CONTACTS[id] ?? { text: "(970) 555-0123", href: "tel:+19705550123", email: `${name.toLowerCase().replace(/\s+/g, ".")}@example.com` }
+  const w = worldCustomer(id)
+  if (CONTACTS[id]) return CONTACTS[id]
+  if (w) return { text: w.phone, href: `tel:+1${w.phone.replace(/\D/g, "")}`, email: w.email }
+  return { text: "(970) 555-0123", href: "tel:+19705550123", email: `${name.toLowerCase().replace(/\s+/g, ".")}@example.com` }
 }
 
 const cheaper = (t: string) => t.replaceAll("$260", "$210").replaceAll("$145", "$95")

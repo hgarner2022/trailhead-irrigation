@@ -2,7 +2,8 @@
 
 import { useSyncExternalStore } from "react"
 import { QUOTE_HISTORY_FIXTURES } from "./quote-history-fixtures"
-import { QUOTE_JOB_FIXTURES, STAGE_PILL, liveQuote, nextNumber, stageOf, type Channel, type DepositHow, type QuoteJob, type QuoteLine, type QuoteState } from "./quote-model"
+import { QUOTES_NOW, QUOTE_JOB_FIXTURES, STAGE_PILL, liveQuote, money, nextNumber, stageOf, type Channel, type DepositHow, type QuoteJob, type QuoteLine, type QuoteState } from "./quote-model"
+import { currentTotal, isApproved, untoldChange, type PriceChange } from "./price-change"
 
 // The quotes of the prototype: each job's lines and the quotes made on it, held in a small store that a page subscribes to. A story makes its own store (so a
 // story that sends a quote never changes another); the walkthrough has one that Start over resets. Every action here is what Ryan's buttons do, and each
@@ -13,9 +14,14 @@ export interface QuoteStore {
   getSnapshot: () => Record<string, QuoteJob>
   getServerSnapshot: () => Record<string, QuoteJob>
   add: (job: QuoteJob) => void
-  addLine: (jobId: string, line: Omit<QuoteLine, "id">) => void
-  updateLine: (jobId: string, id: string, patch: Partial<Omit<QuoteLine, "id">>) => void
-  removeLine: (jobId: string, id: string) => void
+  /** Each line edit answers what the customer has not been told when it moved the total of an approved job (`price-change.ts`), else null. `at` is the history's time. */
+  addLine: (jobId: string, line: Omit<QuoteLine, "id">, at?: string) => PriceChange | null
+  updateLine: (jobId: string, id: string, patch: Partial<Omit<QuoteLine, "id">>, at?: string) => PriceChange | null
+  removeLine: (jobId: string, id: string, at?: string) => PriceChange | null
+  /** After approval a line is canceled, not removed: struck through, out of the total */
+  cancelLine: (jobId: string, id: string, at?: string) => PriceChange | null
+  /** Ryan tells the customer the new total (`via`), or keeps the change without notifying (`none`): either way it is the last step */
+  tellPrice: (jobId: string, o: { via: Channel | "none"; at: string }) => void
   send: (jobId: string, o: { via: Channel | "none"; deposit: { amount: number; percent?: number } | null; at: string }) => string
   remind: (jobId: string, o: { via: Channel; at: string }) => void
   revise: (jobId: string, at: string) => void
@@ -41,6 +47,21 @@ export function createQuoteStore(initial: readonly QuoteJob[] = [...QUOTE_JOB_FI
   }
   const note = (j: QuoteJob, at: string, what: string) => (j.history = [...j.history, { at, actor: "Ryan", what }])
   const live = (j: QuoteJob) => liveQuote(j)
+  // A line edit. On an approved job whose total moved, the history says "Price changed from $1,200 to $1,500" and the answer is what the customer has not been told.
+  const edit = (id: string, at: string = QUOTES_NOW, change: (j: QuoteJob) => void): PriceChange | null => {
+    let out = null as PriceChange | null
+    set(id, (j) => {
+      const before = currentTotal(j)
+      change(j)
+      const after = currentTotal(j)
+      if (isApproved(j) && before !== after) {
+        j.history = [...j.history, { at, actor: "Ryan", what: `Price changed from ${money(before)} to ${money(after)}`, kind: "price-changed", price: { from: before, to: after } }]
+        out = untoldChange(j)
+      }
+      return j
+    })
+    return out
+  }
   return {
     subscribe(l) {
       listeners.add(l)
@@ -52,14 +73,17 @@ export function createQuoteStore(initial: readonly QuoteJob[] = [...QUOTE_JOB_FI
       jobs = { ...jobs, [job.jobId]: structuredClone(job) }
       listeners.forEach((l) => l())
     },
-    addLine(id, line) {
-      set(id, (j) => ((j.lines = [...j.lines, { ...line, id: `l${j.lines.length + 1}-${Date.now() % 100000}` }]), j))
-    },
-    updateLine(id, lineId, patch) {
-      set(id, (j) => ((j.lines = j.lines.map((l) => (l.id === lineId ? { ...l, ...patch } : l))), j))
-    },
-    removeLine(id, lineId) {
-      set(id, (j) => ((j.lines = j.lines.filter((l) => l.id !== lineId)), j))
+    addLine: (id, line, at) => edit(id, at, (j) => (j.lines = [...j.lines, { ...line, id: `l${j.lines.length + 1}-${Date.now() % 100000}` }])),
+    updateLine: (id, lineId, patch, at) => edit(id, at, (j) => (j.lines = j.lines.map((l) => (l.id === lineId ? { ...l, ...patch } : l)))),
+    removeLine: (id, lineId, at) => edit(id, at, (j) => (j.lines = j.lines.filter((l) => l.id !== lineId))),
+    cancelLine: (id, lineId, at) => edit(id, at, (j) => (j.lines = j.lines.map((l) => (l.id === lineId ? { ...l, canceled: true } : l)))),
+    tellPrice(id, o) {
+      set(id, (j) => {
+        const to = currentTotal(j)
+        const what = o.via === "none" ? `Kept the new total, ${money(to)}, without notifying ${j.first}` : `Told ${j.first} the new total, ${money(to)}, by ${VIA[o.via]}`
+        j.history = [...j.history, { at: o.at, actor: "Ryan", what, kind: "price-told" }]
+        return j
+      })
     },
     send(id, o) {
       let number = ""

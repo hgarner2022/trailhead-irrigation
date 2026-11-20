@@ -30,6 +30,7 @@ import { QuoteWalk } from "./QuoteWalk"
 import { BookingForm, type Booked } from "@/app/(booking)/booking/_screens/BookingForm"
 import { WAYS, type Way } from "./receipt-data"
 import { ReceiptSet } from "./ReceiptViews"
+import { LiveScreen } from "./LiveScreens"
 
 // The customer side, one clickable prototype (docs/plans/2026-11-19-prototype-walkthrough-spec.md, section 7): Book online, the texts and emails that
 // follow, the account (Home, Visits, a visit with Reschedule and Cancel), paying an invoice to its receipt, the Season Pass page and its renewal
@@ -93,6 +94,8 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
     setNotice(`Marketing ${kind === "email" ? "emails" : "texts"} ${on ? "on" : "off"}`)
   }
   const [bookRun, setBookRun] = useState(0)
+  // a link to a live screen already open (Use a different email, on the sent note) starts it again
+  const [liveRun, setLiveRun] = useState(0)
   const [notice, setNotice] = useState<string | null>(null)
   const [way, setWay] = useState<Way>("card")
   const [passDay, setPassDay] = useState<"april" | "november">("april")
@@ -114,6 +117,11 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
       case "book":
         setBookRun((n) => n + 1)
         return setWhere("book")
+      case "sign-in":
+      case "card-updated":
+      case "season-pass-page":
+        setLiveRun((n) => n + 1)
+        return setWhere(target.where)
       default:
         return setWhere(target.where)
     }
@@ -228,6 +236,11 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
       break
     case "renew":
       body = <CheckoutFlow season={2028} today="2027-11-05" renewal={RENEWAL} onDone={() => open("/account/pass")} />
+      break
+    case "sign-in":
+    case "card-updated":
+    case "season-pass-page":
+      body = <LiveScreen key={`${where}-${liveRun}`} which={where} onBack={() => open("/account")} onNotice={setNotice} />
       break
     case "placeholder":
       body = (

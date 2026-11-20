@@ -2,7 +2,9 @@ import { useState } from "react"
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, userEvent, within } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
+import { InvoicePage } from "../InvoicePanel"
 import { JobsGridDesign } from "../JobsGridDesign"
+import { finalInvoiceOf } from "./price-change-invoice"
 import { allRows } from "../walkthrough/jobs-data"
 import { QuoteJobPage, type QuoteJobPageProps } from "./QuoteJobPage"
 import { QuotesList } from "./QuotesList"
@@ -143,9 +145,56 @@ export const ApproveByHand: Story = { ...s(beth, laptop, { initialDialog: "appro
 /** No deposit was set: the dialog has no payment question. */
 export const ApproveByHandNoDeposit: Story = { ...s(greg, laptop, { initialDialog: "approve" }), name: "Mark approved by hand, no deposit" }
 
-/** The customer approved and the card deposit went through: Open and ready to schedule, with Billing, the payment and the invoice note. */
+/** The customer approved and the card deposit went through: Open and ready to schedule, with Billing, the payment and the invoice note. The lines are now Ryan's to change: each has Edit and the card has Add a line (while a quote is out and waiting they stay locked). */
 export const ApprovedByCustomer: Story = { ...s(approvedByCard, laptop), name: "Approved, deposit paid by card" }
 export const ApprovedByCustomerPhone: Story = { ...s(approvedByCard, phone), name: "Approved, deposit paid by card, phone" }
+
+// ---------------------------------------------------------------------------------------------------------------------- a price change after approval
+// Hannah, Nov 20 2026: after the customer approved, Ryan edits the lines and tells the customer. There is no second approval and no change-order quote.
+
+/** Beth's approved job after Ryan raised the roofline from $900 to $1,200: built by the store, so the history is the store's own line ("Price changed from $1,200 to $1,500") and the total follows the lines. `told` adds the step after. */
+const afterPriceChange = (told?: "email" | "none"): QuoteJob => {
+  const store = createQuoteStore([approvedByCard()])
+  store.updateLine("q-beth", "b1", { amount: 1200 }, "2026-11-18T18:20:00Z")
+  if (told) store.tellPrice("q-beth", { via: told, at: "2026-11-18T18:22:00Z" })
+  return structuredClone(store.getSnapshot()["q-beth"]!)
+}
+
+/** Editing an approved job's line: the same Edit dialog as before approval, now saying the customer approved and that the change moves the total. A line can be canceled here, never removed. */
+export const ApprovedEditLine: Story = { ...s(approvedByCard, laptop, { initialDialog: { line: "b1" } }), name: "Approved, changing a line" }
+export const ApprovedEditLinePhone: Story = { ...s(approvedByCard, phone, { initialDialog: { line: "b1" } }), name: "Approved, changing a line, phone" }
+
+/** Saving a price that moves the total opens Tell the customer: the new total and the old one, Text, Email or Both from the contact preference, a preview of exactly what the customer reads (only the job, the new total and the old one), and a caret that keeps the change without telling. */
+export const TellTheCustomer: Story = { ...s(() => afterPriceChange(), laptop, { initialTell: { from: 1200, to: 1500 } }), name: "Price changed, tell the customer" }
+export const TellTheCustomerPhone: Story = { ...s(() => afterPriceChange(), phone, { initialTell: { from: 1200, to: 1500 } }), name: "Price changed, tell the customer, phone" }
+
+/** After: the lines and the total are $1,500 (the Total tile says Was $1,200), Billing shows the new total with the $300 deposit credited, Notes and history records the change and the telling. */
+export const PriceChangedAndTold: Story = { ...s(() => afterPriceChange("email"), laptop), name: "Price changed and told" }
+export const PriceChangedAndToldPhone: Story = { ...s(() => afterPriceChange("email"), phone), name: "Price changed and told, phone" }
+
+/** Ryan closed the dialog without choosing: the change is recorded, and a quiet line under the total says the customer has not been told, with Tell Beth to open the dialog again. */
+export const PriceChangedNotTold: Story = { ...s(() => afterPriceChange(), laptop), name: "Price changed, not told yet" }
+
+/** A canceled line is struck through and out of the total; the total moved, so the same step opens. */
+const canceledLine = (): QuoteJob => {
+  const store = createQuoteStore([approvedByCard()])
+  store.cancelLine("q-beth", "b2", "2026-11-18T18:20:00Z")
+  return structuredClone(store.getSnapshot()["q-beth"]!)
+}
+export const ApprovedLineCanceled: Story = { ...s(canceledLine, laptop), name: "A line canceled after approval" }
+
+/** The final invoice of that job: the new total on its lines, the $300 deposit credited as its own line, so $1,200 is unpaid. */
+export const FinalInvoiceAfterChange: Story = {
+  name: "Final invoice after a price change",
+  args,
+  globals: laptop,
+  render: () => (
+    <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>
+      <InvoicePage invoice={finalInvoiceOf(afterPriceChange("email"), { number: "INV-2026-0045", sentOn: "2026-11-24", dueOn: "2026-12-08" })} />
+    </AdminShell>
+  ),
+}
+export const FinalInvoiceAfterChangePhone: Story = { ...FinalInvoiceAfterChange, name: "Final invoice after a price change, phone", globals: phone }
 
 /** Ryan marked it approved after a call; no deposit. */
 export const ApprovedByHand: Story = { ...s(approvedByHand, laptop), name: "Approved by hand, no deposit" }
@@ -242,5 +291,54 @@ export const ReviseTest: Story = {
     await userEvent.click(await within(document.body).findByRole("button", { name: "Revise the quote" }))
     await expect(await c.findByText("Earlier quotes")).toBeInTheDocument()
     await expect((await c.findAllByText("Needs a quote")).length).toBeGreaterThan(0)
+  },
+}
+
+/** The path: change the roofline's price on the approved job, the Tell the customer dialog opens with $1,500 and $1,200, telling Beth records it, and the page follows the lines. */
+export const PriceChangeTest: Story = {
+  name: "Price change after approval (test)",
+  tags: HIDDEN,
+  ...s(approvedByCard, laptop),
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await userEvent.click(await c.findByRole("button", { name: "Edit Roofline lights" }))
+    const price = await body.findByRole("textbox", { name: "Price in dollars" })
+    await userEvent.clear(price)
+    await userEvent.type(price, "1200")
+    await userEvent.click(await body.findByRole("button", { name: "Save the line" }))
+    const dialog = await body.findByRole("dialog", { name: /Tell Beth the new total/ })
+    await expect(within(dialog).getByText("$1,500")).toBeInTheDocument()
+    await expect(within(dialog).getByText("$1,200")).toBeInTheDocument()
+    await expect(within(dialog).getByText(/changed from \$1,200 to \$1,500/)).toBeInTheDocument()
+    await userEvent.click(within(dialog).getByRole("button", { name: "Tell Beth" }))
+    await expect(await c.findByText("Price changed from $1,200 to $1,500")).toBeInTheDocument()
+    await expect(await c.findByText(/Told Beth the new total, \$1,500, by email/)).toBeInTheDocument()
+    await expect(await c.findByText("$1,200 unpaid.")).toBeInTheDocument()
+    await expect(await c.findByText(/The invoice will show the new total, \$1,500 and the \$300 deposit as already paid/)).toBeInTheDocument()
+    await expect(c.queryByText(/has not been told/)).toBeNull()
+  },
+}
+
+/** Closing the dialog leaves the change recorded and untold: Tell Beth under the total opens it again, and the caret keeps the change without telling. */
+export const PriceChangeQuietTest: Story = {
+  name: "Price change, not told (test)",
+  tags: HIDDEN,
+  ...s(approvedByCard, laptop),
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await userEvent.click(await c.findByRole("button", { name: "Edit Porch columns" }))
+    await userEvent.click(await body.findByRole("button", { name: "Cancel this line" }))
+    const first = await body.findByRole("dialog", { name: /Tell Beth the new total/ })
+    await expect(within(first).getByText(/changed from \$1,200 to \$900/)).toBeInTheDocument()
+    await userEvent.click(within(first).getByRole("button", { name: "Cancel" }))
+    await expect(await c.findByText(/Beth has not been told the new total, \$900/)).toBeInTheDocument()
+    await userEvent.click(await c.findByRole("button", { name: "Tell Beth" }))
+    const again = await body.findByRole("dialog", { name: /Tell Beth the new total/ })
+    await userEvent.click(within(again).getByRole("button", { name: "More ways" }))
+    await userEvent.click(await body.findByRole("menuitem", { name: /Keep the change without telling Beth/ }))
+    await expect(await c.findByText(/Kept the new total, \$900, without notifying Beth/)).toBeInTheDocument()
+    await expect(c.queryByText(/has not been told/)).toBeNull()
   },
 }

@@ -1,7 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import { CustomersList } from "./WalkScreens"
-import { customerPage, searchWorld } from "./data"
+import { customerPage, customerRows, searchWorld } from "./data"
 import { resetExtras } from "./jobs-data"
 import { makeNewJobActions } from "./walk-new-job"
 
@@ -17,7 +17,8 @@ describe("the walkthrough's Customers list", () => {
   it("has a Status column and a Status filter, with New, Active and Past customer rows read from the jobs", () => {
     render(<CustomersList onOpen={() => undefined} />)
     expect(screen.getAllByRole("button", { name: "Status" }).length).toBeGreaterThan(0)
-    expect(screen.getAllByRole("row").slice(1)).toHaveLength(6)
+    // the seven with hand-shaped pages (Gus archived and hidden) and every other person with jobs, invoices or quotes
+    expect(screen.getAllByRole("row").slice(1)).toHaveLength(customerRows().filter((r) => customerPage(r.id)!.status !== "archived").length)
     expect(pillOf("Andrea Dalton")).toBe("Active")
     expect(pillOf("Hal Reed")).toBe("Active")
     expect(pillOf("Priya Nair")).toBe("New")
@@ -31,7 +32,7 @@ describe("the walkthrough's Customers list", () => {
     expect(button).toHaveAttribute("aria-pressed", "false")
     fireEvent.click(button)
     expect(screen.getByRole("button", { name: "Show archived" })).toHaveAttribute("aria-pressed", "true")
-    expect(screen.getAllByRole("row").slice(1)).toHaveLength(7)
+    expect(screen.getAllByRole("row").slice(1)).toHaveLength(customerRows().length)
     expect(pillOf("Gus Pratt")).toBe("Archived")
   })
 

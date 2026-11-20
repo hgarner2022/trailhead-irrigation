@@ -18,6 +18,8 @@ export interface QuoteLine {
   description?: string
   /** whole dollars; 0 is an unpriced line */
   amount: number
+  /** canceled after the customer approved: struck through, and out of the total */
+  canceled?: boolean
 }
 
 export interface Deposit {
@@ -74,7 +76,7 @@ export interface QuoteJob {
   quotes: QuoteData[]
   canceled?: boolean
   /** an event line or two for Notes and history, oldest first */
-  history: { at: string; actor: string; what: string; /** a note's full text (the customer's words on a job made from a request) */ note?: string }[]
+  history: { at: string; actor: string; what: string; /** a note's full text (the customer's words on a job made from a request) */ note?: string; /** a price change after approval, and the telling of it (`price-change.ts`) */ kind?: "price-changed" | "price-told"; price?: { from: number; to: number } }[]
 }
 
 export type JobStageKey = "needs-a-quote" | "quote-sent" | "open" | "canceled"

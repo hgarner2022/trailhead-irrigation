@@ -20,7 +20,7 @@ import { JobFlow } from "../JobFlow"
 import { JobPage } from "../JobPage"
 import { JobPagePass } from "../JobPageTrips"
 import { BILLING_WORDS, GRID_WORDS, SERVICE_OPTIONS, WHO_OPTIONS, jobGridCard, jobGridColumns, type BillingState, type GridJob, type GridStatus } from "../JobsGridDesign"
-import { allRows, CUSTOMER_ROWS, customerIdOf, INVOICES, customerPage, invoicePage, jobView, otherCustomer, type CustomerListRow } from "./data"
+import { allRows, customerRows, customerIdOf, INVOICES, customerPage, invoicePage, jobView, type CustomerListRow } from "./data"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import { HomeScreen } from "../../HomeScreen"
@@ -109,11 +109,11 @@ const customerCard: GridCardSlots = { title: "name", line: ["street"], state: "s
 const STATUS_OPTIONS = (["active", "new", "past", "archived"] as const).map((value) => ({ value, label: CUSTOMER_STATUS_WORDS[value] }))
 const SHOWN_BY_DEFAULT = ["active", "new", "past"]
 
-/** The seven customers of the prototype (Andrea, Marcus and Dale with full histories, then Priya, Hal, Ivy and Gus for the four statuses), on the embedded DataGrid recipe: name, status, street, next visit, unpaid, pass. Archived customers are hidden until "Show archived" is pressed; Cmd+K still finds them. */
+/** Every customer of the prototype (Andrea, Marcus and Dale with full histories, Priya, Hal, Ivy and Gus for the four statuses, then everyone else with jobs, invoices or quotes), each opening a real customer page, on the embedded DataGrid recipe: name, status, street, next visit, unpaid, pass. Archived customers are hidden until "Show archived" is pressed; Cmd+K still finds them. */
 export function CustomersList({ onOpen }: { onOpen: (id: string) => void }) {
   const [showArchived, setShowArchived] = useState(false)
   // the next visit reads a job made here ("Unscheduled") before the row's own words
-  const data = useMemo<ListRow[]>(() => CUSTOMER_ROWS.map((r) => { const p = customerPage(r.id); const made = allRows().find((j) => j.id.startsWith("new-") && customerIdOf(j.name) === r.id); return { ...r, next: made?.next ?? r.next, status: p?.status ?? "active", dns: p?.doNotService } }), [])
+  const data = useMemo<ListRow[]>(() => customerRows().map((r) => { const p = customerPage(r.id); const made = allRows().find((j) => j.id.startsWith("new-") && customerIdOf(j.name) === r.id); return { ...r, next: made?.next ?? r.next, status: p?.status ?? "active", dns: p?.doNotService } }), [])
   return (
     <div data-slot="walkthrough-customers">
       <PageHeader title="Customers" context={`${data.filter((r) => showArchived || r.status !== "archived").length} customers`} actions={<Button type="button" variant={showArchived ? "default" : "outline"} aria-pressed={showArchived} className="min-h-11" onClick={() => setShowArchived((v) => !v)}>Show archived</Button>} />
@@ -174,14 +174,6 @@ export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, on
     case "customer": {
       const d = customerPage(route.id ?? "")
       if (d) return <CustomerPage customer={d} />
-      const other = otherCustomer(route.id ?? "")
-      if (other)
-        return (
-          <Placeholder title={other.name} line={`${other.street}. Only the seven customers of the Customers list have pages in this prototype.`}>
-            <RecordChip kind="customer" name="Andrea Dalton" href={recordHref.customer("andrea")} />
-            <RecordChip kind="customer" name="Customers list" href="/admin/customers" />
-          </Placeholder>
-        )
       return <NotFound what="That customer" />
     }
     case "invoice": {

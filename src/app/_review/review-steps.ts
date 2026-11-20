@@ -35,6 +35,7 @@ export const REVIEW_PARTS: ReviewPart[] = [
       { id: "admin-job-page-season-pass-and-return-trip--one-done", label: "The Season Pass trips", look: "One row per trip, each with its own money word, and the next trip opens by itself." },
       { id: "admin-customer-page--pass-holder-unpaid", label: "The customer page", look: "The status pill, the Consent card with its history, Do not service and Archive (see Archive refused and Consent history next to it)." },
       { id: "admin-walkthrough-clickable--laptop", label: "The Customers list and its Status filter", look: "Open Customers in the rail of the walkthrough: a Status column, a Status filter and Show archived." },
+      { id: "admin-walkthrough-clickable--every-customer-opens", label: "Every customer opens", look: "Every name on Customers, every chip and every search hit opens a real customer page; Beth Orr, with only a quote out, reads New and shows empty Billing and Messages." },
       { id: "admin-invoices--list", label: "Invoices", look: "Four tiles that filter the list, past due first, with Remind on the row." },
       { id: "admin-navigation--account-menu-open", label: "The account menu", look: "Bottom left of the rail: your name, Profile, Help and Sign out." },
     ],
@@ -55,6 +56,9 @@ export const REVIEW_PARTS: ReviewPart[] = [
       { id: "customer-walkthrough-clickable--walkthrough", label: "The texts and emails", look: "Step 2 of the walkthrough shows every text and email in the order a customer meets them." },
       { id: "customer-walkthrough-clickable--walkthrough", label: "The account, reschedule and cancel", look: "Steps 3 and 4: Home, a visit, Reschedule with a few days to pick from, Cancel and the canceled page." },
       { id: "customer-walkthrough-clickable--walkthrough", label: "Paying", look: "Steps 5 and 6: Pay now, the pay page, the card button and the receipt in each way of paying." },
+      { id: "customer-walkthrough-clickable--sign-in-screen", label: "Sign in", look: "The live sign-in card in the phone; the four buttons over it draw the form, the link sent, an email we do not have and a link that was not sent." },
+      { id: "customer-walkthrough-clickable--card-saved-screen", label: "Card saved", look: "The page Stripe returns the customer to after the card is updated." },
+      { id: "customer-walkthrough-clickable--season-pass-page-screen", label: "The Season Pass page of the website", look: "The live marketing page in the phone, without the site header and footer; its button goes to Contact, which is still a labelled stand-in." },
       { id: "customer-walkthrough-clickable--walkthrough", label: "The pass, Details and the marketing switches", look: "Steps 7 and 8: the Season Pass page and Details, where the marketing switches turn email and text offers on and off." },
     ],
   },
@@ -92,6 +96,10 @@ export const REVIEW_PARTS: ReviewPart[] = [
       { id: "admin-quotes--quote-sent", label: "Quote sent", look: "The lines are locked; send a reminder, Mark approved or Revise." },
       { id: "admin-quotes--approve-by-hand", label: "Mark approved by hand", look: "Ryan says how the deposit was paid; a receipt always goes out and he chooses whether to tell the customer." },
       { id: "admin-quotes--approved-by-customer", label: "Approved with the deposit paid", look: "Billing shows the deposit, and the invoice will show it as already paid." },
+      { id: "admin-quotes--approved-edit-line", label: "Changing a price after approval", look: "After the customer approved, each line has Edit and the card has Add a line; a line is canceled, never removed, and the lines stay locked while a quote is out." },
+      { id: "admin-quotes--tell-the-customer", label: "Tell the customer the new total", look: "Saving a price that moves the total opens a dialog with the new total and the old one, Text, Email or Both, the exact words, and a caret that keeps the change without telling." },
+      { id: "admin-quotes--price-changed-and-told", label: "After the price change", look: "The Total tile says Was $1,200, Billing shows the new total with the deposit credited, and Notes and history records the change and the telling." },
+      { id: "admin-quotes--final-invoice-after-change", label: "The invoice after a price change", look: "Its lines are the new ones, the total is the new total, and the deposit already paid is credited as its own line." },
       { id: "admin-quotes--jobs-status-filter", label: "Jobs Status filter", look: "Needs a quote and Quote sent are in the Status filter; the job still holds the quote." },
       { id: "admin-quotes--list", label: "Quotes", look: "Quotes: every quote with its status, as a pipeline with tiles, status tabs and a Next action; send one from a job and watch it appear in the tiles, the tab counts and the rail." },
       { id: "customer-walkthrough-clickable--walkthrough", label: "The customer's quote", look: "The last step: open the link in the text, Approve with and without a deposit, or Decline." },
@@ -105,10 +113,10 @@ export const REVIEW_PARTS: ReviewPart[] = [
 ]
 
 export const CHANGED_SINCE_LAST_REVIEW: string[] = [
-  "Requests: a new Requests item in the left menu. A website request waits there as New or Seen until Ryan makes a job of it with Create job or Send a quote. The request moves into the job and leaves the list; nothing is accepted, and a request has no Accepted status.",
-  "Quotes: sent from the job, approved from a link with Approve and Decline. A deposit is optional, paid at Approve, and Ryan can mark a quote approved by hand.",
+  "Requests and quotes: a Requests item in the left menu; a website request waits there until Ryan makes a job of it with Create job or Send a quote, and nothing is accepted. A quote is sent from the job and approved from a link with Approve and Decline; a deposit is optional and paid at Approve.",
   "Booking form: the zip step is gone. It opens on the address, which qualifies the yard, so it is six steps instead of seven (four instead of five for a request for a quote). No Call Ryan in the header, a Close button and a Back button on every step, and Rachio, water efficiency and installation are bookable. Only Christmas lights and the larger repair are requests.",
-  "Messages: every email and text the customer can get is in one section, with a redesigned layout shown next to the current one.",
+  "Messages: every email and text the customer can get is in one section, with a redesigned layout shown next to the current one. In the customer account, the invoice to pay is the first thing on Home.",
   "Season Pass booking: the pass can be bought any month. It holds only the visits still ahead; a visit that is open now gets an exact day and time and one months away gets Early, Mid or Late, scheduled about two weeks before. The pass auto-renews each season until the customer cancels, and the agreement wording is a placeholder for you to write. Customer account: the invoice to pay is still the first thing on Home.",
-  "Status colours, Collect payment and receipts, Refunded, customer status, consent, and the account menu at the bottom left of the rail are all in, as before.",
+  "Price change after approval: once the customer approved a quote, Ryan can add a line, change a price or cancel a line. When the total moves, a dialog tells the customer the new total (Text, Email or Both, or keep it without telling), Notes and history records \"Price changed from $1,200 to $1,500\", and Billing and the invoice show the new total with the deposit credited. There is no second approval.",
+  "Every customer in the admin walkthrough has a real customer page, built from their jobs, invoices, payments, messages and consent, with the status read from their jobs. In the customer walkthrough, Sign in, Card saved and the Season Pass page of the website are the live screens now, in the phone, instead of labelled stand-ins.",
 ]

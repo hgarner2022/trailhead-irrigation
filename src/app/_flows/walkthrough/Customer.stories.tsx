@@ -37,6 +37,44 @@ export const PhoneScreens: StoryObj<typeof CustomerPhone> = {
   render: () => <CustomerPhone />,
 }
 
+// The three screens that were labelled stand-ins are the live screens now (docs/plans/2026-11-20-handoff.md, gap 3): a link in a text or an email that
+// goes to Sign in, the card-saved page or the Season Pass page opens them here. Each opens still, in the phone, with a strip over it and the way back.
+const phone = { viewport: { value: "phone", isRotated: false } }
+
+/** Sign in: the live page's own card. The strip's four buttons draw its states (the form, the link sent, an email we do not have, the link not sent); the button takes any address to the sent note and sends nothing. */
+export const SignInScreen: StoryObj<typeof CustomerPhone> = { name: "Sign in", globals: phone, render: () => <CustomerPhone start="sign-in" /> }
+
+/** Card saved: the page Stripe returns the customer to after the card is updated. */
+export const CardSavedScreen: StoryObj<typeof CustomerPhone> = { name: "Card saved", globals: phone, render: () => <CustomerPhone start="card-updated" /> }
+
+/** The Season Pass page of the website, the whole page without what the site layout adds around it (header, footer, the sticky Call and Book Online bar). Its button goes to Contact, which is still a labelled stand-in. */
+// The page is the live marketing page, shown as it is built. axe finds three things in it that are the site's own (the 12px orange eyebrow and the orange "Read all of
+// our reviews" link on a light ground are 3.0 to 3.2:1, and the price comparison table scrolls sideways without a focusable child), so the check reports them
+// as a to-do and does not fail the suite; fix them in the marketing page, not in the walkthrough.
+export const SeasonPassPageScreen: StoryObj<typeof CustomerPhone> = { name: "Season Pass page", globals: phone, parameters: { a11y: { test: "todo" } }, render: () => <CustomerPhone start="season-pass-page" /> }
+
+/** Sign in, send the link, ask for a different email, and the way back to the account (not in the sidebar). */
+export const LiveScreensPath: StoryObj<typeof CustomerPhone> = {
+  name: "Live screens (test)",
+  tags: ["!dev", "!autodocs"],
+  globals: phone,
+  render: () => <CustomerPhone start="sign-in" />,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await expect(await c.findByRole("heading", { name: "Sign in to your account" })).toBeInTheDocument()
+    await userEvent.type(await c.findByRole("textbox", { name: "Email" }), "andrea.dalton@example.com")
+    await userEvent.click(await c.findByRole("button", { name: "Email me a link" }))
+    await expect(await c.findByRole("heading", { name: "Check your email" })).toBeInTheDocument()
+    await expect(c.getByText(/The link works one time and expires in 10 minutes/)).toBeInTheDocument()
+    await userEvent.click(c.getByRole("link", { name: "Use a different email" }))
+    await expect(await c.findByRole("heading", { name: "Sign in to your account" })).toBeInTheDocument()
+    await userEvent.click(c.getByRole("button", { name: "Email not on file" }))
+    await expect(await c.findByText("We don't have that email. Call Ryan at (970) 692-7270.")).toBeInTheDocument()
+    await userEvent.click(c.getByRole("button", { name: /Your account/ }))
+    await waitFor(() => expect(where(canvasElement)).toBe("account"))
+  },
+}
+
 /** The phone walked through its eight steps with Next and Back, and the receipt's chips (not in the sidebar). */
 export const PhoneSteps: StoryObj<typeof CustomerPhone> = {
   name: "Phone steps",

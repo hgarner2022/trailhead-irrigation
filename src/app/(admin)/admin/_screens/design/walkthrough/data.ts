@@ -10,6 +10,8 @@ import { requestStore } from "../requests/request-store"
 import { quoteRowsOf } from "../quotes/quote-list-model"
 import { QUOTES_NOW, QUOTE_PILL, money as quoteMoney } from "../quotes/quote-model"
 import { walkQuotes } from "../quotes/quote-store"
+import { buildWorldCustomer } from "./customer-build"
+import { worldCustomerIds } from "./world-customers"
 
 export * from "./jobs-data"
 
@@ -39,10 +41,14 @@ function withChoice(page: CustomerPageData): CustomerPageData {
   return { ...page, consent: { ...page.consent, email: line(c.email, page.consent.email), text: line(c.text, page.consent.text) } }
 }
 
+/** The page of any customer in the world: the seven shaped by hand below, and everyone else built from their jobs, invoices and quotes (`customer-build.ts`). */
 export function customerPage(id: string): CustomerPageData | null {
   const page = customerPageBase(id)
   // the status is read from the jobs by `customerStatusOf`, never typed here
-  if (!page) return null
+  if (!page) {
+    const rows = allRows().filter((r) => customerIdOf(r.name) === id)
+    return isRealCustomer(id) ? null : buildWorldCustomer(id, { rows, invoices: INVOICES, quotes: Object.values(walkQuotes.getSnapshot()) })
+  }
   // an archived customer for whom a job was made here is back: no archive date, so the function reads Active from the new open job
   const statusFacts = isActiveAgain(id) ? { ...page.statusFacts, archivedAt: null } : page.statusFacts
   return withChoice(withStatus({ ...page, statusFacts, jobs: [...madeHere(id), ...page.jobs] }))
@@ -80,18 +86,17 @@ function customerPageBase(id: string): CustomerPageData | null {
       notes: [{ ...d.notes[0]!, what: "Sent invoice INV-2026-0035, $145, due Nov 12", at: "2026-10-29T17:00:00Z" }],
     })
   }
-  if (id === "dale") return swapContact(customerPageOf("two-seasons"), { id: "dale" })
+  if (id === "dale") {
+    const d = customerPageOf("two-seasons")
+    // the number his pass page, the New job sheet and a request's match all use
+    return swapContact(d, { id: "dale", contact: { ...d.contact, phone: { text: "(970) 555-0140", href: "tel:+19705550140" } } })
+  }
   // the four of the customer-status design, as built in `customerPageOf`: their status is read from their jobs, never typed here
   if (id === "priya") return swapContact(customerPageOf("nothing-yet"), { id })
   if (id === "hal") return swapContact(customerPageOf("active-recent"), { id })
   if (id === "ivy") return swapContact(customerPageOf("past-customer"), { id })
   if (id === "gus") return swapContact(customerPageOf("archived"), { id })
   return null
-}
-
-export const otherCustomer = (id: string) => {
-  const row = allRows().find((r) => customerIdOf(r.name) === id)
-  return row ? { name: row.name, street: row.property } : null
 }
 
 export interface CustomerListRow {
@@ -102,6 +107,7 @@ export interface CustomerListRow {
   unpaid: number
   pass: string
 }
+/** The seven customers shaped by hand; `customerRows` adds everyone else in the world. */
 export const CUSTOMER_ROWS: CustomerListRow[] = [
   { id: "andrea", name: "Andrea Dalton", street: "480 Briggs St, Erie", next: "Mon, May 3", unpaid: 145, pass: "Season Pass 2027" },
   { id: "marcus", name: "Marcus Bell", street: "91 Main St, Longmont", next: "None", unpaid: 145, pass: "" },
@@ -111,6 +117,19 @@ export const CUSTOMER_ROWS: CustomerListRow[] = [
   { id: "ivy", name: "Ivy Lund", street: "9 Meadow Ln, Louisville", next: "None", unpaid: 0, pass: "" },
   { id: "gus", name: "Gus Pratt", street: "70 Ridge Rd, Lafayette", next: "None", unpaid: 0, pass: "" },
 ]
+
+/** Every customer of the world for the Customers list: the seven, then each other person with jobs, invoices or quotes, then anyone made in the prototype. */
+export function customerRows(): CustomerListRow[] {
+  const seen = new Set(CUSTOMER_ROWS.map((r) => r.id))
+  const ids = [...worldCustomerIds(), ...allRows().map((r) => customerIdOf(r.name)), ...INVOICES.map((i) => i.customerId)].filter((id) => !seen.has(id) && seen.add(id))
+  const others = ids.flatMap((id): CustomerListRow[] => {
+    const p = customerPage(id)
+    if (!p) return []
+    const open = p.jobs.find((j) => j.open && !j.quote)
+    return [{ id, name: p.name, street: p.address.join(", ").replace(", CO", ""), next: open ? (open.day ? (open.day.iso === "2026-11-20" ? "Today" : dayWords(open.day.iso)) : "Unscheduled") : "None", unpaid: Number((p.unpaid ?? "$0").replace(/\D/g, "")), pass: "" }]
+  })
+  return [...CUSTOMER_ROWS, ...others]
+}
 
 // -------------------------------------------------------------------------------------------------------------------- invoices
 
@@ -212,7 +231,7 @@ export function resolveRoute(route: Route, owner?: string): Route {
 export function knownRoute(route: Route): boolean {
   if (route.screen === "job") return Boolean(rowOf(route.id ?? ""))
   if (route.screen === "invoice") return INVOICES.some((i) => i.id === route.id)
-  if (route.screen === "customer") return Boolean(route.id && (isRealCustomer(route.id) || otherCustomer(route.id)))
+  if (route.screen === "customer") return Boolean(route.id && customerPage(route.id))
   return true
 }
 
@@ -230,7 +249,7 @@ export function nameOfRoute(route: Route): string | undefined {
     const r = requestStore.getSnapshot().find((x) => x.id === route.id)
     return r ? fullName(r) : undefined
   }
-  if (route.screen === "customer") return customerPage(route.id ?? "")?.name ?? otherCustomer(route.id ?? "")?.name
+  if (route.screen === "customer") return customerPage(route.id ?? "")?.name
   if (route.screen === "job") {
     const r = rowOf(route.id ?? "")
     return r ? (r.service === "Season Pass" ? r.title : r.name) : undefined
@@ -256,11 +275,7 @@ export function searchWorld(query: string): SearchHit[] {
   const qd = digits(q)
   const names = new Map<string, { id: string; name: string; street: string; phone: string }>()
   // every customer of the list, whether or not they have a row in the Jobs grid (Priya has no job yet; Gus is archived and still found)
-  for (const c of CUSTOMER_ROWS) names.set(c.id, { id: c.id, name: c.name, street: c.street, phone: contactOf(c.name).text })
-  for (const r of allRows()) {
-    const id = customerIdOf(r.name)
-    if (!names.has(id)) names.set(id, { id, name: r.name, street: r.property, phone: contactOf(r.name).text })
-  }
+  for (const c of customerRows()) names.set(c.id, { id: c.id, name: c.name, street: c.street, phone: contactOf(c.name).text })
   const customers: SearchHit[] = [...names.values()]
     .filter((c) => `${c.name} ${c.street}`.toLowerCase().includes(q) || (qd.length >= 3 && digits(c.phone).includes(qd)))
     .map((c) => ({ kind: "customer", id: c.id, title: c.name, detail: statusDetail(c.id, c.street), href: `/admin/customers?customer=${c.id}`, contact: c.phone }))
