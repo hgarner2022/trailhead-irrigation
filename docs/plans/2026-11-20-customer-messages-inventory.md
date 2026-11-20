@@ -242,3 +242,36 @@ Each is a fact I did not have; the message says the minimum until you answer.
 10. **Fixture year.** The brief's visit is Wed Apr 28 (2027) and the invoice is INV-2026-0042; pick one year for the walkthrough's story.
 11. **Settled lines I only listed.** "We won't charge you again" (Season Pass canceled) and "The link is good for 24 hours" (Stripe's own default for the card link, not set by us).
 12. **Paused texts.** What should the email say about why it came by email? The proposal says only "You are getting this by email instead of a text."
+
+## 9. Requests and quotes (prototypes, Nov 20 2026)
+
+Seven messages added to the Messages section (`Messages / Requests and quotes`, and two under `To the crew`), all prototypes ("Prototype, not built yet"), built on `src/emails/design/quote-messages.ts` and the words in `src/lib/portal/quote-words.ts`. The proposed layout and the voice rules are unchanged, with one exception: the voice rules ban the word "request" as a system word, and Hannah's own answer (Nov 20, answer 9) is "Thanks. We've got your request.", so `voiceProblems` takes `mayNameRequest`, set on the thank-you and on the office's note about a request only.
+
+| Message | Kind (none yet) | Channel | To whom | Class |
+|---|---|---|---|---|
+| Request received | none | email only (a stranger's phone has not opted in) | the person who asked | transactional |
+| Your quote | none | text or email by the contact preference | the customer | transactional |
+| Quote reminder | none | text or email | the customer, only when Ryan presses Remind | transactional |
+| Quote approved | none | text or email | the customer, after the link's Approve (or Ryan's Mark approved, if he chooses to tell them) | transactional |
+| Quote declined | none | text or email | the customer, after the link's Decline | transactional |
+| A new request | none | email and text | owner and admins, every request | to the crew |
+| A quote was decided | none | email and text | owner and admins | to the crew |
+
+**Claims check.** Every claim, and its source. A sentence with no source was not written.
+
+| Claim | Where it is | Source |
+|---|---|---|
+| "Thanks. We've got your request." and nothing about when anyone will reply | Request received (lead) | Hannah, answer 9. No call-back time is promised in any message. |
+| The service, the street and the person's own words | Request received (summary) | the request row |
+| "Your quote for Christmas lights at 412 Briggs Street is $1,200" | Your quote, reminder, approved, declined | the quote's frozen total, the job's service and the property |
+| "a $300 deposit is due when you approve" | Your quote, reminder (only when set) | the quote's deposit, Hannah's answer 5 |
+| "Approve or decline here" and one link | Your quote, reminder (text) | Hannah's answer 4 (two buttons on the link) |
+| "A reminder about your quote" | Quote reminder | Hannah's answer 8 (sent only when Ryan presses Remind) |
+| "We received your $300 deposit" | Quote approved (only when a deposit was paid) | the payment row; a receipt for it is its own message (answer 5) |
+| "You declined the quote" and "Text or call Ryan at (970) 692-7270" | Quote declined | the customer's own action; the business phone |
+| Nothing about refunds, a deposit's fate, an expiry, "free", a guarantee or a time | every message | Hannah's answers 7 and 9; the memory rule (no invented promises) |
+| The person, the service, the town, their words, "Open it in the admin" | A new request (office) | the request row |
+| Who, the number, the total, the deposit and "paid" | A quote was decided (office) | the quote row and the payment row |
+
+**Open questions for Hannah** (each is a fact the messages do not have): (1) Should the first email after a request carry the sign-in link? It does not now, because someone could type another person's address. (2) The quote email's headline is "Your quote is ready" and its button "View your quote": are those the words you want? (3) Should the approval message to the customer go every time Ryan marks a quote approved by hand, or only when he chooses (the prototype lets him choose)? (4) The quote's text subject patterns follow the invoice ("Quote: $1,200 for Christmas lights at 412 Briggs Street"); is that right?
+

@@ -9,6 +9,7 @@ const URL_RE = /(https?:\/\/[^\s]+)/g
 export function shortLink(url: string): string {
   if (/\/pay\//.test(url)) return "trailheadirrigation.com/p/7k2m"
   if (/\/visits\//.test(url) || /\/admin\//.test(url)) return "trailheadirrigation.com/v/ab12"
+  if (/\/quote\//.test(url)) return "trailheadirrigation.com/q/4d8w"
   return "trailheadirrigation.com/a/9x3k"
 }
 

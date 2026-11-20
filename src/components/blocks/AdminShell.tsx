@@ -76,6 +76,8 @@ export interface AdminShellProps {
 // 15rem rail (240px); the bar and the content share the 16px phone and 24px laptop gutters.
 const RAIL_WIDTH = { "--sidebar-width": "15rem", "--sidebar-width-icon": "3.5rem" } as CSSProperties
 const GUTTER = "px-4 md:px-6"
+// On a phone the tab bar (58px, plus the safe area) sits over the bottom of the page: a record page pins its action bar above it by this height.
+const PHONE_STYLE = { ...RAIL_WIDTH, "--admin-tabbar-h": "calc(3.625rem + env(safe-area-inset-bottom))" } as CSSProperties
 // The rail's mark: the badge trimmed of its transparent margin (240 by 179), shown at 40px on a cream tile so it keeps its colours on the navy.
 const MARK = "/images/logo-badge-trim.png"
 
@@ -195,7 +197,7 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, onSear
   const [primarySlot, setPrimarySlot] = useState<HTMLElement | null>(null)
   const bar = useMemo(() => ({ mode: phone ? ("inline" as const) : ("bar" as const), title: titleSlot, actions: actionsSlot, primary: primarySlot }), [phone, titleSlot, actionsSlot, primarySlot])
   return (
-    <SidebarProvider data-slot="admin-shell" data-phone={phone || undefined} open={open} onOpenChange={setChoice} style={RAIL_WIDTH}>
+    <SidebarProvider data-slot="admin-shell" data-phone={phone || undefined} open={open} onOpenChange={setChoice} style={phone ? PHONE_STYLE : RAIL_WIDTH}>
       {phone ? null : <Rail current={current} switcher={switcher} requests={requests} user={user} profileHref={profileHref} helpHref={helpHref} customerHref={customerHref} onSignOut={onSignOut} />}
       <SidebarInset className="min-h-svh min-w-0 bg-cream">
         <TopBar

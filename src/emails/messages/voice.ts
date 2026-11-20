@@ -7,6 +7,8 @@ export interface VoiceInput {
   words: string
   /** the kind may say "Season Pass" and its number only when it is about the pass */
   mayNamePass?: boolean
+  /** the word "request" is allowed: the thank-you after a request ("Thanks. We've got your request."), and the note to the office about one (Hannah, Nov 20 2026) */
+  mayNameRequest?: boolean
 }
 
 export interface VoiceProblem {
@@ -29,7 +31,7 @@ const BANNED: { rule: string; pattern: RegExp }[] = [
 ]
 
 /** The rules a message breaks, with the words that broke each. Empty when it follows them. */
-export function voiceProblems({ channel, words: raw, mayNamePass = false }: VoiceInput): VoiceProblem[] {
+export function voiceProblems({ channel, words: raw, mayNamePass = false, mayNameRequest = false }: VoiceInput): VoiceProblem[] {
   // A link is not words: its token, query and percent codes are left out of every check but the ASCII one.
   const words = raw.replace(/https?:\/\/\S+/g, "LINK")
   const out: VoiceProblem[] = []
@@ -37,7 +39,8 @@ export function voiceProblems({ channel, words: raw, mayNamePass = false }: Voic
   if (words.includes("—")) hit("no em dashes", "—")
   if (words.includes("!")) hit("no exclamation marks", "!")
   for (const { rule, pattern } of BANNED) {
-    const m = words.match(pattern)
+    // "request" is only a system word where it is not the customer's own
+    const m = (mayNameRequest && pattern.source.includes("line item") ? words.replace(/\brequest(s|ed)?\b/gi, "") : words).match(pattern)
     if (m) hit(rule, m[0])
   }
   if (!mayNamePass && /\bseason pass\b|\bpass (number|TH-)/i.test(words)) hit('"Season Pass" only on the pass messages', "Season Pass")

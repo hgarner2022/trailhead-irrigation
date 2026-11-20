@@ -4,6 +4,7 @@ import { BUSINESS, ACCOUNT_NAME, dollars, shortDay, timeText } from "../format"
 import { OPT_OUT } from "@/sms/texts"
 import type { CanceledByUsData, RefundData } from "../design/messages"
 import type { ReceiptData } from "../types"
+import { quoteApprovedText, quoteDeclinedText, quoteReminderText, quoteText, type QuoteFacts } from "@/lib/portal/quote-words"
 
 const tail = (optOut: boolean) => (optOut ? ` ${OPT_OUT}` : "")
 
@@ -23,3 +24,14 @@ export const crewAssignedText = (d: { day: string; startTime: string; serviceNam
 
 /** The text the office gets when a customer moves or cancels their own visit: `Trailhead: ` and the Home row's words (src/lib/portal/alerts.ts). */
 export const customerChangedText = (message: string) => `Trailhead: ${message}`
+
+// ---- requests and quotes: the words are `src/lib/portal/quote-words.ts`; each text gets "Reply STOP to opt out." only when it is the first text a number has had ----
+
+export const quoteSms = (f: QuoteFacts, o: { optOut: boolean }) => `${quoteText(f)}${tail(o.optOut)}`
+export const quoteReminderSms = (f: QuoteFacts, o: { optOut: boolean }) => `${quoteReminderText(f)}${tail(o.optOut)}`
+export const quoteApprovedSms = (f: QuoteFacts & { depositPaid?: boolean }, o: { optOut: boolean }) => `${quoteApprovedText(f)}${tail(o.optOut)}`
+export const quoteDeclinedSms = (f: QuoteFacts, o: { optOut: boolean }) => `${quoteDeclinedText(f)}${tail(o.optOut)}`
+
+/** To the office, not the customer: the same Home-row words, `Trailhead: ` first, no link and no opt-out line. */
+export const newRequestStaffText = (d: { name: string; service: string; town: string }) => `Trailhead: New request from ${d.name}${d.service ? `, ${d.service}` : ""}${d.town ? `, ${d.town}` : ""}.`
+export const quoteDecidedStaffText = (d: { name: string; number: string; total: string; outcome: "approved" | "declined" }) => `Trailhead: ${d.name} ${d.outcome} quote ${d.number}, ${d.total}.`

@@ -92,6 +92,8 @@ const KIND_ORDER = ["invoice", "job", "customer"]
 /** `start` is the first screen; `startStack` is a whole way in (so Back has somewhere to go); `startSearch` opens Cmd+K and `startSheet` the New job sheet, so a story can show either with no script. */
 export function Walkthrough({ start = START, startStack, startSearch = false, startSheet }: { start?: Route; startStack?: Route[]; startSearch?: boolean; startSheet?: { customer?: string } }) {
   useInvoicesInNav()
+  // A clean start every time it opens: the requests Ryan answered, the quotes sent and the jobs made in an earlier story are forgotten, so a story opens as it was drawn
+  useState(() => (requestStore.reset(), walkQuotes.reset(), resetExtras(), null))
   const [stack, setStack] = useState<Route[]>(startStack ?? [start])
   const [epoch, setEpoch] = useState(0)
   const [sheet, setSheet] = useState<{ customer?: string; key: number } | null>(startSheet ? { customer: startSheet.customer, key: 1 } : null)

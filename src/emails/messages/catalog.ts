@@ -6,15 +6,17 @@ import { renderEmail, type RenderedEmail } from "../render"
 import * as proposed from "../design/messages"
 import { SMS_TEMPLATES, type SmsKind } from "@/sms/texts"
 import * as f from "./fixtures"
-import { canceledByUsText, crewAssignedText, customerChangedText, receiptText, refundText } from "./prototype-texts"
+import * as q from "../design/quote-messages"
+import { canceledByUsText, crewAssignedText, customerChangedText, newRequestStaffText, quoteApprovedSms, quoteDeclinedSms, quoteDecidedStaffText, quoteReminderSms, quoteSms, receiptText, refundText } from "./prototype-texts"
 
-export type Journey = "Booking and visits" | "Billing" | "Season Pass" | "Marketing" | "Account" | "To the crew, not the customer"
+export type Journey = "Booking and visits" | "Billing" | "Requests and quotes" | "Season Pass" | "Marketing" | "Account" | "To the crew, not the customer"
 export type Channel = "text" | "email"
 
 /** The Storybook group of each journey phase. */
 export const JOURNEY_TITLE: Record<Journey, string> = {
   "Booking and visits": "Messages/Booking and visits",
   Billing: "Messages/Billing",
+  "Requests and quotes": "Messages/Requests and quotes",
   "Season Pass": "Messages/Season Pass",
   Marketing: "Messages/Marketing",
   Account: "Messages/Account",
@@ -47,10 +49,14 @@ export interface MessageDef {
   proposed?: () => RenderedEmail
   /** this is the first text a number has had: it ends with the STOP line */
   firstText?: boolean
+  /** the word "request" is the customer's own here (the thank-you after a request) or the office's note about one: the voice rules let it through */
+  mayNameRequest?: boolean
 }
 
 const sms = (kind: SmsKind, data: unknown) => (first: boolean) => (SMS_TEMPLATES[kind] as (d: never, o?: unknown) => string)(data as never, { optOut: first })
 const live = (kind: string, data: unknown) => () => renderEmail(kind, data as Record<string, unknown>)
+/** The facts a quote's words are built from, from the email's data. */
+const qf = (d: q.QuoteEmailData) => ({ first: d.firstName, service: d.serviceName, address: d.address, total: `$${d.total.toLocaleString("en-US")}`, ...(d.deposit ? { deposit: `$${d.deposit.toLocaleString("en-US")}` } : {}), number: d.number, link: d.quoteUrl })
 const receipt = (key: keyof typeof f.RECEIPTS) => ({ text: (first: boolean) => receiptText(f.RECEIPTS[key], { optOut: first }), current: live("receipt", f.RECEIPTS[key]), proposed: () => proposed.receiptEmail(f.RECEIPTS[key]) })
 
 export const MESSAGES: MessageDef[] = [
@@ -97,6 +103,18 @@ export const MESSAGES: MessageDef[] = [
     when: "Before the month a card on file expires, once per customer, when visits are still to come.", current: live("card-expiring", f.CARD_EXPIRING), proposed: () => proposed.cardExpiringEmail(f.CARD_EXPIRING) },
 
   // ---- Season Pass
+  // ---- Requests and quotes (prototypes, Nov 20 2026: Hannah's answers 1 to 9 in docs/plans/2026-11-20-requests-and-quotes-research.md)
+  { id: "request-received", name: "Request received", journey: "Requests and quotes", kind: "none", channels: ["email"], klass: "transactional", renderer: "not built", prototype: ["email"], mayNameRequest: true, exportName: "RequestReceived",
+    when: "Right after someone sends a request from the website: that it arrived and what they asked. An email only, because a stranger's phone has not opted in to texts. It says nothing about when anyone will reply and has no account link.", proposed: () => q.requestReceivedEmail(f.REQUEST_RECEIVED) },
+  { id: "quote", name: "Your quote", journey: "Requests and quotes", kind: "none", channels: ["text", "email"], klass: "transactional", renderer: "not built", prototype: ["text", "email"], exportName: "Quote", firstText: true,
+    when: "When Ryan presses Send a quote: the total, the deposit only when he set one, and one link to approve or decline. Text or email by the customer's contact preference.", text: (first) => quoteSms(qf(f.QUOTE), { optOut: first }), proposed: () => q.quoteEmail(f.QUOTE) },
+  { id: "quote-reminder", name: "Quote reminder", journey: "Requests and quotes", kind: "none", channels: ["text", "email"], klass: "transactional", renderer: "not built", prototype: ["text", "email"], exportName: "QuoteReminder",
+    when: "Only when Ryan presses Remind on a quote that is waiting, once a day at most, never automatic. The quote again under a reminder heading.", text: (first) => quoteReminderSms(qf(f.QUOTE), { optOut: first }), proposed: () => q.quoteReminderEmail(f.QUOTE) },
+  { id: "quote-approved", name: "Quote approved", journey: "Requests and quotes", kind: "none", channels: ["text", "email"], klass: "transactional", renderer: "not built", prototype: ["text", "email"], exportName: "QuoteApproved",
+    when: "After the customer approves from the link, and after Ryan marks a quote approved if he chooses to tell them. With a deposit it says the deposit was received; its receipt is its own message.", text: (first) => quoteApprovedSms({ ...qf(f.QUOTE_APPROVED), depositPaid: true }, { optOut: first }), proposed: () => q.quoteApprovedEmail(f.QUOTE_APPROVED) },
+  { id: "quote-declined", name: "Quote declined", journey: "Requests and quotes", kind: "none", channels: ["text", "email"], klass: "transactional", renderer: "not built", prototype: ["text", "email"], exportName: "QuoteDeclined",
+    when: "After the customer declines from the link: that the answer was received, and the phone. It says nothing about money.", text: (first) => quoteDeclinedSms(qf(f.QUOTE), { optOut: first }), proposed: () => q.quoteDeclinedEmail(f.QUOTE) },
+
   { id: "purchase-confirmation", name: "Purchase confirmation", journey: "Season Pass", kind: "purchase-confirmation", channels: ["email"], klass: "transactional", renderer: "src/emails/purchase-confirmation.ts", exportName: "PurchaseConfirmation",
     when: "When a Season Pass is sold, on the website or by the office: the card, each visit's day, what Ryan does, the money line and the account.", current: live("purchase-confirmation", f.PURCHASE), proposed: () => proposed.purchaseConfirmationEmail(f.PURCHASE) },
   { id: "renewal", name: "Renewal", journey: "Season Pass", kind: "renewal", channels: ["email"], klass: "marketing", renderer: "src/emails/account-messages.ts", exportName: "Renewal",
@@ -119,6 +137,10 @@ export const MESSAGES: MessageDef[] = [
     when: "To the owner and admins for a new Season Pass, a declined card, tomorrow's crew summary, or a customer changing a visit.", current: live("admin-alert", f.ADMIN_ALERT), proposed: () => proposed.adminAlertEmail(f.ADMIN_ALERT) },
   { id: "customer-changed", name: "A customer changed a visit", journey: "To the crew, not the customer", kind: "none (staff text)", channels: ["text"], klass: "to the crew", renderer: "src/lib/portal/alerts.ts", exportName: "CustomerChanged",
     when: "To each owner and admin with a mobile number when a customer moves or cancels their own visit: the same words as the Home row, no STOP line.", text: () => customerChangedText("Andrea Dalton canceled Repair, Wed, Apr 28, Erie. The day is free.") },
+  { id: "new-request-staff", name: "A new request", journey: "To the crew, not the customer", kind: "none (staff)", channels: ["email", "text"], klass: "to the crew", renderer: "not built", prototype: ["email", "text"], mayNameRequest: true, exportName: "NewRequest",
+    when: "To the owner and admins on every request: the person, what they asked and their words. The alert email Ryan already gets stays; the text goes to an owner or admin with a mobile number.", text: () => newRequestStaffText({ name: f.NEW_REQUEST.name, service: f.NEW_REQUEST.service, town: f.NEW_REQUEST.town }), proposed: () => q.newRequestStaffEmail(f.NEW_REQUEST) },
+  { id: "quote-decided-staff", name: "A quote was decided", journey: "To the crew, not the customer", kind: "none (staff)", channels: ["email", "text"], klass: "to the crew", renderer: "not built", prototype: ["email", "text"], exportName: "QuoteDecided",
+    when: "To the owner and admins when a customer approves or declines a quote: who, the number, the total and the deposit when there is one.", text: () => quoteDecidedStaffText({ name: f.QUOTE_DECIDED.name, number: f.QUOTE_DECIDED.number, total: "$1,200", outcome: "approved" }), proposed: () => q.quoteDecidedStaffEmail(f.QUOTE_DECIDED) },
   { id: "crew-assigned", name: "Crew assigned", journey: "To the crew, not the customer", kind: "none", channels: ["text"], klass: "to the crew", renderer: "not built", prototype: ["text"], exportName: "CrewAssigned",
     when: "To the person a visit is given to. The admin walkthrough's Schedule dialog offers a crew text; no code sends one. Prototype: the day, the time, the service, the customer, the street and one link.", text: () => crewAssignedText({ day: "2027-04-28", startTime: "10:30", serviceName: "repair", customer: f.CREW.customer, address: f.STREET, town: f.CREW.town, visitUrl: f.CREW.visitUrl }) },
 ]

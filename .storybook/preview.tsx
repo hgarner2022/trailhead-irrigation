@@ -43,7 +43,7 @@ const preview: Preview = {
           "Customer",
           ["Walkthrough (clickable)", "Booking form", "Quote"],
           "Messages",
-          ["Overview", "Booking and visits", "Billing", "Season Pass", "Marketing", "Account", "To the crew", "Design rules", "Archive of every live email"],
+          ["Overview", "Booking and visits", "Billing", "Requests and quotes", "Season Pass", "Marketing", "Account", "To the crew", "Design rules", "Archive of every live email"],
           "Screens",
           "Emails",
           "Blocks",

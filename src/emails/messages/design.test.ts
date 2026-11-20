@@ -40,7 +40,7 @@ describe.each(withEmail)("proposed $name", (m) => {
   })
 
   it("follows the voice rules", () => {
-    expect(voiceProblems({ channel: "email", words: `${email.subject}\n${email.text}`, mayNamePass: PASS.has(m.kind) })).toEqual([])
+    expect(voiceProblems({ channel: "email", words: `${email.subject}\n${email.text}`, mayNamePass: PASS.has(m.kind), mayNameRequest: m.mayNameRequest })).toEqual([])
   })
 
   it("loses no number, day, time, number or phone the live email states", () => {
@@ -56,8 +56,8 @@ describe.each(MESSAGES.filter((m) => m.text))("the text of $name", (m) => {
   it("follows the voice rules, and ends with the STOP line only when it is the first text", () => {
     const first = m.text!(true)
     const later = m.text!(false)
-    expect(voiceProblems({ channel: "text", words: later })).toEqual([])
-    expect(voiceProblems({ channel: "text", words: first })).toEqual([])
+    expect(voiceProblems({ channel: "text", words: later, mayNameRequest: m.mayNameRequest })).toEqual([])
+    expect(voiceProblems({ channel: "text", words: first, mayNameRequest: m.mayNameRequest })).toEqual([])
     expect(later.includes("Reply STOP to opt out.")).toBe(false)
     if (m.klass !== "to the crew") expect(first.endsWith("Reply STOP to opt out.")).toBe(true)
     else expect(first.includes("Reply STOP")).toBe(false)

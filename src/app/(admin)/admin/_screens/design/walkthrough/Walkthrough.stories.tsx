@@ -264,3 +264,27 @@ export const RequestFromTheBookingFormTest: Story = {
     await expect(c.getByText("7 Oak St")).toBeInTheDocument()
   },
 }
+
+/** Home carries the entry to Requests: "2 new requests" opens the list filtered to New, each quote waiting has its age and Remind. */
+export const HomeRequestRows: Story = { name: "Home, requests and quotes", args: { start: { screen: "home" } }, globals: laptop }
+export const HomeRequestRowsTest: Story = {
+  name: "Home, requests and quotes (test)",
+  args: { start: { screen: "home" } },
+  globals: laptop,
+  tags: HIDDEN,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await expect(await c.findByText("2 new requests", {}, { timeout: 8000 })).toBeInTheDocument()
+    await expect(await c.findByText("Beth Orr, Christmas lights, $1,200")).toBeInTheDocument()
+    // Remind: the quote reminder dialog, then the row says it was reminded today
+    await userEvent.click((await c.findAllByRole("button", { name: "Remind" }))[0]!)
+    await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Send the reminder" }))
+    await expect(await c.findByRole("button", { name: "Reminded today" })).toBeDisabled()
+    // the row opens the list filtered to New
+    await userEvent.click(await c.findByRole("link", { name: "Open requests" }))
+    await waitFor(() => expect(route(canvasElement)).toBe("requests"))
+    await expect(await c.findByRole("button", { name: "Rosa Delgado" })).toBeInTheDocument()
+    await expect(c.queryByRole("button", { name: "Kevin Marsh" })).toBeNull()
+  },
+}

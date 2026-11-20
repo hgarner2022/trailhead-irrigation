@@ -9,7 +9,7 @@ import { FooterSlotContext } from "./record-slot"
 // docs/plans/2026-11-19-admin-page-layout-research.md): the job and, later, the customer. On the cream canvas, top to bottom: the header
 // (crumb, the title in the display face with its status badge beside it, one muted line, and the actions at the top right from `lg`), a
 // notice, the summary band, then the body in two columns, the main column (what the work is) and a 320px aside (who and where), each a stack
-// of `SectionCard`s. On a phone everything is one column in that order and the actions become one bar pinned to the bottom. The actions are
+// of `SectionCard`s. On a phone everything is one column in that order and the actions become one bar pinned to the bottom, above the shell's tab bar (`--admin-tabbar-h`, which the shell sets on a phone) so the last row of buttons is never behind it. The actions are
 // one `RecordFooter` (primary, outlines, More, the destructive one inside More); it provides the footer slot, so beat two puts its button there.
 // Pure props, nothing fetched.
 
@@ -63,7 +63,7 @@ export function RecordPage({ title, subtitle, badges, crumb, notice, band, aside
         {actions && (
           <div
             data-slot="record-page-actions"
-            className="sticky bottom-0 z-10 order-last -mx-4 border-t border-border bg-card px-4 py-3 sm:-mx-6 sm:px-6 lg:static lg:order-none lg:col-start-2 lg:row-start-1 lg:mx-0 lg:self-end lg:border-0 lg:bg-transparent lg:p-0"
+            className="sticky bottom-[var(--admin-tabbar-h,0px)] z-10 order-last -mx-4 border-t border-border bg-card px-4 py-3 sm:-mx-6 sm:px-6 lg:static lg:order-none lg:col-start-2 lg:row-start-1 lg:mx-0 lg:self-end lg:border-0 lg:bg-transparent lg:p-0"
           >
             {actions}
           </div>

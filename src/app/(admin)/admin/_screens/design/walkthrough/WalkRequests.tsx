@@ -1,15 +1,19 @@
 "use client"
 
 import { RecordChip } from "@/components/blocks/RecordChip"
+import { RequestRows, requestRowsOf, type RequestRow } from "@/components/blocks/RequestRows"
+import { useToast } from "@/components/blocks/Toast"
+import { useState } from "react"
 import type { GridJob } from "../JobsGridDesign"
 import { RequestPage } from "../requests/RequestPage"
 import { RequestsList } from "../requests/RequestsList"
-import { fullName, matchOf, REQUESTS_NOW, type RequestData } from "../requests/request-model"
+import { fullName, matchOf, REQUESTS_NOW, stateOf, type RequestData } from "../requests/request-model"
 import { requestById, requestStore, useRequests } from "../requests/request-store"
 import { customerIdOf, registerJob } from "./jobs-data"
 import { Placeholder } from "./Placeholder"
-import { jobFromRequest } from "../quotes/quote-model"
-import { useQuoteJobStage, walkQuotes } from "../quotes/quote-store"
+import { QuoteReminderDialog } from "../quotes/QuoteDialogs"
+import { jobFromRequest, liveQuote, money, QUOTES_NOW, VIA_WORDS } from "../quotes/quote-model"
+import { useQuoteJobs, useQuoteJobStage, walkQuotes } from "../quotes/quote-store"
 
 // The Requests screens of the walkthrough: the list and a request's page over the request store, so what Ryan does (opens, accepts, archives) shows in
 // the rail's badge, the list, Home and Cmd+K, and what the customer walkthrough sent from the booking form is in the list. Accept makes a job row in
@@ -62,3 +66,39 @@ export function RequestRoute({ id }: { id: string }) {
   return <RequestPage key={id} request={request} now={REQUESTS_NOW} jobStage={stage} onSeen={(r) => requestStore.markSeen(r.id)} onAccept={(r, o) => acceptRequest(r, o)} onArchive={(r, reason) => requestStore.archive(r.id, reason, REQUESTS_NOW)} />
 }
 
+
+/** Home's Needs action rows in the walkthrough: the new requests, each quote waiting with its age and Remind, and a decided quote, read from the two stores. */
+export function HomeRequestRows() {
+  const requests = useRequests()
+  const jobs = useQuoteJobs()
+  const toast = useToast()
+  const [reminding, setReminding] = useState<string | null>(null)
+  const quotes = Object.values(jobs).flatMap((j): Extract<RequestRow, { kind: "quote-waiting" | "quote-decided" }>[] => {
+    const q = liveQuote(j)
+    if (!q || j.canceled) return []
+    if (q.state === "sent") {
+      const last = q.reminders[q.reminders.length - 1]
+      return [{ kind: "quote-waiting", id: q.id, jobId: j.jobId, customer: j.customer, service: j.service, amount: money(q.total), sentAt: q.sentOn, ...(last ? { remindedAt: last.at, remindedToday: last.at.slice(0, 10) === QUOTES_NOW.slice(0, 10) } : {}) }]
+    }
+    return q.state === "approved" || q.state === "declined" ? [{ kind: "quote-decided", id: q.id, jobId: j.jobId, customer: j.customer, outcome: q.state, amount: money(q.total), at: q.decidedOn ?? q.sentOn }] : []
+  })
+  const rows = requestRowsOf({ requests: requests.map((r) => ({ receivedAt: r.receivedAt, isNew: stateOf(r) === "new" })), quotes })
+  const job = reminding ? Object.values(jobs).find((j) => liveQuote(j)?.id === reminding) : undefined
+  const q = job && liveQuote(job)
+  return (
+    <>
+      <RequestRows rows={rows} now={REQUESTS_NOW} onRemind={(row) => setReminding(row.id)} className="border-b border-border" />
+      {job && q && (
+        <QuoteReminderDialog
+          job={job}
+          quote={q}
+          onClose={() => setReminding(null)}
+          onSend={({ via }) => {
+            walkQuotes.remind(job.jobId, { via, at: QUOTES_NOW })
+            toast(`Reminder sent to ${job.first} by ${VIA_WORDS[via]}`)
+          }}
+        />
+      )}
+    </>
+  )
+}

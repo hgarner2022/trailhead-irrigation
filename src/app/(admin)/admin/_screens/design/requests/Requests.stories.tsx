@@ -138,6 +138,23 @@ export const ListOrderTest: Story = {
   },
 }
 
+/** On a phone Requests sits under More, first, with its count; the bar's More button carries the count too. */
+export const MoreOnAPhoneTest: Story = {
+  name: "More on a phone (test)",
+  tags: HIDDEN,
+  args: List.args,
+  render: () => list(),
+  globals: phone,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await expect(canvasElement.querySelector("[data-slot=more-count]")?.textContent).toContain("2")
+    await userEvent.click(await c.findByRole("button", { name: /More/ }))
+    const items = await within(document.body).findAllByRole("menuitem")
+    await expect(items[0]!.textContent).toContain("Requests")
+    await expect(items.map((i) => i.textContent?.replace(/\d+ new|\d$/g, "").trim())).toEqual(["Requests", "Reports", "Settings"])
+  },
+}
+
 /** Accept: the dialog states the effect, the page then shows the job chip and the stage. */
 export const AcceptTest: Story = {
   name: "Accept (test)",

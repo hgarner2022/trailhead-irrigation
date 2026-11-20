@@ -30,7 +30,12 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /** Two new requests, two quotes waiting (one already reminded) and one decided. */
-export const Default: Story = {
+export const Default: Story = {}
+
+/** The rows are there, and each waiting quote has Remind (a test: not in the sidebar). */
+export const DefaultTest: Story = {
+  name: "Default (test)",
+  tags: ["!dev", "!autodocs"],
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
     await expect(c.getByText("2 new requests")).toBeInTheDocument()

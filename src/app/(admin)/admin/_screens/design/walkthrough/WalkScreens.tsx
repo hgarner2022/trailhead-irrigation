@@ -32,7 +32,7 @@ import { ScheduleScreen } from "../../ScheduleScreen"
 import { SettingsScreen } from "../../SettingsScreen"
 import { makeNewJobActions, WALK_DATA, WALK_TODAY } from "./walk-new-job"
 import { Placeholder } from "./Placeholder"
-import { RequestRoute, RequestsRoute } from "./WalkRequests"
+import { HomeRequestRows, RequestRoute, RequestsRoute } from "./WalkRequests"
 import { QuoteJobRoute } from "./WalkQuotes"
 import { ReceiptRoute } from "./receipts"
 import { type Route } from "./routes"
@@ -189,7 +189,7 @@ export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, on
     case "receipt":
       return <ReceiptRoute id={route.id ?? "card"} onBack={onBack} />
     case "home":
-      return <HomeScreen data={LIVE} today={LIVE_TODAY} />
+      return <HomeScreen data={LIVE} today={LIVE_TODAY} needsActionLead={<HomeRequestRows />} />
     case "schedule":
       return <ScheduleScreen data={LIVE} today={LIVE_TODAY} defaultDay={route.id} />
     case "reports":

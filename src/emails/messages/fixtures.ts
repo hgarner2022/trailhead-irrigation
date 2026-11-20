@@ -7,6 +7,7 @@ import type {
   VisitCancelledData, VisitData,
 } from "../types"
 import type { CanceledByUsData, RefundData, TipsData } from "../design/messages"
+import type { NewRequestStaffData, QuoteDecidedStaffData, QuoteEmailData, RequestReceivedData } from "../design/quote-messages"
 
 export const ORIGIN = "https://www.trailheadirrigation.com"
 export const STREET = "412 Briggs Street"
@@ -71,3 +72,13 @@ export const ADMIN_ALERT: AdminAlertData = { origin: ORIGIN, title: "New Season 
 
 /** The crew-assigned text's facts, for the prototype. */
 export const CREW = { person: "Tech Two", customer: "Andrea Dalton", town: "Erie", visitUrl: `${ORIGIN}/admin/schedule?visit=v1` }
+
+// ---- requests and quotes (prototypes, Nov 20 2026): the same Andrea Dalton asks for Christmas lights at her own street, and a stranger sends a request
+
+const QUOTE_LINES = [{ name: "Roofline lights", description: "Front of the house.", amount: 900 }, { name: "Porch columns", description: "Both columns, wrapped.", amount: 300 }]
+export const QUOTE: QuoteEmailData = { ...base, number: "Q-2026-0007", serviceName: "Christmas lights", address: STREET, lines: QUOTE_LINES, total: 1200, deposit: 300, quoteUrl: `${ORIGIN}/quote/Q-2026-0007?token=abc` }
+export const QUOTE_NO_DEPOSIT: QuoteEmailData = { ...QUOTE, deposit: null }
+export const QUOTE_APPROVED: QuoteEmailData = { ...QUOTE, depositPaid: true }
+export const REQUEST_RECEIVED: RequestReceivedData = { origin: ORIGIN, firstName: "Rosa", serviceName: "Christmas lights", address: "212 Spruce Ct", words: "The roofline and the two front trees. Two stories." }
+export const NEW_REQUEST: NewRequestStaffData = { origin: ORIGIN, name: "Rosa Delgado", service: "Christmas lights", town: "Louisville", phone: "(970) 555-0166", email: "rosa.delgado@example.com", words: "The roofline and the two front trees. Two stories.", requestId: "rq-rosa" }
+export const QUOTE_DECIDED: QuoteDecidedStaffData = { origin: ORIGIN, name: "Andrea Dalton", number: "Q-2026-0007", total: 1200, deposit: 300, outcome: "approved", jobPath: "/admin/jobs?job=q-andrea" }

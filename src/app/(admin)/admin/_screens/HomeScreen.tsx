@@ -43,13 +43,15 @@ export interface HomeScreenProps {
   jobActions?: JobActions
   /** the customer panel's marketing opt-out */
   customerActions?: CustomersActions
+  /** rows drawn above the Needs action list (the prototype's request and quote rows, `RequestRows`); nothing in the app passes it yet */
+  needsActionLead?: React.ReactNode
   /** the record open on first render, from `?customer=`, `?job=` or `?visit=` in the address */
   defaultCustomerId?: string
   defaultJobId?: string
   defaultVisitId?: string
 }
 
-export function HomeScreen({ data, today, readOnly = false, onAttentionAction, onDismiss, visitActions, jobActions, customerActions, defaultCustomerId, defaultJobId, defaultVisitId }: HomeScreenProps) {
+export function HomeScreen({ data, today, readOnly = false, onAttentionAction, onDismiss, visitActions, jobActions, customerActions, needsActionLead, defaultCustomerId, defaultJobId, defaultVisitId }: HomeScreenProps) {
   const view = todayView(data, today)
   const money = todayMoney(data.visits, (v) => visitPrice(data, v), today)
   // With nothing today the screen says when the next visits are, once, as a link to that day.
@@ -87,6 +89,7 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
               <SectionHeading level={2}>Needs action</SectionHeading>
             </CardHeader>
             <CardContent>
+              {needsActionLead}
               <NeedsAttention items={attention} now={today} onAction={readOnly ? undefined : onAttentionAction} onDismiss={readOnly ? undefined : onDismiss} readOnly={readOnly} />
             </CardContent>
           </Card>
