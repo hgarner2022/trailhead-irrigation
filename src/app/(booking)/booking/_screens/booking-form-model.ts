@@ -12,33 +12,33 @@ import type { ContactChannel } from "@/components/blocks/ContactPreference"
 import type { ReviewRow } from "@/components/blocks/BookingReview"
 import type { CheckoutFields } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
 
-export type FormStep = "zip" | "service" | "quote-service" | "contact" | "address" | "details" | "day" | "confirm" | "done"
+export type FormStep = "zip" | "service" | "quote-service" | "address" | "details" | "day" | "contact" | "confirm" | "done"
 
 export const QUESTIONS: Record<FormStep, string> = {
   zip: "What's your zip code?",
   service: "What can we do for you?",
   "quote-service": "What do you need a quote for?",
-  contact: "Who should we reach?",
   address: "Where is the yard?",
   details: "A few details about the visit",
   day: "Pick your day and time",
+  contact: "Who should we reach?",
   confirm: "Look it over and confirm.",
   done: "Booked",
 }
 /** The details step of a request is a different question: there is nothing to size, only something to tell Ryan. */
-export const QUOTE_QUESTIONS: Partial<Record<FormStep, string>> = { details: "Tell Ryan about it", confirm: "Look it over and send it." }
+export const QUOTE_QUESTIONS: Partial<Record<FormStep, string>> = { details: "Tell Ryan about it", contact: "How can Ryan reach you?" }
 
 /** The steps a service goes through, in order; the last is the confirmation, which is not counted ("Step 3 of 7"). */
 export function stepsFor(entry: ServiceEntry | null, quote = false): FormStep[] {
-  if (quote || entry?.kind === "quote") return ["zip", "quote-service", "contact", "address", "details", "confirm", "done"]
-  return ["zip", "service", "contact", "address", "details", "day", "confirm", "done"]
+  if (quote || entry?.kind === "quote") return ["zip", "quote-service", "address", "details", "contact", "done"]
+  return ["zip", "service", "address", "details", "day", "contact", "confirm", "done"]
 }
 export const stepTotal = (steps: readonly FormStep[]) => steps.length - 1
 
 export const SEND_REQUEST = "Send to Ryan"
 export const CONFIRM_BOOK = "Confirm and book"
 export const CALL_ME = "Have Ryan call me"
-export const ACTIONS: Partial<Record<FormStep, string>> = { zip: "Continue", service: "Continue", "quote-service": "Continue", contact: "Continue", address: "Continue", details: "Continue", day: "Continue", confirm: CONFIRM_BOOK }
+export const ACTIONS: Partial<Record<FormStep, string>> = { zip: "Continue", service: "Continue", "quote-service": "Continue", address: "Continue", details: "Continue", day: "Continue", contact: "Continue", confirm: CONFIRM_BOOK }
 
 export const DAY_HINT = "Tap a start time to continue."
 export const SERVICE_HINT = "Pick a service to continue."

@@ -9,13 +9,15 @@ import { BookingForm, type BookingFormProps } from "./BookingForm"
 
 // The customer's booking form, one story per screen at 375 (Phone) and 1280 (Laptop), over fixtures; nothing is sent. Today is Wednesday, April 14, 2027, so the Season Pass, the repair and
 // the request for a quote are the open choices (the turn-on opens Apr 25; "Spring turn-on, 10 zones" stories open it so zones have something to size). The order is Jobber's for the first
-// screens: zip code, then services with their lengths, then contact with how we reach you, the address, the service details, the day and an exact start time, and a confirm step.
+// screens: zip code, then services with their lengths, then the address, the service details, the day and an exact start time, then contact with how we reach you (day first, contact after, so an
+// abandoned booking leaves nothing), and a confirm step.
 const phone = { globals: { viewport: { value: "phone", isRotated: false } } } as const
 const laptop = { globals: { viewport: { value: "laptop", isRotated: false } } } as const
 
 const home: Partial<CheckoutState> = { address: FIXTURE_HOME.label, place: FIXTURE_HOME, town: "Erie" }
 const person: Partial<CheckoutState> = { firstName: "Andrea", lastName: "Dalton", email: "andrea.dalton@example.com", phone: "(970) 555-0123", termsAccepted: true }
-const details: Partial<CheckoutState> = { ...home, ...person, access: "yes", accessNote: "Gate code 4471, the controller is in the garage." }
+const details: Partial<CheckoutState> = { ...home, access: "yes", accessNote: "Gate code 4471, the controller is in the garage." }
+const full: Partial<CheckoutState> = { ...details, ...person }
 const picked = { visit: { day: "2027-04-20", start: "10:30" } }
 const photos = [
   { name: "zone-3-head.jpg", src: "/images/sprinkler-spray-head-lawn.jpg" },
@@ -33,7 +35,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The booking form a customer sees at Book Online, every step at 375 (Phone) and 1280 (Laptop). Click Continue through a Sprinkler repair: zip code 80516, the service, who we reach and how, the address, the details (zones, access, a note, photos), a day and an exact start time, then Confirm and book. Zip 80302 shows the way out; \"Need a quote? Request one\" shows the request path, which has no day. Nothing is sent. The whole clickable customer path is under Design / Start here: the customer, clickable.",
+          "The booking form a customer sees at Book Online, every step at 375 (Phone) and 1280 (Laptop). Click Continue through a Sprinkler repair: zip code 80516, the service, the address, the details (zones, access, a note, photos), a day and an exact start time, then who we reach and how, then Confirm and book. Nothing is kept until the contact step is submitted. Zip 80302 shows the way out; \"Need a quote? Request one\" shows the request path, which has no day. Nothing is sent. The whole clickable customer path is under Design / Start here: the customer, clickable.",
       },
     },
   },
@@ -78,28 +80,12 @@ const quote = on({ initial: { step: "quote-service", zip: "80516", quote: true, 
 export const QuotePathServicesPhone = quote.phone
 export const QuotePathServicesLaptop = quote.laptop
 
-/** 3. Contact with how we reach you: four fields, text, email or both, the terms, and the separate unticked marketing box. */
-const contact = on({ initial: { step: "contact", zip: "80516", service: "repair" } }, "Contact")
-export const ContactPhone = contact.phone
-export const ContactLaptop = contact.laptop
-const contactFilled = on({ initial: { step: "contact", zip: "80516", service: "repair", fields: { ...person, email: "andrea.dalton@gmail.con", termsAccepted: false }, channel: "both" } }, "Contact filled, a slip in the email")
-export const ContactFilledPhone = contactFilled.phone
-/** Continue pressed with nothing filled in: each problem is written as help under its field. */
-const contactMissing = on({ initial: { step: "contact", zip: "80516", service: "repair", fields: { firstName: "Andrea", lastName: "Dalton", email: "andrea.dalton@example.com" }, attempted: true } }, "Contact, missing phone and terms", {
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Add a phone number so we can text you the day.")).toBeInTheDocument()
-    await expect(canvas.getByText("Tick the box to accept the terms.")).toBeInTheDocument()
-  },
-})
-export const ContactMissingPhonePhone = contactMissing.phone
-export const ContactMissingPhoneLaptop = contactMissing.laptop
-
-/** 4. The address (type-ahead, "Can't find it? Type your address"). */
-const address = on({ initial: { step: "address", zip: "80516", service: "repair", fields: person } }, "Address")
+/** 3. The address (type-ahead, "Can't find it? Type your address"). */
+const address = on({ initial: { step: "address", zip: "80516", service: "repair" } }, "Address")
 export const AddressPhone = address.phone
 export const AddressLaptop = address.laptop
 /** A Boulder address: the out-of-area line, and Continue stays off. */
-const outside = on({ initial: { step: "address", zip: "80516", service: "repair", fields: person } }, "Address outside the area", {
+const outside = on({ initial: { step: "address", zip: "80516", service: "repair" } }, "Address outside the area", {
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "1200 Pe")
     await userEvent.click(await canvas.findByRole("option", { name: /Boulder/ }))
@@ -110,8 +96,8 @@ const outside = on({ initial: { step: "address", zip: "80516", service: "repair"
 export const AddressOutsideAreaPhone = outside.phone
 export const AddressOutsideAreaLaptop = outside.laptop
 
-/** 5. Service details: zones with the price under them as it changes, access, a note for the crew, photos. */
-const detailsZones = on({ entries: open, initial: { step: "details", zip: "80516", service: "spring-turn-on", fields: { ...home, ...person, zones: 10 } } }, "Service details, zones")
+/** 4. Service details: zones with the price under them as it changes, access, a note for the crew, photos. */
+const detailsZones = on({ entries: open, initial: { step: "details", zip: "80516", service: "spring-turn-on", fields: { ...home, zones: 10 } } }, "Service details, zones")
 export const DetailsZonesPhone = detailsZones.phone
 export const DetailsZonesLaptop = detailsZones.laptop
 /** A repair has no zones; the access answer, a note and two photos are filled in. */
@@ -119,19 +105,19 @@ const detailsRepair = on({ initial: { step: "details", zip: "80516", service: "r
 export const DetailsRepairPhone = detailsRepair.phone
 export const DetailsRepairLaptop = detailsRepair.laptop
 /** Continue pressed with the access question unanswered. */
-const detailsMissing = on({ initial: { step: "details", zip: "80516", service: "repair", fields: { ...home, ...person }, attempted: true } }, "Service details, access not answered", {
+const detailsMissing = on({ initial: { step: "details", zip: "80516", service: "repair", fields: home, attempted: true } }, "Service details, access not answered", {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Tell us whether we can get to the system without you.")).toBeInTheDocument()
   },
 })
 export const DetailsAccessMissingPhone = detailsMissing.phone
 
-/** 5b. The request path's details: what to quote, in their words, and photos. */
-const quoteDetails = on({ initial: { step: "details", zip: "80516", quote: true, service: "new-system", fields: { ...home, ...person, accessNote: "A new system for the back yard, about a quarter acre." }, photos } }, "Request a quote, tell Ryan about it")
+/** 4b. The request path's details: what to quote, in their words, and photos. */
+const quoteDetails = on({ initial: { step: "details", zip: "80516", quote: true, service: "new-system", fields: { ...home, accessNote: "A new system for the back yard, about a quarter acre." }, photos } }, "Request a quote, tell Ryan about it")
 export const QuotePathDetailsPhone = quoteDetails.phone
 export const QuotePathDetailsLaptop = quoteDetails.laptop
 
-/** 6. Day and exact time: the best day selected ("We're already in Erie that day"), its start times under it, none selected, Continue off. */
+/** 5. Day and exact time: the best day selected ("We're already in Erie that day"), its start times under it, none selected, Continue off. */
 const day = on({ initial: { step: "day", zip: "80516", service: "repair", fields: details } }, "Day and time", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("radio", { name: /Tuesday, April 20/ })).toBeChecked()
@@ -160,8 +146,29 @@ export const DayNoOpenDayLaptop = dayFull.laptop
 const passDays = on({ initial: { step: "day", zip: "80516", service: "season-pass", fields: { ...details, zones: 8 } } }, "Season Pass, two visits")
 export const PassDaysPhone = passDays.phone
 
-/** 7. Confirm: every answer with its Change link, and one sentence that says what happens. */
-const confirm = on({ initial: { step: "confirm", zip: "80516", service: "repair", fields: details, picks: picked, channel: "text", photos } }, "Confirm", {
+/** 6. Contact with how we reach you, after the day: four fields, text, email or both, the terms, and the separate unticked marketing box. */
+const contact = on({ initial: { step: "contact", zip: "80516", service: "repair", fields: details, picks: picked } }, "Contact")
+export const ContactPhone = contact.phone
+export const ContactLaptop = contact.laptop
+const contactFilled = on({ initial: { step: "contact", zip: "80516", service: "repair", fields: { ...details, ...person, email: "andrea.dalton@gmail.con", termsAccepted: false }, picks: picked, channel: "both" } }, "Contact filled, a slip in the email")
+export const ContactFilledPhone = contactFilled.phone
+/** Continue pressed with nothing filled in: each problem is written as help under its field. */
+const contactMissing = on({ initial: { step: "contact", zip: "80516", service: "repair", fields: { ...details, firstName: "Andrea", lastName: "Dalton", email: "andrea.dalton@example.com" }, picks: picked, attempted: true } }, "Contact, missing phone and terms", {
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Add a phone number so we can text you the day.")).toBeInTheDocument()
+    await expect(canvas.getByText("Tick the box to accept the terms.")).toBeInTheDocument()
+  },
+})
+export const ContactMissingPhonePhone = contactMissing.phone
+export const ContactMissingPhoneLaptop = contactMissing.laptop
+
+/** 6b. The request path ends on contact: no terms line, no confirm, and the button says Send to Ryan. */
+const quoteContact = on({ initial: { step: "contact", zip: "80516", quote: true, service: "new-system", fields: { ...home, accessNote: "A new system for the back yard, about a quarter acre." } } }, "Request a quote, contact")
+export const QuotePathContactPhone = quoteContact.phone
+export const QuotePathContactLaptop = quoteContact.laptop
+
+/** 7. Confirm, after contact: every answer with its Change link, and one sentence that says what happens. */
+const confirm = on({ initial: { step: "confirm", zip: "80516", service: "repair", fields: full, picks: picked, channel: "text", photos } }, "Confirm", {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("We'll text you a confirmation to (970) 555-0123 and email a receipt when it's done.")).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: "Confirm and book" })).toBeEnabled()
@@ -169,14 +176,11 @@ const confirm = on({ initial: { step: "confirm", zip: "80516", service: "repair"
 })
 export const ConfirmPhone = confirm.phone
 export const ConfirmLaptop = confirm.laptop
-const confirmBoth = on({ initial: { step: "confirm", zip: "80516", service: "repair", fields: details, picks: picked, channel: "both" } }, "Confirm, text and email")
+const confirmBoth = on({ initial: { step: "confirm", zip: "80516", service: "repair", fields: full, picks: picked, channel: "both" } }, "Confirm, text and email")
 export const ConfirmBothPhone = confirmBoth.phone
-const confirmQuote = on({ initial: { step: "confirm", zip: "80516", quote: true, service: "new-system", fields: { ...home, ...person, termsAccepted: false } } }, "Request a quote, confirm")
-export const QuotePathConfirmPhone = confirmQuote.phone
-export const QuotePathConfirmLaptop = confirmQuote.laptop
 
 /** 8. Booked: the holographic card with the exact time, "You added 2 photos", what happens next, Add to calendar, your Trailhead account. */
-const booked = on({ initial: { step: "done", zip: "80516", service: "repair", fields: details, picks: picked, channel: "text", photos } }, "Booked", {
+const booked = on({ initial: { step: "done", zip: "80516", service: "repair", fields: full, picks: picked, channel: "text", photos } }, "Booked", {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("You added 2 photos. Ryan sees them before the visit.")).toBeInTheDocument()
     await expect(canvas.getByRole("article", { name: /booked Tuesday, April 20 at 10:30 am/ })).toBeInTheDocument()
@@ -185,15 +189,15 @@ const booked = on({ initial: { step: "done", zip: "80516", service: "repair", fi
 })
 export const BookedPhone = booked.phone
 export const BookedLaptop = booked.laptop
-const bookedCall = on({ initial: { step: "done", zip: "80516", service: "repair", fields: details, channel: "text" }, offersFor: () => [] }, "Booked with no open day, Ryan calls")
+const bookedCall = on({ initial: { step: "done", zip: "80516", service: "repair", fields: full, channel: "text" }, offersFor: () => [] }, "Booked with no open day, Ryan calls")
 export const BookedCallPhone = bookedCall.phone
-const quoteDone = on({ initial: { step: "done", zip: "80516", quote: true, service: "new-system", fields: { ...home, ...person }, photos } }, "Request sent")
+const quoteDone = on({ initial: { step: "done", zip: "80516", quote: true, service: "new-system", fields: { ...home, ...person, termsAccepted: false }, photos } }, "Request sent")
 export const QuotePathDonePhone = quoteDone.phone
 export const QuotePathDoneLaptop = quoteDone.laptop
-const passBooked = on({ pass, initial: { step: "done", zip: "80516", service: "season-pass", fields: { ...details, zones: 8 } } }, "Season Pass booked")
+const passBooked = on({ pass, initial: { step: "done", zip: "80516", service: "season-pass", fields: { ...full, zones: 8 } } }, "Season Pass booked")
 export const PassBookedPhone = passBooked.phone
 
-/** The whole path on a phone, clicked: zip, repair, contact with Text and email, address, details with the access answer and two sample photos, a time, confirm, booked. */
+/** The whole path on a phone, clicked: zip, repair, address, details with the access answer and two sample photos, a time, contact with Text and email, confirm, booked. */
 export const WholePathPhone: Story = {
   ...phone,
   name: "Whole path, phone",
@@ -204,14 +208,6 @@ export const WholePathPhone: Story = {
     await next()
     await userEvent.click(await c.findByRole("radio", { name: /Sprinkler repair/ }))
     await next()
-    await userEvent.type(await c.findByLabelText("First name"), "Andrea")
-    await userEvent.type(await c.findByLabelText("Last name"), "Dalton")
-    await userEvent.type(await c.findByLabelText("Email"), "andrea.dalton@example.com")
-    await userEvent.type(await c.findByLabelText("Phone"), "9705550123")
-    await userEvent.click(await c.findByRole("radio", { name: "Text and email" }))
-    await userEvent.click(await c.findByRole("checkbox", { name: /I accept the/ }))
-    await expect(c.getByRole("checkbox", { name: "Send me tips and offers from Trailhead by email" })).not.toBeChecked()
-    await next()
     await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
     await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
@@ -220,13 +216,21 @@ export const WholePathPhone: Story = {
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /\d:\d\d [ap]m/ }))[0]!)
     await next()
+    await userEvent.type(await c.findByLabelText("First name"), "Andrea")
+    await userEvent.type(await c.findByLabelText("Last name"), "Dalton")
+    await userEvent.type(await c.findByLabelText("Email"), "andrea.dalton@example.com")
+    await userEvent.type(await c.findByLabelText("Phone"), "9705550123")
+    await userEvent.click(await c.findByRole("radio", { name: "Text and email" }))
+    await userEvent.click(await c.findByRole("checkbox", { name: /I accept the/ }))
+    await expect(c.getByRole("checkbox", { name: "Send me tips and offers from Trailhead by email" })).not.toBeChecked()
+    await next()
     await expect(await c.findByText(/We'll text a confirmation to \(970\) 555-0123 and email one to/)).toBeInTheDocument()
     await next("Confirm and book")
     await expect(await c.findByText("You added 2 photos. Ryan sees them before the visit.")).toBeInTheDocument()
   },
 }
 
-/** The request path on a phone, clicked: it has no day and no card, and ends "Thanks, Ryan will call you by tomorrow." */
+/** The request path on a phone, clicked: zip, what we quote, address, tell Ryan, contact, Send to Ryan. It has no day, no card and no confirm, and ends "Thanks, Ryan will call you by tomorrow." */
 export const QuotePathPhone: Story = {
   ...phone,
   name: "Request a quote path, phone",
@@ -238,15 +242,14 @@ export const QuotePathPhone: Story = {
     await userEvent.click(await c.findByRole("button", { name: "Need a quote? Request one" }))
     await userEvent.click(await c.findByRole("radio", { name: /New sprinkler system/ }))
     await next()
-    await userEvent.type(await c.findByLabelText("First name"), "Andrea")
-    await userEvent.type(await c.findByLabelText("Last name"), "Dalton")
-    await userEvent.type(await c.findByLabelText("Email"), "andrea.dalton@example.com")
-    await userEvent.type(await c.findByLabelText("Phone"), "9705550123")
-    await next()
     await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
     await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
     await next()
+    await userEvent.type(await c.findByLabelText("First name"), "Andrea")
+    await userEvent.type(await c.findByLabelText("Last name"), "Dalton")
+    await userEvent.type(await c.findByLabelText("Email"), "andrea.dalton@example.com")
+    await userEvent.type(await c.findByLabelText("Phone"), "9705550123")
     await next("Send to Ryan")
     await expect(await c.findByText("Thanks, Ryan will call you by tomorrow.")).toBeInTheDocument()
   },

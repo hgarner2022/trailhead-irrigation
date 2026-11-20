@@ -27,10 +27,10 @@ import { BookingDetails, QuoteDetails } from "./booking-details"
 import { ACTIONS, CONFIRM_BOOK, DAY_HINT, QUESTIONS, QUOTE_QUESTIONS, SEND_REQUEST, SERVICE_HINT, ZIP_HINT, callbackMode, canContinue, happensWords, problemsFor, reviewRows, stepTotal, stepsFor, townOf, type FormStep } from "./booking-form-model"
 
 // The customer's booking form (docs/plans/2026-11-19-booking-form-design.md), one question per screen on the FlowShell, in Jobber's order for the first screens: zip code, then the services with
-// their lengths, then who we reach (and how: text, email or both, asked once), the address, the service details (zones with the price, access, a note, photos), the day and an exact
-// start time from the open slots, and a confirm step that says what happens, then the booked card. A service we quote has the same first five screens and no day; the way into it is
-// "Need a quote? Request one" under the list. Only services bookable online are in the list. Every step has Back, "Step 3 of 7" over the question and the primary button fixed at the bottom
-// on a phone. Nothing is sent: the screen holds the answers and tells its host through `onBooked` and `onStep`.
+// their lengths, then the address, the service details (zones with the price, access, a note, photos), the day and an exact start time from the open slots, and only then who we reach
+// (and how: text, email or both, asked once) with the terms, so an abandoned booking leaves nothing (Hannah, Nov 20 2026); a confirm step says what happens, then the booked card. A service we
+// quote is zip, services, address, details and contact ("Send to Ryan") with no day and no confirm; the way into it is "Need a quote? Request one" under the list. Only services bookable online are in the list. Every step has Back, "Step 3 of 7" over the question and the primary button fixed at the bottom
+// on a phone. Nothing is sent, and nothing is kept before the contact step is submitted: the screen holds the answers and tells its host through `onBooked` and `onStep`.
 
 export interface Booked {
   service: string
@@ -175,7 +175,7 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
     ...(dayPart && steps.indexOf("day") >= 0 && at > steps.indexOf("day") ? [{ label: dayPart, what: "day and time", onChange: () => goTo("day") }] : []),
   ]
   const confirmLabel = quote || callback ? SEND_REQUEST : CONFIRM_BOOK
-  const label = step === "confirm" ? confirmLabel : (ACTIONS[step] ?? "Continue")
+  const label = step === "confirm" ? confirmLabel : step === "contact" && quote ? SEND_REQUEST : (ACTIONS[step] ?? "Continue")
   const problems = !valid && attempted ? problemsFor(step, answers) : []
   const question = done ? (quote ? "Request sent" : callback ? "Request sent" : "Booked") : ((quote ? QUOTE_QUESTIONS[step] : undefined) ?? QUESTIONS[step])
   // Continue is off only where the screen says why: a choice not yet made (service, a start time) or a dead end (a zip or an address we do not serve). Everywhere else it stays on and a press names what is missing.
@@ -193,7 +193,12 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
       body = <ServicePicker entries={quote ? QUOTE_SERVICES : entries} value={serviceKey} onChange={choose} onRequestQuote={quote ? undefined : startQuote} />
       break
     case "contact":
-      body = <BookingContact fields={fields} set={set} channel={channel} onChannel={setChannel} attempted={attempted} terms={!quote} />
+      body = (
+        <>
+          <BookingContact fields={fields} set={set} channel={channel} onChannel={setChannel} attempted={attempted} terms={!quote} />
+          {quote && <p data-slot="quote-happens" className="mt-8 text-base text-foreground">{happensWords({ channel, phone: fields.phone, email: fields.email, quote: true, callback: false })}</p>}
+        </>
+      )
       break
     case "address":
       body = <AddressStep state={fields} attempted={attempted} places={places} showAccess={false} onType={(text) => dispatch({ type: "typeAddress", text })} onPick={(place) => dispatch({ type: "pickPlace", place })} set={set} />
