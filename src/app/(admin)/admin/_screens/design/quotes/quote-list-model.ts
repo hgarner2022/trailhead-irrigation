@@ -75,6 +75,33 @@ export function quoteTotals(rows: readonly QuoteListRow[], now: string) {
   }
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** How long the oldest waiting quote has waited, in whole days ("Oldest: 8 days"), or null when nothing waits. */
+export function oldestWaitingDays(rows: readonly QuoteListRow[], now: string): number | null {
+  const waiting = waitingQuotes(rows)
+  if (waiting.length === 0) return null
+  const oldest = Math.min(...waiting.map((r) => Date.parse(r.sentOn)))
+  return Math.max(0, Math.floor((Date.parse(now) - oldest) / DAY_MS))
+}
+
+/**
+ * Close rate: the quotes approved out of the quotes decided (approved plus declined), as a whole percent. A derived figure, nothing else: no target and no
+ * comparison. Null until one quote is decided. Replaced and Sent quotes are not decided.
+ */
+export function closeRate(rows: readonly QuoteListRow[]): { percent: number; approved: number; decided: number } | null {
+  const approved = rows.filter((r) => r.state === "approved").length
+  const decided = approved + rows.filter((r) => r.state === "declined").length
+  return decided === 0 ? null : { percent: Math.round((approved / decided) * 100), approved, decided }
+}
+
+/** The status tabs: All and the quote's own four states, each with its live count. There is no Draft: the draft is the job's live lines. */
+export type QuoteTab = "all" | QuoteState
+export const QUOTE_TABS: readonly QuoteTab[] = ["all", "sent", "approved", "declined", "replaced"]
+export function tabCounts(rows: readonly QuoteListRow[]): Record<QuoteTab, number> {
+  return { all: rows.length, sent: rows.filter((r) => r.state === "sent").length, approved: rows.filter((r) => r.state === "approved").length, declined: rows.filter((r) => r.state === "declined").length, replaced: rows.filter((r) => r.state === "replaced").length }
+}
+
 /** Waiting first (the longest waiting on top), then the decided ones, newest first, then the Replaced. */
 export function sortQuoteRows(rows: readonly QuoteListRow[]): QuoteListRow[] {
   const rank = (r: QuoteListRow) => (r.state === "sent" ? 0 : r.state === "replaced" ? 2 : 1)

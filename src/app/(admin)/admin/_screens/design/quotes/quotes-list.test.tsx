@@ -1,10 +1,11 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { moreItems, railItems } from "@/components/blocks/admin-nav"
 import { QuotesList } from "./QuotesList"
 import { searchQuotes } from "./QuotesShell"
 import { QUOTE_HISTORY_FIXTURES } from "./quote-history-fixtures"
-import { quoteRowsOf, quoteTotals, sortQuoteRows, waitingCount } from "./quote-list-model"
+import { closeRate, oldestWaitingDays, quoteRowsOf, quoteTotals, sortQuoteRows, tabCounts, waitingCount } from "./quote-list-model"
 import { QUOTES_NOW, QUOTE_JOB_FIXTURES, nextNumber } from "./quote-model"
 import { createQuoteStore } from "./quote-store"
 
@@ -41,6 +42,15 @@ describe("the rows and the count", () => {
   })
   it("puts the longest waiting first, then the decided newest first, then Replaced", () => {
     expect(sortQuoteRows(quoteRowsOf(ALL, QUOTES_NOW)).map((r) => r.id)).toEqual(["Q-2026-0007", "Q-2026-0008", "Q-2026-0006", "Q-2026-0005", "Q-2026-0003"])
+  })
+  it("reads the age of the oldest waiting quote, the close rate and the tab counts from the rows", () => {
+    const rows = quoteRowsOf(ALL, QUOTES_NOW)
+    expect(oldestWaitingDays(rows, QUOTES_NOW)).toBe(8)
+    expect(oldestWaitingDays([], QUOTES_NOW)).toBeNull()
+    // approved out of approved plus declined; Sent and Replaced are not decided
+    expect(closeRate(rows)).toEqual({ percent: 50, approved: 1, decided: 2 })
+    expect(closeRate(quoteRowsOf(QUOTE_JOB_FIXTURES, QUOTES_NOW))).toBeNull()
+    expect(tabCounts(rows)).toEqual({ all: 5, sent: 2, approved: 1, declined: 1, replaced: 1 })
   })
   it("keeps the next quote number where it was", () => {
     expect(nextNumber(ALL)).toBe("Q-2026-0009")
@@ -81,13 +91,44 @@ describe("Cmd+K", () => {
 })
 
 describe("the Quotes list", () => {
-  it("has three tiles and a row per quote with the quote, customer and job as chips", () => {
+  it("has the pipeline tiles, each with what it counts", () => {
     render(<QuotesList jobs={ALL} now={QUOTES_NOW} />)
     const band = screen.getByRole("group", { name: "Summary" })
-    for (const label of ["Waiting", "Approved this month", "Declined this month"]) expect(within(band).getByText(label)).toBeInTheDocument()
+    for (const label of ["Open pipeline", "Waiting for an answer", "Approved this month", "Declined this month", "Close rate"]) expect(within(band).getByText(label)).toBeInTheDocument()
     expect(within(band).getByText("$2,060")).toBeInTheDocument()
-    expect(within(band).getByText("2 quotes out")).toBeInTheDocument()
+    expect(within(band).getByText("2 quotes")).toBeInTheDocument()
+    expect(within(band).getByText("Oldest: 8 days")).toBeInTheDocument()
+    expect(within(band).getByText("$750")).toBeInTheDocument()
+    expect(within(band).getByText("$1,150")).toBeInTheDocument()
+    expect(within(band).getByText("50%")).toBeInTheDocument()
+    expect(within(band).getByText("1 approved of 2 decided")).toBeInTheDocument()
+    // Close rate is a figure, not a filter
+    expect(within(band).queryByRole("button", { name: /Close rate/ })).toBeNull()
+  })
+  it("leaves Close rate out until a quote is decided", () => {
+    render(<QuotesList jobs={QUOTE_JOB_FIXTURES} now={QUOTES_NOW} />)
+    expect(within(screen.getByRole("group", { name: "Summary" })).queryByText("Close rate")).toBeNull()
+  })
+  it("has status tabs with live counts, All first and open", () => {
+    render(<QuotesList jobs={ALL} now={QUOTES_NOW} />)
+    const tabs = screen.getAllByRole("tab")
+    expect(tabs.map((t) => t.textContent)).toEqual(["All5", "Sent2", "Approved1", "Declined1", "Replaced1"])
+    expect(screen.getByRole("tab", { name: /^All/ })).toHaveAttribute("aria-selected", "true")
     expect(screen.getAllByRole("row")).toHaveLength(6)
+  })
+  it("sets the tab when a tile is pressed, and when a tab is", async () => {
+    render(<QuotesList jobs={ALL} now={QUOTES_NOW} />)
+    fireEvent.click(within(screen.getByRole("group", { name: "Summary" })).getByRole("button", { name: /Declined this month/ }))
+    expect(screen.getByRole("tab", { name: /^Declined/ })).toHaveAttribute("aria-selected", "true")
+    expect(screen.getAllByRole("row")).toHaveLength(2)
+    expect(screen.getAllByRole("row")[1]!.textContent).toContain("Q-2026-0006")
+    await userEvent.click(screen.getByRole("tab", { name: /^Sent/ }))
+    expect(screen.getAllByRole("row")).toHaveLength(3)
+    await userEvent.click(screen.getByRole("tab", { name: /^All/ }))
+    expect(screen.getAllByRole("row")).toHaveLength(6)
+  })
+  it("has a row per quote with the quote, customer and job as chips and the sent day with its age", () => {
+    render(<QuotesList jobs={ALL} now={QUOTES_NOW} />)
     const first = screen.getAllByRole("row")[1]!
     expect(within(first).getByRole("link", { name: "Quote: Q-2026-0007" })).toHaveAttribute("href", expect.stringContaining("job=q-beth"))
     expect(within(first).getByRole("link", { name: "Quote: Q-2026-0007" })).toHaveAttribute("href", expect.stringContaining("#quote-h"))
@@ -96,6 +137,7 @@ describe("the Quotes list", () => {
     expect(within(first).getByText("Sent", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
     expect(within(first).getByText("$1,200")).toBeInTheDocument()
     expect(within(first).getByText("$300")).toBeInTheDocument()
+    expect(within(first).getByText("Nov 9")).toBeInTheDocument()
     expect(within(first).getByText("8 days ago")).toBeInTheDocument()
   })
   it("shows a dash for no deposit and every status pill", () => {
@@ -104,15 +146,20 @@ describe("the Quotes list", () => {
     expect(within(greg).getByText("No deposit")).toBeInTheDocument()
     for (const label of ["Approved", "Declined", "Replaced"]) expect(screen.getAllByText(label, { selector: "[data-slot=status-pill]" }).length).toBeGreaterThan(0)
   })
-  it("has Remind only on a Sent quote, and opens the quote's reminder dialog", () => {
+  it("has Remind as the Next action of a Sent quote and Open on the others", () => {
     const onRemind = vi.fn()
     render(<QuotesList jobs={ALL} now={QUOTES_NOW} onRemind={onRemind} />)
+    expect(screen.getByRole("columnheader", { name: "Next action" })).toBeInTheDocument()
     const rows = screen.getAllByRole("row")
-    expect(within(rows.find((r) => r.textContent?.includes("Q-2026-0007"))!).getByRole("button", { name: "Remind" })).toBeInTheDocument()
-    for (const n of ["Q-2026-0005", "Q-2026-0006", "Q-2026-0003"]) expect(within(rows.find((r) => r.textContent?.includes(n))!).queryByRole("button", { name: "Remind" })).toBeNull()
-    // every row has Open
-    expect(within(rows.find((r) => r.textContent?.includes("Q-2026-0005"))!).getByRole("link", { name: "Open quote" })).toHaveAttribute("href", expect.stringContaining("#quote-h"))
-    fireEvent.click(within(rows.find((r) => r.textContent?.includes("Q-2026-0007"))!).getByRole("button", { name: "Remind" }))
+    const sent = rows.find((r) => r.textContent?.includes("Q-2026-0007"))!
+    expect(within(sent).getByRole("button", { name: "Remind" })).toBeInTheDocument()
+    expect(within(sent).queryByRole("link", { name: /Open quote/ })).toBeNull()
+    for (const n of ["Q-2026-0005", "Q-2026-0006", "Q-2026-0003"]) {
+      const row = rows.find((r) => r.textContent?.includes(n))!
+      expect(within(row).queryByRole("button", { name: "Remind" })).toBeNull()
+      expect(within(row).getByRole("link", { name: `Open quote ${n}` })).toHaveAttribute("href", expect.stringContaining("#quote-h"))
+    }
+    fireEvent.click(within(sent).getByRole("button", { name: "Remind" }))
     expect(screen.getByRole("dialog", { name: "Send a quote reminder" })).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Send the reminder" }))
     expect(onRemind).toHaveBeenCalledWith(expect.objectContaining({ jobId: "q-beth" }), expect.objectContaining({ id: "Q-2026-0007" }), expect.objectContaining({ via: "email" }))
@@ -124,18 +171,25 @@ describe("the Quotes list", () => {
     const row = screen.getAllByRole("row").find((r) => r.textContent?.includes("Q-2026-0007"))!
     expect(within(row).getByRole("button", { name: "Reminded today" })).toBeDisabled()
   })
-  it("opens on the Sent quotes when a tile is pressed, and the empty and no-match states have their words", () => {
-    render(<QuotesList jobs={ALL} now={QUOTES_NOW} />)
-    fireEvent.click(within(screen.getByRole("group", { name: "Summary" })).getByRole("button", { name: /Declined this month/ }))
-    expect(screen.getAllByRole("row")).toHaveLength(2)
-    expect(screen.getAllByRole("row")[1]!.textContent).toContain("Q-2026-0006")
+  it("changes the tiles, the tab counts and the waiting count at once when a quote is sent", () => {
+    const store = createQuoteStore()
+    store.updateLine("q-dana", "d1", { amount: 145 })
+    const { rerender } = render(<QuotesList jobs={Object.values(store.getSnapshot())} now={QUOTES_NOW} />)
+    expect(screen.getByRole("tab", { name: /^Sent/ }).textContent).toBe("Sent2")
+    store.send("q-dana", { via: "text", deposit: null, at: QUOTES_NOW })
+    const jobs = Object.values(store.getSnapshot())
+    rerender(<QuotesList jobs={jobs} now={QUOTES_NOW} />)
+    expect(screen.getByRole("tab", { name: /^Sent/ }).textContent).toBe("Sent3")
+    expect(screen.getByRole("tab", { name: /^All/ }).textContent).toBe("All6")
+    expect(within(screen.getByRole("group", { name: "Summary" })).getByText("$2,205")).toBeInTheDocument()
+    expect(waitingCount(jobs)).toBe(3)
   })
-  it("says so when there are no quotes, and when the filters hide them all", () => {
+  it("says so when there are no quotes, and when a tab has none", () => {
     const { unmount } = render(<QuotesList jobs={[]} now={QUOTES_NOW} />)
     expect(screen.getByText("No quotes yet")).toBeInTheDocument()
-    expect(screen.getByText("Nothing waiting")).toBeInTheDocument()
+    expect(screen.getAllByText("Nothing waiting").length).toBeGreaterThan(0)
     unmount()
-    render(<QuotesList jobs={QUOTE_JOB_FIXTURES} now={QUOTES_NOW} initialFilters={[{ column: "status", values: ["approved"] }]} />)
+    render(<QuotesList jobs={QUOTE_JOB_FIXTURES} now={QUOTES_NOW} initialTab="approved" />)
     expect(screen.getByText("No quotes match.")).toBeInTheDocument()
   })
 })

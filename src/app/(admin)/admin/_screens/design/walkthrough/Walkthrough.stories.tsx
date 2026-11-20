@@ -241,6 +241,10 @@ export const RequestToQuoteTest: Story = {
     await expect(quotesCount()).toContain("3")
     await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/quotes"]')!)
     await expect(await c.findByRole("heading", { level: 1, name: "Quotes" })).toBeInTheDocument()
+    // the tab counts and the tiles moved with it: 3 Sent of 6, and the open pipeline is $1,200 + $860 + the new $1,200
+    await expect(await c.findByRole("tab", { name: /^Sent/ })).toHaveTextContent("Sent3")
+    await expect(await c.findByRole("tab", { name: /^All/ })).toHaveTextContent("All6")
+    await expect(await c.findByText("$3,260")).toBeInTheDocument()
     const row = (await c.findAllByText("Q-2026-0009"))[0]!.closest("tr")!
     await expect(within(row).getByText("Rosa Delgado")).toBeInTheDocument()
     await expect(within(row).getByText("Sent", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()

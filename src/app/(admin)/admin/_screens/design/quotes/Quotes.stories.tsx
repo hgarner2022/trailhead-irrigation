@@ -6,6 +6,7 @@ import { JobsGridDesign } from "../JobsGridDesign"
 import { allRows } from "../walkthrough/jobs-data"
 import { QuoteJobPage, type QuoteJobPageProps } from "./QuoteJobPage"
 import { QuotesList } from "./QuotesList"
+import type { QuoteTab } from "./quote-list-model"
 import { QuotesShell } from "./QuotesShell"
 import { QUOTE_HISTORY_FIXTURES } from "./quote-history-fixtures"
 import { DESIGN_VISIT_JOB, QUOTES_NOW, QUOTE_JOB_FIXTURES, fixtureJob, jobFromRequest, type QuoteJob } from "./quote-model"
@@ -173,7 +174,7 @@ export const JobsStatusFilter: Story = {
 // ---------------------------------------------------------------------------------------------------------------------- the Quotes list
 
 const ALL = [...QUOTE_JOB_FIXTURES, ...QUOTE_HISTORY_FIXTURES]
-const list = (jobs: readonly QuoteJob[], globals: typeof laptop, o: { initialFilters?: { column: string; values: string[] }[] } = {}): Story => ({
+const list = (jobs: readonly QuoteJob[], globals: typeof laptop, o: { initialTab?: QuoteTab } = {}): Story => ({
   args,
   globals,
   render: () => (
@@ -183,13 +184,17 @@ const list = (jobs: readonly QuoteJob[], globals: typeof laptop, o: { initialFil
   ),
 })
 
-/** Quotes, a rail item after Jobs with the count of quotes still waiting (2). Every quote is a row: the two Sent ones first (the longest waiting on top, with Remind), then Approved, Declined and Replaced. The tiles are Waiting, Approved this month and Declined this month, and each sets the Status filter. */
+/** Quotes as a pipeline, a rail item after Jobs with the count of quotes still waiting (2). Five tiles by stage (Open pipeline, Waiting for an answer with the age of the oldest, Approved this month, Declined this month, Close rate), each one that has something also the tab it sets; the status tabs carry live counts; every quote is a row, the two Sent ones first with Remind as the Next action, then Approved, Declined and Replaced with Open. */
 export const List: Story = { ...list(ALL, laptop), name: "List" }
 export const ListPhone: Story = { ...list(ALL, phone), name: "List, phone" }
 /** No quotes yet: the band reads Nothing waiting and the table says how one gets made. */
 export const ListEmpty: Story = { ...list([], laptop), name: "List empty" }
-/** The Status filter hides every row: "No quotes match." with Clear filters. */
-export const ListNoMatch: Story = { ...list(QUOTE_JOB_FIXTURES, laptop, { initialFilters: [{ column: "status", values: ["approved"] }] }), name: "List no match" }
+/** A tab with no quotes in it (nothing is approved yet): "No quotes match." Close rate is not shown either, because nothing is decided. */
+export const ListNoMatch: Story = { ...list(QUOTE_JOB_FIXTURES, laptop, { initialTab: "approved" }), name: "List no match" }
+
+/** The Sent tab, as a tile or Home's Quote waiting row opens it: only the two quotes still waiting, each with Remind. */
+export const ListSentTab: Story = { ...list(ALL, laptop, { initialTab: "sent" }), name: "List, Sent tab" }
+export const ListSentTabPhone: Story = { ...list(ALL, phone, { initialTab: "sent" }), name: "List, Sent tab, phone" }
 
 /** Cmd+K has a Quotes group: type a quote number or a customer's name and the quote opens its job at the Quote section. */
 export const Search: Story = {

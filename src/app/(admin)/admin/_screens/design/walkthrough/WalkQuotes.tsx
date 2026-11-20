@@ -24,7 +24,7 @@ export function QuotesRoute({ filter }: { filter?: "sent" }) {
       key={filter ?? "all"}
       jobs={Object.values(jobs)}
       now={QUOTES_NOW}
-      initialFilters={filter === "sent" ? [{ column: "status", values: ["sent"] }] : undefined}
+      initialTab={filter === "sent" ? "sent" : undefined}
       onRemind={(job, _quote, { via }) => {
         walkQuotes.remind(job.jobId, { via, at: QUOTES_NOW })
         toast(`Reminder sent to ${job.first} by ${VIA_WORDS[via]}`)

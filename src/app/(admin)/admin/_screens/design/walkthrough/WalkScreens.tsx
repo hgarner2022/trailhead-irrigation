@@ -70,7 +70,7 @@ export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen:
         hiddenColumns={["who", "jobName"]}
         onOpen={(r) => onOpen(r.id)}
         exportName="jobs"
-        pageSize={25}
+        pageSize={50}
         noMatchTitle="No jobs match."
         emptyTitle="No jobs yet"
         emptyLine="Jobs appear here as passes are sold and work is booked. Add one with New job."
