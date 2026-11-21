@@ -13,7 +13,6 @@ import { nextRow, portalTimeline } from "@/lib/portal/timeline"
 import { visitPageOf } from "@/lib/portal/visit-page"
 import { withBookedTime, type BookedTimes } from "@/lib/portal/booked-time"
 import type { DayTimeOffer } from "@/lib/booking/day-time"
-import { PassVisitRows, type PassVisitRowsProps } from "../pass/_screens/PassVisitRows"
 import { openInvoices } from "./account-model"
 import { VisitControls, type VisitActions } from "./VisitControls"
 
@@ -36,10 +35,9 @@ export interface HomeScreenProps extends VisitActions {
   times?: BookedTimes
   offers?: Record<string, readonly DayTimeOffer[]>
   /** the customer saved a new preference for a pass visit that has no day yet */
-  onChangePreference?: PassVisitRowsProps["onChangePreference"]
 }
 
-export function HomeScreen({ customer, jobs, today, pass, days = {}, times, offers, onReschedule, onRescheduleTime, onCancel, onChangePreference }: HomeScreenProps) {
+export function HomeScreen({ customer, jobs, today, pass, days = {}, times, offers, onReschedule, onRescheduleTime, onCancel }: HomeScreenProps) {
   const invoices = openInvoices(jobs)
   const timeline = portalTimeline(customer, jobs, today)
   const next = nextRow(timeline)
@@ -95,7 +93,6 @@ export function HomeScreen({ customer, jobs, today, pass, days = {}, times, offe
                       </p>
                     )}
                     <SeasonLine mode="customer" season={pass.season} visits={pass.visits} preferences={pass} today={today} />
-                    {pass.status !== "cancelled" && <PassVisitRows pass={pass} onChangePreference={onChangePreference} times={times} compact />}
                   </Stack>
                 </CardContent>
               </Card>

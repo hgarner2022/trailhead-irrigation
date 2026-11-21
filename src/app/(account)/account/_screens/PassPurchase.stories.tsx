@@ -33,15 +33,28 @@ const meta = {
 export default meta
 type Story = StoryObj
 
-const homeApril = () => <HomeScreen customer={andrea} jobs={[passJob, repairJob]} today="2027-04-14" pass={aprilPass} times={aprilTimes} onChangePreference={onChangePreference} />
-const homeJanuary = () => <HomeScreen customer={andrea} jobs={[januaryJob, repairJob]} today="2027-01-12" pass={januaryPass} onChangePreference={onChangePreference} />
+const homeApril = () => <HomeScreen customer={andrea} jobs={[passJob, repairJob]} today="2027-04-14" pass={aprilPass} times={aprilTimes} />
+const homeJanuary = () => <HomeScreen customer={andrea} jobs={[januaryJob, repairJob]} today="2027-01-12" pass={januaryPass} />
 const passApril = () => <PassPageScreen pass={aprilPass} today="2027-04-14" times={aprilTimes} onChangePreference={onChangePreference} />
 const passJanuary = () => <PassPageScreen pass={januaryPass} today="2027-01-12" onChangePreference={onChangePreference} />
 
-/** April: the next visit exact on Home, and the blowout under the pass with its preference and a Change control. */
+/** April: Home shows the pass card and its timeline; the list of visits with preferences and Change lives only on the Season Pass page. */
 export const HomeAprilPhone: Story = {
   ...phone,
   render: homeApril,
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector("[data-slot=pass-visit-rows]")).toBeNull()
+  },
+}
+export const HomeAprilLaptop: Story = { ...laptop, render: homeApril }
+/** January: both visits show a preference and no day. */
+export const HomeJanuaryPhone: Story = { ...phone, render: homeJanuary }
+export const HomeJanuaryLaptop: Story = { ...laptop, render: homeJanuary }
+
+/** The Season Pass page after the April purchase: the next visit exact, the blowout with its preference and a Change control. */
+export const PassPageAprilPhone: Story = {
+  ...phone,
+  render: passApril,
   play: async ({ canvasElement }) => {
     const rows = within(canvasElement.querySelector("[data-slot=pass-visit-rows]") as HTMLElement)
     await expect(rows.getByText("Preference: Early October")).toBeInTheDocument()
@@ -50,13 +63,6 @@ export const HomeAprilPhone: Story = {
     await expect(rows.getByRole("button", { name: /Change when we do your fall blowout/ })).toBeInTheDocument()
   },
 }
-export const HomeAprilLaptop: Story = { ...laptop, render: homeApril }
-/** January: both visits show a preference and no day. */
-export const HomeJanuaryPhone: Story = { ...phone, render: homeJanuary }
-export const HomeJanuaryLaptop: Story = { ...laptop, render: homeJanuary }
-
-/** The Season Pass page after the April purchase. */
-export const PassPageAprilPhone: Story = { ...phone, render: passApril }
 export const PassPageAprilLaptop: Story = { ...laptop, render: passApril }
 /** The Season Pass page after the January purchase: two preferences, each with Change, no day yet. */
 export const PassPageJanuaryPhone: Story = {

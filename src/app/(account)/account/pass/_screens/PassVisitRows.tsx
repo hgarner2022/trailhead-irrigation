@@ -9,17 +9,16 @@ import { bookedWhen, canChange, visitLineInfo, visitRows } from "./pass-page-mod
 
 // The pass's visits, one row each, for the pass page and Home (docs/plans/2026-11-20-season-pass-booking-research.md): a visit with a day reads its day and exact time (the next visit); a visit that is
 // months away reads "Preference: Mid October" and "We'll schedule it about two weeks before and tell you the day." with a Change control until its day is set. The state pill is Done, Booked or Preferred.
-// `compact` (Home) leaves out what the visit includes and the calendar buttons. Server component; the dialog carries its own client boundary.
+// Only the Season Pass tab lists these rows: Home shows the pass card and its timeline, never this list (Hannah, Nov 21 2026). Server component; the dialog carries its own client boundary.
 
 export interface PassVisitRowsProps {
   pass: Pass
   onChangePreference?: (kind: "turn-on" | "blowout", preference: TimingPreference) => void
   /** the booked start of each visit by visit id ("10:30"), for the exact time */
   times?: BookedTimes
-  compact?: boolean
 }
 
-export function PassVisitRows({ pass, onChangePreference, times, compact }: PassVisitRowsProps) {
+export function PassVisitRows({ pass, onChangePreference, times }: PassVisitRowsProps) {
   const rows = visitRows(pass)
   return (
     <ul data-slot="pass-visit-rows" className="divide-y divide-border">
@@ -41,11 +40,11 @@ export function PassVisitRows({ pass, onChangePreference, times, compact }: Pass
                   {SCHEDULE_NOTE}
                 </span>
               )}
-              {!compact && info.description && <span className="block text-sm text-muted-foreground">{info.description}</span>}
+              {info.description && <span className="block text-sm text-muted-foreground">{info.description}</span>}
             </span>
             {preference && canChange(visit) && <PreferenceDialog kind={visit.kind} value={preference} onSave={onChangePreference} />}
             <StatusPill status={row.status} label={row.label} />
-            {!compact && <AddToCalendar pass={pass} visit={visit} name={row.name} />}
+            {<AddToCalendar pass={pass} visit={visit} name={row.name} />}
           </li>
         )
       })}
