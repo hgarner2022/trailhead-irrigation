@@ -23,20 +23,27 @@ export interface SummaryItem {
   onClick?: () => void
 }
 
+// A band of three would leave one grey hairline-coloured slab at the end (an empty cell on a phone's second row, a fourth column on a laptop), so the band is as wide
+// as it has cells: the last of an odd count takes the phone's whole second row, and a laptop gets as many columns as cells up to four.
+const LG_COLS: Record<number, string> = { 1: "lg:grid-cols-1", 2: "lg:grid-cols-2", 3: "lg:grid-cols-3" }
+
 export function SummaryBand({ items, className }: { items: readonly SummaryItem[]; className?: string }) {
+  const odd = items.length % 2 === 1
   return (
-    <div data-slot="summary-band" role="group" aria-label="Summary" className={cn("grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border shadow-sm lg:grid-cols-4", className)}>
-      {items.map((item) => (
-        <Cell key={item.label} item={item} />
+    <div data-slot="summary-band" role="group" aria-label="Summary" className={cn("grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border shadow-sm", LG_COLS[items.length] ?? "lg:grid-cols-4", className)}>
+      {items.map((item, i) => (
+        <Cell key={item.label} item={item} wide={odd && i === items.length - 1} />
       ))}
     </div>
   )
 }
 
 const CELL = "relative flex min-w-0 flex-col items-start gap-2 bg-card px-4 py-4 sm:flex-row sm:gap-3 sm:px-5"
+/** the last cell of an odd band, on a phone, takes the whole row */
+const WIDE = "col-span-2 lg:col-span-1"
 const TARGET = "group text-left transition-colors hover:bg-row-hover focus-visible:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
 
-function Cell({ item }: { item: SummaryItem }) {
+function Cell({ item, wide }: { item: SummaryItem; wide?: boolean }) {
   const { icon: Icon, href, onClick } = item
   const body = (
     <>
@@ -55,20 +62,20 @@ function Cell({ item }: { item: SummaryItem }) {
   )
   if (href) {
     return (
-      <Link href={href} data-slot="summary-cell" data-link className={cn(CELL, TARGET, "min-h-11")}>
+      <Link href={href} data-slot="summary-cell" data-link className={cn(CELL, TARGET, "min-h-11", wide && WIDE)}>
         {body}
       </Link>
     )
   }
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} data-slot="summary-cell" data-link className={cn(CELL, TARGET, "min-h-11")}>
+      <button type="button" onClick={onClick} data-slot="summary-cell" data-link className={cn(CELL, TARGET, "min-h-11", wide && WIDE)}>
         {body}
       </button>
     )
   }
   return (
-    <div data-slot="summary-cell" className={CELL}>
+    <div data-slot="summary-cell" className={cn(CELL, wide && WIDE)}>
       {body}
     </div>
   )

@@ -37,11 +37,10 @@ function Fact({ icon: Icon, children }: { icon: typeof Home; children: ReactNode
 
 export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot, photosSlot }: VisitPageProps) {
   const inside = m.reschedule === "text" && m.cancel === "text"
+  // the card holds what is included, the price and the receipts; with none of them it is not drawn at all (an empty white card under the band was "too much going on")
+  const hasDetails = Boolean(m.mustBeHome || m.included || m.priceLine || m.receipts.length > 0)
   return (
     <main data-slot="account-visit" className="mx-auto max-w-3xl space-y-6 container-padding-x py-8 sm:py-12">
-      <Link href="/account/visits" className="inline-flex min-h-11 items-center text-base font-semibold text-primary-deep underline underline-offset-2">
-        Visits
-      </Link>
       {m.invoice && <InvoiceBanner jobName={m.service} total={m.invoice.total} dueOn={m.invoice.dueOn} status={m.invoice.status} payHref={m.invoice.payHref} />}
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div className="min-w-0 space-y-2">
@@ -66,33 +65,35 @@ export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot, 
           {m.dayDetail}
         </p>
       )}
-      <Card>
-        <CardContent className="space-y-3 p-4 sm:p-6">
-          {m.mustBeHome && <Fact icon={Home}>Someone must be home</Fact>}
-          {m.included && (
-            <div className="space-y-1">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{"What's included"}</h2>
-              <p className="text-base text-foreground">{m.included}</p>
-            </div>
-          )}
-          {m.priceLine && <p className="text-base text-foreground">{m.priceLine}</p>}
-          {m.receipts.length > 0 && (
-            <ul className="space-y-1">
-              {m.receipts.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-x-4 text-base text-foreground">
-                  <span className="inline-flex items-center gap-2">
-                    <Check aria-hidden className="size-4 text-positive" />
-                    {r.words}
-                  </span>
-                  <Link href={r.href} className="inline-flex min-h-11 items-center font-semibold text-primary-deep underline underline-offset-2">
-                    Receipt
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      {hasDetails && (
+        <Card>
+          <CardContent className="space-y-3 p-4 sm:p-6">
+            {m.mustBeHome && <Fact icon={Home}>Someone must be home</Fact>}
+            {m.included && (
+              <div className="space-y-1">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{"What's included"}</h2>
+                <p className="text-base text-foreground">{m.included}</p>
+              </div>
+            )}
+            {m.priceLine && <p className="text-base text-foreground">{m.priceLine}</p>}
+            {m.receipts.length > 0 && (
+              <ul className="space-y-1">
+                {m.receipts.map((r) => (
+                  <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-x-4 text-base text-foreground">
+                    <span className="inline-flex items-center gap-2">
+                      <Check aria-hidden className="size-4 text-positive" />
+                      {r.words}
+                    </span>
+                    <Link href={r.href} className="inline-flex min-h-11 items-center font-semibold text-primary-deep underline underline-offset-2">
+                      Receipt
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
       {photosSlot}
       {(m.reschedule !== "no" || m.cancel !== "no") && (
         <section aria-label="Change this visit" data-slot="visit-actions" data-state={inside ? "text" : "online"} className="space-y-3">

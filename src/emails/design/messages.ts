@@ -111,6 +111,7 @@ export function receiptEmail(d: ReceiptData): RenderedEmail {
     ...(d.invoiceNumber ? ([["Invoice", d.invoiceNumber]] as [string, string][]) : []),
   ]
   const why = d.invoiceNumber ? `You are getting this because you paid invoice ${d.invoiceNumber}.` : "You are getting this because a visit of yours was completed."
+  const report = d.report ? visitReport(d.report, "receipt") : null
   const out = customerDoc(d, {
     preheader: `Paid ${dollars(d.amount)}${how ? `, ${how}` : ""}${d.paidOn ? `, on ${longDay(d.paidOn)}` : ""}.`,
     title: "Paid, thank you",
@@ -118,6 +119,7 @@ export function receiptEmail(d: ReceiptData): RenderedEmail {
     parts: [
       summary({ key: { label: "Paid", value: dollars(d.amount), note: `${how ? sentence(how) : ""}${how && d.paidOn ? ", " : ""}${d.paidOn ? longDay(d.paidOn) : ""}` || undefined }, facts }),
       moneyBlock(lines, subtotal, d.tax, total),
+      ...(report ? [{ html: report.html, text: report.text } as Part] : []),
       ...(d.nextLine ? [paragraph(d.nextLine)] : []),
       button(d.signInUrl, SEE_JOB),
       ...(d.receiptUrl ? [links([{ href: d.receiptUrl, label: "View the receipt" }])] : []),

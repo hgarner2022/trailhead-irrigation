@@ -64,20 +64,22 @@ export const EMAIL_LABELS: Record<EmailKind | "sign-in", string> = {
   "sign-in": "Sign in link",
 }
 
-/** The visit report of the invoice story: the repair's checklist, the crew's notes and four photos (placeholders from the site's own images). */
-export const REPORT_FIXTURE: import("./visit-report").VisitReportData = {
-  items: [
-    { label: "Walk the zones", done: true },
-    { label: "Find the leak", done: true, note: "Cracked head in zone 5, by the fence." },
-    { label: "Fix what we can", done: true },
-    { label: "Set the controller", done: true },
-    { label: "Walk the customer through it", done: false, note: "Andrea was out; Ryan left the schedule on the controller." },
-  ],
-  notes: ["Replaced the zone 5 head and the broken rotor in zone 3. Everything runs clean. Worth a look at the garden bed for drip next spring."],
-  photos: [
-    { url: `${ORIGIN}/images/sprinkler-head.jpg`, caption: "The cracked zone 5 head" },
-    { url: `${ORIGIN}/images/sprinkler-repair.jpg`, caption: "New head in place" },
-    { url: `${ORIGIN}/images/sprinkler-spray-head-lawn.jpg`, caption: "Zone 5 running" },
-    { url: `${ORIGIN}/images/sprinkler-golden-hour.jpg`, caption: "The front lawn after the visit" },
-  ],
+/**
+ * The visit report each service carries: the job's checklist template for that service (the labels on the job page: `REPAIR_STEPS` in components/blocks/Checklist.tsx
+ * and `TRIP_STEPS` in the admin trip fixtures; src/emails/visit-report.test.ts holds them equal), the first `done` items ticked, and the photos Ryan shared with
+ * the customer (`shown_to_customer` on a visit that is done). No notes and no captions: the data has none to show.
+ */
+export const REPORT_STEPS: Record<"repair" | "spring turn-on" | "fall blowout" | "July inspection", readonly string[]> = {
+  repair: ["Walk the zones", "Find the leak", "Fix what we can", "Set the controller", "Walk the customer through it"],
+  "spring turn-on": ["Pressure test", "Run every zone", "Set the controller", "Note broken heads"],
+  "fall blowout": ["Shut the water", "Blow out each zone", "Drain the backflow", "Set the controller to off"],
+  "July inspection": ["Run every zone", "Adjust heads", "Check the controller schedule"],
 }
+export const REPORT_PHOTOS = ["/images/sprinkler-head.jpg", "/images/sprinkler-repair.jpg"]
+/** `origin` is the site's for an email (a photo's address must be absolute there) and empty for a page (`""`, a path on the same site). */
+export function reportFor(service: keyof typeof REPORT_STEPS, done?: number, photos = 2, origin = ORIGIN): import("./visit-report").VisitReportData {
+  const steps = REPORT_STEPS[service]
+  return { items: steps.map((label, n) => ({ label, done: n < (done ?? steps.length) })), photos: REPORT_PHOTOS.slice(0, photos).map((url) => ({ url: `${origin}${url}` })) }
+}
+/** The repair of the receipt and invoice stories: four of its five items ticked (the customer was out for the walk-through) and two photos. */
+export const REPORT_FIXTURE = reportFor("repair", 4, 2)

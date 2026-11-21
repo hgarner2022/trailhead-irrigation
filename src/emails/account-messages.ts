@@ -1,6 +1,7 @@
 import { ACCOUNT_NAME, BUSINESS, SEE_JOB, SIGN_OFF, dollars, longDay } from "./format"
 import { doneWords, jobTable, linesOf, paidWords } from "./job-table"
 import { button, emailLayout, greetingText, links, paragraph, plainText, smallPrint } from "./layout"
+import { visitReport } from "./visit-report"
 import type { CancelledData, CardExpiringData, CardFailedData, ReceiptData, RenderedEmail, RenewalData, VisitCancelledData } from "./types"
 
 // The money and account emails, worded as docs/plans/2026-11-18-messages-design.md section 4 writes them: the fact first, the
@@ -32,8 +33,9 @@ export function receiptEmail(d: ReceiptData): RenderedEmail {
   const why = d.invoiceNumber ? `You are getting this because you paid invoice ${d.invoiceNumber}.` : "You are getting this because a visit of yours was completed."
   const how_ = how(d)
   const preheader = `Paid ${dollars(d.amount)}${how_ ? `, ${how_}` : ""}${d.paidOn ? `, on ${longDay(d.paidOn)}` : ""}.`
-  const body = table.html + (d.nextLine ? paragraph(d.nextLine) : "") + button(d.signInUrl, SEE_JOB) + links(d.receiptUrl ? [{ href: d.receiptUrl, label: "View the receipt" }] : [])
-  const text = plainText([...greetingText(d.firstName), intro, "", ...table.text, ...(d.nextLine ? ["", d.nextLine] : []), "", `${SEE_JOB}: ${d.accountUrl}`, ...(d.receiptUrl ? [`Your receipt: ${d.receiptUrl}`] : [])], SIGN_OFF, why)
+  const report = d.report ? visitReport(d.report, "receipt") : null
+  const body = table.html + (report?.html ?? "") + (d.nextLine ? paragraph(d.nextLine) : "") + button(d.signInUrl, SEE_JOB) + links(d.receiptUrl ? [{ href: d.receiptUrl, label: "View the receipt" }] : [])
+  const text = plainText([...greetingText(d.firstName), intro, "", ...table.text, ...(report ? ["", ...report.text] : []), ...(d.nextLine ? ["", d.nextLine] : []), "", `${SEE_JOB}: ${d.accountUrl}`, ...(d.receiptUrl ? [`Your receipt: ${d.receiptUrl}`] : [])], SIGN_OFF, why)
   return { subject, text, html: wrap(d, { preheader, title: "Paid, thank you", lead: intro, body, why }) }
 }
 

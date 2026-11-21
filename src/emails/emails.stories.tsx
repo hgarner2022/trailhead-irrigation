@@ -3,7 +3,8 @@ import { EMAIL_FIXTURES, EMAIL_LABELS, SIGN_IN_FIXTURE } from "./fixtures"
 import { renderEmail, type EmailKind } from "./render"
 import { signInEmail } from "./sign-in"
 import { invoiceEmail } from "./invoice"
-import type { InvoiceData } from "./types"
+import { receiptEmail } from "./account-messages"
+import type { InvoiceData, ReceiptData } from "./types"
 import { REPORT_FIXTURE } from "./fixtures"
 
 // The real HTML of every email, built by the same renderer the sender uses and shown in a frame the way an inbox shows it,
@@ -39,10 +40,14 @@ export const TwoWeeksOut = story("date-confirm")
 export const Receipt = story("receipt")
 /** An invoice: the same table, the amount due, the due day and one Pay button. */
 export const Invoice = story("invoice")
-/** The invoice with the visit report: What we did under the lines, the checklist, the crew's notes and the photos in a grid. */
+/** The invoice with the visit report: What we did under the lines, the checklist (an open item reads "Not done") and the photos in a grid. */
 const withReport = invoiceEmail({ ...(EMAIL_FIXTURES.invoice as unknown as InvoiceData), report: REPORT_FIXTURE })
 export const InvoiceWithVisitReport: Story = { name: "Invoice with the visit report", args: { subject: withReport.subject, html: withReport.html, width: 640 } }
 export const InvoiceWithVisitReportOnAPhone: Story = { name: "Invoice with the visit report on a phone", args: { subject: withReport.subject, html: withReport.html, width: 375 } }
+/** The receipt with "What we did" under the lines: the visit's checklist and the photos Ryan shared. The invoice's "Include the visit report" box left unchecked means the plain Receipt above. */
+const receiptWithReport = receiptEmail({ ...(EMAIL_FIXTURES.receipt as unknown as ReceiptData), report: REPORT_FIXTURE })
+export const ReceiptWithVisitReport: Story = { name: "Receipt with the visit report", args: { subject: receiptWithReport.subject, html: receiptWithReport.html, width: 640 } }
+export const ReceiptWithVisitReportOnAPhone: Story = { name: "Receipt with the visit report on a phone", args: { subject: receiptWithReport.subject, html: receiptWithReport.html, width: 375 } }
 export const InvoiceReminder = story("invoice-reminder")
 export const CardFailed = story("card-failed")
 export const CardExpiring = story("card-expiring")

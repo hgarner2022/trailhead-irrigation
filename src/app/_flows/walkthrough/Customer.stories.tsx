@@ -135,7 +135,7 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
   },
 }
 
-/** The invoice path end to end (moved from the old Account and paying story): Pay now on the account, the pay page, the card button, "paid", the receipt. */
+/** The invoice path end to end: Pay now on the account, the pay page (what it is for and what we did), Stripe's card page (drawn, the save box unticked), Pay, the processing moment, the Paid page, the receipt with what we did. */
 export const PayPath: StoryObj<typeof CustomerPhone> = {
   name: "Pay path",
   tags: ["!dev", "!autodocs"],
@@ -145,10 +145,32 @@ export const PayPath: StoryObj<typeof CustomerPhone> = {
     await expect(await c.findByText("Where is the yard?")).toBeInTheDocument()
     window.postMessage({ walk: "cmd", cmd: "go", step: "account" }, "*")
     await userEvent.click(await c.findByRole("link", { name: /Pay now/ }))
+    await expect(await c.findByText(/for your repair at 412 Briggs Street/)).toBeInTheDocument()
+    await expect(await c.findByRole("heading", { name: "What we did" })).toBeInTheDocument()
     await userEvent.click(await c.findByRole("button", { name: /Pay \$115 by card/ }))
-    await expect(await c.findByText(/your payment went through/)).toBeInTheDocument()
+    await expect(await c.findByRole("checkbox", { name: "Save my payment method for future use" })).not.toBeChecked()
+    await userEvent.click(await c.findByRole("button", { name: "Pay $115" }))
+    await expect(await c.findByRole("button", { name: /Processing/ })).toBeDisabled()
+    await expect(await c.findByText(/your payment went through/, undefined, { timeout: 5000 })).toBeInTheDocument()
     await userEvent.click(await c.findByRole("link", { name: "View the receipt" }))
     await expect(await c.findByText(/Receipt/i, { selector: "h1" })).toBeInTheDocument()
+    await expect(await c.findByRole("heading", { name: "What we did" })).toBeInTheDocument()
+    await expect(c.getByText("Walk the customer through it")).toBeInTheDocument()
+  },
+}
+
+/** The same invoice with a card on file: one tap, no card page, then Paid. */
+export const PaySavedCardPath: StoryObj<typeof CustomerPhone> = {
+  name: "Pay path, saved card",
+  tags: ["!dev", "!autodocs"],
+  render: () => <CustomerPhone />,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await expect(await c.findByText("Where is the yard?")).toBeInTheDocument()
+    window.postMessage({ walk: "cmd", cmd: "go", step: "pay" }, "*")
+    await userEvent.click(await c.findByRole("button", { name: "Visa ending 4242" }))
+    await userEvent.click(await c.findByRole("button", { name: "Pay $115 with Visa ending 4242" }))
+    await expect(await c.findByText(/your payment went through/, undefined, { timeout: 5000 })).toBeInTheDocument()
   },
 }
 

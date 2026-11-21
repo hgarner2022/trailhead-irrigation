@@ -32,16 +32,14 @@ describe("44px tap targets on the account", () => {
     render(<AccountMenu firstName="Andrea" />)
     expect(tall(screen.getByRole("button", { name: /Andrea/ }))).toBe(true)
   })
-  it("Home: See all visits and every Receipt link", () => {
+  it("Home: every Receipt link", () => {
     render(<HomeScreen customer={andrea} jobs={[passJob, repairJob]} today={TODAY} pass={pass} />)
-    expect(tall(screen.getByRole("link", { name: "See all visits" }))).toBe(true)
     const receipts = screen.getAllByRole("link", { name: "Receipt" })
     expect(receipts.length).toBeGreaterThan(0)
     for (const r of receipts) expect(tall(r)).toBe(true)
   })
-  it("a visit page: the back link and its Receipt link", () => {
+  it("a visit page: its Receipt link", () => {
     render(<VisitScreen customer={andrea} job={repairJob} visitId="v3" today={TODAY} />)
-    expect(tall(screen.getByRole("link", { name: "Visits" }))).toBe(true)
     expect(tall(screen.getByRole("link", { name: "Receipt" }))).toBe(true)
   })
   it("Details: the text us links sit in a padded hit area and the must-be-home row is one 44px label", () => {

@@ -28,6 +28,8 @@ describe("AccountNav", () => {
     expect(placeOf("/account")).toBe("/account")
     expect(placeOf("/account/pass/card-updated")).toBe("/account/pass")
     expect(placeOf("/account/visits/x")).toBe("/account/visits")
+    // a receipt is a visit's: Visits stays lit (it used to light no tab)
+    expect(placeOf("/account/receipts/pay_9")).toBe("/account/visits")
   })
 
   it("makes the first name a menu with Sign out, pinned to the far right of the header row", async () => {

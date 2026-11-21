@@ -68,7 +68,7 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
   return (
     <div data-slot="pass-page" data-status={pass.status} className="min-h-svh bg-cream text-foreground">
       <div className="mx-auto max-w-3xl space-y-8 container-padding-x py-10">
-        <h1 className="font-display text-2xl font-semibold leading-none text-navy">Season Pass</h1>
+        <h1 className="sr-only">Season Pass</h1>
 
         <section
           data-slot="pass-headline"

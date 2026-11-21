@@ -2,6 +2,7 @@
 // a Season Pass for the year. The same people and numbers as the walkthroughs, so the messages read as one customer's weeks. Made up; nothing is sent.
 import type { PlainData } from "../plain"
 import { receiptNumber } from "../format"
+import { reportFor } from "../fixtures"
 import type {
   AdminAlertData, BookingConfirmationData, CancelledData, CardExpiringData, CardFailedData, InvoiceData, NotClosedCrewData, PurchaseConfirmationData, ReceiptData, RenewalData, SignInData,
   VisitCancelledData, VisitData,
@@ -32,11 +33,15 @@ const LINES = [{ name: "Repair", amount: 145, quantity: 1, unitPrice: 145 }]
 export const INVOICE: InvoiceData = {
   ...base, invoiceNumber: "INV-2026-0042", visitName: "repair", address: STREET, who: "Ryan", day: "2027-04-28",
   lines: LINES, amount: 145, tax: 0, total: 145, dueOn: "2027-05-12", payUrl: `${ORIGIN}/pay/inv-42?token=abc`,
+  // "Include the visit report" is checked when the office sends an invoice, so the invoice carries "What we did" unless it is unchecked (Hannah, Nov 19 and Nov 21 2026)
+  report: reportFor("repair", 4, 2),
 }
 
 const RECEIPT: ReceiptData = {
   ...base, amount: 145, serviceName: "repair", address: STREET, paidOn: "2027-04-29", who: "Ryan", day: "2027-04-28", number: receiptNumber("1a2b3c4d-0000"),
   lines: LINES, subtotal: 145, tax: 0, total: 145, invoiceNumber: "INV-2026-0042", card: null, nextLine: "Your fall blowout is planned for early October.", receiptUrl: null,
+  // the receipt of that invoice carries the same report (the invoice's checkbox decides; a receipt for a payment with no invoice carries it whenever the visit is done)
+  report: reportFor("repair", 4, 2),
 }
 export const RECEIPTS = {
   card: { ...RECEIPT, card: CARD, receiptUrl: "https://pay.stripe.com/receipts/example" } satisfies ReceiptData,

@@ -25,9 +25,10 @@ const meta = {
   title: "Screens/Account day and time",
   parameters: { layout: "fullscreen" },
   decorators: [
-    (Story) => (
+    (Story, { name }) => (
       <div className="min-h-svh bg-cream">
-        <AccountNav firstName="Andrea" current="/account" />
+        {/* the tab a screen belongs to stays lit (second navigation pass, Nov 21 2026) */}
+        <AccountNav firstName="Andrea" current={/^(Visit|Timeline)/.test(name) ? "/account/visits" : "/account"} />
         <Story />
       </div>
     ),

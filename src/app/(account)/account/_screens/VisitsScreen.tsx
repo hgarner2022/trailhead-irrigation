@@ -61,7 +61,7 @@ export function VisitsScreen({ customer, jobs, today, street, times }: VisitsScr
   const past = all.past.filter(keep)
   return (
     <main data-slot="account-visits" className="mx-auto max-w-3xl space-y-8 container-padding-x py-8">
-      <h1 className="font-display text-[1.75rem] font-semibold leading-none text-navy">Visits</h1>
+      <h1 className="sr-only">Visits</h1>
       {all.streets.length > 1 && <StreetFilter streets={all.streets} street={street} />}
       {all.upcoming.length + all.past.length === 0 ? (
         <EmptyState

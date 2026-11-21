@@ -6,6 +6,7 @@ import type { Pass } from "@/lib/admin/types"
 import { andrea as andreaCustomer, andreaTwoProperties, canceledRepairJob, dana as danaCustomer, invoicedJob, oneOffJob, partPaidJob, passJob, passJobCanceled, passJobCanceledVisit, passJobInsideCutoff, passJobWindowTold, pastDueJob, repairJob, TODAY } from "./account-fixtures"
 import { DetailsScreen } from "./DetailsScreen"
 import { HomeScreen } from "./HomeScreen"
+import { reportFor } from "@/emails/fixtures"
 import { ReceiptScreen } from "./ReceiptScreen"
 import { VisitScreen } from "./VisitScreen"
 import { VisitsScreen } from "./VisitsScreen"
@@ -22,13 +23,16 @@ const onCancel = fn(async (_visitId: string, _reason: string) => ({ ok: true as 
 const actions = { onReschedule, onCancel }
 const calendar = { googleHref: "https://calendar.google.com/calendar/render?action=TEMPLATE", icsHref: "/api/visits/v1/calendar.ics?token=t" }
 
+const tabOf = (story: string) => (story.startsWith("Visit") || story.startsWith("Receipt") ? "/account/visits" : story.startsWith("Details") ? "/account/details" : "/account")
+
 const meta = {
   title: "Screens/Account",
   parameters: { layout: "fullscreen" },
   decorators: [
-    (Story, { args }) => (
+    (Story, { args, name }) => (
       <div className="min-h-svh bg-cream">
-        <AccountNav firstName={(args as { hasPass?: boolean }).hasPass === false ? "Dana" : "Andrea"} current="/account" />
+        {/* the tab a screen belongs to stays lit: a visit and a receipt under Visits (second navigation pass, Nov 21 2026) */}
+        <AccountNav firstName={(args as { hasPass?: boolean }).hasPass === false ? "Dana" : "Andrea"} current={tabOf(name)} />
         <Story />
       </div>
     ),
@@ -94,3 +98,11 @@ export const ReceiptPhone: Story = { ...phone, render: () => <ReceiptScreen rece
 export const ReceiptLaptop: Story = { ...laptop, render: () => <ReceiptScreen receipt={receipt} /> }
 /** A card payment: our page, with a link to the card receipt on it. */
 export const ReceiptCardLaptop: Story = { ...laptop, render: () => <ReceiptScreen receipt={{ ...receipt, method: "card_on_file", reference: null, receiptUrl: "https://pay.stripe.com/receipts/example" }} /> }
+
+// "What we did" on the receipt (Hannah, Nov 21 2026): the visit's checklist, an open item marked "Not done", and the photos Ryan shared. A receipt whose invoice left the report out is the one above.
+const card = { ...receipt, amount: 145, method: "card_now" as const, reference: null, paidOn: "2027-04-29", receiptUrl: "https://pay.stripe.com/receipts/example" }
+/** The repair: four of five items done and two photos, under the amount. */
+export const ReceiptWithReportPhone: Story = { ...phone, render: () => <ReceiptScreen receipt={{ ...card, report: reportFor("repair", 4, 2, "") }} /> }
+export const ReceiptWithReportLaptop: Story = { ...laptop, render: () => <ReceiptScreen receipt={{ ...card, report: reportFor("repair", 4, 2, "") }} /> }
+/** A spring turn-on, every item done, no photos shared: the checklist alone, no empty photo grid. */
+export const ReceiptTurnOnNoPhotosPhone: Story = { ...phone, render: () => <ReceiptScreen receipt={{ ...card, jobName: "Spring turn-on", lines: [{ name: "Spring turn-on", quantity: 1, unitPrice: 145 }], report: reportFor("spring turn-on", undefined, 0, "") }} /> }

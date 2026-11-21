@@ -98,8 +98,9 @@ describe("VisitPage", () => {
     expect(screen.queryByRole("region", { name: "Change this visit" })).toBeNull()
   })
 
-  it("links back to Visits", () => {
+  it("has no second Visits link: the lit tab is the way back (second navigation pass, Nov 21 2026)", () => {
     render(<VisitPage model={base} {...slots} />)
-    expect(screen.getByRole("link", { name: "Visits" })).toHaveAttribute("href", "/account/visits")
+    expect(screen.queryByRole("link", { name: "Visits" })).toBeNull()
+    expect(screen.queryByRole("link", { name: /back/i })).toBeNull()
   })
 })

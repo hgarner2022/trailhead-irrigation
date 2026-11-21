@@ -73,6 +73,8 @@ export interface ReceiptData extends Base {
   /** the line that names the next visit */
   nextLine: string
   receiptUrl: string | null
+  /** "What we did": the visit's checklist and the photos shared with the customer; left out when the invoice this paid left the report out, or the payment has no visit */
+  report?: import("./visit-report").VisitReportData
 }
 /** An invoice the office sent: what it is for, the frozen lines, the tax, the total, the due day and the pay link. */
 export interface InvoiceData extends Base {

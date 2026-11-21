@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
 import { andrea, andreaTwoProperties, canceledRepairJob, dana, invoicedJob, oneOffJob, passJob, passJobCanceled, passJobCanceledVisit, passJobInsideCutoff, passJobWindowTold, pastDueJob, repairJob, TODAY } from "./account-fixtures"
+import { reportFor } from "@/emails/fixtures"
 import { DetailsScreen } from "./DetailsScreen"
 import { HomeScreen } from "./HomeScreen"
 import { ReceiptScreen } from "./ReceiptScreen"
@@ -25,9 +26,11 @@ describe("HomeScreen", () => {
     expect(screen.getByText("We'll text you the time the day before.")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Reschedule" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Cancel visit" })).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "See your pass" })).toHaveAttribute("href", "/account/pass")
     expect(screen.getAllByText("Season Pass 2027").length).toBeGreaterThan(0)
-    expect(screen.getByRole("link", { name: "See all visits" })).toHaveAttribute("href", "/account/visits")
+    // no link repeats a tab's word (second navigation pass, Nov 21 2026): the header is the way to Visits and to the pass
+    expect(screen.queryByRole("link", { name: "See all visits" })).toBeNull()
+    expect(screen.queryByRole("link", { name: "See your pass" })).toBeNull()
+    expect(screen.queryByRole("link", { name: "Visits" })).toBeNull()
     expect(screen.queryByText(/Jobs?\b/)).toBeNull()
   })
 
@@ -54,7 +57,7 @@ describe("HomeScreen", () => {
 
   it("works for a customer with one-off visits and no pass: no pass card, nothing booked right now", () => {
     render(<HomeScreen customer={dana} jobs={[repairJob]} today={TODAY} />)
-    expect(screen.queryByRole("link", { name: "See your pass" })).toBeNull()
+    expect(screen.queryByRole("heading", { name: /Season Pass 2027/ })).toBeNull()
     expect(screen.getByRole("heading", { name: "Nothing booked right now." })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Book Online" })).toBeInTheDocument()
     expect(screen.getByText(/^Repair/)).toBeInTheDocument()
@@ -234,7 +237,8 @@ describe("DetailsScreen", () => {
     expect(document.body.innerHTML).not.toContain("+1970")
     expect(screen.getByText("Visa ending 4242, expires 08/28")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Update card" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument()
+    // Sign out is in the account menu, once
+    expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull()
   })
 
   it("offers Add a card to a customer with none", () => {
@@ -265,5 +269,21 @@ describe("ReceiptScreen", () => {
     expect(screen.getByText("R-PAY_2")).toBeInTheDocument()
     expect(screen.getByText("$80")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Print" })).toBeInTheDocument()
+  })
+
+  const paid = { id: "pay_2", business: { name: "Trailhead Lawn & Irrigation LLC", phone: "(970) 692-7270" }, customerName: "Andrea Lopez", address: "412 Briggs Street", jobName: "Repair", lines: [{ name: "Repair", quantity: 1, unitPrice: 145 }], amount: 145, method: "card_now" as const, reference: null, paidOn: "2027-04-29", receiptUrl: null }
+
+  it("carries What we did under the amount: the checklist with the open item Not done, and the shared photos", () => {
+    render(<ReceiptScreen receipt={{ ...paid, report: reportFor("repair", 4, 2, "") }} />)
+    const heading = screen.getByRole("heading", { name: "What we did" })
+    expect(heading.compareDocumentPosition(screen.getByText("Amount paid")) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
+    expect(screen.getByText("Walk the zones")).toBeInTheDocument()
+    expect(screen.getByText("Not done")).toBeInTheDocument()
+    expect(screen.getAllByRole("img", { name: /from the visit/ })).toHaveLength(2)
+  })
+
+  it("has no What we did when the receipt carries no report", () => {
+    render(<ReceiptScreen receipt={paid} />)
+    expect(screen.queryByRole("heading", { name: "What we did" })).toBeNull()
   })
 })

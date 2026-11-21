@@ -1,6 +1,7 @@
 import type { ReceiptOutType } from "@/api/v1/portal/schemas"
 import { receiptEmail } from "@/emails/account-messages"
 import { BUSINESS, SIGN_OFF, dollars, receiptNumber } from "@/emails/format"
+import { reportFor } from "@/emails/fixtures"
 import { emailLayout, paragraph } from "@/emails/layout"
 
 // The receipt a customer gets for one payment, in every way it can be paid, built for the walkthroughs (Hannah, Nov 19 2026: "so we can see what it
@@ -43,6 +44,8 @@ export function receiptOf(way: Exclude<Way, "refund">, ref?: string): ReceiptOut
     reference: way === "card" ? CARD : way === "check" ? clean(ref) || null : way === "venmo" ? ref ?? null : null,
     paidOn: PAID_ON,
     receiptUrl: way === "card" ? CARD_RECEIPT : null,
+    // "What we did": the repair's checklist (four of five done) and the two photos Ryan shared, the same on the page and in the email
+    report: reportFor("repair", 4, 2, ""),
   }
 }
 
@@ -58,7 +61,7 @@ export function receiptEmailOf(way: Way, ref?: string): { subject: string; html:
       html: emailLayout({ origin: ORIGIN, preheader: "Refunded $145 to your card.", title: "Refunded", greet: { firstName: "Andrea" }, lead, body: paragraph("It can take 5 to 10 days to show on your statement. You do not need to do anything."), why: "You are getting this because Ryan refunded a payment.", signOff: SIGN_OFF }),
     }
   }
-  const e = receiptEmail({ ...BASE, amount: 145, serviceName: SERVICE, address: STREET, paidOn: PAID_ON, total: 145, number: receiptNumber(PAYMENT_ID), card: way === "card" ? CARD : null, paidBy: way === "card" ? null : paidBy(way, ref), nextLine: "", receiptUrl: way === "card" ? CARD_RECEIPT : null })
+  const e = receiptEmail({ ...BASE, amount: 145, serviceName: SERVICE, address: STREET, paidOn: PAID_ON, total: 145, number: receiptNumber(PAYMENT_ID), card: way === "card" ? CARD : null, paidBy: way === "card" ? null : paidBy(way, ref), nextLine: "", receiptUrl: way === "card" ? CARD_RECEIPT : null, report: reportFor("repair", 4, 2) })
   return { subject: e.subject, html: e.html }
 }
 

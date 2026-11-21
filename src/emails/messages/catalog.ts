@@ -82,11 +82,11 @@ export const MESSAGES: MessageDef[] = [
 
   // ---- Billing
   { id: "invoice", name: "Invoice", journey: "Billing", kind: "invoice", channels: ["text", "email"], klass: "transactional", renderer: "src/sms/texts.ts, src/emails/invoice.ts", exportName: "Invoice",
-    when: "When the office sends an invoice: the amount, the due day and one pay link. The email also has the lines.", text: sms("invoice", f.INVOICE), current: live("invoice", f.INVOICE), proposed: () => proposed.invoiceEmail(f.INVOICE) },
+    when: "When the office sends an invoice: the amount, the due day and one pay link. The email also has the lines and What we did (the visit's checklist and the photos Ryan shared), which the office can leave out with the Include the visit report box.", text: sms("invoice", f.INVOICE), current: live("invoice", f.INVOICE), proposed: () => proposed.invoiceEmail(f.INVOICE) },
   { id: "invoice-reminder", name: "Invoice reminder", journey: "Billing", kind: "invoice-reminder", channels: ["text", "email"], klass: "transactional", renderer: "src/sms/texts.ts, src/emails/invoice.ts", exportName: "InvoiceReminder",
     when: "When the office presses Remind on an unpaid invoice: once a day at most, never automatic. The same invoice again under a reminder heading.", text: sms("invoice-reminder", f.INVOICE), current: live("invoice-reminder", f.INVOICE), proposed: () => proposed.invoiceReminderEmail(f.INVOICE) },
   { id: "receipt-card", name: "Receipt, paid by card", journey: "Billing", kind: "receipt", channels: ["email", "text"], klass: "transactional", renderer: "src/emails/account-messages.ts", prototype: ["text"], exportName: "ReceiptCard",
-    when: "When a card payment goes through, after a visit is marked done or an invoice is paid on the pay page. The email is built; the text is a prototype.", ...receipt("card") },
+    when: "When a card payment goes through, after a visit is marked done or an invoice is paid on the pay page. The email carries What we did under the money (not when the invoice left the report out). The email is built; the text is a prototype.", ...receipt("card") },
   { id: "receipt-check", name: "Receipt, paid by check", journey: "Billing", kind: "receipt", channels: ["email", "text"], klass: "transactional", renderer: "src/emails/account-messages.ts", prototype: ["text"], exportName: "ReceiptCheck",
     when: "When the office records a check. The method reads \"Check\" and its number.", ...receipt("check") },
   { id: "receipt-venmo", name: "Receipt, paid by Venmo", journey: "Billing", kind: "receipt", channels: ["email", "text"], klass: "transactional", renderer: "src/emails/account-messages.ts", prototype: ["text"], exportName: "ReceiptVenmo",

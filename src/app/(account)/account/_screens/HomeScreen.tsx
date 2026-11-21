@@ -1,4 +1,3 @@
-import Link from "next/link"
 import { InvoiceBanner } from "@/components/blocks/InvoiceBanner"
 import { NextVisitCard } from "@/components/blocks/NextVisitCard"
 import { PassCard } from "@/components/blocks/PassCard"
@@ -6,7 +5,6 @@ import { PassSellCard } from "@/components/blocks/PassSellCard"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { VisitRow } from "@/components/blocks/VisitRow"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Grid, GridCol, Stack } from "@/components/ui/grid"
 import type { PortalCustomerType, PortalJobType } from "@/api/v1/portal/schemas"
@@ -98,9 +96,6 @@ export function HomeScreen({ customer, jobs, today, pass, days = {}, times, offe
                     )}
                     <SeasonLine mode="customer" season={pass.season} visits={pass.visits} preferences={pass} today={today} />
                     {pass.status !== "cancelled" && <PassVisitRows pass={pass} onChangePreference={onChangePreference} times={times} compact />}
-                    <Button asChild variant="outline">
-                      <Link href="/account/pass">See your pass</Link>
-                    </Button>
                   </Stack>
                 </CardContent>
               </Card>
@@ -120,9 +115,6 @@ export function HomeScreen({ customer, jobs, today, pass, days = {}, times, offe
                   <VisitRow key={r.id} href={r.href} dayWords={r.dayWords} service={r.service} label={r.label} street={r.street} who={r.who} money={r.money} tone={r.tone} pill={r.pill} receiptHref={r.receiptId ? `/account/receipts/${r.receiptId}` : null} />
                 ))}
               </ul>
-              <Link href="/account/visits" className="inline-flex min-h-11 items-center text-base font-semibold text-primary-deep underline underline-offset-2">
-                See all visits
-              </Link>
             </Stack>
           </section>
         )}

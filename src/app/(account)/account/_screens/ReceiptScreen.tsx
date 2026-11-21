@@ -1,4 +1,5 @@
 import Image from "next/image"
+import { VisitReport } from "@/components/blocks/VisitReport"
 import { Card, CardContent } from "@/components/ui/card"
 import type { ReceiptOutType } from "@/api/v1/portal/schemas"
 import { receiptNumber } from "@/emails/format"
@@ -6,7 +7,8 @@ import { fullDay, METHOD_PHRASE } from "@/lib/portal/words"
 import { PrintButton } from "./PrintButton"
 
 // The printable receipt for one payment, built from the payment row: who paid, for what, how and when. It is the receipt for a check, Venmo or cash
-// payment, which has no card receipt; a card payment's page also links the card receipt. The account header and the buttons stay off the paper.
+// payment, which has no card receipt; a card payment's page also links the card receipt. "What we did" (the visit's checklist and the photos shared with the customer) sits under the
+// amount when the receipt carries a report. The account header and the buttons stay off the paper.
 
 export function ReceiptScreen({ receipt }: { receipt: ReceiptOutType }) {
   const how = METHOD_PHRASE[receipt.method] ?? receipt.method
@@ -65,6 +67,7 @@ export function ReceiptScreen({ receipt }: { receipt: ReceiptOutType }) {
             <span>Amount paid</span>
             <span>{`$${receipt.amount}`}</span>
           </p>
+          {receipt.report && <VisitReport report={receipt.report} className="border-t border-border pt-5" />}
         </CardContent>
       </Card>
       <div className="flex flex-wrap items-center gap-4 print:hidden">

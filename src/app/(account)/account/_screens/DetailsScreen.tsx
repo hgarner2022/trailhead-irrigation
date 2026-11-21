@@ -5,7 +5,7 @@ import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { ContactForm, YardForm, type SaveResult } from "./DetailsForms"
 
 // Details: the name and mobile (editable), the email (shown, with how to change it), each service address with the yard facts the customer knows best
-// (editable), the card on file with Update card, and Sign out. The email is not editable here: a sign-in link must only ever go to an address on record,
+// (editable), and the card on file with Update card. Sign out is in the account menu, once. The email is not editable here: a sign-in link must only ever go to an address on record,
 // so a change is one text to Ryan. Pure composition; the three actions are server actions the page binds.
 
 export interface DetailsScreenProps {
@@ -14,7 +14,6 @@ export interface DetailsScreenProps {
   onSaveYard?: (propertyId: string, fields: Record<string, unknown>) => Promise<SaveResult> | SaveResult
   /** sends the customer to Stripe's hosted page; a form action */
   onUpdateCard?: () => void | Promise<void>
-  onSignOut?: () => void | Promise<void>
 }
 
 const expiry = (ym: string) => `${ym.slice(5, 7)}/${ym.slice(2, 4)}`
@@ -28,11 +27,11 @@ function Title({ id, children }: { id: string; children: string }) {
   )
 }
 
-export function DetailsScreen({ customer, onSaveContact, onSaveYard, onUpdateCard, onSignOut }: DetailsScreenProps) {
+export function DetailsScreen({ customer, onSaveContact, onSaveYard, onUpdateCard }: DetailsScreenProps) {
   const card = customer.card
   return (
     <main data-slot="account-details" className="mx-auto max-w-3xl space-y-6 container-padding-x py-8">
-      <h1 className="font-display text-[1.75rem] font-semibold leading-none text-navy">Details</h1>
+      <h1 className="sr-only">Details</h1>
 
       <Card>
         <CardHeader>
@@ -89,12 +88,6 @@ export function DetailsScreen({ customer, onSaveContact, onSaveYard, onUpdateCar
           </form>
         </CardContent>
       </Card>
-
-      <form action={onSignOut}>
-        <Button variant="outline" type={onSignOut ? "submit" : "button"}>
-          Sign out
-        </Button>
-      </form>
     </main>
   )
 }

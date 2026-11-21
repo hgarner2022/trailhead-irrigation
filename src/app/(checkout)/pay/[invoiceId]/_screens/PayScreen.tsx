@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { BUSINESS } from "@/emails/format"
 import { textRyanHref } from "@/lib/portal/words"
+import { VisitReport } from "@/components/blocks/VisitReport"
 import { PayForm, type PayAction } from "./PayForm"
-import { dueWords, lineTotal, money, paidWords, payLabel, type PayBill } from "./pay-model"
+import { dueWords, introWords, lineTotal, money, paidWords, payLabel, payWithLabel, type PayBill } from "./pay-model"
 
 // The pay page: one invoice, as the customer sees it, on a phone first. The Trailhead badge, "Your invoice", the frozen lines, the tax
 // line only when there is tax, the total, the due day and one button that opens Stripe's card form. A paid invoice says when and
@@ -16,6 +17,8 @@ export interface PayScreenProps {
   bill: PayBill
   /** opens Stripe's card form (redirects); a stub in stories */
   payAction: PayAction
+  /** pays with the card on file in one tap, for a bill that carries `savedCard`; left out where the page cannot (the live page today) */
+  payWithSavedAction?: PayAction
 }
 
 function Lines({ bill }: { bill: PayBill }) {
@@ -40,40 +43,6 @@ function Lines({ bill }: { bill: PayBill }) {
   )
 }
 
-function Report({ bill }: { bill: PayBill }) {
-  const r = bill.report
-  if (!r) return null
-  return (
-    <section data-slot="pay-report" aria-labelledby="pay-report-h" className="mt-6">
-      <h2 id="pay-report-h" className="font-display text-xl text-navy">What we did</h2>
-      <ul className="mt-2 divide-y divide-border border-y border-border">
-        {r.items.map((i) => (
-          <li key={i.label} className="flex gap-3 py-2.5">
-            <CheckCircle2 aria-hidden className={i.done ? "mt-0.5 size-5 shrink-0 text-positive" : "mt-0.5 size-5 shrink-0 text-muted-foreground/40"} />
-            <span className="min-w-0 text-base text-foreground">
-              <span className="sr-only">{i.done ? "Done: " : "Not done: "}</span>
-              {i.label}
-              {i.note && <span className="block text-sm text-muted-foreground">{i.note}</span>}
-            </span>
-          </li>
-        ))}
-      </ul>
-      {r.notes.map((n) => <p key={n} className="mt-3 text-base text-foreground">{n}</p>)}
-      {r.photos.length > 0 && (
-        <ul className="mt-4 grid grid-cols-2 gap-3">
-          {r.photos.map((p) => (
-            <li key={p.url}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.url} alt={`Photo: ${p.caption}`} className="aspect-[4/3] w-full rounded-lg border border-border object-cover" />
-              <p className="mt-1 text-sm text-muted-foreground">{p.caption}</p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  )
-}
-
 function Total({ bill }: { bill: PayBill }) {
   return (
     <div data-slot="pay-total" className="mt-4 flex items-baseline justify-between gap-4">
@@ -83,18 +52,19 @@ function Total({ bill }: { bill: PayBill }) {
   )
 }
 
-function Open({ bill, payAction }: PayScreenProps) {
+function Open({ bill, payAction, payWithSavedAction }: PayScreenProps) {
+  const saved = bill.savedCard && payWithSavedAction ? { label: payWithLabel(bill, bill.savedCard), action: payWithSavedAction } : undefined
   return (
     <>
       <Lines bill={bill} />
-      <Report bill={bill} />
+      {bill.report && <VisitReport report={bill.report} className="mt-6" />}
       <Total bill={bill} />
       <p data-slot="pay-due" className={bill.status === "overdue" ? "mt-1 text-right text-sm font-medium text-warning" : "mt-1 text-right text-sm text-muted-foreground"}>
         {dueWords(bill)}
       </p>
-      <p className="mt-6 text-sm text-foreground">You can keep the card for future visits on the next page.</p>
-      <div className="mt-3">
-        <PayForm label={payLabel(bill)} action={payAction} />
+      {!saved && <p className="mt-6 text-sm text-foreground">You can keep the card for future visits on the next page.</p>}
+      <div className={saved ? "mt-6" : "mt-3"}>
+        <PayForm label={payLabel(bill)} action={payAction} saved={saved} />
       </div>
       <p className="mt-4 text-sm text-muted-foreground">Paid by check, Venmo or cash already? Nothing to do.</p>
     </>
@@ -105,6 +75,7 @@ function Paid({ bill }: { bill: PayBill }) {
   return (
     <>
       <Lines bill={bill} />
+      {bill.report && <VisitReport report={bill.report} className="mt-6" />}
       <Total bill={bill} />
       <p data-slot="pay-paid" className="mt-6 flex items-center gap-2 text-base font-medium text-positive-deep">
         <CheckCircle2 className="size-5 shrink-0 text-positive" aria-hidden />
@@ -141,7 +112,7 @@ function Canceled() {
   )
 }
 
-export function PayScreen({ bill, payAction }: PayScreenProps) {
+export function PayScreen({ bill, payAction, payWithSavedAction }: PayScreenProps) {
   return (
     <main data-slot="pay-screen" className="flex min-h-dvh justify-center px-4 py-8 sm:py-12">
       <Card className="h-fit w-full max-w-md">
@@ -149,9 +120,9 @@ export function PayScreen({ bill, payAction }: PayScreenProps) {
           <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={57} height={40} className="h-12 w-auto" priority />
           <h1 className="mt-5 font-display text-4xl leading-none text-navy">Your invoice</h1>
           <p className="mt-2 mb-6 text-base text-muted-foreground">
-            Hi {bill.firstName}, here is invoice {bill.number}.
+            {introWords(bill)}
           </p>
-          {bill.status === "cancelled" ? <Canceled /> : bill.status === "paid" ? <Paid bill={bill} /> : <Open bill={bill} payAction={payAction} />}
+          {bill.status === "cancelled" ? <Canceled /> : bill.status === "paid" ? <Paid bill={bill} /> : <Open bill={bill} payAction={payAction} payWithSavedAction={payWithSavedAction} />}
         </CardContent>
       </Card>
     </main>

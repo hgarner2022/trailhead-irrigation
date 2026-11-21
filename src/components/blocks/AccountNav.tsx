@@ -30,9 +30,15 @@ const PLACES = [
   { href: "/account/details", label: "Details" },
 ]
 
-/** The place a path belongs to: Home only for `/account` itself, the others by their prefix (a visit page is under Visits). */
-export const placeOf = (path: string) =>
-  PLACES.filter((p) => (p.href === "/account" ? path === p.href : path === p.href || path.startsWith(`${p.href}/`))).sort((a, b) => b.href.length - a.href.length)[0]?.href
+/** A page that is no tab of its own but belongs to one: a receipt is one of a visit's, so it keeps Visits lit (the second navigation pass, Nov 21 2026). */
+const BELONGS_TO: Record<string, string> = { "/account/receipts": "/account/visits", "/account/jobs": "/account/visits" }
+
+/** The place a path belongs to: Home only for `/account` itself, the others by their prefix (a visit page and a receipt are under Visits). */
+export const placeOf = (path: string) => {
+  const owner = Object.keys(BELONGS_TO).find((p) => path === p || path.startsWith(`${p}/`))
+  const at = owner ? BELONGS_TO[owner]! : path
+  return PLACES.filter((x) => (x.href === "/account" ? at === x.href : at === x.href || at.startsWith(`${x.href}/`))).sort((a, b) => b.href.length - a.href.length)[0]?.href
+}
 
 export function AccountNav({ firstName, current, isStaff = false, onSignOut, className }: AccountNavProps) {
   const route = usePathname()

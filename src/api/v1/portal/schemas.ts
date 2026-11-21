@@ -114,5 +114,7 @@ export const ReceiptOut = z.object({
   reference: z.string().nullable(),
   paidOn: Day.nullable(),
   receiptUrl: z.string().nullable(),
+  /** "What we did": the visit's checklist and the photos Ryan shared with the customer (`shown_to_customer`, the visit done); absent when the invoice this paid left the report out, or the payment has no visit */
+  report: z.object({ items: z.array(z.object({ label: z.string(), done: z.boolean() })), photos: z.array(z.object({ url: z.string() })) }).optional(),
 })
 export type ReceiptOutType = z.infer<typeof ReceiptOut>

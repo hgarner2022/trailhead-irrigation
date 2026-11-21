@@ -15,7 +15,8 @@ import { VisitScreen } from "@/app/(account)/account/_screens/VisitScreen"
 import { VisitsScreen } from "@/app/(account)/account/_screens/VisitsScreen"
 import { PassPageScreen } from "@/app/(account)/account/pass/_screens/PassPageScreen"
 import { CheckoutFlow } from "@/app/(checkout)/season-pass/checkout/_screens/CheckoutFlow"
-import { PayScreen } from "@/app/(checkout)/pay/[invoiceId]/_screens/PayScreen"
+import { PayFlow } from "@/app/(checkout)/pay/[invoiceId]/_screens/PayFlow"
+import { reportFor } from "@/emails/fixtures"
 import PaidPage from "@/app/(checkout)/pay/[invoiceId]/paid/page"
 import { accountReducer, initialAccount } from "../account-flow"
 import { channelWords, ContactPreference, type ContactChannel } from "./ContactPreference"
@@ -51,6 +52,8 @@ const receiptOf = {
   reference: null,
   paidOn: TODAY,
   receiptUrl: "https://pay.stripe.com/receipts/example",
+  // what the receipt says was done: the repair's checklist from the job page and the photos Ryan shared (Hannah, Nov 21 2026)
+  report: reportFor("repair", 4, 2, ""),
 }
 const RENEWAL = { passId: "p-last", season: 2028, firstName: "Andrea", lastName: "Anderson", email: "andrea@example.com", phone: "(970) 555-0123", place: { id: "property-1", label: "123 Trailhead Way, Erie, CO", line1: "123 Trailhead Way", town: "Erie", state: "CO", zip: "80516" }, zones: 8, inspection: false, needsCustomerHome: false, accessNote: "", card: { last4: "4242", expires: "2029-08" } }
 
@@ -98,6 +101,8 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   const [liveRun, setLiveRun] = useState(0)
   const [notice, setNotice] = useState<string | null>(null)
   const [way, setWay] = useState<Way>("card")
+  // the pay step: no card on file shows Stripe's card page; a card on file shows the one tap (the account has one, so both are walkable)
+  const [payCard, setPayCard] = useState<"none" | "saved">("none")
   const [passDay, setPassDay] = useState<"april" | "november">("april")
   const facts: TextFacts = booked ? { service: booked.service.toLowerCase(), day: booked.day, start: booked.start, street: booked.street, town: booked.town, firstName: booked.firstName } : DEFAULT_FACTS
   const pref = booked?.channel ?? channel
@@ -145,7 +150,7 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   const route = s.route
   const invoice = s.jobs.flatMap((j) => j.invoices).find((i) => route.page === "pay" && i.id === route.invoiceId)
   const shown = route.page === "visit" ? s.jobs.find((j) => j.visits.some((v) => v.id === route.id)) : undefined
-  const bill = { number: invoice?.number ?? "INV-2027-0001", firstName: "Andrea", lines: [{ name: "Repair", description: "One hour on site, parts at cost.", quantity: 1, unitPrice: 115 }], tax: 0, total: 115, dueOn: invoice?.dueOn ?? "2027-12-01", paidOn: null, status: "sent" as const, receiptUrl: null }
+  const bill = { number: invoice?.number ?? "INV-2027-0001", firstName: "Andrea", serviceName: "repair", address: "412 Briggs Street", lines: [{ name: "Repair", description: "One hour on site, parts at cost.", quantity: 1, unitPrice: 115 }], tax: 0, total: 115, dueOn: invoice?.dueOn ?? "2027-12-01", paidOn: null, status: "sent" as const, receiptUrl: null, savedCard: payCard === "saved" ? "Visa ending 4242" : null, report: reportFor("repair", 4, 2, "") }
   const withNav = (el: ReactNode, at: string) => (
     <div className="bg-cream">
       <AccountNav firstName="Andrea" current={at} />
@@ -172,7 +177,16 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
       case "visit":
         return shown ? withNav(<VisitScreen customer={andrea} job={shown} visitId={route.id} today={TODAY} times={s.times} offers={offers.v1} days={[]} {...actions} />, "/account/visits") : null
       case "pay":
-        return <PayScreen bill={bill} payAction={async () => void dispatch({ type: "pay" })} />
+        return (
+          <>
+            <div role="group" aria-label="Your card in the prototype" className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-3">
+              <span className="text-sm text-muted-foreground">Your card</span>
+              <Button type="button" size="sm" variant={payCard === "none" ? "default" : "outline"} aria-pressed={payCard === "none"} onClick={() => setPayCard("none")}>No card on file</Button>
+              <Button type="button" size="sm" variant={payCard === "saved" ? "default" : "outline"} aria-pressed={payCard === "saved"} onClick={() => setPayCard("saved")}>Visa ending 4242</Button>
+            </div>
+            <PayFlow key={payCard} bill={bill} email="andrea.dalton@example.com" onPaid={() => dispatch({ type: "pay" })} />
+          </>
+        )
       case "paid":
         return <PaidPage />
       case "receipt":
