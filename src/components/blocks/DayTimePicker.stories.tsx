@@ -10,7 +10,7 @@ function Harness({ offers, minutes, note }: { offers: DayTimeOffer[]; minutes?: 
   const [text, setText] = useState("")
   return (
     <div className="max-w-3xl container-padding-x py-8">
-      <DayTimePicker offers={offers} value={pick} onChange={setPick} legend="Pick your day" helper="Ryan is in Erie on Tuesdays and Thursdays." length={minutes} note={text} onNote={note ? setText : undefined} />
+      <DayTimePicker offers={offers} value={pick} onChange={setPick} legend="Pick your day" length={minutes} note={text} onNote={note ? setText : undefined} />
       <p className="mt-6 text-sm text-muted-foreground">{pick.start ? `Holding ${pick.day} ${pick.start}` : "No time tapped yet"}</p>
     </div>
   )

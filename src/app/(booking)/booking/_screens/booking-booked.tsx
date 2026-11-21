@@ -65,9 +65,11 @@ export interface BookingBookedProps {
   onOpenAccount?: () => void
   /** a Season Pass: the card lists every visit */
   pass?: BookedPass
+  /** "Visa ending 4242" or "No card" */
+  card?: string
 }
 
-export function BookingBooked({ service, where, channel, phone, email, pick, photos, callback, quote, onOpenAccount, pass }: BookingBookedProps) {
+export function BookingBooked({ service, where, channel, phone, email, pick, photos, callback, quote, onOpenAccount, pass, card }: BookingBookedProps) {
   const links = (
     <div data-slot="done-links" className="mt-8 flex flex-col items-start">
       <p data-slot="done-account" className="text-base text-muted-foreground">
@@ -82,19 +84,26 @@ export function BookingBooked({ service, where, channel, phone, email, pick, pho
       </Link>
     </div>
   )
+  const cardLine = card && (
+    <div data-slot="done-card" className="mt-4">
+      <p className="text-sm text-muted-foreground">Card</p>
+      <p className="text-base text-foreground">{card}</p>
+    </div>
+  )
   const photoLine = photos > 0 && <p data-slot="done-photos" className="mt-4 text-base text-foreground">{`You added ${photoCount(photos)}.`}</p>
   if (pass && !quote && !callback) {
     const sent = channel === "text" ? `We're texting your confirmation to ${phoneWords(phone)}.` : channel === "email" ? `We're emailing your confirmation to ${email}.` : `We're texting your confirmation to ${phoneWords(phone)} and emailing it to ${email}.`
     return (
       <div>
-        <h2 className="mb-5 font-display text-4xl leading-none text-navy">{`Your ${pass.name} is booked.`}</h2>
-        <BookedCard service={pass.name} visits={pass.lines} where={where} />
+        <h2 className="mb-5 font-display text-4xl leading-none text-navy">{`Your ${pass.name} is set up.`}</h2>
+        <BookedCard service={pass.name} visits={pass.lines} where={where} status="Set up" />
         {photoLine}
+        {cardLine}
         <Trail
           lines={[
             { key: "now", lead: "Now", text: sent },
             ...pass.exact.map((v) => ({ key: v.name, lead: longDay(dayBefore(v.day)), text: `A reminder by ${channelWords(channel)}: Ryan is coming tomorrow at ${clock12(v.start)} for your ${v.name.toLowerCase()}.` })),
-            { key: "after", lead: "After each visit", text: "You pay by card, check, Venmo or cash. We email your receipt." },
+            { key: "after", lead: "After each visit", text: "Your card is charged and we email your receipt." },
           ]}
         />
         {pass.exact.length > 0 && (
@@ -139,6 +148,7 @@ export function BookingBooked({ service, where, channel, phone, email, pick, pho
       <h2 className="mb-5 font-display text-4xl leading-none text-navy">{`Your ${service.toLowerCase()} is booked.`}</h2>
       <BookedCard service={service} day={longDay(pick.day)} time={clock12(pick.start)} where={where} />
       {photoLine}
+      {cardLine}
       <Trail
         lines={[
           { key: "now", lead: "Now", text: now },

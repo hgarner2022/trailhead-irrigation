@@ -20,8 +20,6 @@ export interface DayTimePickerProps {
   onChange: (next: DayTimePick) => void
   /** names the days group for a screen reader ("Pick your day", "Your spring turn-on") */
   legend: string
-  /** one line over the cards: "Ryan is in Erie on Tuesdays and Thursdays." */
-  helper?: string
   /** the service's length in words, over the times: "Start times for a 2 hour visit" */
   length?: string
   /** days shown before "Show more days"; default 3 */
@@ -38,7 +36,7 @@ const CARD = "flex min-h-20 cursor-pointer flex-col justify-center rounded-lg bo
 const CHIP = "flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2"
 const LINK = "inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary-deep underline underline-offset-2 hover:text-primary-dark"
 
-export function DayTimePicker({ offers, value, onChange, legend, helper, length, shown = 3, note = "", onNote, timesShown = 6, className }: DayTimePickerProps) {
+export function DayTimePicker({ offers, value, onChange, legend, length, shown = 3, note = "", onNote, timesShown = 6, className }: DayTimePickerProps) {
   const id = useId()
   const [more, setMore] = useState(() => offers.findIndex((o) => o.day === value.day) >= shown)
   const [moreTimes, setMoreTimes] = useState(false)
@@ -71,7 +69,6 @@ export function DayTimePicker({ offers, value, onChange, legend, helper, length,
     <div data-slot="day-time-picker" className={cn("space-y-8", className)}>
       <fieldset className="min-w-0">
         <legend className="sr-only">{legend}</legend>
-        {helper && <p className="mb-4 text-base text-muted-foreground">{helper}</p>}
         <div className="grid gap-3 sm:grid-cols-3">
           {days.map((offer, i) => {
             const checked = value.day === offer.day

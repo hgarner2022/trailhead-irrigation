@@ -1,14 +1,15 @@
 // The booking form's rules, pure and with no React (docs/plans/2026-11-19-booking-form-design.md): which steps a service has, the question each asks, what lets Continue pass, the price and its
-// words, and the words of the confirm step. The first screen is the address (Hannah, Nov 20 2026: no zip step, the address qualifies the yard: its town and zip decide the service area), then the
-// services with their lengths, the service details, the day and an exact start time, contact with how we reach you, and a confirm step that says what happens. A request for a quote is the address,
+// words, and the words of the confirm step. The first screen is the address (Hannah, Nov 20 2026: no zip step, the address qualifies the yard: its city and zip decide the service area), then the
+// services with their lengths, the service details, the day and an exact start time, contact with how we reach you, a card, and a confirm step that says what happens. A request for a quote is the address,
 // what we quote, "Tell Ryan about it" and contact, with no day. Nothing here knows about the server.
 import { SEASON_PASS_VISITS, seasonPassPrice, visitPrice } from "@/lib/season-pass"
 import type { TimingPreference } from "@/lib/admin/types"
 import { exactVisits, preferenceVisits, type PassPlan } from "@/lib/booking/pass-visits"
+import { CARD_FOR_PASS, NOTHING_CHARGED } from "@/lib/booking/pass-words"
 import { passReviewRows } from "./booking-pass-model"
 import { emailProblem } from "@/lib/email-check"
 import { SERVICE_ZIPS, serviceability, type PlaceSuggestion } from "@/lib/places"
-import { STREET_PROBLEM, TOWN_PROBLEM } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-address-typed"
+import { CITY_PROBLEM, STREET_PROBLEM } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-address-typed"
 import { dayAtTime, type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
 import { PRICE_AT_VISIT, type ServiceEntry } from "@/lib/booking/services"
 import { pickComplete } from "@/components/blocks/DayTimePicker"
@@ -16,7 +17,7 @@ import type { ContactChannel } from "@/components/blocks/ContactPreference"
 import type { ReviewRow } from "@/components/blocks/BookingReview"
 import type { CheckoutFields } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
 
-export type FormStep = "address" | "service" | "quote-service" | "details" | "day" | "preference" | "agreement" | "contact" | "confirm" | "done"
+export type FormStep = "address" | "service" | "quote-service" | "details" | "day" | "preference" | "pass" | "contact" | "card" | "confirm" | "done"
 
 export const QUESTIONS: Record<FormStep, string> = {
   address: "Where is the yard?",
@@ -25,28 +26,38 @@ export const QUESTIONS: Record<FormStep, string> = {
   details: "A few details about the visit",
   day: "Pick your day and time",
   preference: "When would you like it?",
-  agreement: "How the Season Pass renews",
+  pass: "Your Season Pass",
   contact: "Who should we reach?",
+  card: "Add a card",
   confirm: "Look it over and confirm.",
   done: "Booked",
 }
 /** The details step of a request is a different question: there is nothing to size, only something to tell Ryan. */
 export const QUOTE_QUESTIONS: Partial<Record<FormStep, string>> = { details: "Tell Ryan about it", contact: "How can Ryan reach you?" }
 
-/** The steps a service goes through, in order; the last is the confirmation, which is not counted ("Step 3 of 6"). The address is first and qualifies the area, so nothing after it is offered outside the six towns. */
+/** The steps a service goes through, in order; the last is the confirmation, which is not counted ("Step 3 of 6"). The address is first and qualifies the area, so nothing after it is offered outside the six cities. */
 export function stepsFor(entry: ServiceEntry | null, quote = false, plan: PassPlan | null = null): FormStep[] {
   if (quote || entry?.kind === "quote") return ["address", "quote-service", "details", "contact", "done"]
-  // A Season Pass bought on a date: an exact day and time for a visit that is open now, a preference for a visit months away, then the agreement before the look-over.
+  // A Season Pass bought on a date: an exact day and time for a visit that is open now, a preference for a visit months away, what the pass is, then contact. Every booking ends with a card before the look-over.
   if (entry?.kind === "pass" && plan) {
-    return ["address", "service", "details", ...(exactVisits(plan).length ? (["day"] as const) : []), ...(preferenceVisits(plan).length ? (["preference"] as const) : []), "contact", "agreement", "confirm", "done"]
+    return ["address", "service", "details", ...(exactVisits(plan).length ? (["day"] as const) : []), ...(preferenceVisits(plan).length ? (["preference"] as const) : []), "pass", "contact", "card", "confirm", "done"]
   }
-  return ["address", "service", "details", "day", "contact", "confirm", "done"]
+  return ["address", "service", "details", "day", "contact", "card", "confirm", "done"]
 }
 export const stepTotal = (steps: readonly FormStep[]) => steps.length - 1
 
 export const SEND_REQUEST = "Send to Ryan"
 export const CONFIRM_BOOK = "Confirm and book"
-export const ACTIONS: Partial<Record<FormStep, string>> = { address: "Continue", service: "Continue", "quote-service": "Continue", details: "Continue", day: "Continue", preference: "Continue", agreement: "Continue", contact: "Continue", confirm: CONFIRM_BOOK }
+export const CONFIRM_PASS = "Set up my Season Pass"
+export const ACTIONS: Partial<Record<FormStep, string>> = { address: "Continue", service: "Continue", "quote-service": "Continue", details: "Continue", day: "Continue", preference: "Continue", pass: "Continue", contact: "Continue", card: "Save card", confirm: CONFIRM_BOOK }
+
+/** The card step's answer: saved, or put off ("Not now", a one-off only), or not asked yet. The stories draw Stripe's form and a saved card is always this Visa. */
+export type CardChoice = "saved" | "skipped" | null
+export const CARD_SAVED = "Visa ending 4242"
+export const CARD_NONE = "No card"
+export const cardWords = (card: CardChoice) => (card === "saved" ? CARD_SAVED : CARD_NONE)
+/** The one line on the card step: when the card is charged. For a pass nothing is charged now. */
+export const cardCharged = (pass: boolean) => (pass ? CARD_FOR_PASS : "Charged after the visit.")
 
 export const DAY_HINT = "Tap a start time to continue."
 export const SERVICE_HINT = "Pick a service to continue."
@@ -64,47 +75,16 @@ export function priceFor(entry: ServiceEntry, zones: number, plan: PassPlan | nu
 
 /** "About $145, charged after the visit." for a priced service; "Price set at the visit" when the catalogue has no price; nothing is said for a service that is only requested. */
 export function priceWords(entry: ServiceEntry, zones: number, plan: PassPlan | null = null): string {
+  // A Season Pass is a setup, not an order: each visit says what it costs, and the pass has no total.
+  if (entry.kind === "pass") return ""
   const price = priceFor(entry, zones, plan)
   if (price === null) return entry.kind === "quote" ? "" : `${PRICE_AT_VISIT}.`
   if (price === 0) return "Free."
-  return `About ${money(price)}${entry.kind === "pass" ? " for the season, charged after each visit." : ", charged after the visit."}`
+  return `About ${money(price)}, charged after the visit.`
 }
 
-/** What a service-specific question may be answered with, and the answers held for it. */
-export const CONTROLLER_BRANDS = ["Not sure", "Hunter", "Rain Bird", "Rachio", "Toro", "Orbit", "Irritrol", "Other"] as const
-export const EFFICIENCY_GOALS = ["A high water bill", "Dry spots", "A garden bed to put on drip"] as const
-export type Wifi = "yes" | "no" | "unsure"
-export type InstallType = "new" | "replace"
-export interface Extras {
-  /** Rachio: the controller there now */
-  brand: string
-  /** Rachio: Wi-Fi at the controller */
-  wifi: Wifi | null
-  /** Water efficiency: what to improve */
-  goals: string[]
-  /** Installation: a new lawn or replacing a system */
-  installType: InstallType | null
-  /** Installation: the rough area, square feet */
-  area: string
-}
-export const NO_EXTRAS: Extras = { brand: "", wifi: null, goals: [], installType: null, area: "" }
-export const WIFI_WORDS: Record<Wifi, string> = { yes: "Yes", no: "No", unsure: "Not sure" }
-export const INSTALL_WORDS: Record<InstallType, string> = { new: "A new lawn", replace: "Replacing a system" }
-
-/** The review rows a service-specific answer adds. */
-function extraRows(service: ServiceEntry, x: Extras, go: () => void): ReviewRow[] {
-  const rows: ReviewRow[] = []
-  if (service.details === "rachio") {
-    if (x.brand) rows.push({ label: "Controller now", value: x.brand, onChange: go })
-    if (x.wifi) rows.push({ label: "Wi-Fi at the controller", value: WIFI_WORDS[x.wifi], onChange: go })
-  }
-  if (service.details === "efficiency" && x.goals.length) rows.push({ label: "To improve", value: x.goals, onChange: go })
-  if (service.details === "install") {
-    if (x.installType) rows.push({ label: "Project", value: INSTALL_WORDS[x.installType], onChange: go })
-    if (x.area.trim()) rows.push({ label: "Rough area", value: `${x.area.trim()} square feet`, onChange: go })
-  }
-  return rows
-}
+export * from "./booking-extras"
+import { NO_EXTRAS, extraRows, type Extras } from "./booking-extras"
 
 /** What each contact field needs, written as help: the field and the fix. Null when the field can pass. */
 export function contactProblem(field: "firstName" | "lastName" | "email" | "phone", value: string): string | null {
@@ -130,7 +110,7 @@ const contactOk = (f: CheckoutFields, terms: boolean) => CONTACT_FIELDS.every((k
 export interface FormAnswers {
   service: ServiceEntry | null
   fields: CheckoutFields
-  /** the typed fields are open under the address box, so a missing town is asked for by name */
+  /** the typed fields are open under the address box, so a missing city is asked for by name */
   addressTyped?: boolean
   /** one pick per visit: "visit" for a day service, "turn-on" and "blowout" for a pass (only for a visit that takes an exact day now) */
   picks: Record<string, DayTimePick>
@@ -182,12 +162,12 @@ export function problemsFor(step: FormStep, a: FormAnswers): string[] {
   }
 }
 
-/** What the picked address says about the service area: not picked yet, in the six towns (by town name, then zip), outside them, or with no town we can read (no town and no zip we serve), which asks for the town instead of turning the customer away. */
-export type AreaState = "none" | "ok" | "outside" | "needs-town"
+/** What the picked address says about the service area: not picked yet, in the six cities (by city name, then zip), outside them, or with no city we can read (no city and no zip we serve), which asks for the city instead of turning the customer away. */
+export type AreaState = "none" | "ok" | "outside" | "needs-city"
 export function areaState(place: PlaceSuggestion | null): AreaState {
   if (!place) return "none"
   if (serviceability(place).ok) return "ok"
-  return place.town.trim() === "" && !SERVICE_ZIPS[place.zip] ? "needs-town" : "outside"
+  return place.town.trim() === "" && !SERVICE_ZIPS[place.zip] ? "needs-city" : "outside"
 }
 
 export const townOf = (f: CheckoutFields) => f.town ?? f.place?.town ?? null
@@ -199,8 +179,9 @@ export function phoneWords(phone: string): string {
 }
 
 /** What happens when the button is pressed, in one plain sentence per channel. A request says only what we do with the contact the customer gave, never when. */
-export function happensWords(a: { channel: ContactChannel; phone: string; email: string; quote: boolean; callback: boolean }): string {
+export function happensWords(a: { channel: ContactChannel; phone: string; email: string; quote: boolean; callback: boolean; pass?: boolean }): string {
   const text = phoneWords(a.phone)
+  if (a.pass) return `${NOTHING_CHARGED} ${happensWords({ ...a, pass: false })}`
   if (a.quote) return "We'll use this to get back to you about your quote."
   if (a.callback) return `We'll use ${text} to get back to you about a day.`
   if (a.channel === "text") return `We'll text you a confirmation to ${text} and email a receipt when it's done.`
@@ -225,6 +206,7 @@ export interface ReviewInput {
   photos: number
   quote: boolean
   extras?: Extras
+  card?: CardChoice
   go: (step: FormStep) => void
 }
 
@@ -240,7 +222,7 @@ export function reviewRows(i: ReviewInput): ReviewRow[] {
       : i.pick?.day && i.pick.start
         ? [dayAtTime(i.pick.day, i.pick.start)]
         : null
-  const passRows: ReviewRow[] = i.plan ? passReviewRows(i.plan, i.picks ?? {}, i.prefs ?? {}, i.go) : []
+  const passRows: ReviewRow[] = i.plan ? passReviewRows(i.plan, i.picks ?? {}, i.prefs ?? {}, i.go, f.zones) : []
   const rows: (ReviewRow | null)[] = [
     { label: "Service", value: [serviceLine, ...(i.service.length ? [i.service.length] : [])], onChange: () => i.go(i.quote ? "quote-service" : "service") },
     { label: "Where", value: [street, `${i.town ?? ""}${i.town ? ", CO " : ""}${f.place?.zip ?? ""}`.trim()], onChange: () => i.go("address") },
@@ -252,6 +234,7 @@ export function reviewRows(i: ReviewInput): ReviewRow[] {
     ...(i.quote ? [] : extraRows(i.service, i.extras ?? NO_EXTRAS, () => i.go("details"))),
     i.photos > 0 ? { label: "Photos", value: `${i.photos} photo${i.photos === 1 ? "" : "s"}`, onChange: () => i.go("details") } : null,
     f.accessNote.trim() ? { label: i.quote ? "What you wrote" : "Note for the crew", value: f.accessNote.trim(), onChange: () => i.go("details") } : null,
+    i.quote ? null : { label: "Card", value: cardWords(i.card ?? null), onChange: () => i.go("card") },
     priceWords(i.service, f.zones, i.plan ?? null) ? { label: "Price", value: priceWords(i.service, f.zones, i.plan ?? null) } : null,
   ]
   return rows.filter((r): r is ReviewRow => r !== null)
@@ -277,9 +260,9 @@ export function problemList(step: FormStep, a: FormAnswers): Problem[] {
   switch (step) {
     case "address": {
       const area = areaState(a.fields.place)
-      // An address outside the six towns is a dead end with its own line beside the box; a missing town is asked for by name.
+      // An address outside the six cities is a dead end with its own line beside the box; a missing city is asked for by name.
       if (area === "ok" || area === "outside") return []
-      if (area === "needs-town" || a.addressTyped) return a.fields.place === null && a.fields.address.trim().length < 3 ? [{ message: STREET_PROBLEM, field: "[name=address]" }] : [{ message: TOWN_PROBLEM, field: "[name=town]" }]
+      if (area === "needs-city" || a.addressTyped) return a.fields.place === null && a.fields.address.trim().length < 3 ? [{ message: STREET_PROBLEM, field: "[name=address]" }] : [{ message: CITY_PROBLEM, field: "[name=city]" }]
       return [{ message: PICK_ADDRESS_PROBLEM, field: "[role=combobox]" }]
     }
     case "details":

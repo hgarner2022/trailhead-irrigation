@@ -4,24 +4,26 @@ import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Textarea } from "@/components/ui/textarea"
 import { AddressSearch } from "@/components/blocks/AddressSearch"
-import { SERVICE_AREA_SENTENCE, SERVICE_ZIPS, isTypedPlace, needsDetails, type PlaceProvider, type PlaceSuggestion } from "@/lib/places"
+import { SERVICE_ZIPS, isTypedPlace, needsDetails, type PlaceProvider, type PlaceSuggestion } from "@/lib/places"
 import { fixturePlaces } from "@/lib/places/fixture"
 import { googlePlaceDetails } from "@/lib/places/google"
 import { ACCESS_PROBLEM, addressProblem, type CheckoutFields } from "./checkout-state"
 import { TypedAddress } from "./checkout-address-typed"
-import { Helper } from "./checkout-steps"
 
 // The first question: one box that finds the address as the customer types
-// (Hannah, 2026-11-12: a normal address with type-ahead, no town to pick;
-// the town comes from the address). An address outside the six towns gets
+// (Hannah, 2026-11-12: a normal address with type-ahead, no city to pick;
+// the city comes from the address). An address outside the six cities gets
 // the out-of-area line and Continue stays off. The provider is injected: the
 // fixture in stories and tests, Google Places behind /api/places on the live
 // site. A Google suggestion has no zip until its details answer, so a pick
 // is dispatched at once (the check mark) and again with the whole address.
-// Under the box, always, "Can't find it? Type your address" swaps the box for
-// three fields (checkout-address-typed.tsx); a query of five characters that
-// finds nothing opens them on its own, which is how the checkout works with
-// no key at all. Under that, the access question (the scheduling flow,
+// Under the box, always, "Type it instead" swaps the box for
+// three fields, street, city and zip (checkout-address-typed.tsx); a query of
+// five characters that finds nothing opens them on its own, which is how the
+// checkout works with no key at all. Nothing else shows until it is needed
+// (Hannah, Nov 21 2026): the six cities are listed only under an address
+// outside them, and there is no way back to the box, because the typed fields
+// are a whole address. Under that, the access question (the scheduling flow,
 // 2026-11-12): most visits need nobody home, only the controller and the
 // shut-off; a customer who must be there picks their own day later.
 
@@ -36,14 +38,13 @@ export interface AddressStepProps {
   details?: (id: string) => Promise<PlaceSuggestion | null>
   /** the access question under the address; the booking form asks it on its details step instead, so it passes false */
   showAccess?: boolean
-  /** told when the typed fields open or close, so a screen can name a missing town in its summary */
+  /** told when the typed fields open or close, so a screen can name a missing city in its summary */
   onTypedChange?: (open: boolean) => void
 }
 
 const ACCESS_PROBLEM_ID = "checkout-access-problem"
 const LINK = "cursor-pointer font-medium text-primary-dark underline underline-offset-2 hover:text-primary-deep"
-export const TYPE_INSTEAD = "Can't find it? Type your address"
-export const FIND_INSTEAD = "Find it instead"
+export const TYPE_INSTEAD = "Type it instead"
 
 const ACCESS = [
   { value: "yes", name: "Yes", detail: "The controller and shut-off are reachable" },
@@ -52,7 +53,7 @@ const ACCESS = [
 
 export function AddressStep({ state, attempted, onType, onPick, set, places = fixturePlaces, details = googlePlaceDetails, showAccess = true, onTypedChange }: AddressStepProps) {
   // Opens on the typed fields when the step comes back to a typed address; `opened` says the customer opened them here, so they take focus.
-  // `asked`: a pick came back with no town we can read, so the fields open with the town already asked for.
+  // `asked`: a pick came back with no city we can read, so the fields open with the city already asked for.
   const [typed, setTyped] = useState<{ open: boolean; line1: string; opened: boolean; asked: boolean }>(() => ({ open: !!state.place && isTypedPlace(state.place.id), line1: "", opened: false, asked: false }))
   const latestPick = useRef<string | null>(null)
   const picked = state.place !== null
@@ -71,29 +72,25 @@ export function AddressStep({ state, attempted, onType, onPick, set, places = fi
   const pick = (place: PlaceSuggestion) => {
     latestPick.current = place.id
     onPick(place)
-    if (!needsDetails(place)) return askTown(place)
+    if (!needsDetails(place)) return askCity(place)
     void details(place.id).then((full) => {
       if (latestPick.current !== place.id) return
       if (full) onPick(full)
-      askTown(full ?? place)
+      askCity(full ?? place)
     })
   }
-  // An address with no town we can read and no zip we serve is not turned away: the typed fields open with the street filled in and ask for the town.
-  const askTown = (place: PlaceSuggestion) => {
+  // An address with no city we can read and no zip we serve is not turned away: the typed fields open with the street filled in and ask for the city.
+  const askCity = (place: PlaceSuggestion) => {
     if (place.town.trim() !== "" || SERVICE_ZIPS[place.zip]) return
     type(place.line1)
     setTyped({ open: true, line1: place.line1, opened: true, asked: true })
   }
   const openTyped = (line1: string) => setTyped({ open: true, line1, opened: true, asked: false })
-  const openFind = () => {
-    type("")
-    setTyped({ open: false, line1: "", opened: false, asked: false })
-  }
 
   return (
     <>
       {typed.open ? (
-        <TypedAddress place={state.place} initialLine1={typed.line1} attempted={attempted} townAsked={typed.asked} focusOnOpen={typed.opened} onType={type} onPick={pick} />
+        <TypedAddress place={state.place} initialLine1={typed.line1} attempted={attempted} cityAsked={typed.asked} focusOnOpen={typed.opened} onType={type} onPick={pick} />
       ) : (
         <AddressSearch
           name="address"
@@ -107,21 +104,18 @@ export function AddressStep({ state, attempted, onType, onPick, set, places = fi
           problem={addressProblem(state, attempted)}
         />
       )}
-      <p data-slot="address-mode" className="mt-3 text-sm text-muted-foreground">
-        {typed.open ? (
-          <button type="button" onClick={openFind} className={LINK}>
-            {FIND_INSTEAD}
-          </button>
-        ) : (
-          <button type="button" onClick={() => openTyped(state.place ? state.place.line1 : state.address)} className={LINK}>
+      {typed.open && state.place && addressProblem(state, false) && (
+        <p id="address-outside" role="alert" className="mt-3 text-sm text-destructive">
+          {addressProblem(state, false)}
+        </p>
+      )}
+      {!typed.open && (
+        <p data-slot="address-mode" className="mt-3 text-sm text-muted-foreground">
+          <button type="button" onClick={() => openTyped(state.place ? state.place.line1 : state.address)} className={cn(LINK, "inline-flex min-h-11 items-center")}>
             {TYPE_INSTEAD}
           </button>
-        )}
-      </p>
-      <Helper>
-        {SERVICE_AREA_SENTENCE}
-        {!typed.open && " Pick your address from the list so we have it right."}
-      </Helper>
+        </p>
+      )}
       {picked && showAccess && (
         <div data-slot="checkout-access" className="mt-8">
           <p id="access-question" className="font-display text-2xl leading-tight text-navy">Can we reach the controller and the water shut-off without you?</p>

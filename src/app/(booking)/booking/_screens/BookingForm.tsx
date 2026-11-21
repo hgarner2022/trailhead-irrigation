@@ -3,42 +3,42 @@
 import Link from "next/link"
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { BookingReview } from "@/components/blocks/BookingReview"
-import { BookingSummary, type SummaryPart } from "@/components/blocks/BookingSummary"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import type { ContactChannel } from "@/components/blocks/ContactPreference"
 import { FlowShell } from "@/components/blocks/FlowShell"
 import type { PickedPhoto } from "@/components/blocks/PhotoPicker"
 import { ServicePicker } from "@/components/blocks/ServicePicker"
-import { clock12, fixtureDayTimes, startDay, type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
+import { fixtureDayTimes, startDay, type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
 import { bookingEntries, visitMinutes } from "@/lib/booking/pass-entry"
-import { exactVisits, passPlanFor, preferenceVisits } from "@/lib/booking/pass-visits"
+import { exactVisits, passPlanFor, preferenceOfDay, preferenceVisits } from "@/lib/booking/pass-visits"
 import { QUOTE_SERVICES, SERVICES } from "@/lib/booking/services"
 import type { TimingPreference } from "@/lib/admin/types"
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { fixturePlaces } from "@/lib/places/fixture"
-import { shortDay } from "@/lib/portal/words"
 import { AddressStep } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-address"
 import type { CheckoutFields } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
 import { useCheckoutState } from "@/app/(checkout)/season-pass/checkout/_screens/use-checkout-state"
-import { BookingAgreement } from "./booking-agreement"
+import { BookingCard } from "./booking-card"
 import { BookingBooked, type BookedPass } from "./booking-booked"
 import { BookingContact } from "./booking-contact"
+import { BookingPass } from "./booking-pass"
 import { DayTimeGroups, type DayGroup } from "./booking-day"
 import { BookingDetails, QuoteDetails } from "./booking-details"
 import { bookedPassOf } from "./booking-pass-model"
-import { PreferenceGroups, VISIT_HEADINGS } from "./booking-preference"
+import { PreferenceGroups, VISIT_HEADINGS, preferenceQuestion } from "./booking-preference"
 import { StepProblems } from "./booking-problems"
 import type { BookingFormProps } from "./booking-form-types"
 import { useStepHistory } from "./use-step-history"
-import { ACTIONS, CONFIRM_BOOK, DAY_HINT, NO_EXTRAS, QUESTIONS, QUOTE_QUESTIONS, SEND_REQUEST, SERVICE_HINT, areaState, callbackMode, canContinue, hasEntries, happensWords, problemList, reviewRows, stepTotal, stepsFor, townOf, type Extras, type FormStep } from "./booking-form-model"
+import { ACTIONS, CONFIRM_BOOK, CONFIRM_PASS, DAY_HINT, NO_EXTRAS, QUESTIONS, QUOTE_QUESTIONS, SEND_REQUEST, SERVICE_HINT, areaState, callbackMode, canContinue, cardWords, hasEntries, happensWords, problemList, reviewRows, stepTotal, stepsFor, townOf, type CardChoice, type Extras, type FormStep } from "./booking-form-model"
 
 // The customer's booking form (docs/plans/2026-11-19-booking-form-design.md), one question per screen on the FlowShell. It opens on the address, the checkout's type-ahead with its typed fallback
-// (Hannah, Nov 20 2026: no zip step, the address qualifies the yard; the town and zip come from the chosen address and an address outside the six towns stops at once with the way out), then the
+// (Hannah, Nov 20 2026: no zip step, the address qualifies the yard; the city and zip come from the chosen address and an address outside the six cities stops at once with the way out), then the
 // services with their lengths, the service details (zones with the price, access, the questions that belong to the service, a note, photos), the day and an exact start time from the open slots,
-// and only then who we reach (and how: text, email or both, asked once) with the terms, so an abandoned booking leaves nothing; a confirm step says what happens, then the booked card. A service we
-// quote is the address, services, "Tell Ryan about it" and contact ("Send to Ryan") with no day and no confirm. Navigation and close: Close at the top right asks only once
-// something is entered; every step is a browser-history entry so the phone's Back button goes to the previous step; Back is the same as the browser's Back; the heading takes focus and the page
-// title follows each step; a failed Continue puts a summary at the top and focus on the first bad field. Nothing is sent, and nothing is kept before the contact step is submitted.
+// and only then who we reach (and how: text, email or both, asked once) with the terms, so an abandoned booking leaves nothing; then a card (Stripe's setup form, drawn), a confirm step that says what
+// happens, then the booked card. A service we quote is the address, services, "Tell Ryan about it" and contact ("Send to Ryan") with no day, no card and no confirm. Navigation (docs/plans/2026-11-19-booking-
+// form-design.md, "Navigation, second pass"): Back is the one way back and is the browser's Back; there is no summary of answers over the steps; the only Change links are on the confirm step, and a Change
+// there returns to the confirm step when the customer continues. Close at the top right asks only once something is entered; the heading takes focus and the page title follows each step; a failed
+// Continue puts a summary at the top and focus on the first bad field. Nothing is sent, and nothing is kept before the contact step is submitted.
 
 export type { Booked, BookingFormProps, BookingProgress, Requested } from "./booking-form-types"
 
@@ -64,6 +64,9 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
   const [photos, setPhotos] = useState<PickedPhoto[]>(initial.photos ?? [])
   const [extras, setExtras] = useState<Extras>({ ...NO_EXTRAS, ...initial.extras })
   const [leaving, setLeaving] = useState(initial.leaving ?? false)
+  const [card, setCard] = useState<CardChoice>(initial.card ?? null)
+  // The customer pressed Change on the confirm step: Continue takes them straight back to it.
+  const [fromConfirm, setFromConfirm] = useState(false)
   const [addressTyped, setAddressTyped] = useState(false)
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
   const town = townOf(fields)
@@ -80,7 +83,13 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
   }, [service, plan, town, today, offersFor])
   // The best day starts selected on each visit; a time is never selected for the customer.
   const heldPicks = Object.fromEntries(groups.map((g) => [g.key, picks[g.key] ?? { day: startDay(g.offers), start: null }]))
-  const heldPrefs = Object.fromEntries((plan ? preferenceVisits(plan) : []).map((v) => [v.kind, prefs[v.kind] ?? "recommended"])) as Record<string, TimingPreference>
+  // The preference is kept per visit kind for every season: asked for a visit with no day, and for a kind booked exactly it starts as the part of the window of the day picked.
+  const heldPrefs = Object.fromEntries(
+    (plan?.visits ?? []).map((v) => {
+      const day = heldPicks[v.kind]?.day
+      return [v.kind, v.mode === "exact" ? (day ? preferenceOfDay(v, day) : "recommended") : (prefs[v.kind] ?? "recommended")]
+    }),
+  ) as Record<string, TimingPreference>
   const answers = { service, fields, addressTyped, picks: heldPicks, offers: Object.fromEntries(groups.map((g) => [g.key, g.offers as DayTimeOffer[]])), when, prefs: heldPrefs }
   const valid = canContinue(step, answers)
   const callback = !quote && callbackMode(answers)
@@ -98,19 +107,26 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
     setAttempted(false)
     history.push(to)
   }
+  // A Change link on the confirm step: the step opens with the answer in it, and Continue returns to the confirm step (GOV.UK check answers). Changing the address or the service changes what comes
+  // after it, so those go on step by step.
+  const change = (to: FormStep) => {
+    setFromConfirm(to !== "address" && to !== "service" && to !== "quote-service")
+    go(to)
+  }
 
   useEffect(() => {
     onStep?.({ step, steps, quote, service, address: street, town, firstName: fields.firstName, email: fields.email, pick })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, serviceKey, quote])
   // Every step change moves focus to the heading and names the page for a screen reader; nothing moves on the first render.
-  const heading = (done ? (quote || callback ? "Request sent" : "Booked") : ((quote ? QUOTE_QUESTIONS[step] : undefined) ?? QUESTIONS[step])) as string
+  const heading = (done ? (quote || callback ? "Request sent" : service?.kind === "pass" ? "Set up" : "Booked") : step === "preference" && plan ? preferenceQuestion(preferenceVisits(plan)) : ((quote ? QUOTE_QUESTIONS[step] : undefined) ?? QUESTIONS[step])) as string
   useEffect(() => {
     const before = document.title
     document.title = done ? `${heading} | Trailhead Lawn & Irrigation` : `${heading} Step ${at + 1} of ${total} | Book online | Trailhead Lawn & Irrigation`
     return () => void (document.title = before)
   }, [heading, at, total, done])
   useEffect(() => {
+    if (step === "confirm") setFromConfirm(false)
     if (first.current) return void (first.current = false)
     window.scrollTo?.(0, 0)
     document.getElementById("flow-heading")?.focus({ preventScroll: true })
@@ -130,7 +146,7 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
   }, [step])
   useEffect(() => {
     if (step === "done" && !quote && !callback && service && pick?.day && pick.start) {
-      onBooked?.({ service: service.name, day: pick.day, start: pick.start, street: street || "480 Briggs St", town: town ?? "Erie", firstName: fields.firstName || "Andrea", email: fields.email, phone: fields.phone, channel, photos: photos.length, marketing: fields.marketingEmail })
+      onBooked?.({ service: service.name, day: pick.day, start: pick.start, street: street || "480 Briggs St", town: town ?? "Erie", firstName: fields.firstName || "Andrea", email: fields.email, phone: fields.phone, channel, photos: photos.length, marketing: fields.marketingEmail, card: cardWords(card) })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
@@ -140,6 +156,12 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
       setAttempted(true)
       return setPresses((n) => n + 1)
     }
+    if (step === "card") setCard("saved")
+    go(fromConfirm ? "confirm" : steps[Math.min(at + 1, steps.length - 1)]!)
+  }
+  // "Not now" on the card step, for a one-off only: no card is kept and the form goes on.
+  const skipCard = () => {
+    setCard("skipped")
     go(steps[Math.min(at + 1, steps.length - 1)]!)
   }
   // Back is the browser's Back: the same step the phone's Back button would show. With nothing behind it in this form, it goes to the step before.
@@ -167,15 +189,9 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
     next()
   }
 
-  const dayPart = pick?.day && pick.start && !callback ? `${shortDay(pick.day)} at ${clock12(pick.start)}` : null
   const bookedPass: BookedPass | undefined = service?.kind === "pass" && plan ? bookedPassOf(service.name, plan, heldPicks, heldPrefs) : undefined
-  const parts: SummaryPart[] = [
-    ...(service && at > steps.indexOf(quote ? "quote-service" : "service") ? [{ label: service.name, what: "service", onChange: () => go(quote ? "quote-service" : "service") }] : []),
-    ...(street && at > steps.indexOf("address") ? [{ label: [street, town].filter(Boolean).join(", "), what: "address", onChange: () => go("address") }] : []),
-    ...(dayPart && steps.indexOf("day") >= 0 && at > steps.indexOf("day") ? [{ label: dayPart, what: "day and time", onChange: () => go("day") }] : []),
-  ]
-  const confirmLabel = quote || callback ? SEND_REQUEST : CONFIRM_BOOK
-  const label = step === "confirm" ? confirmLabel : step === "contact" && quote ? SEND_REQUEST : (ACTIONS[step] ?? "Continue")
+  const confirmLabel = quote || callback ? SEND_REQUEST : service?.kind === "pass" ? CONFIRM_PASS : CONFIRM_BOOK
+  const label = step === "confirm" ? confirmLabel : step === "contact" && quote ? SEND_REQUEST : step === "card" && card === "saved" ? "Continue" : (ACTIONS[step] ?? "Continue")
   // Continue is off only where the screen says why: a choice not yet made (service, a start time) or a dead end (an address we do not serve). Everywhere else it stays on and a press names what is missing.
   const area = areaState(fields.place)
   const deadEnd = step === "address" && area === "outside"
@@ -207,17 +223,20 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
       break
     case "details": {
       const shared = { note: fields.accessNote, onNote: (t: string) => set("accessNote", t), photos, onAddPhotos: addPhotos, onRemovePhoto: (n: string) => setPhotos((prev) => prev.filter((p) => p.name !== n)) }
-      body = quote || !service ? <QuoteDetails {...shared} /> : <BookingDetails service={service} zones={fields.zones} onZones={(n) => set("zones", n)} access={fields.access} onAccess={(a) => set("access", a)} attempted={attempted} extras={extras} onExtras={setExtras} {...shared} />
+      body = quote || !service ? <QuoteDetails {...shared} /> : <BookingDetails service={service} plan={plan} zones={fields.zones} onZones={(n) => set("zones", n)} access={fields.access} onAccess={(a) => set("access", a)} attempted={attempted} extras={extras} onExtras={setExtras} {...shared} />
       break
     }
     case "day":
-      body = <DayTimeGroups groups={groups} picks={heldPicks} onPick={(k, p) => setPicks((prev) => ({ ...prev, [k]: p }))} town={town} note={when} onNote={setWhen} />
+      body = <DayTimeGroups groups={groups} picks={heldPicks} onPick={(k, p) => setPicks((prev) => ({ ...prev, [k]: p }))} note={when} onNote={setWhen} />
       break
     case "preference":
       body = plan && <PreferenceGroups visits={preferenceVisits(plan)} prefs={heldPrefs} onPref={(k, p) => setPrefs((prev) => ({ ...prev, [k]: p }))} />
       break
-    case "agreement":
-      body = <BookingAgreement />
+    case "pass":
+      body = <BookingPass />
+      break
+    case "card":
+      body = <BookingCard saved={card === "saved"} pass={service?.kind === "pass"} onSkip={skipCard} />
       break
     case "contact":
       body = (
@@ -234,13 +253,13 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
     case "confirm":
       body = service && (
         <BookingReview
-          rows={reviewRows({ service, fields, town, pick, plan, picks: heldPicks, prefs: heldPrefs, when, callback, channel, photos: photos.length, quote, extras, go })}
-          happens={happensWords({ channel, phone: fields.phone, email: fields.email, quote, callback })}
+          rows={reviewRows({ service, fields, town, pick, plan, picks: heldPicks, prefs: heldPrefs, when, callback, channel, photos: photos.length, quote, extras, card, go: change })}
+          happens={happensWords({ channel, phone: fields.phone, email: fields.email, quote, callback, pass: service.kind === "pass" })}
         />
       )
       break
     default:
-      body = <BookingBooked service={service?.name ?? "Visit"} where={[street, town].filter(Boolean).join(", ")} channel={channel} phone={fields.phone} email={fields.email} pick={quote || callback ? undefined : pick} photos={photos.length} callback={callback} quote={quote} onOpenAccount={onOpenAccount} pass={bookedPass} />
+      body = <BookingBooked service={service?.name ?? "Visit"} where={[street, town].filter(Boolean).join(", ")} channel={channel} phone={fields.phone} email={fields.email} pick={quote || callback ? undefined : pick} photos={photos.length} callback={callback} quote={quote} onOpenAccount={onOpenAccount} pass={bookedPass} card={cardWords(card)} />
   }
 
   return (
@@ -249,7 +268,6 @@ export function BookingForm({ entries = SERVICES, today = "2027-04-14", initial 
         question={heading}
         step={Math.min(at + 1, total)}
         total={total}
-        summary={!done && step !== "confirm" && parts.length > 0 ? <BookingSummary parts={parts} /> : undefined}
         notice={<StepProblems problems={problems} />}
         onBack={back}
         onNext={next}

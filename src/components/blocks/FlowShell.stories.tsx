@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect } from "storybook/test"
-import { BookingSummary } from "./BookingSummary"
 import { FlowShell } from "./FlowShell"
 
 // The frame of the booking form: the logo (a link to the site), Close at the top right, one card in a 640px column with a real progress bar (Step 3 of 6), the question, the body and Back and Continue as a pair at the card's foot (fixed to the bottom of a phone).
@@ -35,7 +34,7 @@ export const Empty: Story = { args: { step: 1, question: "What can we do for you
 
 /** Continue is off, and the hint says what is missing. */
 export const ContinueOff: Story = {
-  args: { question: "Pick your day", hint: "Tap a start time to continue.", nextDisabled: true, summary: <BookingSummary parts={[{ label: "Sprinkler repair", onChange: () => {} }, { label: "Erie" }]} /> },
+  args: { question: "Pick your day", hint: "Tap a start time to continue.", nextDisabled: true },
 }
 
 export const Phone: Story = {

@@ -12,28 +12,28 @@ const person = { firstName: "Andrea", lastName: "Dalton", email: "andrea@example
 
 describe("the booking form's steps", () => {
   it("starts on the address, puts the day before contact, and gives a request the address first, contact last and no day", () => {
-    expect(stepsFor(svc("repair"))).toEqual(["address", "service", "details", "day", "contact", "confirm", "done"])
+    expect(stepsFor(svc("repair"))).toEqual(["address", "service", "details", "day", "contact", "card", "confirm", "done"])
     expect(stepsFor(null, true)).toEqual(["address", "quote-service", "details", "contact", "done"])
-    expect(stepTotal(stepsFor(svc("repair")))).toBe(6)
+    expect(stepTotal(stepsFor(svc("repair")))).toBe(7)
     expect(stepTotal(stepsFor(null, true))).toBe(4)
   })
-  it("qualifies the area from the address: the town by name, then the zip, and asks for a town it cannot read", () => {
+  it("qualifies the area from the address: the city by name, then the zip, and asks for a city it cannot read", () => {
     const at = (place: PlaceSuggestion | null) => ({ ...initialState(), place })
     expect(areaState(null)).toBe("none")
     expect(areaState(FIXTURE_HOME)).toBe("ok")
     expect(areaState({ ...FIXTURE_HOME, town: "Unincorporated Weld", zip: "80516" })).toBe("ok")
     expect(areaState(FIXTURE_PLACES[9]!)).toBe("outside")
-    expect(areaState({ ...FIXTURE_HOME, town: "", zip: "" })).toBe("needs-town")
+    expect(areaState({ ...FIXTURE_HOME, town: "", zip: "" })).toBe("needs-city")
     expect(canContinue("address", base({ fields: at(FIXTURE_HOME) }))).toBe(true)
     expect(canContinue("address", base({ fields: at(FIXTURE_PLACES[9]!) }))).toBe(false)
     expect(canContinue("address", base({ fields: at({ ...FIXTURE_HOME, town: "", zip: "" }) }))).toBe(false)
   })
-  it("names what is missing on the address step: the pick, the street or the town, and nothing for a dead end", () => {
+  it("names what is missing on the address step: the pick, the street or the city, and nothing for a dead end", () => {
     const fields = initialState()
     expect(problemList("address", base({ fields }))[0]!.message).toBe("Pick your address from the list so we have it right.")
     expect(problemList("address", base({ fields, addressTyped: true }))[0]).toMatchObject({ message: "We need your street address, with the house number.", field: "[name=address]" })
-    expect(problemList("address", base({ fields: { ...fields, address: "9 Cottonwood Ln" }, addressTyped: true }))[0]).toMatchObject({ message: "Pick your town so we know which route you are on.", field: "[name=town]" })
-    expect(problemList("address", base({ fields: { ...fields, place: { ...FIXTURE_HOME, town: "", zip: "" } } }))[0]!.field).toBe("[name=town]")
+    expect(problemList("address", base({ fields: { ...fields, address: "9 Cottonwood Ln" }, addressTyped: true }))[0]).toMatchObject({ message: "Add your city.", field: "[name=city]" })
+    expect(problemList("address", base({ fields: { ...fields, place: { ...FIXTURE_HOME, town: "", zip: "" } } }))[0]!.field).toBe("[name=city]")
     expect(problemList("address", base({ fields: { ...fields, place: FIXTURE_PLACES[9]! } }))).toEqual([])
   })
   it("keeps the service step off for a closed service", () => {
@@ -87,9 +87,11 @@ describe("the price and the confirm words", () => {
   it("lists only what the customer gave, each with a Change", () => {
     const fields = { ...initialState(), ...person, place: FIXTURE_HOME, town: "Erie" as const, access: "yes" as const, accessNote: "Gate code 4471" }
     const rows = reviewRows({ service: svc("repair"), fields, town: "Erie", pick: { day: "2027-04-20", start: "10:30" }, when: "", callback: false, channel: "text", photos: 0, quote: false, go: () => {} })
-    expect(rows.map((r) => r.label)).toEqual(["Service", "Where", "When", "You", "We reach you", "Access", "Note for the crew", "Price"])
+    expect(rows.map((r) => r.label)).toEqual(["Service", "Where", "When", "You", "We reach you", "Access", "Note for the crew", "Card", "Price"])
     expect(rows.find((r) => r.label === "When")?.value).toEqual(["Tuesday, April 20 at 10:30 am"])
     expect(rows.find((r) => r.label === "Price")?.onChange).toBeUndefined()
+    expect(rows.find((r) => r.label === "Card")?.value).toBe("No card")
+    expect(reviewRows({ service: svc("repair"), fields, town: "Erie", pick: { day: "2027-04-20", start: "10:30" }, when: "", callback: false, channel: "text", photos: 0, quote: false, card: "saved", go: () => {} }).find((r) => r.label === "Card")?.value).toBe("Visa ending 4242")
   })
   it("never invents a price: a service with none says it is set at the visit, and a request says nothing about money", () => {
     expect(priceFor(svc("install"), 8)).toBeNull()

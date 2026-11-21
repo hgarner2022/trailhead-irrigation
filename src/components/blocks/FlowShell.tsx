@@ -16,8 +16,6 @@ export interface FlowShellProps {
   step: number
   total: number
   children: ReactNode
-  /** a line above the card: the booking summary with its Change links */
-  summary?: ReactNode
   /** what is wrong with the step, drawn at the top of the card under the progress bar */
   notice?: ReactNode
   onBack?: () => void
@@ -40,7 +38,7 @@ export interface FlowShellProps {
 
 const COLUMN = "mx-auto w-full max-w-[640px]"
 
-export function FlowShell({ question, step, total, children, summary, notice, onBack, onNext, nextLabel = "Continue", nextDisabled, hint, busy, done, homeHref = "/", onClose, className }: FlowShellProps) {
+export function FlowShell({ question, step, total, children, notice, onBack, onNext, nextLabel = "Continue", nextDisabled, hint, busy, done, homeHref = "/", onClose, className }: FlowShellProps) {
   const closeClass = "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-base font-medium text-navy hover:bg-card focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
   const close = (
     <>
@@ -65,7 +63,6 @@ export function FlowShell({ question, step, total, children, summary, notice, on
         )}
       </header>
       <div className={cn(COLUMN, "pb-8 sm:pb-12")}>
-        {summary && <div className="mb-3 px-4 sm:px-0">{summary}</div>}
         <section data-slot="flow-surface" aria-labelledby="flow-heading" className="flex flex-col bg-background p-4 max-sm:min-h-[calc(100svh-6.5rem)] max-sm:border-y max-sm:border-border sm:rounded-lg sm:border sm:border-border sm:p-8 sm:shadow-sm">
           {!done && (
             <div data-slot="flow-progress" className="mb-6">

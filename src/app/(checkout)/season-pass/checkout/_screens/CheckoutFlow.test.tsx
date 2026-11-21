@@ -482,13 +482,13 @@ describe("the typed address", () => {
     const user = userEvent.setup()
     const onBegin = vi.fn(async (): Promise<BeginResult> => ({ ok: true, passId: "p1", sessionId: "cs_1", clientSecret: "secret" }))
     render(<CheckoutFlow season={2027} prefill={{ ...answers, address: "", place: null, town: null, access: null }} stripeKey="pk_test_x" onBegin={onBegin} onFinish={vi.fn()} />)
-    await user.click(screen.getByRole("button", { name: "Can't find it? Type your address" }))
+    await user.click(screen.getByRole("button", { name: "Type it instead" }))
     expect(screen.queryByRole("combobox", { name: "Street address" })).not.toBeInTheDocument()
     const street = screen.getByLabelText("Street address")
     expect(street).toHaveFocus()
     await user.type(street, "9 Elm St")
     expect(accessQuestion()).not.toBeInTheDocument()
-    await user.selectOptions(screen.getByLabelText("Town"), "Erie")
+    await user.type(screen.getByLabelText("City"), "Erie")
     expect(accessQuestion()).toBeInTheDocument()
     // A zip is optional, but a started one must be five digits before the address counts again.
     const zip = screen.getByLabelText("ZIP (optional)")
@@ -517,17 +517,28 @@ describe("the typed address", () => {
     )
   })
 
-  it("names each missing field when Continue is pressed too early, and goes back to the box on Find it instead", async () => {
+  it("names each missing field when Continue is pressed too early", async () => {
     const user = userEvent.setup()
     render(<CheckoutFlow season={2027} />)
-    await user.click(screen.getByRole("button", { name: "Can't find it? Type your address" }))
+    await user.click(screen.getByRole("button", { name: "Type it instead" }))
     await user.click(continueButton())
     expect(screen.getByText("We need your street address, with the house number.")).toBeInTheDocument()
-    expect(screen.getByText("Pick your town so we know which route you are on.")).toBeInTheDocument()
+    expect(screen.getByText("Add your city.")).toBeInTheDocument()
     expect(screen.queryByText("Pick your address from the list so we have it right.")).not.toBeInTheDocument()
     expect(screen.getByLabelText("Street address")).toHaveFocus()
-    await user.click(screen.getByRole("button", { name: "Find it instead" }))
-    expect(screen.getByRole("combobox", { name: "Street address" })).toHaveValue("")
+    expect(screen.queryByRole("button", { name: "Find it instead" })).not.toBeInTheDocument()
+  })
+
+  it("shows nothing under the box but the way to type it instead, and a typed city outside the six is turned away once the box is left", async () => {
+    const user = userEvent.setup()
+    render(<CheckoutFlow season={2027} />)
+    expect(screen.queryByText(/We work in Erie/)).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Type it instead" }))
+    await user.type(screen.getByLabelText("Street address"), "1200 Pearl St")
+    await user.type(screen.getByLabelText("City"), "Bould")
+    expect(screen.queryByText(/We don't serve/)).not.toBeInTheDocument()
+    await user.tab()
+    expect(await screen.findByText(/We don't serve Bould yet\. We work in Erie, Longmont/)).toBeInTheDocument()
   })
 
   it("opens the fields on its own when nothing is found for five characters, with the street filled in", async () => {
@@ -535,7 +546,7 @@ describe("the typed address", () => {
     const none = vi.fn(async () => [])
     render(<CheckoutFlow season={2027} places={none} />)
     await user.type(screen.getByRole("combobox", { name: "Street address" }), "9 Elm")
-    expect(await screen.findByLabelText("Town")).toBeInTheDocument()
+    expect(await screen.findByLabelText("City")).toBeInTheDocument()
     expect(screen.getByLabelText("Street address")).toHaveValue("9 Elm")
     expect(screen.getByLabelText("Street address")).toHaveFocus()
   })

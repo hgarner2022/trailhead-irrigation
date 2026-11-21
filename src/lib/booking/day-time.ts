@@ -9,7 +9,7 @@ export interface StartOption {
   best?: boolean
 }
 
-/** One offered day: the day, why it is a good one when it is ("We're already in Erie that day"), and the start times open on it. */
+/** One offered day: the day, why it is a good one when it is ("We're already in Erie that day."), and the start times open on it. */
 export interface DayTimeOffer {
   day: string
   note?: string | null
@@ -53,29 +53,36 @@ function timesFor(minutes: number, taken: readonly string[], best: string | null
   return out
 }
 
-/** The five route days a fixture offers from `from`: Tuesdays and Thursdays on or after it, as YYYY-MM-DD. */
-function routeDays(from: string): string[] {
-  const out: string[] = []
+/** The days the offer rule gives a customer (docs/plans/2026-11-18-scheduling-engine-design.md, 4.2), as it labels them. The stories draw these labels; the live screen reads them from `offerFor`. */
+export const LABEL_SOONEST = "Soonest open day."
+export const labelSameCity = (town: string) => `We're already in ${town} that day.`
+
+/**
+ * Five open days for the stories, standing in for `offerFor`: working days (Monday to Friday, no fixed weekdays) on or after `from`, the soonest first, with a few days skipped because they are full.
+ * Which weekdays are open is whatever the schedule leaves; nothing here says where Ryan is on which day.
+ */
+function openDays(from: string): string[] {
+  const weekdays: string[] = []
   const d = new Date(`${from}T12:00:00Z`)
-  while (out.length < 5) {
-    if (d.getUTCDay() === 2 || d.getUTCDay() === 4) out.push(d.toISOString().slice(0, 10))
+  while (weekdays.length < 7) {
+    if (d.getUTCDay() >= 1 && d.getUTCDay() <= 5) weekdays.push(d.toISOString().slice(0, 10))
     d.setUTCDate(d.getUTCDate() + 1)
   }
-  return out
+  return [0, 1, 3, 4, 6].map((i) => weekdays[i]!)
 }
 
 /**
- * Five days for the stories: Erie's route days (Tuesdays and Thursdays) from `from` (the first day the visit may be offered: tomorrow, or the day its window opens, whichever is later),
- * the second marked best with "We're already in Erie that day" and its best time "10:30 am", the first nearly full. `minutes` sizes the times to the service (a 60 minute turn-on has more
+ * Five open days for the stories, soonest first, from `from` (the first day the visit may be offered: tomorrow, or the day its window opens, whichever is later). The first is "Soonest open day.",
+ * the third is the ranked best with "We're already in Erie that day." and its best time "10:30 am", the first nearly full. `minutes` sizes the times to the service (a 60 minute turn-on has more
  * starts than a 120 minute repair). With no `from` they are the April days of 2027 the stories open on.
  */
 export function fixtureDayTimes(minutes = 120, town = "Erie", from = "2027-04-15"): DayTimeOffer[] {
   const busy = ["08:30", "09:30", "11:30", "13:00", "14:30"]
-  const [d1, d2, d3, d4, d5] = routeDays(from) as [string, string, string, string, string]
+  const [d1, d2, d3, d4, d5] = openDays(from) as [string, string, string, string, string]
   return [
-    { day: d1, times: timesFor(minutes, [...busy, "08:00", "09:00", "10:00", "10:30", "11:00", "12:00", "12:30", "13:30", "14:00"], null) },
-    { day: d2, best: true, note: `We're already in ${town} that day`, times: timesFor(minutes, ["08:00", "12:00"], "10:30") },
-    { day: d3, times: timesFor(minutes, busy, null) },
+    { day: d1, note: LABEL_SOONEST, times: timesFor(minutes, [...busy, "08:00", "09:00", "10:00", "10:30", "11:00", "12:00", "12:30", "13:30", "14:00"], null) },
+    { day: d2, times: timesFor(minutes, busy, null) },
+    { day: d3, best: true, note: labelSameCity(town), times: timesFor(minutes, ["08:00", "12:00"], "10:30") },
     { day: d4, times: timesFor(minutes, ["09:00"], null) },
     { day: d5, times: timesFor(minutes, [], null) },
   ]

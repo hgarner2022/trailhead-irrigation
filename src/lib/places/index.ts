@@ -42,8 +42,9 @@ export const needsDetails = (place: PlaceSuggestion) => place.zip === "" && !isT
 const squash = (text: string) => text.trim().replace(/\s+/g, " ")
 
 /** The address as the customer typed it in the three fields: the same shape as a picked one, so the checkout treats it the same. */
-export function typedPlace(line1: string, town: Town, zip = ""): PlaceSuggestion {
+export function typedPlace(line1: string, city: string, zip = ""): PlaceSuggestion {
   const street = squash(line1)
+  const town = squash(city)
   const code = zip.trim()
   return {
     id: `${TYPED_PREFIX}${street.toLowerCase()}|${town.toLowerCase()}|${code}`,

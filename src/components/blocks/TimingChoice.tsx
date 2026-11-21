@@ -24,7 +24,7 @@ export interface TimingChoiceProps {
   label?: string
   value: TimingPreference
   onChange: (value: TimingPreference) => void
-  /** the booking form: the names Early, Mid and Late with each one's dates under it ("Oct 1 to Oct 10"), in place of the month and the "Mid means" line */
+  /** the booking form: the names Early, Mid and Late with each one's dates under it ("Oct 1 to Oct 10"), in place of the month and the "Mid means" line; the booking form says why under its own question, so no reason line follows */
   ranges?: Record<TimingPreference, string>
   /** the pressed button takes the step's focus (the checkout shell reads `data-autofocus`) */
   autofocus?: boolean
@@ -35,7 +35,7 @@ export function TimingChoice({ kind, labelledBy, label, value, onChange, ranges,
   const id = useId()
   return (
     <div className={className}>
-      <div role="group" aria-labelledby={labelledBy} aria-label={labelledBy ? undefined : label} aria-describedby={`${id}-reason`} className="grid gap-3 sm:grid-cols-3">
+      <div role="group" aria-labelledby={labelledBy} aria-label={labelledBy ? undefined : label} aria-describedby={ranges ? undefined : `${id}-reason`} className="grid gap-3 sm:grid-cols-3">
         {TIMING_PREFERENCES.map((preference) => {
           const pressed = value === preference
           return (
@@ -59,9 +59,11 @@ export function TimingChoice({ kind, labelledBy, label, value, onChange, ranges,
           )
         })}
       </div>
-      <p id={`${id}-reason`} className="mt-3 text-base text-muted-foreground">
-        {ranges ? preferenceReason(kind) : `${MID_MEANS[kind]} ${preferenceReason(kind)}`}
-      </p>
+      {!ranges && (
+        <p id={`${id}-reason`} className="mt-3 text-base text-muted-foreground">
+          {`${MID_MEANS[kind]} ${preferenceReason(kind)}`}
+        </p>
+      )}
     </div>
   )
 }

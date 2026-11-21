@@ -2,6 +2,7 @@
 
 import { useId } from "react"
 import { Clock } from "lucide-react"
+import { CHARGED_AFTER, HAPPENS_FOR_YOU, HOW_EXACT, HOW_PREFERENCE, PASS_HAPPENS } from "@/lib/booking/pass-words"
 import { REQUEST_QUOTE, OUT_OF_SEASON_NOTE, type ServiceEntry } from "@/lib/booking/services"
 import { cn } from "@/lib/utils"
 
@@ -31,19 +32,33 @@ function Entry({ entry, name, checked, onChange }: { entry: ServiceEntry; name: 
         <span className={cn(CARD, checked ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
           <span className="flex items-baseline justify-between gap-4">
             <span className="font-display text-2xl leading-none">{entry.name}</span>
-            {!quote && <span className="shrink-0 text-base font-semibold tabular-nums">{off ? `Opens ${entry.opens}` : entry.price}</span>}
+            {!quote && (off || entry.price) && <span className="shrink-0 text-base font-semibold tabular-nums">{off ? `Opens ${entry.opens}` : entry.price}</span>}
           </span>
           <span className={cn("text-base", checked ? "text-white/90" : "text-foreground")}>{entry.line}</span>
           {entry.passVisits && (
-            <ul data-slot="pass-visits" className={cn("mt-2 divide-y rounded-md border", checked ? "divide-white/20 border-white/25" : "divide-border border-border")}>
+            <ol data-slot="pass-visits" aria-label="When the visits happen" className={cn("mt-2 ml-1.5 border-l-2", checked ? "border-white/30" : "border-navy/15")}>
               {entry.passVisits.map((v) => (
-                <li key={v.kind} data-slot="pass-visit" data-kind={v.kind} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 px-3 py-2">
-                  <span className="text-base font-semibold">{v.name}</span>
-                  <span className={cn("text-sm tabular-nums", checked ? "text-white/90" : "text-foreground")}>{v.price}</span>
-                  <span className={cn("basis-full text-sm", checked ? "text-white/85" : "text-muted-foreground")}>{[v.length, v.opens ? `Opens ${v.opens}` : null].filter(Boolean).join(" · ")}</span>
+                <li key={v.kind} data-slot="pass-visit" data-kind={v.kind} className="relative pb-3 pl-5 last:pb-0">
+                  <span aria-hidden className={cn("absolute top-[0.45rem] -left-[0.4375rem] size-3 rounded-full border-2", checked ? "border-navy bg-white" : "border-background bg-primary")} />
+                  <span className="flex flex-wrap items-baseline justify-between gap-x-4">
+                    <span className="text-base font-semibold">{v.name}</span>
+                    <span className={cn("text-sm tabular-nums", checked ? "text-white/90" : "text-foreground")}>{v.price}</span>
+                  </span>
+                  <span className={cn("block text-sm", checked ? "text-white/85" : "text-muted-foreground")}>{[v.length, v.opens ? `Opens ${v.opens}` : "Open now"].filter(Boolean).join(" · ")}</span>
+                  <span className={cn("block text-sm", checked ? "text-white/85" : "text-muted-foreground")}>{`${v.mode === "exact" ? HOW_EXACT : HOW_PREFERENCE} ${CHARGED_AFTER}`}</span>
                 </li>
               ))}
-            </ul>
+            </ol>
+          )}
+          {entry.passVisits && checked && (
+            <div data-slot="pass-happens" className="mt-3">
+              <p className="text-sm font-semibold">{HAPPENS_FOR_YOU}</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-white/90">
+                {PASS_HAPPENS.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
           )}
           {entry.length && (
             <span data-slot="service-length" className={cn("mt-1 flex items-center gap-1.5 text-sm", checked ? "text-white/85" : "text-muted-foreground")}>

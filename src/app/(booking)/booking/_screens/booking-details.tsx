@@ -7,7 +7,9 @@ import { PhotoPicker, type PickedPhoto } from "@/components/blocks/PhotoPicker"
 import { ZoneChips } from "@/components/blocks/ZoneChips"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import type { PassPlan } from "@/lib/booking/pass-visits"
 import { PRICE_AT_VISIT, type ServiceEntry } from "@/lib/booking/services"
+import { visitCostWords, visitName } from "./booking-pass-model"
 import { ACCESS_PROBLEM, CONTROLLER_BRANDS, EFFICIENCY_GOALS, INSTALL_WORDS, WIFI_WORDS, money, priceFor, type Extras, type InstallType, type Wifi } from "./booking-form-model"
 
 // The service details step (Jobber's "Service details"): how many zones when the price depends on them, with the price under the chips as it changes; whether we can reach the controller
@@ -28,7 +30,19 @@ interface Shared {
   onRemovePhoto: (name: string) => void
 }
 
-function Price({ service, zones }: { service: ServiceEntry; zones: number }) {
+function Price({ service, zones, plan }: { service: ServiceEntry; zones: number; plan: PassPlan | null }) {
+  // A Season Pass is a setup, not an order: what each visit costs at this zone count and when it is charged, with no total.
+  if (service.kind === "pass" && plan)
+    return (
+      <ul data-slot="booking-price" className="space-y-3">
+        {plan.visits.map((v) => (
+          <li key={v.kind} className="flex flex-wrap items-baseline justify-between gap-x-4">
+            <span className="font-display text-2xl leading-none text-navy">{visitName(v)}</span>
+            <span className="text-base text-foreground">{visitCostWords(v.kind, zones)}</span>
+          </li>
+        ))}
+      </ul>
+    )
   const price = priceFor(service, zones)
   if (price === null) return <p data-slot="booking-price" className="font-display text-3xl leading-none text-navy">{PRICE_AT_VISIT}</p>
   if (price === 0) return <p data-slot="booking-price" className="font-display text-5xl leading-none text-navy">Free</p>
@@ -79,7 +93,7 @@ function ServiceQuestions({ service, extras, onExtras }: { service: ServiceEntry
   return null
 }
 
-export function BookingDetails({ service, zones, onZones, access, onAccess, attempted, extras, onExtras, ...shared }: Shared & { service: ServiceEntry; zones: number; onZones: (n: number) => void; access: Access | null; onAccess: (a: Access) => void; attempted: boolean; extras: Extras; onExtras: (x: Extras) => void }) {
+export function BookingDetails({ service, plan = null, zones, onZones, access, onAccess, attempted, extras, onExtras, ...shared }: Shared & { service: ServiceEntry; plan?: PassPlan | null; zones: number; onZones: (n: number) => void; access: Access | null; onAccess: (a: Access) => void; attempted: boolean; extras: Extras; onExtras: (x: Extras) => void }) {
   return (
     <div data-slot="booking-details" className="space-y-10">
       {service.perZone && (
@@ -89,14 +103,14 @@ export function BookingDetails({ service, zones, onZones, access, onAccess, atte
           </h2>
           <ZoneChips value={zones} onChange={onZones} className="mt-4" />
           <div className="mt-6">
-            <Price service={service} zones={zones} />
+            <Price service={service} zones={zones} plan={plan} />
           </div>
           <p className="mt-4 text-base text-muted-foreground">Not sure? Count the stations on your controller.</p>
         </section>
       )}
       {!service.perZone && (
         <section aria-label="Price">
-          <Price service={service} zones={zones} />
+          <Price service={service} zones={zones} plan={plan} />
         </section>
       )}
       <ServiceQuestions service={service} extras={extras} onExtras={onExtras} />

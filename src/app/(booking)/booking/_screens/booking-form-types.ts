@@ -5,7 +5,7 @@ import type { ServiceEntry } from "@/lib/booking/services"
 import type { TimingPreference } from "@/lib/admin/types"
 import type { PlaceProvider } from "@/lib/places"
 import type { CheckoutState } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
-import type { Extras, FormStep } from "./booking-form-model"
+import type { CardChoice, Extras, FormStep } from "./booking-form-model"
 
 // The booking form's public shapes: what it tells its host when a day is booked (`Booked`), what it reports on every step (`BookingProgress`) and the props a story or the walkthrough gives it.
 
@@ -22,6 +22,8 @@ export interface Booked {
   photos: number
   /** ticked "Send me tips and offers from Trailhead by email" */
   marketing: boolean
+  /** "Visa ending 4242" or "No card" */
+  card: string
 }
 
 /** What a request for a quote holds when "Send to Ryan" is pressed: the person's own words, photos and address (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.3). It becomes a request in the admin, held outside Customers until Ryan accepts it. */
@@ -57,7 +59,7 @@ export interface BookingFormProps {
   entries?: readonly ServiceEntry[]
   today?: string
   /** open on a step with earlier answers filled in; stories use it */
-  initial?: { step?: FormStep; service?: string; quote?: boolean; fields?: Partial<CheckoutState>; picks?: Record<string, DayTimePick>; prefs?: Record<string, TimingPreference>; when?: string; channel?: ContactChannel; photos?: PickedPhoto[]; extras?: Partial<Extras>; attempted?: boolean; leaving?: boolean }
+  initial?: { step?: FormStep; service?: string; quote?: boolean; fields?: Partial<CheckoutState>; picks?: Record<string, DayTimePick>; prefs?: Record<string, TimingPreference>; when?: string; channel?: ContactChannel; photos?: PickedPhoto[]; extras?: Partial<Extras>; card?: CardChoice; attempted?: boolean; leaving?: boolean }
   /** the open days for a visit, from `from` (the first day it may be offered: tomorrow, or the day its window opens); the fixture days by default, `[]` for a full calendar */
   offersFor?: (key: string, minutes: number, town: string | null, from?: string) => DayTimeOffer[]
   places?: PlaceProvider

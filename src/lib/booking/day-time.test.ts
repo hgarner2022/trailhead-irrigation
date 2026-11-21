@@ -18,6 +18,10 @@ describe("the fixture offer", () => {
     const offers = fixtureDayTimes(120)
     expect(startDay(offers)).toBe("2027-04-20")
     expect(offers.flatMap((o) => o.times).filter((t) => t.best)).toHaveLength(1)
+    // the days are soonest-first working days, not fixed weekdays, and the labels are the offer rule's
+    expect(offers.map((o) => o.day)).toEqual(["2027-04-15", "2027-04-16", "2027-04-20", "2027-04-21", "2027-04-23"])
+    expect(offers[0]!.note).toBe("Soonest open day.")
+    expect(offers[2]!.note).toBe("We're already in Erie that day.")
     const last = (m: number) => fixtureDayTimes(m)[4]!.times.at(-1)!.start
     expect(last(120)).toBe("15:00")
     expect(last(60)).toBe("16:00")

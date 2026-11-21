@@ -23,7 +23,6 @@ function Step() {
         ]}
         picks={picks}
         onPick={(k, p) => setPicks((prev) => ({ ...prev, [k]: p }))}
-        town="Erie"
       />
       <p className="mt-10 text-base text-muted-foreground">Change them later from your Season Pass page, until the day before.</p>
     </FlowShell>

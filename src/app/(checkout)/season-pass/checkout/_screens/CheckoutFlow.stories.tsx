@@ -46,13 +46,13 @@ export const Address: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** The typed fallback under the box: street, one of the six towns, an optional zip; filled in, the access question follows. */
+/** The typed fallback under the box: street, city, an optional zip; filled in, the access question follows. */
 export const AddressTyped: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole("button", { name: "Can't find it? Type your address" }))
+    await userEvent.click(await canvas.findByRole("button", { name: "Type it instead" }))
     await userEvent.type(await canvas.findByLabelText("Street address"), "9 Elm St")
-    await userEvent.selectOptions(canvas.getByLabelText("Town"), "Erie")
+    await userEvent.type(canvas.getByLabelText("City"), "Erie")
     await userEvent.type(canvas.getByLabelText("ZIP (optional)"), "80516")
     await expect(await canvas.findByText(/Can we reach the controller/)).toBeInTheDocument()
   },

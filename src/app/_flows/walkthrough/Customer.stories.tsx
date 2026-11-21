@@ -98,7 +98,7 @@ export const PhoneSteps: StoryObj<typeof CustomerPhone> = {
   },
 }
 
-/** Book online end to end: address, service, details with two photos, a day and an exact time, contact with how we reach you, Confirm and book, and the holographic card. */
+/** Book online end to end: address, service, details with two photos, a day and an exact time, contact with how we reach you, a card, Confirm and book, and the holographic card. */
 export const BookingPath: StoryObj<typeof CustomerPhone> = {
   name: "Booking path",
   tags: ["!dev", "!autodocs"],
@@ -125,6 +125,10 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     for (const box of await c.findAllByRole("checkbox")) await userEvent.click(box)
     await userEvent.click(await c.findByRole("radio", { name: /Text and email/ }))
     await next()
+    // a card is asked in every booking, a repair too: Stripe's form, drawn, kept with Save card
+    await expect(await c.findByText("Charged after the visit.")).toBeInTheDocument()
+    await next("Save card")
+    await expect(await c.findByText("Visa ending 4242")).toBeInTheDocument()
     await next("Confirm and book")
     await expect(await c.findByText("You added 2 photos.")).toBeInTheDocument()
     await expect(await c.findByRole("article", { name: /booked/ })).toBeInTheDocument()

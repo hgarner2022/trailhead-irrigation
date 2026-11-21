@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { EXACT_WITHIN_DAYS, PASS_WINDOWS, exactVisits, opensLabel, passPlanFor, preferenceDates, preferenceVisits, rangeWords, seasonOf, shortDate } from "./pass-visits"
+import { EXACT_WITHIN_DAYS, PASS_WINDOWS, exactVisits, opensLabel, passPlanFor, preferenceDates, preferenceOfDay, preferenceVisits, rangeWords, seasonOf, shortDate } from "./pass-visits"
 
 // What a pass bought on a day starts with, month by month and on the edge days: the visits still ahead, each one's mode (an exact day and time now, or a preference) and, from November, next season.
-type Row = [string, string, ("turn-on" | "blowout")[], ("turn-on" | "blowout")[], number, boolean]
+type Kind = "turn-on" | "blowout"
+type Row = [string, string, Kind[], Kind[], number, boolean]
+// Every month: the pass holds both kinds, each kind's next visit soonest first. The preference visits are the ones that ask Early, Mid or Late, including next season's.
 const MONTH_TABLE: Row[] = [
   // [today, label, exact, preference, season, startsNextSeason]
   ["2027-01-15", "January", [], ["turn-on", "blowout"], 2027, false],
@@ -10,11 +12,11 @@ const MONTH_TABLE: Row[] = [
   ["2027-03-15", "March", [], ["turn-on", "blowout"], 2027, false],
   ["2027-04-14", "April", ["turn-on"], ["blowout"], 2027, false],
   ["2027-05-14", "May", ["turn-on"], ["blowout"], 2027, false],
-  ["2027-06-14", "June", [], ["blowout"], 2027, false],
-  ["2027-07-14", "July", [], ["blowout"], 2027, false],
-  ["2027-08-14", "August", [], ["blowout"], 2027, false],
-  ["2027-09-14", "September", [], ["blowout"], 2027, false],
-  ["2027-10-14", "October", ["blowout"], [], 2027, false],
+  ["2027-06-14", "June", [], ["blowout", "turn-on"], 2027, false],
+  ["2027-07-14", "July", [], ["blowout", "turn-on"], 2027, false],
+  ["2027-08-14", "August", [], ["blowout", "turn-on"], 2027, false],
+  ["2027-09-14", "September", [], ["blowout", "turn-on"], 2027, false],
+  ["2027-10-14", "October", ["blowout"], ["turn-on"], 2027, false],
   ["2027-11-14", "November", [], ["turn-on", "blowout"], 2028, true],
   ["2027-12-14", "December", [], ["turn-on", "blowout"], 2028, true],
 ]
@@ -22,10 +24,16 @@ const MONTH_TABLE: Row[] = [
 describe("passPlanFor, month by month", () => {
   it.each(MONTH_TABLE)("%s (%s)", (today, _label, exact, preference, season, next) => {
     const plan = passPlanFor(today)
+    expect(plan.visits).toHaveLength(2)
     expect(exactVisits(plan).map((v) => v.kind)).toEqual(exact)
     expect(preferenceVisits(plan).map((v) => v.kind)).toEqual(preference)
     expect(plan.season).toBe(season)
     expect(plan.startsNextSeason).toBe(next)
+  })
+  it("gives a visit whose window has closed next year's season, labelled with the year", () => {
+    const july = passPlanFor("2027-07-14")
+    expect(july.visits.map((v) => `${v.kind}:${v.season}:${v.opensLabel}`)).toEqual(["blowout:2027:Oct 1", "turn-on:2028:Apr 25, 2028"])
+    expect(july.visits.map((v) => v.nextSeason)).toEqual([false, true])
   })
 })
 
@@ -41,15 +49,16 @@ describe("passPlanFor, the edge days", () => {
     expect(kinds("2027-04-25")[0]).toBe("turn-on:exact")
     expect(kinds("2027-05-31")).toEqual(["turn-on:exact", "blowout:preference"])
   })
-  it("drops the turn-on the day after its window closes", () => {
-    expect(kinds("2027-06-01")).toEqual(["blowout:preference"])
+  it("moves the turn-on to next season the day after its window closes, as a preference", () => {
+    expect(kinds("2027-06-01")).toEqual(["blowout:preference", "turn-on:preference"])
+    expect(passPlanFor("2027-06-01").visits[1]).toMatchObject({ kind: "turn-on", season: 2028, nextSeason: true })
   })
-  it("turns the blowout exact 14 days before October 1", () => {
-    expect(kinds("2027-09-16")).toEqual(["blowout:preference"])
-    expect(kinds("2027-09-17")).toEqual(["blowout:exact"])
+  it("turns the blowout exact 14 days before October 1, with next spring's turn-on a preference", () => {
+    expect(kinds("2027-09-16")).toEqual(["blowout:preference", "turn-on:preference"])
+    expect(kinds("2027-09-17")).toEqual(["blowout:exact", "turn-on:preference"])
   })
   it("keeps the blowout through October 31 and starts next season on November 1", () => {
-    expect(kinds("2027-10-31")).toEqual(["blowout:exact"])
+    expect(kinds("2027-10-31")).toEqual(["blowout:exact", "turn-on:preference"])
     expect(passPlanFor("2027-10-31").startsNextSeason).toBe(false)
     const nov = passPlanFor("2027-11-01")
     expect(nov.visits.map((v) => `${v.kind}:${v.season}:${v.mode}`)).toEqual(["turn-on:2028:preference", "blowout:2028:preference"])
@@ -100,5 +109,18 @@ describe("preference thirds", () => {
   it("writes a short date", () => {
     expect(shortDate("2027-04-25")).toBe("Apr 25")
     expect(shortDate("10-01")).toBe("Oct 1")
+  })
+})
+
+describe("the preference a kind booked exactly starts with", () => {
+  const blowout = { opens: "2027-10-01", closes: "2027-10-31" }
+  it("is the part of the window of the day picked", () => {
+    expect(preferenceOfDay(blowout, "2027-10-01")).toBe("earlier")
+    expect(preferenceOfDay(blowout, "2027-10-10")).toBe("earlier")
+    expect(preferenceOfDay(blowout, "2027-10-11")).toBe("recommended")
+    expect(preferenceOfDay(blowout, "2027-10-20")).toBe("recommended")
+    expect(preferenceOfDay(blowout, "2027-10-21")).toBe("later")
+    expect(preferenceOfDay(blowout, "2027-10-31")).toBe("later")
+    expect(preferenceOfDay({ opens: "2027-04-25", closes: "2027-05-31" }, "2027-04-29")).toBe("earlier")
   })
 })

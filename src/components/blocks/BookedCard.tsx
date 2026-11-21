@@ -31,15 +31,17 @@ export interface BookedCardProps {
   where: string
   /** "Ryan" */
   who?: string
+  /** the word under the name: "Booked", or "Set up" for a Season Pass, which is a setup and not an order */
+  status?: string
   /** false: static sheen, no listeners */
   interactive?: boolean
   className?: string
 }
 
-export function BookedCard({ service, day, time, visits, where, who = "Ryan", interactive = true, className }: BookedCardProps) {
+export function BookedCard({ service, day, time, visits, where, who = "Ryan", status = "Booked", interactive = true, className }: BookedCardProps) {
   const { ref } = useSheen(interactive)
   const several = Boolean(visits && visits.length > 0)
-  const label = several ? `${service}, booked, ${visits!.map((v) => `${v.name} ${v.when}`).join(", ")}, ${where}` : `${service}, booked ${day} at ${time}, ${where}`
+  const label = several ? `${service}, ${status.toLowerCase()}, ${visits!.map((v) => `${v.name} ${v.when}`).join(", ")}, ${where}` : `${service}, booked ${day} at ${time}, ${where}`
   const place = several ? "relative" : "absolute"
   return (
     <article
@@ -55,7 +57,7 @@ export function BookedCard({ service, day, time, visits, where, who = "Ryan", in
       <div className={cn(place, "left-5 top-5 max-w-[60%] @max-[440px]:left-4 @max-[440px]:top-4", several && "m-5 @max-[440px]:m-4")}>
         <p className="whitespace-nowrap text-[11px] font-semibold uppercase leading-tight tracking-[0.16em] text-navy @max-[440px]:text-[10px] @max-[440px]:tracking-[0.12em]">Trailhead Lawn &amp; Irrigation</p>
         <p className="mt-2 font-display text-4xl font-semibold leading-none text-navy @max-[440px]:mt-1.5 @max-[440px]:text-3xl">{service}</p>
-        <p className="mt-1 font-display text-xl leading-tight text-navy/80 @max-[440px]:text-lg">Booked</p>
+        <p className="mt-1 font-display text-xl leading-tight text-navy/80 @max-[440px]:text-lg">{status}</p>
       </div>
       {several ? (
         <div data-slot="booked-card-band" className="relative space-y-3 bg-navy/85 px-5 py-3 text-white backdrop-blur-sm @max-[440px]:px-4 @max-[440px]:py-2.5">

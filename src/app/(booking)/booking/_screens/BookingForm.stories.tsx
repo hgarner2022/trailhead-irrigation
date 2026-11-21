@@ -9,7 +9,7 @@ import { BookingForm, type BookingFormProps } from "./BookingForm"
 // The customer's booking form, one story per screen at 375 (Phone) and 1280 (Laptop), over fixtures; nothing is sent. Today is Wednesday, April 14, 2027, so the Season Pass, the repair and
 // the request for a quote are the open choices (the turn-on opens Apr 25; "Spring turn-on, 10 zones" stories open it so zones have something to size). The order: the address first (it qualifies the
 // area, Hannah, Nov 20 2026: no zip step), then services with their lengths, the service details, the day and an exact start time, then contact with how we reach you (day first, contact after, so an
-// abandoned booking leaves nothing), and a confirm step: six counted steps, four for a request for a quote.
+// abandoned booking leaves nothing), a card (Stripe's setup form, drawn) and a confirm step: seven counted steps, four for a request for a quote.
 const phone = { globals: { viewport: { value: "phone", isRotated: false } } } as const
 const laptop = { globals: { viewport: { value: "laptop", isRotated: false } } } as const
 
@@ -17,8 +17,8 @@ const home: Partial<CheckoutState> = { address: FIXTURE_HOME.label, place: FIXTU
 const person: Partial<CheckoutState> = { firstName: "Andrea", lastName: "Dalton", email: "andrea.dalton@example.com", phone: "(970) 555-0123", termsAccepted: true }
 const boulder: Partial<CheckoutState> = { address: FIXTURE_PLACES[9]!.label, place: FIXTURE_PLACES[9]! }
 const typed: Partial<CheckoutState> = { address: "9 Cottonwood Ln", place: typedPlace("9 Cottonwood Ln", "Lafayette", "80026"), town: "Lafayette" }
-// A typed address with the town not chosen yet: the same shape the typed fields hand the step, with no town.
-const noTown: Partial<CheckoutState> = { address: "9 Cottonwood Ln", place: { id: "typed:9 cottonwood ln||", label: "9 Cottonwood Ln", line1: "9 Cottonwood Ln", town: "", state: "CO", zip: "" } }
+// A typed address with no city yet: the same shape the typed fields hand the step, with no city.
+const noCity: Partial<CheckoutState> = { address: "9 Cottonwood Ln", place: { id: "typed:9 cottonwood ln||", label: "9 Cottonwood Ln", line1: "9 Cottonwood Ln", town: "", state: "CO", zip: "" } }
 const details: Partial<CheckoutState> = { ...home, access: "yes", accessNote: "Gate code 4471, the controller is in the garage." }
 const full: Partial<CheckoutState> = { ...details, ...person }
 const picked = { visit: { day: "2027-04-20", start: "10:30" } }
@@ -37,7 +37,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The booking form a customer sees at Book Online, every step at 375 (Phone) and 1280 (Laptop). Click Continue through a Sprinkler repair: the address (the town and zip come from it; one outside the six towns shows the way out at once), the service, the details (zones, access, the questions that belong to the service, a note, photos), a day and an exact start time, then who we reach and how, then Confirm and book. Nothing is kept until the contact step is submitted. Close (top right) leaves, and asks first only once something is entered; the browser's Back button goes to the previous step. \"Need a quote? Request one\" lists what we do not book online (Christmas lights, larger repairs) and has no day. Nothing is sent. The whole clickable customer path is under Customer / Walkthrough (clickable).",
+          "The booking form a customer sees at Book Online, every step at 375 (Phone) and 1280 (Laptop). Click Continue through a Sprinkler repair: the address (one box; the city and zip come from it; one outside the six cities shows the way out at once), the service, the details (zones, access, the questions that belong to the service, a note, photos), a day and an exact start time, then who we reach and how, then a card (Stripe's form, drawn; \"Not now\" for a one-off), then Confirm and book, where each answer has its Change link. Nothing is kept until the contact step is submitted. Close (top right) leaves, and asks first only once something is entered; the browser's Back button goes to the previous step. \"Need a quote? Request one\" lists what we do not book online (Christmas lights, larger repairs) and has no day. Nothing is sent. The whole clickable customer path is under Customer / Walkthrough (clickable).",
       },
     },
   },
@@ -53,15 +53,15 @@ const on = (args: Args, name: string, extra: Partial<Story> = {}): { phone: Stor
   laptop: { ...laptop, name: `${name}, laptop`, args, ...extra },
 })
 
-/** 1. The address, the first question: the type-ahead, and the six towns under it. The town and zip come from the address picked, so there is no zip step. */
+/** 1. The address, the first question: one box with type-ahead and a plain "Type it instead" link under it, and nothing else until it is needed. The city and zip come from the address picked, so there is no zip step. */
 const address = on({}, "Address")
 export const AddressPhone: Story = { ...address.phone, name: "Address, phone" }
 export const AddressLaptop: Story = { ...address.laptop, name: "Address, laptop" }
-/** A picked address in the six towns: Continue goes on. */
+/** A picked address in the six cities: Continue goes on. */
 const addressPicked = on({ initial: { fields: home } }, "Address picked")
 export const AddressPickedPhone: Story = { ...addressPicked.phone, name: "Address picked, phone" }
 export const AddressPickedLaptop: Story = { ...addressPicked.laptop, name: "Address picked, laptop" }
-/** A Boulder address: the "we don't come to you yet" line under the box with the six towns and Ryan's number, and Continue stays off. */
+/** A Boulder address: the "we don't come to you yet" line under the box with the six cities and Ryan's number, and Continue stays off. */
 const outsideAddress = on({ initial: { fields: boulder } }, "Address outside the area")
 export const AddressOutsideAreaPhone: Story = { ...outsideAddress.phone, name: "Address outside the area, phone" }
 export const AddressOutsideAreaLaptop: Story = { ...outsideAddress.laptop, name: "Address outside the area, laptop" }
@@ -77,7 +77,7 @@ export const AddressOutsideAreaTest: Story = {
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
   },
 }
-/** "Can't find it? Type your address": the checkout's three fields, filled in. They work with no lookup at all. */
+/** "Type it instead": Street, City and ZIP, filled in. They work with no lookup at all. */
 const addressTyped = on({ initial: { fields: typed } }, "Address typed")
 export const AddressTypedPhone: Story = { ...addressTyped.phone, name: "Address typed, phone" }
 export const AddressTypedLaptop: Story = { ...addressTyped.laptop, name: "Address typed, laptop" }
@@ -86,46 +86,61 @@ export const AddressTypedTest: Story = {
   name: "Address typed (test)",
   tags: HIDDEN,
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole("button", { name: "Can't find it? Type your address" }))
+    await expect(canvas.queryByLabelText("City")).toBeNull()
+    await userEvent.click(await canvas.findByRole("button", { name: "Type it instead" }))
     await userEvent.type(await canvas.findByLabelText("Street address"), "9 Cottonwood Ln")
-    await userEvent.selectOptions(canvas.getByLabelText("Town"), "Lafayette")
+    await userEvent.type(canvas.getByLabelText("City"), "Lafayette")
+    await expect(canvas.getByLabelText("ZIP (optional)")).toBeInTheDocument()
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await expect(await canvas.findByRole("radio", { name: /Sprinkler repair/ })).toBeInTheDocument()
-    await expect(canvas.getByText("9 Cottonwood Ln, Lafayette")).toBeInTheDocument()
   },
 }
-/** An address with no town we can read asks for the town, in the words beside the field, instead of turning the customer away. */
-const townMissing = on({ initial: { fields: noTown, attempted: true } }, "Address, town missing")
-export const AddressTownMissingPhone: Story = { ...townMissing.phone, name: "Address, town missing, phone" }
-export const AddressTownMissingLaptop: Story = { ...townMissing.laptop, name: "Address, town missing, laptop" }
-export const AddressTownMissingTest: Story = {
+/** A typed city outside the six: the same line as a picked one, with the six cities and Ryan's number, and Continue stays off. */
+export const AddressTypedOutsideTest: Story = {
   ...phone,
-  name: "Address, town missing (test)",
+  name: "Address typed outside the area (test)",
   tags: HIDDEN,
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole("button", { name: "Can't find it? Type your address" }))
-    await userEvent.type(await canvas.findByLabelText("Street address"), "9 Cottonwood Ln")
-    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await expect((await canvas.findAllByText("Pick your town so we know which route you are on.")).length).toBe(2)
-    await expect(canvas.getByLabelText("Town")).toHaveFocus()
+    await userEvent.click(await canvas.findByRole("button", { name: "Type it instead" }))
+    await userEvent.type(await canvas.findByLabelText("Street address"), "1200 Pearl St")
+    await userEvent.type(canvas.getByLabelText("City"), "Boulder")
+    await userEvent.tab()
+    await expect(await canvas.findByText(/We don't serve Boulder yet/)).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
   },
 }
-/** A pick the lookup could not give a town for opens the typed fields with the street filled in and the town asked for. */
-export const AddressNoTownPickTest: Story = {
+/** An address with no city we can read asks for the city, in the words beside the field, instead of turning the customer away. */
+const cityMissing = on({ initial: { fields: noCity, attempted: true } }, "Address, city missing")
+export const AddressCityMissingPhone: Story = { ...cityMissing.phone, name: "Address, city missing, phone" }
+export const AddressCityMissingLaptop: Story = { ...cityMissing.laptop, name: "Address, city missing, laptop" }
+export const AddressCityMissingTest: Story = {
   ...phone,
-  name: "Address, a pick with no town (test)",
+  name: "Address, city missing (test)",
+  tags: HIDDEN,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole("button", { name: "Type it instead" }))
+    await userEvent.type(await canvas.findByLabelText("Street address"), "9 Cottonwood Ln")
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect((await canvas.findAllByText("Add your city.")).length).toBe(2)
+    await expect(canvas.getByLabelText("City")).toHaveFocus()
+  },
+}
+/** A pick the lookup could not give a city for opens the typed fields with the street filled in and the city asked for. */
+export const AddressNoCityPickTest: Story = {
+  ...phone,
+  name: "Address, a pick with no city (test)",
   tags: HIDDEN,
   args: { places: async () => [{ id: "rural-1", label: "9 Cottonwood Ln", line1: "9 Cottonwood Ln", town: "", state: "CO", zip: "" }] },
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "9 Cot")
     await userEvent.click(await canvas.findByRole("option", { name: /Cottonwood/ }))
-    await waitFor(() => expect(canvas.getByLabelText("Town")).toHaveFocus())
+    await waitFor(() => expect(canvas.getByLabelText("City")).toHaveFocus())
     await expect(canvas.getByLabelText("Street address")).toHaveValue("9 Cottonwood Ln")
-    await expect(canvas.getByText("Pick your town so we know which route you are on.")).toBeInTheDocument()
+    await expect(canvas.getByText("Add your city.")).toBeInTheDocument()
   },
 }
 
-/** 2. Services with their lengths: only what we book online, after the address has qualified the area (the town sits in the line above); the turn-on and blowout show when they open. */
+/** 2. Services with their lengths: only what we book online, after the address has qualified the area; the turn-on and blowout show when they open. */
 const services = on({ initial: { step: "service", fields: home } }, "Services")
 export const ServicesPhone: Story = { ...services.phone, name: "Services, phone" }
 export const ServicesLaptop: Story = { ...services.laptop, name: "Services, laptop" }
@@ -170,10 +185,12 @@ const detailsInstall = on({ initial: { step: "details", service: "install", fiel
 export const DetailsInstallPhone = detailsInstall.phone
 export const DetailsInstallLaptop = detailsInstall.laptop
 
-/** 4. Day and exact time: the best day selected ("We're already in Erie that day"), its start times under it, none selected, Continue off. */
+/** 4. Day and exact time: the open days soonest first, the best one selected with the offer rule's label ("We're already in Erie that day."), its start times under it, none selected, Continue off. No sentence about which weekdays Ryan is where. */
 const day = on({ initial: { step: "day", service: "repair", fields: details } }, "Day and time", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("radio", { name: /Tuesday, April 20/ })).toBeChecked()
+    await expect(canvas.getByRole("radio", { name: /Thursday, April 15.*Soonest open day\./ })).toBeInTheDocument()
+    await expect(canvas.queryByText(/Tuesdays|texts you the day before|He texts/)).toBeNull()
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
   },
 })
@@ -212,27 +229,55 @@ const contactMissing = on({ initial: { step: "contact", service: "repair", field
 export const ContactMissingPhonePhone: Story = { ...contactMissing.phone, name: "Contact, missing phone and terms, phone" }
 export const ContactMissingPhoneLaptop: Story = { ...contactMissing.laptop, name: "Contact, missing phone and terms, laptop" }
 
+/** 5c. The card, after contact: Stripe's setup form drawn (never a real card field), one line saying when it is charged, and for a one-off a "Not now". */
+const cardStep = on({ initial: { step: "card", service: "repair", fields: full, picks: picked } }, "Card", {
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Charged after the visit.")).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Not now" })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Save card" })).toBeEnabled()
+  },
+})
+export const CardPhone: Story = { ...cardStep.phone, name: "Card, phone" }
+export const CardLaptop: Story = { ...cardStep.laptop, name: "Card, laptop" }
+/** The card kept: the form is replaced by "Visa ending 4242" and there is no "Not now". */
+const cardSaved = on({ initial: { step: "card", service: "repair", fields: full, picks: picked, card: "saved" } }, "Card saved")
+export const CardSavedPhone: Story = { ...cardSaved.phone, name: "Card saved, phone" }
+/** "Not now" goes on with no card: the confirm step reads "No card". */
+export const CardNotNowTest: Story = {
+  ...phone,
+  name: "Card, not now (test)",
+  tags: HIDDEN,
+  args: { initial: { step: "card", service: "repair", fields: full, picks: picked } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole("button", { name: "Not now" }))
+    await expect(await canvas.findByText("Look it over and confirm.")).toBeInTheDocument()
+    await expect(canvas.getByText("No card")).toBeInTheDocument()
+  },
+}
+
 /** 5b. The request path ends on contact: no terms line, no confirm, and the button says Send to Ryan. */
 const quoteContact = on({ initial: { step: "contact", quote: true, service: "lights", fields: { ...home, accessNote: "Lights along the front roofline." } } }, "Request a quote, contact")
 export const QuotePathContactPhone: Story = { ...quoteContact.phone, name: "Request a quote, contact, phone" }
 export const QuotePathContactLaptop: Story = { ...quoteContact.laptop, name: "Request a quote, contact, laptop" }
 
-/** 6. Confirm, after contact: every answer with its Change link, and one sentence that says what happens. */
-const confirm = on({ initial: { step: "confirm", service: "repair", fields: full, picks: picked, channel: "text", photos } }, "Confirm", {
+/** 6. Confirm, after the card: every answer with its Change link, the card, and one sentence that says what happens. It is the only place the form has Change links. */
+const confirm = on({ initial: { step: "confirm", service: "repair", fields: full, picks: picked, channel: "text", photos, card: "saved" } }, "Confirm", {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("We'll text you a confirmation to (970) 555-0123 and email a receipt when it's done.")).toBeInTheDocument()
+    await expect(canvas.getByText("Visa ending 4242")).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: "Confirm and book" })).toBeEnabled()
   },
 })
 export const ConfirmPhone: Story = { ...confirm.phone, name: "Confirm, phone" }
 export const ConfirmLaptop: Story = { ...confirm.laptop, name: "Confirm, laptop" }
-const confirmBoth = on({ initial: { step: "confirm", service: "repair", fields: full, picks: picked, channel: "both" } }, "Confirm, text and email")
+const confirmBoth = on({ initial: { step: "confirm", service: "repair", fields: full, picks: picked, channel: "both", card: "saved" } }, "Confirm, text and email")
 export const ConfirmBothPhone: Story = { ...confirmBoth.phone, name: "Confirm, text and email, phone" }
 
 /** 7. Booked: the holographic card with the exact time, "You added 2 photos", what happens next, Add to calendar, your Trailhead account. */
-const booked = on({ initial: { step: "done", service: "repair", fields: full, picks: picked, channel: "text", photos } }, "Booked", {
+const booked = on({ initial: { step: "done", service: "repair", fields: full, picks: picked, channel: "text", photos, card: "saved" } }, "Booked", {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("You added 2 photos.")).toBeInTheDocument()
+    await expect(canvas.getByText("Visa ending 4242")).toBeInTheDocument()
     await expect(canvas.getByRole("article", { name: /booked Tuesday, April 20 at 10:30 am/ })).toBeInTheDocument()
     await expect(canvas.getByRole("link", { name: "your Trailhead account" })).toBeInTheDocument()
   },
@@ -245,7 +290,7 @@ const quoteDone = on({ initial: { step: "done", quote: true, service: "lights", 
 export const QuotePathDonePhone: Story = { ...quoteDone.phone, name: "Request sent, phone" }
 export const QuotePathDoneLaptop: Story = { ...quoteDone.laptop, name: "Request sent, laptop" }
 
-/** The whole path on a phone, clicked: address, repair, details with the access answer and two sample photos, a time, contact with Text and email, confirm, booked. */
+/** The whole path on a phone, clicked: address, repair, details with the access answer and two sample photos, a time, contact with Text and email, the card, confirm, booked. */
 export const WholePathPhone: Story = {
   ...phone,
   name: "Whole path, phone",
@@ -274,7 +319,9 @@ export const WholePathPhoneTest: Story = {
     await userEvent.click(await c.findByRole("checkbox", { name: /I accept the/ }))
     await expect(c.getByRole("checkbox", { name: "Send me tips and offers from Trailhead by email" })).not.toBeChecked()
     await next()
+    await userEvent.click(await c.findByRole("button", { name: "Save card" }))
     await expect(await c.findByText(/We'll text a confirmation to \(970\) 555-0123 and email one to/)).toBeInTheDocument()
+    await expect(c.getByText("Visa ending 4242")).toBeInTheDocument()
     await next("Confirm and book")
     await expect(await c.findByText("You added 2 photos.")).toBeInTheDocument()
   },
@@ -308,10 +355,11 @@ export const QuotePathPhoneTest: Story = {
 }
 
 /** Confirm for the design visit: the service-specific answers are rows with their Change links, and the price reads "Price set at the visit." and nothing more. */
-const confirmInstall = on({ initial: { step: "confirm", service: "install", fields: full, picks: picked, extras: { installType: "new", area: "5,000" }, photos } }, "Confirm, new system design visit", {
+const confirmInstall = on({ initial: { step: "confirm", service: "install", fields: full, picks: picked, extras: { installType: "new", area: "5,000" }, photos, card: "skipped" } }, "Confirm, new system design visit", {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Price set at the visit.")).toBeInTheDocument()
     await expect(canvas.getByText("A new lawn")).toBeInTheDocument()
+    await expect(canvas.getByText("No card")).toBeInTheDocument()
   },
 })
 export const ConfirmInstallPhone = confirmInstall.phone

@@ -17,8 +17,7 @@ export interface DayGroup {
 
 export const lengthWords = (minutes: number) => (minutes >= 60 ? `Start times for a ${minutes / 60} hour visit` : `Start times for a ${minutes} minute visit`)
 
-export function DayTimeGroups({ groups, picks, onPick, town, note, onNote }: { groups: readonly DayGroup[]; picks: Record<string, DayTimePick>; onPick: (key: string, pick: DayTimePick) => void; town: string | null; note?: string; onNote?: (text: string) => void }) {
-  const helper = `${town ? `Ryan is in ${town} on Tuesdays and Thursdays.` : "Ryan sets his days by town."} He texts you the day before.`
+export function DayTimeGroups({ groups, picks, onPick, note, onNote }: { groups: readonly DayGroup[]; picks: Record<string, DayTimePick>; onPick: (key: string, pick: DayTimePick) => void; note?: string; onNote?: (text: string) => void }) {
   return (
     <div data-slot="day-time-groups" className="space-y-12">
       {groups.map((g, i) => (
@@ -29,7 +28,6 @@ export function DayTimeGroups({ groups, picks, onPick, town, note, onNote }: { g
             value={picks[g.key] ?? { day: null, start: null }}
             onChange={(next) => onPick(g.key, next)}
             legend={g.heading ?? "Pick your day"}
-            helper={i === 0 ? helper : undefined}
             length={lengthWords(g.minutes)}
             note={i === groups.length - 1 ? note : undefined}
             onNote={i === groups.length - 1 ? onNote : undefined}

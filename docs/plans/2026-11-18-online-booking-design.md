@@ -296,7 +296,7 @@ One block, `ServicePicker` in `src/components/blocks/`, pure props, used by this
 |---|---|
 | `ServicePicker`, `ZonesField` | As above. |
 | `DayCards` | Three day cards with first selected, Show more, None of these work. Generalises `DaysStep`; the Season Pass uses it once per visit. |
-| `BookingSummary` | The line at the top of each step after the first: "Sprinkler repair, Erie, Tue Apr 28" with Change links. On a laptop it is the same line, not a side panel. |
+| `BookingSummary` (deleted Nov 21 2026: Back is the only way back, and Change links are only on the confirm step) | The line at the top of each step after the first: "Sprinkler repair, Erie, Tue Apr 28" with Change links. On a laptop it is the same line, not a side panel. |
 | `PassCard` visit face | The visit card of 4.7. |
 | `BookingFlow` | Replaces `CheckoutFlow`; the state machine stays pure (`checkout-state.ts`, with a service step and the three paths). The shell, the progress line, Enter and the arrow keys, the sticky button and the reveal are unchanged. |
 
