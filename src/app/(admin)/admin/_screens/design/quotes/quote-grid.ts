@@ -14,6 +14,9 @@ export function quoteGridRow(base: GridJob, job: QuoteJob): GridJob {
   const paid = q?.state === "approved" && q.deposit?.paid && !q.deposit.paid.refundedOn ? q.deposit.amount : 0
   return {
     ...base,
+    // Change service renames the job in the grid too
+    service: job.service,
+    title: job.service,
     stage: STAGE_GRID[stageOf(job)],
     total,
     billingState: paid ? "owed" : null,

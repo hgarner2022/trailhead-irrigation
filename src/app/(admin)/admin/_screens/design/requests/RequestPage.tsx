@@ -15,8 +15,8 @@ import { SummaryBand, type SummaryItem } from "@/components/blocks/SummaryBand"
 import { useToast } from "@/components/blocks/Toast"
 import type { TimelineLine } from "@/lib/events/timeline"
 import { NOW, noteOk } from "../job-fixtures"
-import { ArchiveDialog, CreateJobDialog, type CreateMode } from "./RequestDialogs"
-import { isQuoteFirst } from "./request-catalogue"
+import { ArchiveDialog, CreateJobDialog, type ChosenService, type CreateMode } from "./RequestDialogs"
+import { isQuoteFirst, type ServicePick } from "./request-catalogue"
 import { REQUEST_PILL, SOURCE_WORDS, cameIn, cameInOn, fullName, matchOf, matchWords, serviceWords, stateOf, type ArchiveReason, type Match, type RequestData } from "./request-model"
 
 // A request as a page of its own (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.2 to 4.5; Hannah's answers 2 and 3 of Nov 20 2026), on the
@@ -45,12 +45,14 @@ export interface RequestPageProps {
   markSeenOnOpen?: boolean
   onSeen?: (request: RequestData) => void
   /** Create job or Send a quote: answers the job it made and the customer it was added to */
-  onCreateJob?: (request: RequestData, o: { asNew: boolean; mode: CreateMode }) => { jobId: string; customerId: string }
+  onCreateJob?: (request: RequestData, o: { asNew: boolean; mode: CreateMode; service: ChosenService }) => { jobId: string; customerId: string }
   /** the host takes Ryan to the new job (the request has left the list) and shows the toast there; without it the page shows "This request became a job" in place */
   onJobCreated?: (jobId: string, message: string, mode: CreateMode) => void
   onArchive?: (request: RequestData, reason: ArchiveReason) => void
   /** the dialog a story opens at once */
   initialDialog?: "job" | "quote" | "archive" | null
+  /** where the convert sheet's picker starts, when a story shows a service that was changed */
+  initialPick?: ServicePick
 }
 
 interface Overlay {
@@ -69,7 +71,7 @@ function history(r: RequestData, now: string): TimelineLine[] {
   return lines
 }
 
-export function RequestPage({ request, now = NOW.toISOString(), match: matchProp, jobStage = NEEDS_A_QUOTE, markSeenOnOpen = true, onSeen, onCreateJob, onJobCreated, onArchive, initialDialog = null }: RequestPageProps) {
+export function RequestPage({ request, now = NOW.toISOString(), match: matchProp, jobStage = NEEDS_A_QUOTE, markSeenOnOpen = true, onSeen, onCreateJob, onJobCreated, onArchive, initialDialog = null, initialPick }: RequestPageProps) {
   const toast = useToast()
   const [overlay, setOverlay] = useState<Overlay>({})
   const [dialog, setDialog] = useState<"job" | "quote" | "archive" | null>(initialDialog)
@@ -94,7 +96,7 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
     onSeen?.(request)
     toast("Marked as seen")
   }
-  const create = (o: { asNew: boolean; mode: CreateMode }) => {
+  const create = (o: { asNew: boolean; mode: CreateMode; service: ChosenService }) => {
     const made = onCreateJob?.(r, o) ?? { jobId: `q-${r.id.replace(/^rq-/, "")}`, customerId: match && !o.asNew ? match.customer.id : `other-${r.first}-${r.last}`.toLowerCase() }
     const message = `Job created for ${match && !o.asNew ? match.customer.name : name}`
     setOverlay((v) => ({ ...v, seen: true, becameJob: { ...made, at: now } }))
@@ -173,7 +175,7 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
           </SectionCard>
         )}
       </RecordPage>
-      {(dialog === "job" || dialog === "quote") && <CreateJobDialog request={r} match={match} mode={dialog} quoteFirst={quoteFirst} onClose={() => setDialog(null)} onCreate={create} />}
+      {(dialog === "job" || dialog === "quote") && <CreateJobDialog request={r} match={match} mode={dialog} initialPick={initialPick} onClose={() => setDialog(null)} onCreate={create} />}
       {dialog === "archive" && <ArchiveDialog request={r} onClose={() => setDialog(null)} onArchive={archive} />}
     </>
   )

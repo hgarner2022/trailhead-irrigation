@@ -20,6 +20,8 @@ export interface QuoteStore {
   removeLine: (jobId: string, id: string, at?: string) => PriceChange | null
   /** After approval a line is canceled, not removed: struck through, out of the total */
   cancelLine: (jobId: string, id: string, at?: string) => PriceChange | null
+  /** Change service, before any quote was sent: the service line takes the new service's name and price, the notes and the other lines stay, and the history says so */
+  changeService: (jobId: string, o: { name: string; price?: number; at: string }) => void
   /** The deposit Ryan sets in the quote editor before sending: kept on the job, frozen as dollars by `send` */
   setDeposit: (jobId: string, input: DepositInput) => void
   /** Ryan tells the customer the new total (`via`), or keeps the change without notifying (`none`): either way it is the last step */
@@ -79,6 +81,21 @@ export function createQuoteStore(initial: readonly QuoteJob[] = [...QUOTE_JOB_FI
     updateLine: (id, lineId, patch, at) => edit(id, at, (j) => (j.lines = j.lines.map((l) => (l.id === lineId ? { ...l, ...patch } : l)))),
     removeLine: (id, lineId, at) => edit(id, at, (j) => (j.lines = j.lines.filter((l) => l.id !== lineId))),
     cancelLine: (id, lineId, at) => edit(id, at, (j) => (j.lines = j.lines.map((l) => (l.id === lineId ? { ...l, canceled: true } : l)))),
+    changeService(id, o) {
+      set(id, (j) => {
+        if (j.quotes.length > 0 || j.service === o.name) return j
+        const old = j.service
+        const at = j.lines.findIndex((l) => l.name === old)
+        const i = at >= 0 ? at : 0
+        const line = { id: j.lines[i]?.id ?? "l1", name: o.name, amount: o.price ?? 0 }
+        j.lines = j.lines.length ? j.lines.map((l, n) => (n === i ? line : l)) : [line]
+        j.service = o.name
+        // a job made ready to schedule stays so only while its new service has a price
+        if (o.price === undefined) j.direct = undefined
+        note(j, o.at, `Service changed from ${old} to ${o.name}`)
+        return j
+      })
+    },
     setDeposit(id, input) {
       set(id, (j) => ((j.depositDraft = input.mode === "none" ? undefined : input), j))
     },

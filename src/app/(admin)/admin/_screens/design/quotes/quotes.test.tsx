@@ -8,6 +8,7 @@ import { QuoteJobPage } from "./QuoteJobPage"
 import { QUOTES_NOW, QUOTE_JOB_FIXTURES, canSend, depositOf, fixtureJob, jobFromRequest, liveQuote, nextNumber, stageOf } from "./quote-model"
 import { createQuoteStore } from "./quote-store"
 import { factsOf } from "./QuoteDialogs"
+import { canChangeService } from "./ChangeServiceDialog"
 import { linesTotal } from "./quote-model"
 const linesTotalOf = (store: ReturnType<typeof createQuoteStore>) => linesTotal(store.getSnapshot()["q-dana"]!.lines)
 
@@ -134,6 +135,52 @@ describe("the quote on the job page", () => {
     return { store, ...render(<QuoteJobPage store={store} jobId={id} now={QUOTES_NOW} />) }
   }
   const sendButtons = () => screen.getAllByRole("button", { name: "Send a quote" })
+  it("changes the service before any quote is sent: the service line is replaced, the notes and other lines stay, and the history says so", async () => {
+    const store = createQuoteStore()
+    store.addLine("q-dana", { name: "Zone 3 line", amount: 90 })
+    render(<QuoteJobPage store={store} jobId="q-dana" now={QUOTES_NOW} />)
+    await userEvent.click(screen.getByRole("button", { name: "More" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Change service" }))
+    const dialog = screen.getByRole("dialog")
+    // the picker starts on the job's own service, so nothing can be confirmed until another is chosen
+    expect(within(dialog).getByRole("combobox", { name: "What is this for?" })).toHaveValue("big-repair")
+    expect(within(dialog).getByRole("button", { name: "Change service" })).toBeDisabled()
+    expect(within(dialog).getByText("This is the current service.")).toBeInTheDocument()
+    fireEvent.change(within(dialog).getByRole("combobox", { name: "What is this for?" }), { target: { value: "repair" } })
+    expect(within(dialog).getByText(/Change the service from Larger sprinkler repair to Sprinkler repair\. .* Nothing is sent to Dana\./)).toBeInTheDocument()
+    fireEvent.click(within(dialog).getByRole("button", { name: "Change service" }))
+    const job = store.getSnapshot()["q-dana"]!
+    expect(job.service).toBe("Sprinkler repair")
+    expect(job.lines.map((l) => [l.name, l.amount])).toEqual([["Sprinkler repair", 145], ["Zone 3 line", 90]])
+    expect(job.history.at(-1)!.what).toBe("Service changed from Larger sprinkler repair to Sprinkler repair")
+    // the customer's words, the first note, are untouched
+    expect(job.history[0]!.note).toMatch(/Zone 3 has a geyser/)
+    expect(await screen.findByRole("textbox", { name: "Price for Sprinkler repair" })).toHaveValue("145")
+  })
+  it("Something else changes the service to the name Ryan types, with no price", () => {
+    const s = createQuoteStore()
+    s.updateLine("q-dana", "d1", { amount: 380 })
+    s.changeService("q-dana", { name: "Drip line for the garden", at: QUOTES_NOW })
+    expect(s.getSnapshot()["q-dana"]!.lines).toEqual([{ id: "d1", name: "Drip line for the garden", amount: 0 }])
+  })
+  it("a job made ready to schedule needs a quote once its service changes to one with no price", () => {
+    const s = createQuoteStore([jobFromRequest({ jobId: "q-x", requestId: "rq-x", customerId: "c", customer: "X Y", first: "X", phone: "", email: "", contact: "text", service: "Sprinkler repair", street: "1 A St", town: "Erie", words: "", receivedAt: "2026-11-18T16:00:00Z", at: QUOTES_NOW, price: 145, quote: false })])
+    expect(stageOf(s.getSnapshot()["q-x"]!)).toBe("open")
+    s.changeService("q-x", { name: "Christmas lights", at: QUOTES_NOW })
+    expect(stageOf(s.getSnapshot()["q-x"]!)).toBe("needs-a-quote")
+  })
+  it("has no Change service once a quote is out, or after it was revised", async () => {
+    stage("q-beth")
+    await userEvent.click(screen.getByRole("button", { name: "More" }))
+    expect(screen.queryByRole("menuitem", { name: "Change service" })).toBeNull()
+    await userEvent.keyboard("{Escape}")
+    await userEvent.click(screen.getByRole("button", { name: "Revise" }))
+    await userEvent.click(await within(screen.getByRole("dialog")).findByRole("button", { name: "Revise the quote" }))
+    await userEvent.click(await screen.findByRole("button", { name: "More" }))
+    expect(screen.queryByRole("menuitem", { name: "Change service" })).toBeNull()
+    expect(canChangeService(fixtureJob("q-beth"))).toBe(false)
+    expect(canChangeService(fixtureJob("q-dana"))).toBe(true)
+  })
   it("leads with one Quote card: the steps, what they asked, the one service line with an empty price box, and Send a quote off with one line saying what is missing", () => {
     stage("q-dana")
     expect(sendButtons()).toHaveLength(2)

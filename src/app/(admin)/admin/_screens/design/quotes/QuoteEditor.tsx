@@ -95,6 +95,13 @@ function LineRow({ line, onPrice, onCancel, onRestore, onEdit, focusFirst }: { l
   const [text, setText] = useState(line.amount ? String(line.amount) : "")
   const bad = text.trim() !== "" && !/^\d+$/.test(text.trim())
   const ref = useRef<HTMLInputElement>(null)
+  // a price that changed from outside the box (Change service puts the new service's price on the line) shows in it; typing never trips this, because what is typed is what the line holds
+  useEffect(() => {
+    const typed = text.trim() === "" ? 0 : /^\d+$/.test(text.trim()) ? Number(text) : null
+    if (typed !== null && typed !== line.amount) setText(line.amount ? String(line.amount) : "")
+    // only when the line's price moves
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [line.amount])
   useEffect(() => {
     if (focusFirst) ref.current?.focus()
   }, [focusFirst])

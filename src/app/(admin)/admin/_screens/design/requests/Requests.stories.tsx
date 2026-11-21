@@ -79,6 +79,65 @@ export const Seen: Story = { name: "Seen", args: List.args, render: () => page(b
 export const SeenPriced: Story = { name: "Seen, a priced service", args: List.args, render: () => page(byId("rq-tom")), globals: laptop }
 export const SeenPricedPhone: Story = { name: "Seen, a priced service, phone", args: List.args, render: () => page(byId("rq-tom")), globals: phone }
 
+// The convert sheet (Hannah, Nov 21 2026, docs/plans/2026-11-21-request-conversion-research.md): Create job and Send a quote both open a sheet with the customer and a required
+// "What is this for?" built from the booking catalogue and ending with Something else. It is chosen when the request named a catalogue service and empty when it did not.
+
+/** A request with no service named (the list reads "Not said"): Ben Harlan with a real question in place of the spam he wrote in the fixture. */
+const BEN: RequestData = { ...byId("rq-ben"), archived: undefined, seen: false, phone: "", email: "ben.harlan@example.com", contact: "text", street: "31 Maple Dr", town: "Lafayette", words: "A sprinkler head by the mailbox keeps popping off. Can someone take a look?" }
+
+/** The sheet when the request named a catalogue service: Christmas lights is already chosen, the sentence states the exact effect, and the button is on. */
+export const ConvertPreselected: Story = { name: "Convert sheet, service chosen", args: List.args, render: () => page(byId("rq-rosa"), { initialDialog: "job" }), globals: laptop }
+export const ConvertPreselectedPhone: Story = { name: "Convert sheet, service chosen, phone", args: List.args, render: () => page(byId("rq-rosa"), { initialDialog: "job" }), globals: phone }
+
+/** The sheet when the request named none: the picker is empty, the button is off and one quiet line says what is missing. */
+export const ConvertEmpty: Story = { name: "Convert sheet, nothing chosen", args: List.args, render: () => page(BEN, { initialDialog: "job" }), globals: laptop }
+export const ConvertEmptyPhone: Story = { name: "Convert sheet, nothing chosen, phone", args: List.args, render: () => page(BEN, { initialDialog: "job" }), globals: phone }
+
+/** Something else: the list ends with it, it asks for the name of the job, and the job has that name and no price. */
+export const ConvertSomethingElse: Story = { name: "Convert sheet, something else", args: List.args, render: () => page(BEN, { initialDialog: "job", initialPick: { key: "else", other: "" } }), globals: laptop }
+
+/** The request named the larger repair and Ryan, who read the words, changes it to a sprinkler repair before he confirms: the sentence follows the choice. */
+export const ConvertChanged: Story = { name: "Convert sheet, a wrong service being changed", args: List.args, render: () => page(byId("rq-kevin"), { initialDialog: "job", initialPick: { key: "repair", other: "" } }), globals: laptop }
+export const ConvertChangedPhone: Story = { name: "Convert sheet, a wrong service being changed, phone", args: List.args, render: () => page(byId("rq-kevin"), { initialDialog: "job", initialPick: { key: "repair", other: "" } }), globals: phone }
+
+/** Empty to chosen: the button is off until a choice is made, then the sentence names the service and the job is made with it. */
+export const ConvertEmptyTest: Story = {
+  name: "Convert, nothing chosen (test)",
+  tags: HIDDEN,
+  args: List.args,
+  render: () => page(BEN),
+  globals: laptop,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await userEvent.click(await c.findByRole("button", { name: "Create job" }))
+    const dialog = within(await within(document.body).findByRole("dialog"))
+    await expect(dialog.getByRole("button", { name: "Create job" })).toBeDisabled()
+    await expect(dialog.getByText("Choose what this is for.")).toBeInTheDocument()
+    await userEvent.selectOptions(dialog.getByRole("combobox", { name: "What is this for?" }), "repair")
+    await expect(dialog.getByText(/create a Sprinkler repair job/)).toBeInTheDocument()
+    await userEvent.click(dialog.getByRole("button", { name: "Create job" }))
+    await expect(await c.findByRole("heading", { level: 1, name: "This request became a job" })).toBeInTheDocument()
+  },
+}
+
+/** Preselected to changed: Kevin's request names the larger repair, Ryan picks another service and the sheet says the new one. */
+export const ConvertChangeTest: Story = {
+  name: "Convert, change the service (test)",
+  tags: HIDDEN,
+  args: List.args,
+  render: () => page(byId("rq-kevin")),
+  globals: laptop,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await userEvent.click(await c.findByRole("button", { name: "Create job" }))
+    const dialog = within(await within(document.body).findByRole("dialog"))
+    await expect(dialog.getByRole("combobox", { name: "What is this for?" })).toHaveValue("big-repair")
+    await userEvent.selectOptions(dialog.getByRole("combobox", { name: "What is this for?" }), "repair")
+    await expect(dialog.getByText(/create a Sprinkler repair job/)).toBeInTheDocument()
+    await expect(dialog.getByRole("button", { name: "Create job" })).toBeEnabled()
+  },
+}
+
 /** Create job on a new person: the dialog states the exact effect, adds a customer and a job, and sends nothing. */
 export const CreateJobNoMatch: Story = { name: "Create job, no match", args: List.args, render: () => page(byId("rq-rosa"), { initialDialog: "job" }), globals: laptop }
 export const CreateJobNoMatchPhone: Story = { name: "Create job, no match, phone", args: List.args, render: () => page(byId("rq-rosa"), { initialDialog: "job" }), globals: phone }
@@ -178,7 +237,7 @@ export const CreateJobTest: Story = {
     const c = within(canvasElement)
     await userEvent.click(await c.findByRole("button", { name: "Create job" }))
     const body = within(document.body)
-    await expect(await body.findByText(/Add Rosa Delgado as a customer and create a job\. Nothing is sent to Rosa\./)).toBeInTheDocument()
+    await expect(await body.findByText(/Add Rosa Delgado as a customer and create a Christmas lights job\. Nothing is sent to Rosa\./)).toBeInTheDocument()
     await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Create job" }))
     await expect(await c.findByRole("heading", { level: 1, name: "This request became a job" })).toBeInTheDocument()
     await expect(await c.findByRole("link", { name: "Open job" })).toBeInTheDocument()

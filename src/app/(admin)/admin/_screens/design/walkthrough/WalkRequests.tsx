@@ -7,7 +7,6 @@ import { useState } from "react"
 import type { GridJob } from "../JobsGridDesign"
 import { RequestPage } from "../requests/RequestPage"
 import { RequestsList } from "../requests/RequestsList"
-import { catalogueEntry } from "../requests/request-catalogue"
 import { fullName, matchOf, openRequests, REQUESTS_NOW, stateOf, type RequestData } from "../requests/request-model"
 import { requestById, requestStore, useRequests } from "../requests/request-store"
 import { customerIdOf, registerJob } from "./jobs-data"
@@ -31,13 +30,13 @@ export const takeLanding = (jobId: string) => {
 export const setLanding = (jobId: string, d: "send" | "price") => void landing.set(jobId, d)
 
 /** What Create job and Send a quote do in the prototype: the customer the job goes under (the match, or a new one), a job in the Jobs grid, and the request moved into it. */
-export function createJobFromRequest(request: RequestData, o: { asNew: boolean; mode: "job" | "quote" }): { jobId: string; customerId: string } {
+export function createJobFromRequest(request: RequestData, o: { asNew: boolean; mode: "job" | "quote"; service: { name: string; price?: number } }): { jobId: string; customerId: string } {
   const match = matchOf(request)
   const name = fullName(request)
   const customerId = match && !o.asNew ? match.customer.id : customerIdOf(name)
   const jobId = `q-${request.id.replace(/^rq-/, "")}`
-  const service = request.service || "Job"
-  const { price } = catalogueEntry(request.service)
+  const service = o.service.name
+  const { price } = o.service
   const quote = o.mode === "quote" || price === undefined
   const row: GridJob = {
     id: jobId,
@@ -55,7 +54,7 @@ export function createJobFromRequest(request: RequestData, o: { asNew: boolean; 
     next: "Unscheduled",
   }
   registerJob(row)
-  walkQuotes.add(jobFromRequest({ jobId, requestId: request.id, customerId, customer: row.name, first: request.first, phone: request.phone, email: request.email, contact: request.contact, service: request.service, street: request.street, town: request.town, words: request.words, receivedAt: request.receivedAt, at: REQUESTS_NOW, price, quote: o.mode === "quote" }))
+  walkQuotes.add(jobFromRequest({ jobId, requestId: request.id, customerId, customer: row.name, first: request.first, phone: request.phone, email: request.email, contact: request.contact, service, street: request.street, town: request.town, words: request.words, receivedAt: request.receivedAt, at: REQUESTS_NOW, price, quote: o.mode === "quote" }))
   if (o.mode === "quote") setLanding(jobId, price ? "send" : "price")
   requestStore.becomeJob(request.id, { jobId, customerId, at: REQUESTS_NOW })
   return { jobId, customerId }

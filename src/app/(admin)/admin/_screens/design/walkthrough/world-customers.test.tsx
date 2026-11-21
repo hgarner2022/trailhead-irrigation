@@ -158,7 +158,7 @@ describe("a customer built from their records", () => {
 describe("a customer made in the prototype", () => {
   it("a request turned into a job has a page with the request's contact details", () => {
     const rosa = REQUEST_FIXTURES.find((r) => r.id === "rq-rosa")!
-    const { customerId } = createJobFromRequest(rosa, { asNew: true, mode: "quote" })
+    const { customerId } = createJobFromRequest(rosa, { asNew: true, mode: "quote", service: { name: "Christmas lights" } })
     const p = customerPage(customerId)
     expect(p).toMatchObject({ name: "Rosa Delgado", status: "new" })
     expect(p!.contact.email).toBe(rosa.email)

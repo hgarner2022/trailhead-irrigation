@@ -223,7 +223,7 @@ export const NewJobUnarchivesTest: Story = {
   },
 }
 
-/** Starts on Requests: two are New (the rail says 2), one matches Andrea Dalton. Open Rosa Delgado (Christmas lights, no catalogue price, so Send a quote leads), Send a quote: the request moves into a job that needs a quote and the job page opens on its line; price it, Send a quote with a deposit, and the job reads Quote sent in Jobs. The other way out, Create job, is on Tom Ellis (a priced repair): the request becomes an Unscheduled job. */
+/** Starts on Requests: two are New (the rail says 2), one matches Andrea Dalton. Open Rosa Delgado (Christmas lights, no catalogue price, so Send a quote leads), Send a quote: a sheet asks what it is for (already chosen), the request moves into a job that needs a quote and the job page opens on its Quote card; price the line in the Quote card, set a deposit if you want one, Send a quote, and the job reads Quote sent in Jobs. The other way out, Create job, is on Tom Ellis (a priced repair): the request becomes an Unscheduled job. */
 export const FromRequests: Story = { name: "From requests", args: { start: { screen: "requests" } }, globals: laptop }
 export const FromRequestsPhone: Story = { name: "From requests, phone", args: { start: { screen: "requests" } }, globals: phone }
 export const RequestToQuoteTest: Story = {
@@ -251,12 +251,13 @@ export const RequestToQuoteTest: Story = {
     await expect((await c.findAllByText("Needs a quote")).length).toBeGreaterThan(0)
     // the request has left the list: one New request is left
     await expect(canvasElement.querySelector("[data-slot=nav-count]")?.textContent).toContain("1")
-    // price the line (its dialog is already open), then send the quote with a $300 deposit
-    await userEvent.type(await within(await body.findByRole("dialog")).findByRole("textbox", { name: "Price in dollars" }), "1200")
-    await userEvent.click(within(await body.findByRole("dialog")).getByRole("button", { name: "Save the line" }))
-    await userEvent.click(await c.findByRole("button", { name: "Send a quote" }))
-    await userEvent.click(await body.findByRole("radio", { name: "Dollars" }))
-    await userEvent.type(await body.findByRole("textbox", { name: "Deposit in dollars" }), "300")
+    // the page is the Quote editor: price the line in its row, set a $300 deposit in the card, press Send a quote in the card, then confirm
+    const card = within(canvasElement.querySelector<HTMLElement>("#quote-h")!.closest("section")!)
+    await expect(card.getByRole("button", { name: "Send a quote" })).toBeDisabled()
+    await userEvent.type(await card.findByRole("textbox", { name: "Price for Christmas lights" }), "1200")
+    await userEvent.click(card.getByRole("radio", { name: "Dollars" }))
+    await userEvent.type(await card.findByRole("textbox", { name: "Deposit in dollars" }), "300")
+    await userEvent.click(card.getByRole("button", { name: "Send a quote" }))
     await userEvent.click(await body.findByRole("button", { name: "Send the quote" }))
     await expect((await c.findAllByText("Quote sent")).length).toBeGreaterThan(0)
     // Jobs lists it under Quote sent, and the rail's count has dropped to the one New request left

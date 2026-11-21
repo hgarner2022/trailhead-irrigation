@@ -131,6 +131,44 @@ export const QuantityMoreThanOne: Story = { ...s(withQuantity, laptop), name: "A
 export const AfterSend: Story = { ...s(justSent, laptop), name: "After send" }
 export const AfterSendPhone: Story = { ...s(justSent, phone), name: "After send, phone" }
 
+// Change service (Hannah, Nov 21 2026): under More while no quote has been sent. The same "What is this for?" picker as the convert sheet.
+
+/** Change service opened on a job: the picker starts on the job's own service, and the button stays off until Ryan chooses a different one ("This is the current service."). */
+export const ChangeServiceCurrent: Story = { ...s(dana, laptop, { initialDialog: "service" }), name: "Change service, current service" }
+
+/** The wrong service being changed: the larger repair becomes a sprinkler repair, and the sentence says what happens to the service line and what stays. */
+export const ChangeServiceDialog: Story = { ...s(dana, laptop, { initialDialog: "service", initialServicePick: { key: "repair", other: "" } }), name: "Change service, a wrong service being changed" }
+export const ChangeServiceDialogPhone: Story = { ...s(dana, phone, { initialDialog: "service", initialServicePick: { key: "repair", other: "" } }), name: "Change service, a wrong service being changed, phone" }
+
+/** After the change: built by the store, so the service line is the new service with its catalogue price, the notes and the other lines stay, and Notes and history says "Service changed from Larger sprinkler repair to Sprinkler repair". */
+const afterChange = (): QuoteJob => {
+  const store = createQuoteStore([dana()])
+  store.addLine("q-dana", { name: "Zone 3 line", amount: 0 }, "2026-11-18T17:00:00Z")
+  store.changeService("q-dana", { name: "Sprinkler repair", price: 145, at: "2026-11-18T17:30:00Z" })
+  return structuredClone(store.getSnapshot()["q-dana"]!)
+}
+export const ServiceChanged: Story = { ...s(afterChange, laptop), name: "Service changed" }
+export const ServiceChangedPhone: Story = { ...s(afterChange, phone), name: "Service changed, phone" }
+
+/** The path: More, Change service, choose another service, confirm; the title line, the service line and the history follow, and a quote that is out has no Change service. */
+export const ChangeServiceTest: Story = {
+  name: "Change service (test)",
+  tags: HIDDEN,
+  ...s(dana, laptop),
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await userEvent.click(await c.findByRole("button", { name: "More" }))
+    await userEvent.click(await body.findByRole("menuitem", { name: "Change service" }))
+    const dialog = within(await body.findByRole("dialog"))
+    await expect(dialog.getByRole("button", { name: "Change service" })).toBeDisabled()
+    await userEvent.selectOptions(dialog.getByRole("combobox", { name: "What is this for?" }), "repair")
+    await userEvent.click(dialog.getByRole("button", { name: "Change service" }))
+    await expect((await c.findAllByText("Service changed from Larger sprinkler repair to Sprinkler repair")).length).toBeGreaterThan(0)
+    await expect(await c.findByRole("textbox", { name: "Price for Sprinkler repair" })).toHaveValue("145")
+  },
+}
+
 /** Revise: the quote that was out is Replaced and listed under Earlier quotes in the editor, the deposit starts where it was, and the lines are open again. */
 export const Revising: Story = { ...s(revising, laptop), name: "Revising" }
 export const RevisingPhone: Story = { ...s(revising, phone), name: "Revising, phone" }

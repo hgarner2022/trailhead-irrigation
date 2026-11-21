@@ -17,6 +17,8 @@ import { NOW, noteOk } from "../job-fixtures"
 import { PriceChangeDialog } from "./PriceChangeDialog"
 import { ApproveByHandDialog, LineDialog, QuoteReminderDialog, ReviseDialog, SendQuoteDialog } from "./QuoteDialogs"
 import { isApproved, type PriceChange, untoldChange } from "./price-change"
+import type { ServicePick } from "../requests/request-catalogue"
+import { canChangeService, ChangeServiceDialog } from "./ChangeServiceDialog"
 import { MISSING_ID, QuoteEditor } from "./QuoteEditor"
 import { HOW_WORDS, LinesCard, QuoteBilling, QuoteCard, VisitCard, historyLines, quoteBand } from "./QuoteJobParts"
 import { canSend, liveQuote, money, nextNumber, QUOTES_NOW, STAGE_PILL, stageOf, VIA_WORDS } from "./quote-model"
@@ -29,7 +31,7 @@ import { useQuoteJob, useQuoteJobs, type QuoteStore } from "./quote-store"
 // takes a deposit by check, cash or Venmo. Every action that reaches the customer confirms and states its effect; a result is a toast and the page changes
 // state, never a message in a section. Pure props over a store: a story makes its own.
 
-type Dialog = "send" | "remind" | "revise" | "approve" | "cancel" | "refund" | { line: string } | null
+type Dialog = "send" | "service" | "remind" | "revise" | "approve" | "cancel" | "refund" | { line: string } | null
 
 export interface QuoteJobPageProps {
   store: QuoteStore
@@ -39,6 +41,8 @@ export interface QuoteJobPageProps {
   photos?: PhotoItem[]
   /** a dialog a story opens at once; a line is `{ line: "new" }` or a line's id */
   initialDialog?: Dialog
+  /** where Change service's picker starts (a story that shows the service being changed) */
+  initialServicePick?: ServicePick
   /** a job just made from a request: the cursor starts in the first empty price box */
   autoFocusPrice?: boolean
   /** "Schedule" on an approved job: the schedule dialog is the one every job has */
@@ -47,7 +51,7 @@ export interface QuoteJobPageProps {
   initialTell?: PriceChange | null
 }
 
-export function QuoteJobPage({ store, jobId, now = QUOTES_NOW, photos, initialDialog = null, autoFocusPrice, onSchedule, initialTell = null }: QuoteJobPageProps) {
+export function QuoteJobPage({ store, jobId, now = QUOTES_NOW, photos, initialDialog = null, initialServicePick, autoFocusPrice, onSchedule, initialTell = null }: QuoteJobPageProps) {
   const toast = useToast()
   const job = useQuoteJob(store, jobId)
   const all = useQuoteJobs(store)
@@ -65,13 +69,15 @@ export function QuoteJobPage({ store, jobId, now = QUOTES_NOW, photos, initialDi
   const lineId = typeof dialog === "object" && dialog ? dialog.line : null
   const editLine = lineId && lineId !== "new" ? job.lines.find((l) => l.id === lineId) : undefined
 
+  // Change service lives under More while no quote has been sent; once one is out Ryan revises the quote instead
+  const changeService = canChangeService(job) ? [act("Change service", () => setDialog("service"))] : undefined
   const actions =
     stage === "needs-a-quote" ? (
-      <RecordFooter primary={{ ...act("Send a quote", () => setDialog("send"), !canSend(job)), ...(canSend(job) ? {} : { describedBy: MISSING_ID }) }} destructive={act("Cancel job", () => setDialog("cancel"))} destructiveInMenu />
+      <RecordFooter primary={{ ...act("Send a quote", () => setDialog("send"), !canSend(job)), ...(canSend(job) ? {} : { describedBy: MISSING_ID }) }} more={changeService} destructive={act("Cancel job", () => setDialog("cancel"))} destructiveInMenu />
     ) : stage === "quote-sent" ? (
       <RecordFooter primary={act(remindedToday ? "Reminded today" : "Send a quote reminder", () => setDialog("remind"), remindedToday)} secondary={[act("Mark approved", () => setDialog("approve")), act("Revise", () => setDialog("revise"))]} destructive={act("Cancel job", () => setDialog("cancel"))} destructiveInMenu />
     ) : stage === "open" ? (
-      <RecordFooter primary={act("Schedule", () => (onSchedule ? onSchedule() : toast("The schedule dialog is the one every job has")))} more={isApproved(job) ? [act("Add a line", () => setDialog({ line: "new" }))] : undefined} destructive={act("Cancel job", () => setDialog("cancel"))} destructiveInMenu />
+      <RecordFooter primary={act("Schedule", () => (onSchedule ? onSchedule() : toast("The schedule dialog is the one every job has")))} more={isApproved(job) ? [act("Add a line", () => setDialog({ line: "new" }))] : changeService} destructive={act("Cancel job", () => setDialog("cancel"))} destructiveInMenu />
     ) : undefined
 
   const refundWords = q?.deposit?.paid ? `${job.first} is told by ${job.contact === "email" ? "email" : "text"}.` : ""
@@ -129,6 +135,17 @@ export function QuoteJobPage({ store, jobId, now = QUOTES_NOW, photos, initialDi
           onSend={({ via, deposit }) => {
             const n = store.send(job.jobId, { via, deposit, at: now })
             toast(via === "none" ? `Quote ${n} sent without notifying ${job.first}` : `Quote ${n} sent to ${job.first} by ${VIA_WORDS[via]}`)
+          }}
+        />
+      )}
+      {dialog === "service" && (
+        <ChangeServiceDialog
+          job={job}
+          initialPick={initialServicePick}
+          onClose={close}
+          onChange={({ name, price }) => {
+            store.changeService(job.jobId, { name, price, at: now })
+            toast(`Service changed from ${job.service} to ${name}`)
           }}
         />
       )}
