@@ -12,8 +12,8 @@ import { Placeholder } from "./Placeholder"
 import { takeLanding } from "./WalkRequests"
 
 // A job that has a quote, in the walkthrough: the quote page over the walkthrough's one quote store, so sending, reminding, revising and approving here
-// show in the Jobs grid's Status and Home. The request's photos come along to the job. Arriving from a request (Send a quote) or from New job, the next step
-// is already open: price the line, or the Send a quote dialog once a line has a price.
+// show in the Jobs grid's Status and Home. The request's photos come along to the job. Arriving from a request (Send a quote) or from New job, the page leads
+// with the Quote editor and the cursor is in the first empty price box: Ryan prices the line there, then presses Send a quote.
 
 /** The Quotes list over the walkthrough's one quote store: a quote sent from a job is a row here at once, and Remind uses the quote's own dialog. */
 export function QuotesRoute({ filter }: { filter?: "sent" }) {
@@ -50,7 +50,6 @@ export function QuoteJobRoute({ id, anchor }: { id: string; anchor?: "quote" }) 
     )
   }
   const photos = requests.find((r) => r.becameJob?.jobId === id)?.photos
-  const firstLine = job.lines[0]?.id
-  const initialDialog = step === "send" ? ("send" as const) : step === "price" && firstLine ? { line: firstLine } : null
-  return <QuoteJobPage key={id} store={walkQuotes} jobId={id} photos={photos} initialDialog={initialDialog} />
+  // arriving from a request or from New job, the page is the quote editor and the cursor starts in the first price box that is empty; nothing opens by itself
+  return <QuoteJobPage key={id} store={walkQuotes} jobId={id} photos={photos} autoFocusPrice={step !== undefined} />
 }

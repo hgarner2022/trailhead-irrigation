@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react"
 import { QUOTE_HISTORY_FIXTURES } from "./quote-history-fixtures"
-import { QUOTES_NOW, QUOTE_JOB_FIXTURES, STAGE_PILL, liveQuote, money, nextNumber, stageOf, type Channel, type DepositHow, type QuoteJob, type QuoteLine, type QuoteState } from "./quote-model"
+import { QUOTES_NOW, QUOTE_JOB_FIXTURES, STAGE_PILL, liveQuote, linesTotal, money, nextNumber, stageOf, type Channel, type DepositHow, type DepositInput, type QuoteJob, type QuoteLine, type QuoteState } from "./quote-model"
 import { currentTotal, isApproved, untoldChange, type PriceChange } from "./price-change"
 
 // The quotes of the prototype: each job's lines and the quotes made on it, held in a small store that a page subscribes to. A story makes its own store (so a
@@ -20,6 +20,8 @@ export interface QuoteStore {
   removeLine: (jobId: string, id: string, at?: string) => PriceChange | null
   /** After approval a line is canceled, not removed: struck through, out of the total */
   cancelLine: (jobId: string, id: string, at?: string) => PriceChange | null
+  /** The deposit Ryan sets in the quote editor before sending: kept on the job, frozen as dollars by `send` */
+  setDeposit: (jobId: string, input: DepositInput) => void
   /** Ryan tells the customer the new total (`via`), or keeps the change without notifying (`none`): either way it is the last step */
   tellPrice: (jobId: string, o: { via: Channel | "none"; at: string }) => void
   send: (jobId: string, o: { via: Channel | "none"; deposit: { amount: number; percent?: number } | null; at: string }) => string
@@ -77,6 +79,9 @@ export function createQuoteStore(initial: readonly QuoteJob[] = [...QUOTE_JOB_FI
     updateLine: (id, lineId, patch, at) => edit(id, at, (j) => (j.lines = j.lines.map((l) => (l.id === lineId ? { ...l, ...patch } : l)))),
     removeLine: (id, lineId, at) => edit(id, at, (j) => (j.lines = j.lines.filter((l) => l.id !== lineId))),
     cancelLine: (id, lineId, at) => edit(id, at, (j) => (j.lines = j.lines.map((l) => (l.id === lineId ? { ...l, canceled: true } : l)))),
+    setDeposit(id, input) {
+      set(id, (j) => ((j.depositDraft = input.mode === "none" ? undefined : input), j))
+    },
     tellPrice(id, o) {
       set(id, (j) => {
         const to = currentTotal(j)
@@ -89,8 +94,11 @@ export function createQuoteStore(initial: readonly QuoteJob[] = [...QUOTE_JOB_FI
       let number = ""
       set(id, (j) => {
         number = nextNumber(Object.values(jobs))
-        const total = j.lines.reduce((s, l) => s + l.amount, 0)
-        j.quotes = [...j.quotes, { id: number, jobId: id, lines: structuredClone(j.lines), total, ...(o.deposit ? { deposit: { amount: o.deposit.amount, ...(o.deposit.percent ? { percent: o.deposit.percent } : {}) } } : {}), sentOn: o.at, sentVia: o.via, state: "sent", reminders: [] }]
+        // a canceled line is not part of the quote: only the lines that count are frozen into it
+        const frozen = structuredClone(j.lines.filter((l) => !l.canceled))
+        const total = linesTotal(frozen)
+        j.depositDraft = undefined
+        j.quotes = [...j.quotes, { id: number, jobId: id, lines: frozen, total, ...(o.deposit ? { deposit: { amount: o.deposit.amount, ...(o.deposit.percent ? { percent: o.deposit.percent } : {}) } } : {}), sentOn: o.at, sentVia: o.via, state: "sent", reminders: [] }]
         note(j, o.at, `Sent quote ${number}${o.via === "none" ? " without notifying" : ` by ${VIA[o.via]}`}`)
         return j
       })
@@ -110,6 +118,8 @@ export function createQuoteStore(initial: readonly QuoteJob[] = [...QUOTE_JOB_FI
         const q = live(j)
         if (!q || q.state !== "sent") return j
         q.state = "replaced" as QuoteState
+        // the replaced quote's deposit is where the next one starts
+        if (q.deposit) j.depositDraft = q.deposit.percent ? { mode: "percent", value: String(q.deposit.percent) } : { mode: "dollars", value: String(q.deposit.amount) }
         note(j, at, `Revised quote ${q.id}: it is now Replaced and the job needs a quote`)
         return j
       })

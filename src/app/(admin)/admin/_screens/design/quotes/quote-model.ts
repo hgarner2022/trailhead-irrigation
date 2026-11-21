@@ -16,8 +16,10 @@ export interface QuoteLine {
   id: string
   name: string
   description?: string
-  /** whole dollars; 0 is an unpriced line */
+  /** whole dollars, the price of one; 0 is an unpriced line */
   amount: number
+  /** how many; left out means one, and the editor shows a quantity only when it is more than one */
+  quantity?: number
   /** canceled after the customer approved: struck through, and out of the total */
   canceled?: boolean
 }
@@ -72,6 +74,8 @@ export interface QuoteJob {
   visit?: { name: string; day: string; done: boolean; who: string }
   /** the job's live lines: editable until a quote is sent */
   lines: QuoteLine[]
+  /** the deposit Ryan has set in the quote editor and not yet sent: none by default; it is frozen as dollars when the quote is sent */
+  depositDraft?: DepositInput
   /** every quote made on the job, oldest first */
   quotes: QuoteData[]
   canceled?: boolean
@@ -109,9 +113,19 @@ export const QUOTE_PILL: Record<QuoteState, { status: PillStatus; label: string 
 }
 
 export const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`
-export const linesTotal = (lines: readonly QuoteLine[]) => lines.reduce((sum, l) => sum + l.amount, 0)
-/** A quote can be sent once a line has a price. */
-export const canSend = (job: QuoteJob) => stageOf(job) === "needs-a-quote" && linesTotal(job.lines) > 0
+/** One line's total: its price times its quantity (one when it has none). */
+export const lineTotal = (l: QuoteLine) => l.amount * (l.quantity ?? 1)
+/** The total of the lines that count: a canceled line is out. */
+export const linesTotal = (lines: readonly QuoteLine[]) => lines.reduce((sum, l) => sum + (l.canceled ? 0 : lineTotal(l)), 0)
+/** What is missing before the quote can be sent, in words, or empty when it can: a line with a price, and a deposit that is valid. */
+export function sendBlock(job: QuoteJob): string {
+  if (stageOf(job) !== "needs-a-quote") return ""
+  const total = linesTotal(job.lines)
+  if (total <= 0) return "Add a price to a line to send."
+  return depositOf(total, job.depositDraft ?? { mode: "none", value: "" }).problem
+}
+/** A quote can be sent once a line has a price and the deposit, if one is set, is valid. */
+export const canSend = (job: QuoteJob) => stageOf(job) === "needs-a-quote" && sendBlock(job) === ""
 
 // ------------------------------------------------------------------------------------------------------------------------------ the deposit
 
@@ -192,7 +206,7 @@ export const QUOTE_JOB_FIXTURES: QuoteJob[] = [
     town: "Erie",
     requestId: "rq-dana",
     words: "Zone 3 has a geyser by the driveway after the blowout. I would like a price to redo that line.",
-    lines: [ln("d1", "Larger sprinkler repair", 0, "Zone 3 has a geyser by the driveway after the blowout. I would like a price to redo that line.")],
+    lines: [ln("d1", "Larger sprinkler repair", 0)],
     quotes: [],
     history: [
       { at: "2026-11-13T15:20:00Z", actor: "Dana", what: "Zone 3 has a geyser by the driveway after the blowout. I would like a price to redo that line.", note: "Zone 3 has a geyser by the driveway after the blowout. I would like a price to redo that line." },
@@ -243,7 +257,7 @@ export const QUOTE_JOB_FIXTURES: QuoteJob[] = [
 export const fixtureJob = (id: string): QuoteJob => structuredClone(QUOTE_JOB_FIXTURES.find((j) => j.jobId === id)!)
 
 /** Priya Nair's new system: booked online as a design visit, which Ryan did on Nov 12. The price is set at the visit and the job reads Needs a quote; he sends the quote from the job. */
-const INSTALL_LINES = [ln("i1", "New sprinkler system installation", 0, "Priced from the design visit: zone layout, heads and the backflow assembly.")]
+const INSTALL_LINES = [ln("i1", "New sprinkler system installation", 0)]
 export const DESIGN_VISIT_JOB: QuoteJob = {
   jobId: "q-priya",
   customerId: "priya",

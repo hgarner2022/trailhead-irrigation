@@ -1,6 +1,6 @@
 import { dayWords, invoicePageOf, money as invoiceMoney, type InvoicePageData } from "../invoice-fixtures"
 import { activeLines, currentTotal } from "./price-change"
-import { liveQuote, type QuoteJob } from "./quote-model"
+import { lineTotal, liveQuote, type QuoteJob } from "./quote-model"
 
 // The final invoice of an approved job whose price changed after approval (Hannah, Nov 20 2026): its lines are the job's lines that are not canceled, its
 // total is the job's total now, and a deposit the customer already paid is credited as its own line, so what is unpaid is the new total less the deposit.
@@ -15,7 +15,7 @@ export function finalInvoiceOf(job: QuoteJob, o: { number: string; sentOn: strin
   const total = currentTotal(job)
   const dep = q?.deposit?.paid && !q.deposit.paid.refundedOn ? q.deposit : undefined
   const owed = total - (dep?.amount ?? 0)
-  const lines = activeLines(job.lines).map((l) => ({ name: l.name, description: l.description, amount: invoiceMoney(l.amount) }))
+  const lines = activeLines(job.lines).map((l) => ({ name: l.name, description: l.description, amount: invoiceMoney(lineTotal(l)) }))
   const paidOn = dep?.paid ? dep.paid.on.slice(0, 10) : undefined
   return {
     ...base,

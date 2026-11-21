@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { quoteLink, quoteReminderText, quoteText, quoteSubject, quoteReminderSubject, quoteLead, quoteReminderLead } from "@/lib/portal/quote-words"
 import { REMINDER_LINE_MAX } from "../confirm-copy"
-import { depositOf, linesTotal, money, type Channel, type DepositHow, type DepositMode, type QuoteData, type QuoteJob, type QuoteLine } from "./quote-model"
+import { depositOf, linesTotal, money, type Channel, type DepositHow, type QuoteData, type QuoteJob, type QuoteLine } from "./quote-model"
 
 // The questions of the quote (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.6; Hannah's answers 3 to 8 of Nov 20 2026). Every action that reaches the
 // customer confirms in a dialog that states its exact effect and the channel from their contact preference, with a "without notifying" caret on a send; a
@@ -53,20 +53,15 @@ export interface SendQuoteDialogProps {
   /** the number the quote will have */
   number: string
   onClose: () => void
-  /** where the deposit control starts (a story that shows a typed deposit) */
-  initial?: { mode: DepositMode; value: string }
-  /** `via: "none"` is "Send without notifying": the quote is Sent and no message goes out */
+  /** `via: "none"` is "Send without notifying": the quote is Sent and no message goes out. The deposit is the one set in the quote editor. */
   onSend: (o: { via: Channel | "none"; deposit: { amount: number; percent?: number } | null }) => void
 }
 
-export function SendQuoteDialog({ job, number, onClose, onSend, initial }: SendQuoteDialogProps) {
+export function SendQuoteDialog({ job, number, onClose, onSend }: SendQuoteDialogProps) {
   const total = linesTotal(job.lines)
-  const [mode, setMode] = useState<DepositMode>(initial?.mode ?? "none")
-  const [value, setValue] = useState(initial?.value ?? "")
   const [channel, setChannel] = useState<Channel>(job.contact === "email" && job.email ? "email" : job.phone ? job.contact : "email")
-  const result = depositOf(total, { mode, value })
-  const typed = value.trim().length > 0
-  const blocked = mode !== "none" && result.amount === null
+  const result = depositOf(total, job.depositDraft ?? { mode: "none", value: "" })
+  const blocked = result.problem !== ""
   const facts = factsOf(job, number, total, result.amount ?? undefined)
   const deposit = result.amount ? `${job.first} pays the ${money(result.amount)} deposit when approving.` : ""
   const sentence = `Send quote ${number} for ${money(total)} to ${job.first} ${channelWords(job, channel)}. ${deposit} The lines are locked until you revise the quote.`.replace("  ", " ")
@@ -84,27 +79,6 @@ export function SendQuoteDialog({ job, number, onClose, onSend, initial }: SendQ
       renderConfirm={({ confirm, pending }) => <SplitButton label="Send the quote" onClick={() => confirm("send")} disabled={pending} menuLabel="More ways" menu={[{ label: `Send without telling ${job.first}`, onSelect: () => confirm("quiet") }]} />}
     >
       <div className="flex flex-col gap-4 text-sm">
-        <div className="flex flex-col gap-2">
-          <p className="font-medium">Deposit</p>
-          <SegmentedControl
-            label="Deposit"
-            value={mode}
-            onChange={(v) => {
-              setMode(v as DepositMode)
-              setValue("")
-            }}
-            options={[
-              { value: "none", label: "None" },
-              { value: "dollars", label: "Dollars" },
-              { value: "percent", label: "Percent" },
-            ]}
-          />
-          {mode !== "none" && (
-            <FormRow label={mode === "dollars" ? "Deposit in dollars" : "Deposit as a percent of the total"} error={typed ? result.problem : ""} hint={result.amount ? `${money(result.amount)} of ${money(total)}. Frozen as dollars when you send.` : `The total is ${money(total)}.`}>
-              <Input inputMode="numeric" autoComplete="off" value={value} onChange={(e) => setValue(e.target.value)} placeholder={mode === "dollars" ? "300" : "25"} />
-            </FormRow>
-          )}
-        </div>
         <div className="flex flex-col gap-2">
           <p className="font-medium">Send by</p>
           <SegmentedControl label="Send by" value={channel} onChange={(v) => setChannel(v as Channel)} options={CHANNEL_OPTIONS(job)} />
@@ -237,7 +211,7 @@ export function ApproveByHandDialog({ job, quote, onClose, onApprove }: ApproveB
 export interface LineDialogProps {
   line?: QuoteLine
   onClose: () => void
-  onSave: (line: { name: string; description: string; amount: number }) => void
+  onSave: (line: { name: string; description: string; amount: number; quantity?: number }) => void
   onRemove?: () => void
   /** the customer already approved the quote: the lines can still change, a line is canceled rather than removed, and the total moves */
   approved?: boolean
@@ -248,8 +222,11 @@ export function LineDialog({ line, onClose, onSave, onRemove, approved }: LineDi
   const [name, setName] = useState(line?.name ?? "")
   const [description, setDescription] = useState(line?.description ?? "")
   const [price, setPrice] = useState(line && line.amount ? String(line.amount) : "")
+  const [quantity, setQuantity] = useState(line?.quantity && line.quantity > 1 ? String(line.quantity) : "1")
   const amount = price.trim() === "" ? 0 : Number(price)
   const bad = !Number.isInteger(amount) || amount < 0
+  const count = Number(quantity)
+  const badCount = !/^\d+$/.test(quantity.trim()) || count < 1
   return (
     <ConfirmDialog
       open
@@ -257,9 +234,9 @@ export function LineDialog({ line, onClose, onSave, onRemove, approved }: LineDi
       title={line ? "Edit the line" : "Add a line"}
       message={approved ? "The customer approved this job. A change here changes its total, and Notes and history records it." : "A line is what the quote charges for. The customer reads its name, its description and its price."}
       confirmLabel={line ? "Save the line" : "Add the line"}
-      confirmDisabled={!name.trim() || bad}
+      confirmDisabled={!name.trim() || bad || badCount}
       slot="line-dialog"
-      onConfirm={async () => (onSave({ name: name.trim(), description: description.trim(), amount }), { ok: true })}
+      onConfirm={async () => (onSave({ name: name.trim(), description: description.trim(), amount, ...(count > 1 ? { quantity: count } : {}) }), { ok: true })}
     >
       <div className="flex flex-col gap-3 text-sm">
         <FormRow label="Name">
@@ -268,8 +245,11 @@ export function LineDialog({ line, onClose, onSave, onRemove, approved }: LineDi
         <FormRow label="Description (optional)">
           <Textarea value={description} rows={2} onChange={(e) => setDescription(e.target.value)} />
         </FormRow>
-        <FormRow label="Price in dollars" error={bad ? "Use whole dollars." : ""} hint="Leave it empty while the line has no price.">
+        <FormRow label={count > 1 ? "Price of one, in dollars" : "Price in dollars"} error={bad ? "Use whole dollars." : ""} hint="Leave it empty while the line has no price.">
           <Input inputMode="numeric" autoComplete="off" value={price} onChange={(e) => setPrice(e.target.value)} />
+        </FormRow>
+        <FormRow label="Quantity" error={badCount ? "Use a whole number, 1 or more." : ""}>
+          <Input inputMode="numeric" autoComplete="off" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-24" />
         </FormRow>
         {onRemove && (
           <button type="button" onClick={onRemove} className="min-h-11 self-start rounded-sm text-destructive underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">

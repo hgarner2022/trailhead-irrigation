@@ -19,6 +19,8 @@ export interface FooterAction {
   href?: string
   /** the link leaves the app and opens in a new tab: Open in Stripe */
   external?: boolean
+  /** the id of the line that says why the action is off, read aloud with it */
+  describedBy?: string
   disabled?: boolean
 }
 
@@ -50,7 +52,7 @@ function Act({ action, variant, className }: { action: FooterAction; variant: "d
       </Button>
     )
   return (
-    <Button type="button" variant={variant} className={cls} disabled={action.disabled} onClick={action.onClick}>
+    <Button type="button" variant={variant} className={cls} disabled={action.disabled} aria-describedby={action.describedBy} onClick={action.onClick}>
       {action.label}
     </Button>
   )

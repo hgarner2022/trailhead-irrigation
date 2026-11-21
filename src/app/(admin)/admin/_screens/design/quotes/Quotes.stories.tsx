@@ -26,7 +26,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The job page in its quote states: Needs a quote (add lines, then Send a quote), the send dialog with its deposit control (none by default, dollars or percent, never above the total) and a without-notifying caret, Quote sent (Remind, Revise, Mark approved by hand), Approved with its deposit and Billing, and Declined. Lines are locked while a quote is out. The clickable version is Admin / Walkthrough (clickable): accept a request, then send its quote.",
+          "The job page in its quote states: Needs a quote (one Quote card: price the lines in their rows, an optional deposit set in the card (none by default, dollars or percent, never above the total), then Send a quote), the send dialog with its without-notifying caret, Quote sent (Remind, Revise, Mark approved by hand), Approved with its deposit and Billing, and Declined. Lines are locked while a quote is out. The clickable version is Admin / Walkthrough (clickable): accept a request, then send its quote.",
       },
     },
   },
@@ -80,20 +80,60 @@ const declined = (): QuoteJob => {
   j.history = [...j.history, { at: "2026-11-17T15:00:00Z", actor: "Greg", what: `Declined quote ${q.id}` }]
   return j
 }
-const revised = (): QuoteJob => {
-  const j = greg()
-  j.quotes[0]!.state = "replaced"
-  j.lines = [...j.lines.slice(0, 2), { id: "g3", name: "New lines, zone 6", description: "Three heads added.", amount: 520 }]
-  j.history = [...j.history, { at: "2026-11-17T18:00:00Z", actor: "Ryan", what: "Revised quote Q-2026-0008: it is now Replaced and the job needs a quote" }]
-  return j
+/** Beth's job after Ryan pressed Revise on the quote that was out: built by the store, so the replaced quote is listed, her $300 deposit (25%) is where the next quote starts, and the roofline is the line he is changing. */
+const revising = (): QuoteJob => {
+  const store = createQuoteStore([beth()])
+  store.revise("q-beth", "2026-11-17T18:00:00Z")
+  store.updateLine("q-beth", "b1", { amount: 1000 }, "2026-11-17T18:05:00Z")
+  return structuredClone(store.getSnapshot()["q-beth"]!)
+}
+/** Priced lines with a deposit already set in the card. */
+const withDeposit = (mode: "dollars" | "percent", value: string): QuoteJob => ({ ...priced(), depositDraft: { mode, value } })
+/** The quote after Ryan pressed Send: built by the store, so the quote number, the frozen lines and the history line are the store's own. */
+const justSent = (): QuoteJob => {
+  const store = createQuoteStore([withDeposit("dollars", "150")])
+  store.send("q-dana", { via: "text", deposit: { amount: 150 }, at: QUOTES_NOW })
+  return structuredClone(store.getSnapshot()["q-dana"]!)
 }
 
 const args = { store: createQuoteStore([]), jobId: "x" }
 const s = (job: () => QuoteJob, globals: typeof laptop, extra: Omit<QuoteJobPageProps, "store" | "jobId"> = {}): Story => ({ args, globals, render: () => <Stage job={job()} {...extra} /> })
 
-/** A job from a request: one unpriced line holds the customer's words. The primary, Send a quote, is off until a line has a price. */
-export const NeedsAQuote: Story = { ...s(dana, laptop), name: "Needs a quote" }
-export const NeedsAQuotePhone: Story = { ...s(dana, phone), name: "Needs a quote, phone" }
+// ---------------------------------------------------------------------------------------------------------------------- the Quote editor
+// Hannah, Nov 20 2026: "Create a quote here. What's the flow?" A job in Needs a quote leads with ONE Quote card: Ryan prices the lines in their rows, sets an optional
+// deposit and presses Send a quote. The band holds the job's own facts (When, Who, Where, Contact) so no tile repeats the card.
+
+/** Just created from a request, nothing priced: "1 Price  2 Send  3 They approve", what the customer asked, the one line (the service, never the customer's words) with an empty price box, and Send a quote off with one line saying what is missing. */
+export const NeedsAQuote: Story = { ...s(dana, laptop), name: "Needs a quote, nothing priced" }
+export const NeedsAQuotePhone: Story = { ...s(dana, phone), name: "Needs a quote, nothing priced, phone" }
+
+/** One line priced, a second added and still empty: the total follows the box, Send a quote is on and the step moves to 2. */
+const onePriced = (): QuoteJob => ({ ...dana(), lines: [{ id: "d1", name: "Larger sprinkler repair", amount: 380 }, { id: "d2", name: "Zone 3 line", amount: 0 }] })
+export const OneLinePriced: Story = { ...s(onePriced, laptop), name: "One line priced" }
+export const OneLinePricedPhone: Story = { ...s(onePriced, phone), name: "One line priced, phone" }
+
+/** A deposit set in dollars: the dollars it comes to are written under the box. */
+export const DepositDollars: Story = { ...s(() => withDeposit("dollars", "150"), laptop), name: "Deposit in dollars" }
+export const DepositDollarsPhone: Story = { ...s(() => withDeposit("dollars", "150"), phone), name: "Deposit in dollars, phone" }
+
+/** A deposit set as a percent of the total: 25% of $525 comes to $131. */
+export const DepositPercent: Story = { ...s(() => withDeposit("percent", "25"), laptop), name: "Deposit in percent" }
+export const DepositPercentPhone: Story = { ...s(() => withDeposit("percent", "25"), phone), name: "Deposit in percent, phone" }
+
+/** A deposit above the total: Send a quote is off and the one line beside it says why. */
+export const DepositTooHigh: Story = { ...s(() => withDeposit("dollars", "900"), laptop), name: "Deposit above the total" }
+
+/** A quantity shows in the row only when it is more than one: three of the same line, the price is for one. */
+const withQuantity = (): QuoteJob => ({ ...dana(), lines: [{ id: "d1", name: "Larger sprinkler repair", amount: 380 }, { id: "d2", name: "Replacement head", amount: 18, quantity: 3 }] })
+export const QuantityMoreThanOne: Story = { ...s(withQuantity, laptop), name: "A quantity of three" }
+
+/** After Send: the same card, in the same place, is the sent quote (its pill, the facts, Remind, Revise, Mark approved by hand) and the lines are locked below it. */
+export const AfterSend: Story = { ...s(justSent, laptop), name: "After send" }
+export const AfterSendPhone: Story = { ...s(justSent, phone), name: "After send, phone" }
+
+/** Revise: the quote that was out is Replaced and listed under Earlier quotes in the editor, the deposit starts where it was, and the lines are open again. */
+export const Revising: Story = { ...s(revising, laptop), name: "Revising" }
+export const RevisingPhone: Story = { ...s(revising, phone), name: "Revising, phone" }
 
 /** An installation booked online as a design visit: the visit is on the job and done, the price reads "Set at the visit", the job needs a quote, and Ryan sends the quote from the job once he has priced the line. The Quote section is first. */
 const install = (): QuoteJob => structuredClone(DESIGN_VISIT_JOB)
@@ -104,8 +144,9 @@ export const InstallAfterDesignVisitPhone: Story = { ...s(install, phone), name:
 const direct = (): QuoteJob => jobFromRequest({ jobId: "q-tom", requestId: "rq-tom", customerId: "other-tom-ellis", customer: "Tom Ellis", first: "Tom", phone: "(970) 555-0133", email: "tom.ellis@example.com", contact: "text", service: "Sprinkler repair", street: "64 Hollis Ct", town: "Louisville", words: "Two heads in the side yard are spraying the fence. Hoping someone can come this week.", receivedAt: "2026-11-17T15:00:00Z", at: QUOTES_NOW, price: 145, quote: false })
 export const CreatedFromARequest: Story = { ...s(direct, laptop), name: "Created from a request, ready to schedule" }
 
-/** Priced lines: Send a quote is the one primary action. */
+/** Priced lines, no deposit: Send a quote is the one primary action and nothing is said to be missing. */
 export const ReadyToSend: Story = { ...s(priced, laptop), name: "Ready to send" }
+export const ReadyToSendPhone: Story = { ...s(priced, phone), name: "Ready to send, phone" }
 
 /** Add a line: a name, an optional description and a price. */
 export const AddALine: Story = { ...s(dana, laptop, { initialDialog: { line: "new" } }), name: "Add a line" }
@@ -114,14 +155,12 @@ export const AddALine: Story = { ...s(dana, laptop, { initialDialog: { line: "ne
 export const SendNoDeposit: Story = { ...s(priced, laptop, { initialDialog: "send" }), name: "Send dialog, no deposit" }
 export const SendNoDepositPhone: Story = { ...s(priced, phone, { initialDialog: "send" }), name: "Send dialog, no deposit, phone" }
 
-/** A deposit typed in dollars. */
-export const SendDollars: Story = { ...s(priced, laptop, { initialDialog: "send", sendInitial: { mode: "dollars", value: "150" } }), name: "Send dialog, dollars" }
+/** A deposit set in the card in dollars: the dialog's sentence says the customer pays it when approving. The dialog has no deposit control of its own. */
+export const SendDollars: Story = { ...s(() => withDeposit("dollars", "150"), laptop, { initialDialog: "send" }), name: "Send dialog, dollars" }
+export const SendDollarsPhone: Story = { ...s(() => withDeposit("dollars", "150"), phone, { initialDialog: "send" }), name: "Send dialog, dollars, phone" }
 
-/** A deposit typed as a percent: the dialog shows the dollars it comes to, frozen when the quote is sent. */
-export const SendPercent: Story = { ...s(priced, laptop, { initialDialog: "send", sendInitial: { mode: "percent", value: "25" } }), name: "Send dialog, percent" }
-
-/** A deposit above the total: the problem is written under the box and the send button is off. */
-export const SendTooHigh: Story = { ...s(priced, laptop, { initialDialog: "send", sendInitial: { mode: "dollars", value: "900" } }), name: "Send dialog, above the total" }
+/** A deposit set as a percent: the dialog names the dollars it comes to, frozen when the quote is sent. */
+export const SendPercent: Story = { ...s(() => withDeposit("percent", "25"), laptop, { initialDialog: "send" }), name: "Send dialog, percent" }
 
 /** Sent with a $300 deposit: the job reads Quote sent, the quote is Sent, the lines are locked. The primary is Send a quote reminder; Mark approved and Revise sit beside it. */
 export const QuoteSent: Story = { ...s(beth, laptop), name: "Quote sent, with a deposit" }
@@ -135,9 +174,6 @@ export const Reminder: Story = { ...s(beth, laptop, { initialDialog: "remind" })
 
 /** Revise marks the quote Replaced and returns the job to Needs a quote. */
 export const ReviseDialog: Story = { ...s(greg, laptop, { initialDialog: "revise" }), name: "Revise" }
-
-/** After a revise: Needs a quote again, the lines open, the replaced quote listed under Earlier quotes. */
-export const Revised: Story = { ...s(revised, laptop), name: "Revised, needs a quote again" }
 
 /** Mark approved by hand with a deposit: Ryan says how it was paid, a receipt goes out, and he chooses whether to tell the customer. */
 export const ApproveByHand: Story = { ...s(beth, laptop, { initialDialog: "approve" }), name: "Mark approved by hand" }
@@ -266,17 +302,37 @@ export const SendTest: Story = {
   ...s(priced, laptop),
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
-    await userEvent.click(await c.findByRole("button", { name: "Send a quote" }))
+    const card = within(canvasElement.querySelector<HTMLElement>("#quote-h")!.closest("section")!)
+    // the deposit is set in the card, and what is wrong with it is the one line beside Send a quote
+    await userEvent.click(await card.findByRole("radio", { name: "Dollars" }))
+    await userEvent.type(await card.findByRole("textbox", { name: "Deposit in dollars" }), "900")
+    await expect(await card.findByText(/cannot be more than the total/)).toBeInTheDocument()
+    await expect(card.getByRole("button", { name: "Send a quote" })).toBeDisabled()
+    await userEvent.clear(card.getByRole("textbox", { name: "Deposit in dollars" }))
+    await userEvent.type(card.getByRole("textbox", { name: "Deposit in dollars" }), "150")
+    await userEvent.click(card.getByRole("button", { name: "Send a quote" }))
     const body = within(document.body)
-    await userEvent.click(await body.findByRole("radio", { name: "Dollars" }))
-    await userEvent.type(await body.findByRole("textbox", { name: "Deposit in dollars" }), "900")
-    await expect(await body.findByText(/cannot be more than the total/)).toBeInTheDocument()
-    await userEvent.clear(body.getByRole("textbox", { name: "Deposit in dollars" }))
-    await userEvent.type(body.getByRole("textbox", { name: "Deposit in dollars" }), "150")
     await userEvent.click(await body.findByRole("button", { name: "Send the quote" }))
     await expect((await c.findAllByText("Quote sent")).length).toBeGreaterThan(0)
     await expect(await c.findByText(/Locked while quote/)).toBeInTheDocument()
     await expect(await c.findByRole("button", { name: "Send a quote reminder" })).toBeInTheDocument()
+  },
+}
+
+/** Typing a price in the line's row is the edit: the one line saying what is missing goes away, the step moves on and the total follows. */
+export const PriceInCardTest: Story = {
+  name: "Price in the card (test)",
+  tags: HIDDEN,
+  ...s(dana, laptop),
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const card = within(canvasElement.querySelector<HTMLElement>("#quote-h")!.closest("section")!)
+    await expect(card.getByText("Add a price to a line to send.")).toBeInTheDocument()
+    await expect(card.getByRole("button", { name: "Send a quote" })).toBeDisabled()
+    await userEvent.type(card.getByRole("textbox", { name: "Price for Larger sprinkler repair" }), "380")
+    await expect(card.queryByText("Add a price to a line to send.")).toBeNull()
+    await expect(card.getByRole("button", { name: "Send a quote" })).toBeEnabled()
+    await expect((await c.findAllByText("$380")).length).toBeGreaterThan(0)
   },
 }
 

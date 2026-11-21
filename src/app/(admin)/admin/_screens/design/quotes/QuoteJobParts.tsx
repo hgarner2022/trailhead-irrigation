@@ -1,6 +1,6 @@
 "use client"
 
-import { Banknote, FileText, MapPin, Receipt } from "lucide-react"
+import { Banknote, CalendarDays, FileText, MapPin, MessageSquare, Receipt, UserRound } from "lucide-react"
 import { BillingBody, type BillingLine } from "@/components/blocks/BillingBody"
 import type { PaymentRowData } from "@/components/blocks/BillingTables"
 import { LineItemList } from "@/components/blocks/LineItemList"
@@ -11,10 +11,11 @@ import type { SummaryItem } from "@/components/blocks/SummaryBand"
 import type { TimelineLine } from "@/lib/events/timeline"
 import { cn } from "@/lib/utils"
 import { approvedTotal, currentTotal, isApproved, untoldChange } from "./price-change"
-import { ago, dayOf, linesTotal, liveQuote, money, QUOTE_PILL, stageOf, VIA_WORDS, type DepositHow, type QuoteJob } from "./quote-model"
+import { ago, dayOf, lineTotal, liveQuote, money, QUOTE_PILL, stageOf, VIA_WORDS, type DepositHow, type QuoteJob } from "./quote-model"
 
-// The cards of the job page in its quote states (QuoteJobPage.tsx): What's included (its lines, editable until a quote is sent, then locked), Quote (its
-// facts, the decision and the earlier quotes), Billing (once a deposit is paid) and the summary band. Pure props.
+// The cards of the job page in its quote states (QuoteJobPage.tsx): What's included (the lines once a quote is out, locked, and after approval, Ryan's to change), Quote
+// (its facts, the decision and the earlier quotes), Billing (once a deposit is paid) and the summary band. While the job needs a quote the page leads with the one
+// Quote editor card instead (QuoteEditor.tsx). Pure props.
 
 export const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
 export const QUIET = `min-h-11 ${LINK}`
@@ -50,16 +51,25 @@ export function VisitCard({ visit }: { visit: NonNullable<QuoteJob["visit"]> }) 
   )
 }
 
-/** The summary band: the quote, the total, the deposit and where. */
+/** The summary band. While the job needs a quote the band holds the job's own facts (When, Who, Where and how the customer is contacted): the quote, its total and its deposit are the editor card itself. Once a quote is out it is the quote, the total, the deposit and where. */
 export function quoteBand(job: QuoteJob): SummaryItem[] {
   const q = liveQuote(job)
+  if (stageOf(job) === "needs-a-quote") {
+    const contact = job.contact === "text" ? { value: "Text", sub: job.phone } : job.contact === "email" ? { value: "Email", sub: job.email } : { value: "Text and email", sub: `${job.phone}, ${job.email}` }
+    return [
+      { label: "When", value: job.visit ? dayOf(job.visit.day) : "No day yet", sub: job.visit ? `${job.visit.name}, ${job.visit.done ? "done" : "scheduled"}` : undefined, icon: CalendarDays },
+      { label: "Who", value: job.visit?.who ?? "No one yet", icon: UserRound },
+      { label: "Where", value: job.street, sub: `${job.town}, CO`, icon: MapPin },
+      { label: "Contact", value: contact.value, sub: contact.sub, icon: MessageSquare },
+    ]
+  }
   const total = currentTotal(job)
   const was = approvedTotal(job)
   const go = (id: string) => () => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
   return [
-    { label: "Quote", value: q ? QUOTE_PILL[q.state].label : job.direct ? "None" : "Not sent yet", sub: q ? `${q.id}, ${dayOf(q.sentOn)}` : job.direct ? "Not needed" : "Price the lines first", icon: FileText, onClick: go("quote-h") },
-    { label: "Total", value: total > 0 ? money(total) : "No price yet", sub: was !== undefined ? `Was ${money(was)}` : q ? "Frozen in the quote" : "From the lines", icon: Receipt, onClick: go("included-h") },
-    { label: "Deposit", value: q?.deposit ? money(q.deposit.amount) : "None", sub: q?.deposit ? (q.deposit.paid ? (q.deposit.paid.refundedOn ? "Refunded" : `Paid by ${HOW_WORDS[q.deposit.paid.how]}`) : `Due when ${job.first} approves`) : q ? "Not asked for" : "Set when you send", icon: Banknote },
+    { label: "Quote", value: q ? QUOTE_PILL[q.state].label : "None", sub: q ? `${q.id}, ${dayOf(q.sentOn)}` : "Not needed", icon: FileText, onClick: go("quote-h") },
+    { label: "Total", value: money(total), sub: was !== undefined ? `Was ${money(was)}` : q ? "Frozen in the quote" : "From the lines", icon: Receipt, onClick: go("included-h") },
+    { label: "Deposit", value: q?.deposit ? money(q.deposit.amount) : "None", sub: q?.deposit ? (q.deposit.paid ? (q.deposit.paid.refundedOn ? "Refunded" : `Paid by ${HOW_WORDS[q.deposit.paid.how]}`) : `Due when ${job.first} approves`) : "Not asked for", icon: Banknote },
     { label: "Where", value: job.street, sub: `${job.town}, CO`, icon: MapPin },
   ]
 }
@@ -83,13 +93,13 @@ export function depositPayments(job: QuoteJob): PaymentRowData[] {
   return p.refundedOn ? [row, { ...row, id: `${row.id}-r`, at: p.refundedOn, amount: `-${row.amount}`, refund: true, refundOf: row.id, canRefund: false, stripeHref: undefined }] : [row]
 }
 
-/** What's included: the job's lines. While the job needs a quote each has Edit and the card has Add a line; once a quote is out they are locked. */
+/** What's included: the job's lines once a quote is out (locked) or approved (Ryan's to change). While the job needs a quote its lines are in the Quote editor. */
 export function LinesCard({ job, onAdd, onEdit, onTell }: { job: QuoteJob; onAdd: () => void; onEdit: (id: string) => void; /** after approval: tell the customer a total they have not been told */ onTell?: () => void }) {
   const stage = stageOf(job)
   const q = liveQuote(job)
   const approved = isApproved(job)
   // the lines are Ryan's to change while the job needs a quote and, once the customer approved, whenever the work needs it; locked while a quote is out
-  const open = stage === "needs-a-quote" || approved
+  const open = approved
   const total = currentTotal(job)
   const was = approvedTotal(job)
   const untold = approved ? untoldChange(job) : null
@@ -105,7 +115,7 @@ export function LinesCard({ job, onAdd, onEdit, onTell }: { job: QuoteJob; onAdd
                   {l.description && <span className={cn("block text-muted-foreground", l.canceled && "line-through")}>{l.description}</span>}
                 </span>
                 <RecordRowEnd>
-                  <span className={cn("font-medium tabular-nums", (l.amount === 0 || l.canceled) && "text-muted-foreground", l.canceled && "line-through")}>{l.amount ? money(l.amount) : job.visit ? "Set at the visit" : "No price yet"}</span>
+                  <span className={cn("font-medium tabular-nums", (l.amount === 0 || l.canceled) && "text-muted-foreground", l.canceled && "line-through")}>{l.amount ? money(lineTotal(l)) : "No price yet"}</span>
                   {l.canceled ? (
                     <span className="ml-3 text-sm text-muted-foreground">Canceled</span>
                   ) : (
@@ -130,11 +140,10 @@ export function LinesCard({ job, onAdd, onEdit, onTell }: { job: QuoteJob; onAdd
               </button>
             </p>
           )}
-          {total === 0 && <p className="mt-3 text-sm text-muted-foreground">{job.visit ? `The price is set at the visit. Edit the line with what Ryan priced, then send the quote.` : "No line has a price yet. A quote can be sent once one does."}</p>}
         </>
       ) : (
         <>
-          <LineItemList lines={(q?.lines ?? job.lines).map((l) => ({ name: l.name, description: l.description, amount: money(l.amount) }))} totals={[["Total", money(total), "strong"]]} />
+          <LineItemList lines={(q?.lines ?? job.lines).map((l) => ({ name: (l.quantity ?? 1) > 1 ? `${l.name} × ${l.quantity}` : l.name, description: l.description, amount: money(lineTotal(l)) }))} totals={[["Total", money(total), "strong"]]} />
           <p className="mt-3 text-sm text-muted-foreground">{stage === "quote-sent" ? `Locked while quote ${q!.id} is out. Revise the quote to change them.` : q ? `These are the lines of quote ${q.id}.` : "This job is ready to schedule."}</p>
         </>
       )}
@@ -145,7 +154,6 @@ export function LinesCard({ job, onAdd, onEdit, onTell }: { job: QuoteJob; onAdd
 /** Quote: the live quote's facts with its pill, then the earlier quotes (Replaced). */
 export function QuoteCard({ job, now }: { job: QuoteJob; now: string }) {
   const q = liveQuote(job)
-  const earlier = job.quotes.filter((x) => x.state === "replaced")
   return (
     <SectionCard title="Quote" id="quote-h" action={q ? <StatusPill status={QUOTE_PILL[q.state].status} label={QUOTE_PILL[q.state].label} /> : undefined}>
       {q ? (
@@ -162,27 +170,34 @@ export function QuoteCard({ job, now }: { job: QuoteJob; now: string }) {
           ]}
         />
       ) : (
-        <p className="text-sm text-muted-foreground">{job.direct ? "No quote. This job is ready to schedule." : "No quote sent yet. Price the lines, then send a quote."}</p>
+        <p className="text-sm text-muted-foreground">{job.direct ? "No quote. This job is ready to schedule." : "No quote was sent."}</p>
       )}
-      {earlier.length > 0 && (
-        <div className="mt-4 border-t border-border pt-4">
-          <p className="text-sm font-medium">Earlier quotes</p>
-          <RecordList>
-            {earlier.map((e) => (
-              <li key={e.id} className={cn("flex items-center", RECORD_ROW)}>
-                <span className="block min-w-0 flex-1">
-                  <span className="block font-medium">{e.id}</span>
-                  <span className="block text-muted-foreground">{`Sent ${dayOf(e.sentOn)}, ${money(e.total)}`}</span>
-                </span>
-                <RecordRowEnd>
-                  <StatusPill status={QUOTE_PILL.replaced.status} label={QUOTE_PILL.replaced.label} />
-                </RecordRowEnd>
-              </li>
-            ))}
-          </RecordList>
-        </div>
-      )}
+      <EarlierQuotes job={job} />
     </SectionCard>
+  )
+}
+
+/** The quotes of this job that were Replaced, oldest first: in the Quote card and in the editor when Ryan revises. */
+export function EarlierQuotes({ job }: { job: QuoteJob }) {
+  const earlier = job.quotes.filter((x) => x.state === "replaced")
+  if (earlier.length === 0) return null
+  return (
+    <div data-slot="earlier-quotes" className="mt-4 border-t border-border pt-4">
+      <p className="text-sm font-medium">Earlier quotes</p>
+      <RecordList>
+        {earlier.map((e) => (
+          <li key={e.id} className={cn("flex items-center", RECORD_ROW)}>
+            <span className="block min-w-0 flex-1">
+              <span className="block font-medium">{e.id}</span>
+              <span className="block text-muted-foreground">{`Sent ${dayOf(e.sentOn)}, ${money(e.total)}`}</span>
+            </span>
+            <RecordRowEnd>
+              <StatusPill status={QUOTE_PILL.replaced.status} label={QUOTE_PILL.replaced.label} />
+            </RecordRowEnd>
+          </li>
+        ))}
+      </RecordList>
+    </div>
   )
 }
 

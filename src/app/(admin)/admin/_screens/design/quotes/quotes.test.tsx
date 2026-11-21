@@ -8,6 +8,8 @@ import { QuoteJobPage } from "./QuoteJobPage"
 import { QUOTES_NOW, QUOTE_JOB_FIXTURES, canSend, depositOf, fixtureJob, jobFromRequest, liveQuote, nextNumber, stageOf } from "./quote-model"
 import { createQuoteStore } from "./quote-store"
 import { factsOf } from "./QuoteDialogs"
+import { linesTotal } from "./quote-model"
+const linesTotalOf = (store: ReturnType<typeof createQuoteStore>) => linesTotal(store.getSnapshot()["q-dana"]!.lines)
 
 beforeAll(() => {
   vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} })
@@ -131,34 +133,105 @@ describe("the quote on the job page", () => {
     const store = createQuoteStore()
     return { store, ...render(<QuoteJobPage store={store} jobId={id} now={QUOTES_NOW} />) }
   }
-  it("has Send a quote off until a line has a price", () => {
+  const sendButtons = () => screen.getAllByRole("button", { name: "Send a quote" })
+  it("leads with one Quote card: the steps, what they asked, the one service line with an empty price box, and Send a quote off with one line saying what is missing", () => {
     stage("q-dana")
-    expect(screen.getByRole("button", { name: "Send a quote" })).toBeDisabled()
+    expect(sendButtons()).toHaveLength(2)
+    for (const b of sendButtons()) expect(b).toBeDisabled()
     expect(screen.getAllByText("Needs a quote").length).toBeGreaterThan(0)
+    expect(screen.getByRole("list", { name: "Steps" })).toHaveTextContent("1 Price2 Send3 They approve")
+    // the customer's words are shown once in the card and are never a line
+    expect(screen.getAllByText(/Zone 3 has a geyser/)).toHaveLength(2) // the card and the first note in Notes and history
+    expect(screen.getByRole("textbox", { name: "Price for Larger sprinkler repair" })).toHaveValue("")
+    expect(screen.getAllByText("Add a price to a line to send.")).toHaveLength(1)
+    // no tile repeats the card
+    expect(screen.queryByText("Not sent yet")).toBeNull()
+    expect(screen.queryByText("No price yet")).toBeNull()
+    expect(screen.getByText("No day yet")).toBeInTheDocument()
+    expect(screen.getByText("No one yet")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Add a line" })).toBeInTheDocument()
   })
-  it("sends with a dollar deposit and locks the lines", async () => {
+  it("prices a line by typing in its row, and the total, the step and the button follow", () => {
+    stage("q-dana")
+    fireEvent.change(screen.getByRole("textbox", { name: "Price for Larger sprinkler repair" }), { target: { value: "380" } })
+    for (const b of sendButtons()) expect(b).toBeEnabled()
+    expect(screen.queryByText("Add a price to a line to send.")).toBeNull()
+    expect(screen.getAllByText("$380").length).toBeGreaterThan(0)
+    expect(screen.getByText(/2 Send/)).toHaveAttribute("aria-current", "step")
+  })
+  it("cancels a line struck through and out of the total, and restores it", () => {
+    const store = createQuoteStore()
+    store.updateLine("q-dana", "d1", { amount: 380 })
+    store.addLine("q-dana", { name: "Extra", amount: 100 })
+    render(<QuoteJobPage store={store} jobId="q-dana" now={QUOTES_NOW} />)
+    fireEvent.click(screen.getByRole("button", { name: "Cancel Extra" }))
+    expect(screen.getByText("Extra").className).toMatch(/line-through/)
+    expect(linesTotalOf(store)).toBe(380)
+    fireEvent.click(screen.getByRole("button", { name: "Restore Extra" }))
+    expect(linesTotalOf(store)).toBe(480)
+  })
+  it("shows a quantity only when it is more than one, and totals price times quantity", () => {
+    const store = createQuoteStore()
+    store.updateLine("q-dana", "d1", { amount: 20, quantity: 3 })
+    render(<QuoteJobPage store={store} jobId="q-dana" now={QUOTES_NOW} />)
+    expect(screen.getByText("3 ×")).toBeInTheDocument()
+    expect(linesTotalOf(store)).toBe(60)
+  })
+  it("sets the deposit in the card, never above the total, and says what is wrong in the one line beside Send a quote", () => {
     const store = createQuoteStore()
     store.updateLine("q-dana", "d1", { amount: 500 })
     render(<QuoteJobPage store={store} jobId="q-dana" now={QUOTES_NOW} />)
-    fireEvent.click(screen.getByRole("button", { name: "Send a quote" }))
+    expect(screen.queryByRole("textbox", { name: "Deposit in dollars" })).toBeNull()
+    fireEvent.click(screen.getByRole("radio", { name: "Dollars" }))
+    fireEvent.change(screen.getByRole("textbox", { name: "Deposit in dollars" }), { target: { value: "600" } })
+    expect(screen.getAllByText("A deposit cannot be more than the total, $500.")).toHaveLength(1)
+    for (const b of sendButtons()) expect(b).toBeDisabled()
+    fireEvent.change(screen.getByRole("textbox", { name: "Deposit in dollars" }), { target: { value: "125" } })
+    expect(screen.getByText(/\$125 of \$500/)).toBeInTheDocument()
+    for (const b of sendButtons()) expect(b).toBeEnabled()
+    fireEvent.click(screen.getByRole("radio", { name: "Percent" }))
+    fireEvent.change(screen.getByRole("textbox", { name: "Deposit as a percent of the total" }), { target: { value: "25" } })
+    expect(screen.getByText(/\$125 of \$500/)).toBeInTheDocument()
+  })
+  it("sends with the deposit set in the card and locks the lines", async () => {
+    const store = createQuoteStore()
+    store.updateLine("q-dana", "d1", { amount: 500 })
+    store.setDeposit("q-dana", { mode: "dollars", value: "125" })
+    render(<QuoteJobPage store={store} jobId="q-dana" now={QUOTES_NOW} />)
+    fireEvent.click(sendButtons()[0]!)
     const dialog = screen.getByRole("dialog")
-    fireEvent.click(within(dialog).getByRole("radio", { name: "Dollars" }))
-    fireEvent.change(within(dialog).getByRole("textbox", { name: "Deposit in dollars" }), { target: { value: "600" } })
-    expect(within(dialog).getByText("A deposit cannot be more than the total, $500.")).toBeInTheDocument()
-    expect(within(dialog).getByRole("button", { name: "Send the quote" })).toBeDisabled()
-    fireEvent.change(within(dialog).getByRole("textbox", { name: "Deposit in dollars" }), { target: { value: "125" } })
+    expect(within(dialog).queryByRole("radio", { name: "Dollars" })).toBeNull()
     expect(within(dialog).getByText(/Dana pays the \$125 deposit when approving/)).toBeInTheDocument()
     fireEvent.click(within(dialog).getByRole("button", { name: "Send the quote" }))
     expect(await screen.findByText(/Locked while quote Q-2026-0009 is out/)).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Send a quote reminder" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Add a line" })).toBeNull()
+    expect(liveQuote(store.getSnapshot()["q-dana"]!)).toMatchObject({ total: 500, deposit: { amount: 125 } })
+    expect(store.getSnapshot()["q-dana"]!.depositDraft).toBeUndefined()
+  })
+  it("keeps a canceled line out of the quote it freezes", () => {
+    const s = createQuoteStore()
+    s.updateLine("q-dana", "d1", { amount: 380 })
+    s.addLine("q-dana", { name: "Extra", amount: 100 })
+    s.updateLine("q-dana", s.getSnapshot()["q-dana"]!.lines[1]!.id, { canceled: true })
+    s.send("q-dana", { via: "text", deposit: null, at: QUOTES_NOW })
+    const q = liveQuote(s.getSnapshot()["q-dana"]!)!
+    expect(q.total).toBe(380)
+    expect(q.lines.map((l) => l.name)).toEqual(["Larger sprinkler repair"])
+  })
+  it("revising returns the job to the editor with the replaced quote's deposit where the next one starts", () => {
+    const s = createQuoteStore()
+    s.revise("q-beth", QUOTES_NOW)
+    expect(s.getSnapshot()["q-beth"]!.depositDraft).toEqual({ mode: "percent", value: "25" })
+    render(<QuoteJobPage store={s} jobId="q-beth" now={QUOTES_NOW} />)
+    expect(screen.getByRole("list", { name: "Steps" })).toBeInTheDocument()
+    expect(screen.getByText("Earlier quotes")).toBeInTheDocument()
   })
   it("sends without notifying from the caret", async () => {
     const store = createQuoteStore()
     store.updateLine("q-dana", "d1", { amount: 500 })
     render(<QuoteJobPage store={store} jobId="q-dana" now={QUOTES_NOW} />)
-    fireEvent.click(screen.getByRole("button", { name: "Send a quote" }))
+    fireEvent.click(sendButtons()[0]!)
     const dialog = screen.getByRole("dialog")
     expect(within(dialog).getByText(/Send quote Q-2026-0009 for \$500 to Dana by text at \(970\) 555-0171/)).toBeInTheDocument()
     expect(within(dialog).getByRole("button", { name: "More ways" })).toBeInTheDocument()
