@@ -1,5 +1,6 @@
 import type { PillStatus } from "@/components/blocks/StatusPill"
 import { relativeTime } from "@/components/blocks/needs-attention-time"
+import { depositOf, type DepositInput } from "./quote-deposit"
 
 // A quote and the job it is on (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.1, 4.5, 4.6 and "Deposits and card on file at approval"; Hannah's
 // answers 3 to 8 of Nov 20 2026). A quote is a document made when Ryan presses "Send a quote": the job's lines frozen into it, a number, a link, an optional
@@ -112,7 +113,7 @@ export const QUOTE_PILL: Record<QuoteState, { status: PillStatus; label: string 
   replaced: { status: "quote-replaced", label: "Replaced" },
 }
 
-export const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`
+export { depositOf, money, type DepositInput, type DepositMode, type DepositResult } from "./quote-deposit"
 /** One line's total: its price times its quantity (one when it has none). */
 export const lineTotal = (l: QuoteLine) => l.amount * (l.quantity ?? 1)
 /** The total of the lines that count: a canceled line is out. */
@@ -126,44 +127,6 @@ export function sendBlock(job: QuoteJob): string {
 }
 /** A quote can be sent once a line has a price and the deposit, if one is set, is valid. */
 export const canSend = (job: QuoteJob) => stageOf(job) === "needs-a-quote" && sendBlock(job) === ""
-
-// ------------------------------------------------------------------------------------------------------------------------------ the deposit
-
-export type DepositMode = "none" | "dollars" | "percent"
-
-export interface DepositInput {
-  mode: DepositMode
-  /** what was typed: whole dollars or a percent */
-  value: string
-}
-
-export interface DepositResult {
-  /** whole dollars, or null for no deposit */
-  amount: number | null
-  percent?: number
-  /** why it cannot be sent, in words, or empty */
-  problem: string
-}
-
-/** The dollar amount a typed deposit comes to, frozen as dollars, and what is wrong with it: more than zero, no more than the total, whole dollars. */
-export function depositOf(total: number, input: DepositInput): DepositResult {
-  if (input.mode === "none") return { amount: null, problem: "" }
-  const raw = input.value.trim()
-  if (!raw) return { amount: null, problem: input.mode === "dollars" ? "Type the deposit in dollars." : "Type the deposit as a percent of the total." }
-  if (!/^\d+(\.\d+)?$/.test(raw)) return { amount: null, problem: "Use numbers only." }
-  const n = Number(raw)
-  if (input.mode === "dollars") {
-    if (!Number.isInteger(n)) return { amount: null, problem: "Use whole dollars." }
-    if (n <= 0) return { amount: null, problem: "A deposit is more than $0." }
-    if (n > total) return { amount: null, problem: `A deposit cannot be more than the total, ${money(total)}.` }
-    return { amount: n, problem: "" }
-  }
-  if (n <= 0) return { amount: null, problem: "A deposit is more than 0%." }
-  if (n > 100) return { amount: null, problem: "A deposit cannot be more than 100% of the total." }
-  const amount = Math.round((total * n) / 100)
-  if (amount <= 0) return { amount: null, problem: "That percent comes to less than $1." }
-  return { amount, percent: n, problem: "" }
-}
 
 // ------------------------------------------------------------------------------------------------------------------------------ words
 
