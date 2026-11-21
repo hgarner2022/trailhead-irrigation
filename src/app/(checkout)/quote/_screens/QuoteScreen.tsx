@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { BUSINESS } from "@/emails/format"
 import { textRyanHref } from "@/lib/portal/words"
-import { CARD_TERMS_PLACEHOLDER } from "@/lib/portal/quote-words"
 import { approveLabel, money, quoteOf, type QuoteStatus, type QuoteView } from "./quote-view"
 
 // The quote page (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.6 and "Deposits and card on file at approval"; Hannah's answers 3 to 7 of
@@ -124,10 +123,6 @@ function Approved({ quote, depositPaid, cardSaved, onAddCard }: Pick<QuoteScreen
           <Button type="button" variant="outline" size="lg" className="w-full" onClick={onAddCard}>
             Add a card
           </Button>
-          <p data-slot="card-terms" className="mt-3 rounded-md border border-dashed border-warning/60 bg-warning/10 px-3 py-2 text-sm text-warning-ink">
-            <span className="block text-xs font-medium uppercase tracking-wide">Placeholder: how a saved card may be used</span>
-            {CARD_TERMS_PLACEHOLDER}
-          </p>
         </div>
       )}
       <Button asChild variant="ghost" size="lg" className="mt-2 w-full">

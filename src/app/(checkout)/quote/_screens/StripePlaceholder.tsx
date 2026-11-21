@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { CARD_TERMS_PLACEHOLDER } from "@/lib/portal/quote-words"
 import { money, type QuoteView } from "./quote-view"
 
 // Stripe's own card page, drawn (docs/plans/2026-11-20-requests-and-quotes-research.md, "Deposits and card on file at approval"; Hannah's answers 5 and 6 of
@@ -65,10 +64,6 @@ export function StripePlaceholder({ mode, quote, onPay, onBack }: StripePlacehol
               <label htmlFor="stripe-save">Save my payment method for future use</label>
             </div>
           ) : null}
-          <p data-slot="card-terms" className="rounded-md border border-dashed border-warning/60 bg-warning/10 px-3 py-2 text-sm text-warning-ink">
-            <span className="block text-xs font-medium uppercase tracking-wide">Placeholder: how a saved card may be used</span>
-            {CARD_TERMS_PLACEHOLDER}
-          </p>
           <Button type="button" size="lg" className="w-full" onClick={() => onPay({ saveCard: deposit ? save : true })}>
             {deposit ? `Pay ${amount}` : "Save card"}
           </Button>

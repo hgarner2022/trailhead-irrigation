@@ -68,5 +68,3 @@ export const REQUEST_THANKS = "Thanks. We've got your request."
 /** The email that states a request arrived: the same words, then what was asked, so it can be checked. */
 export const requestReceivedSubject = "We've got your request"
 
-/** Placeholders for the sentences Hannah has not written. They are shown marked, never invented. */
-export const CARD_TERMS_PLACEHOLDER = "[Wording from Hannah]"

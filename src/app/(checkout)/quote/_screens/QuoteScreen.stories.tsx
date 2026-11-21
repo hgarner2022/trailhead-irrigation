@@ -110,7 +110,7 @@ export const NoDepositFlowTest: Story = {
     const c = within(canvasElement)
     await userEvent.click(await c.findByRole("button", { name: "Approve" }))
     await expect(await c.findByText("Approved")).toBeInTheDocument()
-    await expect(c.getByText("[Wording from Hannah]")).toBeInTheDocument()
+    await expect(c.queryByText("[Wording from Hannah]")).toBeNull()
     await userEvent.click(c.getByRole("button", { name: "Add a card" }))
     await userEvent.click(await c.findByRole("button", { name: "Save card" }))
     await expect(await c.findByText("Card added: Visa ending 4242.")).toBeInTheDocument()

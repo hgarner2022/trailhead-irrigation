@@ -4,7 +4,6 @@ import { useState } from "react"
 import { ChevronLeft, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BUSINESS } from "@/emails/format"
-import { CARD_TERMS_PLACEHOLDER } from "@/lib/portal/quote-words"
 import { money, type PayBill } from "./pay-model"
 
 // Stripe's own card page for an invoice, drawn (Hannah, Nov 21 2026: "On the invoice, how do they collect payment? Did you not show the Stripe setup here?"). The pay page's
@@ -68,10 +67,6 @@ export function StripeCardPage({ bill, email, onPay, onBack, processing = false 
             <input id="stripe-save" type="checkbox" checked={save} disabled={processing} onChange={(e) => setSave(e.target.checked)} className="size-5 shrink-0 accent-primary" />
             <label htmlFor="stripe-save">Save my payment method for future use</label>
           </div>
-          <p data-slot="card-terms" className="rounded-md border border-dashed border-warning/60 bg-warning/10 px-3 py-2 text-sm text-warning-ink">
-            <span className="block text-xs font-medium uppercase tracking-wide">Placeholder: how a saved card may be used</span>
-            {CARD_TERMS_PLACEHOLDER}
-          </p>
           <Button type="button" size="lg" className="w-full" disabled={processing} onClick={() => onPay({ saveCard: save })}>
             {processing ? (
               <>
