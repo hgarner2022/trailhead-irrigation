@@ -116,7 +116,7 @@ const prefApril = on(at("april", { step: "preference", picks: picked }), "April,
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Your fall blowout" })).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: /Mid.*Oct 11 to Oct 20/ })).toHaveAttribute("aria-pressed", "true")
-    await expect(canvas.getByText("We'll schedule it about two weeks before and tell you the day.")).toBeInTheDocument()
+    await expect(canvas.getByText(/We'll schedule it about two weeks before and tell you the day\. We use it every season\./)).toBeInTheDocument()
     await expect(canvas.queryByText(/freeze/i)).toBeNull()
   },
 })
