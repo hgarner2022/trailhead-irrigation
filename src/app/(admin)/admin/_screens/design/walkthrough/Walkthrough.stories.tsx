@@ -289,7 +289,7 @@ export const RequestToQuoteTest: Story = {
     // the job exists now: its chip opens it, it says which quote it came from, and Jobs lists it Unscheduled
     await userEvent.click(await c.findByRole("link", { name: "Open job" }))
     await waitFor(() => expect(route(canvasElement)).toBe("job:qj-0009"))
-    await expect(await c.findByText("From quote")).toBeInTheDocument()
+    await expect((await c.findAllByText("From quote")).length).toBeGreaterThan(0)
     await expect((await c.findAllByText("Unscheduled")).length).toBeGreaterThan(0)
     await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/jobs"]')!)
     await expect((await c.findAllByText("Rosa Delgado")).length).toBeGreaterThan(0)

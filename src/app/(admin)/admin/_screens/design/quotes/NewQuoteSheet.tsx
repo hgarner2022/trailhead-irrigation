@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { SidePanel } from "@/components/blocks/SidePanel"
 import type { AdminData } from "@/lib/admin/types"
 import { CustomerPicker, choiceReady, emptyChoice, type CustomerChoice } from "../../CustomerPicker"
 import { NO_PICK, pickMissing, pickedService, type ServicePick } from "../requests/request-catalogue"
@@ -39,37 +39,38 @@ export function NewQuoteSheet({ data, open, onOpenChange, customerId, initial, o
     onOpenChange(next)
   }
   return (
-    <Sheet open={open} onOpenChange={change}>
-      <SheetContent side="right" className="w-full gap-0 sm:max-w-md" data-slot="new-quote">
-        <SheetHeader className="border-b border-border">
-          <SheetTitle className="font-display text-2xl font-semibold text-navy">New quote</SheetTitle>
-          <SheetDescription>A customer and what it is for.</SheetDescription>
-        </SheetHeader>
-        <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-4">
-          <CustomerPicker data={data} customerId={customerId} value={choice} onChange={setChoice} idPrefix="nq" />
-          <ServicePicker value={pick} onChange={setPick} />
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              className="min-h-11 w-full sm:w-fit"
-              disabled={Boolean(missing)}
-              aria-describedby={missing ? "new-quote-missing" : undefined}
-              onClick={() => {
-                if (!service) return
-                onCreate({ choice, service: { name: service.name, ...(service.price !== undefined ? { price: service.price } : {}) } })
-                change(false)
-              }}
-            >
-              New quote
-            </Button>
-            {missing && (
-              <p id="new-quote-missing" className="text-sm text-muted-foreground">
-                {missing}
-              </p>
-            )}
-          </div>
+    <SidePanel
+      open={open}
+      onOpenChange={change}
+      title="New quote"
+      description="A customer and what it is for."
+      footer={
+        <div className="flex flex-col gap-2">
+          <Button
+            type="button"
+            className="min-h-11 w-full sm:w-fit"
+            disabled={Boolean(missing)}
+            aria-describedby={missing ? "new-quote-missing" : undefined}
+            onClick={() => {
+              if (!service) return
+              onCreate({ choice, service: { name: service.name, ...(service.price !== undefined ? { price: service.price } : {}) } })
+              change(false)
+            }}
+          >
+            New quote
+          </Button>
+          {missing && (
+            <p id="new-quote-missing" className="text-sm text-muted-foreground">
+              {missing}
+            </p>
+          )}
         </div>
-      </SheetContent>
-    </Sheet>
+      }
+    >
+      <div data-slot="new-quote" className="flex flex-col gap-5">
+        <CustomerPicker data={data} customerId={customerId} value={choice} onChange={setChoice} idPrefix="nq" />
+        <ServicePicker value={pick} onChange={setPick} />
+      </div>
+    </SidePanel>
   )
 }

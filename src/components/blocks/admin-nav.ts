@@ -33,8 +33,8 @@ export const MORE_ITEMS: readonly NavItem[] = NAV.slice(4)
 export const REQUESTS_ITEM: NavItem = { id: "requests", label: "Requests", href: "/admin/requests", icon: Inbox }
 
 /**
- * Quotes (Hannah, Nov 20 2026: a Quotes item was added after all, after Jobs, with a count of the quotes still waiting for an answer). The job still holds the
- * quote and Jobs still shows Needs a quote and Quote sent; this is a second view of every quote. Not in `NAV` for the same reason as Requests: a screen
+ * Quotes (Hannah, Nov 20 2026: a Quotes item was added after all, after Jobs, with a count of the quotes still waiting for an answer). A quote is its own record
+ * (Nov 22 2026: a job is made only when it is approved), so Jobs has no Needs a quote or Quote sent; this is the one list of every quote. Not in `NAV` for the same reason as Requests: a screen
  * that has the list passes `quotes` to `AdminShell`, which draws it after Jobs in the rail and in More after Requests.
  */
 export const QUOTES_ITEM: NavItem = { id: "quotes", label: "Quotes", href: "/admin/quotes", icon: FileText }

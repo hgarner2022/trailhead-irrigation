@@ -414,7 +414,7 @@ export const ApproveTest: Story = {
     await userEvent.selectOptions(dialog.getByRole("combobox"), "check")
     await userEvent.click(dialog.getByRole("button", { name: "Mark approved and tell Beth" }))
     await expect((await c.findAllByText("Approved")).length).toBeGreaterThan(0)
-    await expect(await c.findByText(/Job created/)).toBeInTheDocument()
+    await expect((await c.findAllByText(/Job created/)).length).toBeGreaterThan(0)
     await expect(await c.findByRole("link", { name: /Open job/ })).toBeInTheDocument()
   },
 }
