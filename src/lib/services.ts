@@ -55,6 +55,8 @@ const DESCRIPTION: Record<Exclude<ServiceKind, "other"> | "repair-large", string
   lights: "C9 bulbs on socket wire, cut to length for each run of the house and hung along the rooflines and peaks, with trees, bushes, walkways and railings lit if you want them. We supply the lights, and the takedown in January is included.",
 }
 const REPAIR_VISIT_PRICE = 145
+const WATER_EFFICIENCY_PRICE = 145
+const WATER_EFFICIENCY_DESCRIPTION = "A visit to look at your yard and what you want to improve."
 const REPAIR_SLOT_MINUTES = 120
 const BANDS = [
   { suffix: "8", minZones: 1, maxZones: 8, slotMinutes: 60 },
@@ -98,8 +100,10 @@ const LIST: ServiceDef[] = [
     quoteOnly: false,
   },
   { key: "repair", name: "Sprinkler repair visit", description: DESCRIPTION.repair, kind: "repair", bookable: true, price: REPAIR_VISIT_PRICE, slotMinutes: REPAIR_SLOT_MINUTES, quoteOnly: false },
-  // The site offers a free consultation; the audit's $75 assessment was a Jobber test value.
-  { key: "consult", name: "Free consultation", description: DESCRIPTION.consult, kind: "consult", bookable: true, price: 0, slotMinutes: 30, quoteOnly: false },
+  // Off for the web form (Hannah, Nov 22 2026: "get rid of the free consultation"); the office can still make one. The audit's $75 assessment was a Jobber test value.
+  { key: "consult", name: "Free consultation", description: DESCRIPTION.consult, kind: "consult", bookable: false, price: 0, slotMinutes: 30, quoteOnly: false },
+  // The water efficiency and drip visit is a normal bookable service at the repair visit's price (Hannah, Nov 22 2026: "Water efficiency is 145").
+  { key: "water-efficiency", name: "Water efficiency and drip", description: WATER_EFFICIENCY_DESCRIPTION, kind: "consult", bookable: true, price: WATER_EFFICIENCY_PRICE, slotMinutes: 90, quoteOnly: false },
   {
     key: "rachio-install-8",
     name: "Rachio smart controller install, up to 8 zones",
@@ -124,7 +128,8 @@ const LIST: ServiceDef[] = [
     slotMinutes: 120,
     quoteOnly: false,
   },
-  // Quoted, never booked online.
+  // Quoted, never booked online. (Hannah, Nov 20 2026, wanted the installation bookable as a design visit with no price; Settings > Services cannot yet show a bookable service with no price, so it stays
+  // quoted until it can. The booking form reads this row: `bookingCatalogue({ install: "bookable" })` is what it looks like flipped.)
   { key: "install", name: "New sprinkler system installation", description: DESCRIPTION.install, kind: "install", bookable: false, slotMinutes: 120, quoteOnly: true },
   { key: "repair-large", name: "Larger sprinkler repair", description: DESCRIPTION["repair-large"], kind: "repair", bookable: false, slotMinutes: REPAIR_SLOT_MINUTES, quoteOnly: true },
   // Not offered for the 2026 season (/pricing); listed so the catalogue is whole.

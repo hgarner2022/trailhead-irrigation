@@ -1,6 +1,6 @@
 "use client"
 
-import { useId, useState } from "react"
+import { useId, useState, type ReactNode } from "react"
 import { ContactPreference, type ContactChannel } from "@/components/blocks/ContactPreference"
 import { FormRow } from "@/components/blocks/FormRow"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -25,11 +25,6 @@ const FIELDS = [
   { key: "phone", label: "Phone", type: "tel", autoComplete: "tel", inputMode: "tel", half: false },
 ] as const
 
-const HINTS: Partial<Record<(typeof FIELDS)[number]["key"], string>> = {
-  email: "Your receipt comes here.",
-  phone: "We text the day and time. Message and data rates may apply. Reply STOP to opt out.",
-}
-
 export interface BookingContactProps {
   fields: CheckoutFields
   set: <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => void
@@ -38,14 +33,17 @@ export interface BookingContactProps {
   attempted: boolean
   /** a request for a quote has no terms line */
   terms: boolean
+  /** the returning customer's block, above the fields */
+  top?: ReactNode
 }
 
-export function BookingContact({ fields, set, channel, onChannel, attempted, terms }: BookingContactProps) {
+export function BookingContact({ fields, set, channel, onChannel, attempted, terms, top }: BookingContactProps) {
   const id = useId()
   const [touched, setTouched] = useState<Set<string>>(() => new Set())
   const termsProblem = terms && attempted && !fields.termsAccepted
   return (
     <div data-slot="booking-contact" className="space-y-8">
+      {top}
       <div className="grid grid-cols-2 gap-x-3 gap-y-5">
         {FIELDS.map((field, i) => {
           const problem = contactProblem(field.key, fields[field.key])
@@ -53,7 +51,7 @@ export function BookingContact({ fields, set, channel, onChannel, attempted, ter
           const slip = field.key === "email" && !shown ? emailSuggestion(fields.email) : null
           return (
             <div key={field.key} className={cn(!field.half && "col-span-2")}>
-              <FormRow label={field.label} hint={shown ? undefined : HINTS[field.key]} error={shown ? (problem ?? undefined) : undefined}>
+              <FormRow label={field.label} error={shown ? (problem ?? undefined) : undefined}>
                 <Input
                   name={field.key}
                   type={field.type}
@@ -79,7 +77,7 @@ export function BookingContact({ fields, set, channel, onChannel, attempted, ter
           )
         })}
       </div>
-      <ContactPreference value={channel} onChange={onChannel} name={`${id}-preference`} />
+      <ContactPreference plain value={channel} onChange={onChannel} name={`${id}-preference`} />
       {terms && (
         <div data-slot="booking-terms" className="border-t border-border pt-6">
           <div className="flex items-start gap-3">
@@ -103,14 +101,11 @@ export function BookingContact({ fields, set, channel, onChannel, attempted, ter
         </div>
       )}
       <div data-slot="booking-marketing" className="flex items-start gap-3 border-t border-border pt-6">
-        <Checkbox id={`${id}-marketing`} name="marketingEmail" checked={fields.marketingEmail} onCheckedChange={(c) => set("marketingEmail", c === true)} aria-describedby={`${id}-marketing-note`} className="mt-1 size-5" />
+        <Checkbox id={`${id}-marketing`} name="marketingEmail" checked={fields.marketingEmail} onCheckedChange={(c) => set("marketingEmail", c === true)} className="mt-1 size-5" />
         <div>
           <Label htmlFor={`${id}-marketing`} className="inline text-base font-normal leading-snug text-foreground">
             Send me tips and offers from Trailhead by email
           </Label>
-          <p id={`${id}-marketing-note`} className="mt-1 text-sm text-muted-foreground">
-            Optional. You can stop any time. You get receipts and visit reminders either way.
-          </p>
         </div>
       </div>
     </div>

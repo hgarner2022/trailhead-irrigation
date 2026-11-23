@@ -1,16 +1,17 @@
-// What the booking form says about a Season Pass bought on a date, pure (docs/plans/2026-11-20-season-pass-booking-research.md): the confirm step's rows, one per visit, and the lines of the booked card.
-// A visit that is open now shows its exact day and time; a visit that is months away shows its preference and when it is scheduled. Nothing here is invented: the sentences
-// are the two Hannah allowed (`pass-words.ts`) and the preference words (`preferenceLabel`). A pass is a setup, not an order: each visit row says what it costs and that it is charged after the visit, and there is no total.
+// What the booking form says about a Season Pass bought on a date, pure (docs/plans/2026-11-20-season-pass-booking-research.md): the review step's rows, one per visit, and the lines of the booked card.
+// A visit that is open now (or within a month) shows its exact day and time; a visit that is months away shows its preference and, on the booked card, when it is scheduled. A preference is named
+// "Our recommended", "Early season" or "Late season" and nothing else (Hannah, Nov 22 2026). A pass is a setup, not an order: each visit row says what it costs and there is no total.
 import type { ReviewRow } from "@/components/blocks/BookingReview"
 import type { BookedVisitLine } from "@/components/blocks/BookedCard"
+import { PLAIN_NAMES } from "@/components/blocks/TimingChoice"
 import type { TimingPreference } from "@/lib/admin/types"
 import { clock12, dayAtTime, type DayTimePick } from "@/lib/booking/day-time"
-import { preferenceLabel } from "@/lib/admin/format"
 import { exactVisits, type PassPlan, type PassVisitKind, type PassVisitPlan } from "@/lib/booking/pass-visits"
-import { SCHEDULE_NOTE, preferenceStatement } from "@/lib/booking/pass-words"
+import { SCHEDULE_NOTE } from "@/lib/booking/pass-words"
+import { money } from "@/lib/booking/services"
 import { SEASON_PASS_VISITS, visitPrice } from "@/lib/season-pass"
 import { shortDay } from "@/lib/portal/words"
-import { money, type FormStep } from "./booking-form-model"
+import type { FormStep } from "./booking-form-model"
 
 export const VISIT_NAMES: Record<PassVisitKind, string> = { "turn-on": "Spring turn-on", blowout: "Fall blowout" }
 /** "Spring turn-on", or "Spring turn-on 2028" for a visit that belongs to next season. */
@@ -19,21 +20,23 @@ export const visitName = (v: Pick<PassVisitPlan, "kind" | "season" | "nextSeason
 type Picks = Record<string, DayTimePick>
 type Prefs = Record<string, TimingPreference>
 
-/** What a visit costs, at the customer's zones, and when it is charged: the only place the pass shows a price (a setup is not an order, so there is no total). */
-export const visitCostWords = (kind: PassVisitKind, zones: number) => `About ${money(visitPrice(SEASON_PASS_VISITS[kind === "turn-on" ? 0 : 2], zones))}, charged after the visit.`
+/** What a visit costs at the customer's zones: the only place the pass shows a price (a setup is not an order, so there is no total). */
+export const visitCostWords = (kind: PassVisitKind, zones: number) => `About ${money(visitPrice(SEASON_PASS_VISITS[kind === "turn-on" ? 0 : 2], zones))}`
+
+/** "Preference: Our recommended" */
+export const choiceStatement = (preference: TimingPreference) => `Preference: ${PLAIN_NAMES[preference]}`
 
 /**
- * The confirm step's rows for a pass: the season when it starts next year, and one row per visit. A visit with a day shows it and the preference it starts next season with (the part of the window of
- * the day picked); a visit with only a preference shows it and when it is scheduled. Each says what it costs and that it is charged after the visit (a Change link goes to the step that asked).
+ * The review step's rows for a pass: the season when it starts next year, and one row per visit with its exact day and time, or its preference, and what it costs (a Change link goes to the step
+ * that asked). The preference a visit booked exactly keeps for the seasons after is not said here: it starts as the part of the window of the day picked and is changed in the account.
  */
-export function passReviewRows(plan: PassPlan, picks: Picks, prefs: Prefs, go: (step: FormStep) => void, zones = 8): ReviewRow[] {
+export function passReviewRows(plan: PassPlan, picks: Picks, _prefs: Prefs, go: (step: FormStep) => void, zones = 8): ReviewRow[] {
   const visits = plan.visits.map((v): ReviewRow => {
-    const kept = prefs[v.kind] ?? "recommended"
     if (v.mode === "exact") {
       const p = picks[v.kind]
-      return { label: visitName(v), value: [p?.day && p.start ? dayAtTime(p.day, p.start) : "No day yet.", `Next season: ${preferenceLabel(v.kind, kept)}`, visitCostWords(v.kind, zones)], onChange: () => go("day") }
+      return { label: visitName(v), value: [p?.day && p.start ? dayAtTime(p.day, p.start) : "No day yet.", visitCostWords(v.kind, zones)], onChange: () => go("day") }
     }
-    return { label: visitName(v), value: [preferenceStatement(v.kind, kept), SCHEDULE_NOTE, visitCostWords(v.kind, zones)], onChange: () => go("preference") }
+    return { label: visitName(v), value: [choiceStatement(_prefs[v.kind] ?? "recommended"), visitCostWords(v.kind, zones)], onChange: () => go("preference") }
   })
   return [...(plan.startsNextSeason ? [{ label: "Season", value: String(plan.season) }] : []), ...visits]
 }
@@ -43,7 +46,7 @@ export function bookedPassOf(name: string, plan: PassPlan, picks: Picks, prefs: 
   const lines = plan.visits.map((v): BookedVisitLine => {
     const p = picks[v.kind]
     if (v.mode === "exact") return { name: visitName(v), when: p?.day && p.start ? `${shortDay(p.day)} at ${clock12(p.start)}` : "No day yet" }
-    return { name: visitName(v), when: preferenceStatement(v.kind, prefs[v.kind] ?? "recommended"), note: SCHEDULE_NOTE }
+    return { name: visitName(v), when: choiceStatement(prefs[v.kind] ?? "recommended"), note: SCHEDULE_NOTE }
   })
   const exact = exactVisits(plan).flatMap((v) => {
     const p = picks[v.kind]

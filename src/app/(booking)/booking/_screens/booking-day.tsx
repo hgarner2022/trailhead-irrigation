@@ -1,5 +1,6 @@
 "use client"
 
+import { DayCalendar } from "@/components/blocks/DayCalendar"
 import { DayTimePicker } from "@/components/blocks/DayTimePicker"
 import { type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
 
@@ -32,6 +33,20 @@ export function DayTimeGroups({ groups, picks, onPick, note, onNote }: { groups:
             note={i === groups.length - 1 ? note : undefined}
             onNote={i === groups.length - 1 ? onNote : undefined}
           />
+        </section>
+      ))}
+    </div>
+  )
+}
+
+/** The booking form's day step: the calendar per visit (soonest day selected, recommended days marked), with a heading over each when a Season Pass has two. */
+export function CalendarGroups({ groups, picks, onPick, note, onNote }: { groups: readonly DayGroup[]; picks: Record<string, DayTimePick>; onPick: (key: string, pick: DayTimePick) => void; note?: string; onNote?: (text: string) => void }) {
+  return (
+    <div data-slot="day-time-groups" className="space-y-12">
+      {groups.map((g, i) => (
+        <section key={g.key} aria-label={g.heading ?? "Day and time"} data-kind={g.key}>
+          {g.heading && <h2 className="mb-4 font-display text-3xl leading-[1.05] text-navy">{g.heading}</h2>}
+          <DayCalendar headingLevel={g.heading ? 3 : 2} offers={g.offers} value={picks[g.key] ?? { day: null, start: null }} onChange={(next) => onPick(g.key, next)} legend={g.heading ?? "Pick your day"} note={i === groups.length - 1 ? note : undefined} onNote={i === groups.length - 1 ? onNote : undefined} />
         </section>
       ))}
     </div>

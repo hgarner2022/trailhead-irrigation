@@ -3,7 +3,7 @@
 import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
-// The confirm step of the booking form: "Look it over and confirm." One row per answer (what, where, when, who, how we reach you, photos, the price), each with its own Change link back
+// The review step of the booking form. One row per answer (service, address, day, contact, photos, the price), each with its own Change link back
 // to the step that asked, and under the rows one plain sentence that says exactly what happens when the button is pressed. Rows with nothing to say are left out by the screen. A white
 // card with hairlines between rows, label small over the value, the Change link a 44px target at the right. Pure props, client component.
 

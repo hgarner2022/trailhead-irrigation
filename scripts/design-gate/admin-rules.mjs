@@ -157,7 +157,7 @@ function checkOverlays(file, text, problems) {
 
 // Chart keeps the visually hidden data table that makes a chart readable aloud; WeekGrid is the calendar of days, one of the blocks section 9 keeps;
 // DayTimePicker, ServicePicker, AccessChoice and PreferencePicker are the customer's radio cards (a card is its own label; FormRow is for text controls); PhotoPicker's label is the button over a real file input. CancelVisitSheet and RescheduleSheet are the customer's account, which is not part of this system (section 9, "Kept").
-const TABLE_OK = /(^|\/)(DataGrid|data-grid-[\w-]+|FormRow|Chart|WeekGrid|CancelVisitSheet|RescheduleSheet|NextVisitCard|SignInCard|DayTimePicker|ServicePicker|AccessChoice|PhotoPicker|ChoiceChips|PreferencePicker)\.tsx$/
+const TABLE_OK = /(^|\/)(DataGrid|data-grid-[\w-]+|FormRow|Chart|WeekGrid|CancelVisitSheet|RescheduleSheet|NextVisitCard|SignInCard|DayTimePicker|DayCalendar|ServicePicker|AccessChoice|PhotoPicker|ChoiceChips|PreferencePicker)\.tsx$/
 
 function checkTableLabel(file, text, problems) {
   if (TABLE_OK.test(file)) return
