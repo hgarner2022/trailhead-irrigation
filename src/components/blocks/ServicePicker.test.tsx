@@ -15,7 +15,9 @@ describe("ServicePicker", () => {
     expect(screen.queryByText(/Priced after Ryan looks/)).toBeNull()
     expect(screen.queryByRole("button", { name: /Christmas lights/ })).toBeNull()
     expect(screen.queryByRole("button", { name: /Free consultation/ })).toBeNull()
-    expect(screen.getByRole("button", { name: /New sprinkler system installation/ })).toBeEnabled()
+    // the installation is We quote in the backend rows, so it is on the request path and not in this list
+    expect(screen.queryByRole("button", { name: /New sprinkler system installation/ })).toBeNull()
+    expect(screen.getByRole("button", { name: /Water efficiency and drip/ })).toBeEnabled()
   })
   it("opens a card in place: the whole header is the button, aria-expanded says so, and the panel holds the details", async () => {
     const onChange = vi.fn()
