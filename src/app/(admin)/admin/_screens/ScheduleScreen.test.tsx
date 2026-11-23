@@ -32,6 +32,13 @@ const cell = (person: string, day: string) => document.querySelector<HTMLElement
 const percy = (el: HTMLElement) => within(el).getByRole("button", { name: /Percy/ })
 
 async function pick(user: ReturnType<typeof userEvent.setup>, trigger: string, option: string) {
+  // the person is a select; the day is the one calendar in a popover (the option is "Fri 13": the weekday and the day of the month)
+  if (trigger === "Move to day") {
+    await user.click(screen.getByRole("button", { name: new RegExp(`^${trigger}`) }))
+    const [, weekday, day] = /^(\w+) (\d+)$/.exec(option)!
+    await user.click(await screen.findByRole("button", { name: new RegExp(`^${weekday}\\w*, November ${day}(,|$)`) }))
+    return
+  }
   await user.click(screen.getByRole("combobox", { name: trigger }))
   await user.click(await screen.findByRole("option", { name: option }))
 }

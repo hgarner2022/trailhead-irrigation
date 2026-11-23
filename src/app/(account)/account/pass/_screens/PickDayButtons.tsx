@@ -2,13 +2,12 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { DayCalendar } from "@/components/blocks/DayCalendar"
 import { writtenDate } from "@/lib/admin/format"
 import type { ActionResult } from "./CancelPassDialog"
 
-// The days a customer picks from, to set a day or change one: three open
-// days inside their window, one tap each, then the answer in place. `onPick` is where
-// the wiring phase books the visit; the prototype only swaps the words.
+// The days a customer picks from, to set a day or change one: the open days inside their window on the one calendar (`DayCalendar`, days only, the soonest chosen and marked, the visit's own day marked
+// "Your day"), one button that names the day, then the answer in place. `onPick` is where the wiring phase books the visit; the prototype only swaps the words.
 
 export interface PickDayButtonsProps {
   /** what the visit is, handed back to `onPick`: the pass page's turn-on or blowout, or any visit the account page moves */
@@ -27,6 +26,7 @@ const weekdayOf = (iso: string) => ["Sunday", "Monday", "Tuesday", "Wednesday", 
 
 export function PickDayButtons({ kind, days, onPick, foldedLabel, previousDay, foldedAria }: PickDayButtonsProps) {
   const [picked, setPicked] = useState<string | null>(null)
+  const [held, setHeld] = useState<string | null>([...days].sort()[0] ?? null)
   const [open, setOpen] = useState(!foldedLabel)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -81,15 +81,11 @@ export function PickDayButtons({ kind, days, onPick, foldedLabel, previousDay, f
     )
   }
   return (
-    <div className="space-y-3">
-      <div role="group" aria-label="Days to pick from" className="grid gap-3 sm:grid-cols-3">
-        {days.map((day) => (
-          <Button key={day} variant="outline" data-slot="pick-day" disabled={busy} className={cn("h-auto flex-col items-start gap-0.5 px-4 py-3 text-left")} onClick={() => pick(day)}>
-            <span className="font-display text-xl leading-none">{weekdayOf(day)}</span>
-            <span className="text-sm text-muted-foreground">{writtenDate(day)}</span>
-          </Button>
-        ))}
-      </div>
+    <div className="space-y-4">
+      <DayCalendar offers={days.map((day) => ({ day, times: [] }))} value={{ day: held, start: null }} onChange={(next) => setHeld(next.day)} timed={false} current={previousDay ?? null} density="sheet" headingLevel={3} legend="Days to pick from" />
+      <Button className="min-h-11" disabled={busy || !held} onClick={() => held && pick(held)}>
+        {held ? `${previousDay ? "Move it to" : "Book"} ${weekdayOf(held)}, ${writtenDate(held)}` : "Pick a day"}
+      </Button>
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}

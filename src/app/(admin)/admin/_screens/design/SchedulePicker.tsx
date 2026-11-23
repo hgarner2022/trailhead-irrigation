@@ -4,6 +4,7 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { DayCalendar } from "@/components/blocks/DayCalendar"
 import { FormRow } from "@/components/blocks/FormRow"
+import { TimeChips } from "@/components/blocks/TimeChips"
 import { Input } from "@/components/ui/input"
 import { CREW_LINE_MAX, crewText, notices } from "./crew-copy"
 
@@ -34,6 +35,8 @@ const DAYS: Day[] = [
   { key: "d27", iso: "2026-11-27", label: "Fri, Nov 27", stops: [s(11, 0, 60, "Ana", "Louisville", "Tech Two")] },
 ]
 
+const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`
+const toMinutes = (v: string) => Number(v.slice(0, 2)) * 60 + Number(v.slice(3, 5))
 const time = (m: number) => `${Math.floor(m / 60) % 12 || 12}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "am" : "pm"}`
 /** The day on the calendar as the picker holds it: a fixture day with its stops, or any other day with none. */
 const dayOf = (iso: string): Day =>
@@ -140,17 +143,8 @@ function PersonAndTimes({ day, people, setPeople, stops, starts, at, minutes, pi
         <p data-slot="day-timeline" className="rounded-lg bg-stone px-3 py-2 text-muted-foreground">
           {stops.length ? `${people[0]!.split(" ")[0]} is booked: ${stops.map((x) => `${time(x.start)} ${x.name}, ${x.town}`).join(" · ")}` : `${people[0]!.split(" ")[0]} has nothing booked ${day.label.startsWith("Today") ? "today" : "that day"}.`}
         </p>
-        <div role="radiogroup" aria-label="Start time" className="flex flex-wrap gap-2">
-          {starts.length === 0 && <p className="text-muted-foreground">No open time that fits. Pick Any time or another day.</p>}
-          {starts.map((t) => (
-            <button key={t} type="button" role="radio" aria-checked={at === t} onClick={() => pick(t)} className={cn("min-h-11 rounded-lg border px-3 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", at === t ? "border-primary bg-primary/10" : "border-input")}>
-              {time(t)}
-            </button>
-          ))}
-        </div>
-        <button type="button" role="radio" aria-checked={at === "any"} onClick={() => pick("any")} className={cn("min-h-11 self-start rounded-sm px-1 text-muted-foreground underline-offset-2 hover:underline", at === "any" && "font-medium text-foreground underline")}>
-          Any time
-        </button>
+        {starts.length === 0 && <p className="text-muted-foreground">No open time that fits. Pick Any time or another day.</p>}
+        <TimeChips legend="Start time" hideLegend density="sheet" anyTime options={starts.map((t) => ({ start: hhmm(t) }))} value={at === "any" ? null : hhmm(at)} onChange={(v) => pick(v === null ? "any" : toMinutes(v))} />
       </div>
     </>
   )

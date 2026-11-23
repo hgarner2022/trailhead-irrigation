@@ -157,8 +157,8 @@ export const PickDayPlay: Story = {
   args: { pass: { ...fresh, needsCustomerHome: true }, today: "2027-04-20" },
   globals: wide,
   play: async ({ canvas, userEvent, args }) => {
-    const [first] = await canvas.findAllByRole("button", { name: /^(Tuesday|Thursday)/ })
-    await userEvent.click(first)
+    // the soonest open day is chosen already; one button books it
+    await userEvent.click(await canvas.findByRole("button", { name: /^Book (Tuesday|Thursday)/ }))
     await expect(await canvas.findByText(/You're set for .*\. We'll text you the time the day before\./)).toBeInTheDocument()
     await expect(args.onPickDay).toHaveBeenCalledTimes(1)
   },
