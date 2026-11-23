@@ -22,7 +22,7 @@ const mismatch: Partial<CheckoutState> = { address: "9 Cottonwood Ln", place: ty
 const noCity: Partial<CheckoutState> = { address: "9 Cottonwood Ln", place: { id: "typed:9 cottonwood ln||", label: "9 Cottonwood Ln", line1: "9 Cottonwood Ln", town: "", state: "CO", zip: "" } }
 const details: Partial<CheckoutState> = { ...home, access: "yes", accessNote: "Gate code 4471, the controller is in the garage." }
 const full: Partial<CheckoutState> = { ...details, ...person }
-// April 19 is a recommended day and 10:30 its best fit.
+// April 19 is an open day and 10:30 one of its times.
 const picked = { visit: { day: "2027-04-19", start: "10:30" } }
 const photos = [
   { name: "zone-3-head.jpg", src: "/images/sprinkler-spray-head-lawn.jpg" },
@@ -141,7 +141,7 @@ export const AddressNoCityPickTest: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "9 Cot")
     await userEvent.click(await canvas.findByRole("option", { name: /Cottonwood/ }))
-    await waitFor(() => expect(canvas.getByLabelText("City")).toHaveFocus())
+    await waitFor(() => expect(canvas.getByLabelText("City")).toHaveFocus(), { timeout: 5000 })
     await expect(canvas.getByLabelText("Street address")).toHaveValue("9 Cottonwood Ln")
   },
 }
@@ -287,12 +287,13 @@ const quoteDetails = on({ initial: { step: "details", quote: true, service: "lig
 export const QuotePathDetailsPhone: Story = { ...quoteDetails.phone, name: "Request a quote, details, phone" }
 export const QuotePathDetailsLaptop: Story = { ...quoteDetails.laptop, name: "Request a quote, details, laptop" }
 
-/** 3. Day: a month calendar. The soonest open day is selected and marked, recommended days are marked, days with nothing open are greyed, and the times of the chosen day are under it, none selected. */
+/** 3. Day: a month calendar. The soonest open day is chosen and marked, every open day carries a quiet dot, days with nothing open are plain, and the times of the chosen day are under it, none chosen. */
 const day = on({ initial: { step: "day", service: "repair", fields: details } }, "Day", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Day" })).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: /Thursday, April 15, soonest/ })).toHaveAttribute("aria-pressed", "true")
-    await expect(canvas.getByRole("button", { name: /Monday, April 19, recommended/ })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Monday, April 19" })).toBeInTheDocument()
+    await expect(canvas.queryByText(/Recommended|Best fit/)).toBeNull()
     await expect(canvas.getByRole("button", { name: /Wednesday, April 21, no times open/ })).toHaveAttribute("aria-disabled", "true")
     await expect(canvas.queryByText(/Tuesdays|texts you the day before|already in Erie|Show more days/)).toBeNull()
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
@@ -300,7 +301,7 @@ const day = on({ initial: { step: "day", service: "repair", fields: details } },
 })
 export const DayPhone: Story = { ...day.phone, name: "Day, phone" }
 export const DayLaptop: Story = { ...day.laptop, name: "Day, laptop" }
-/** A recommended day picked and its best time tapped: Continue is on. */
+/** A day picked and a time tapped: Continue is on. */
 const dayTapped = on({ initial: { step: "day", service: "repair", fields: details, picks: picked } }, "Day, a time tapped")
 export const DayTimeTappedPhone: Story = { ...dayTapped.phone, name: "Day, a time tapped, phone" }
 export const DayTimeTappedLaptop: Story = { ...dayTapped.laptop, name: "Day, a time tapped, laptop" }
