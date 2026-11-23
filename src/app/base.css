@@ -46,3 +46,16 @@ h1, h2, h3 {
   line-height: 1.05;
   text-wrap: balance;
 }
+
+/* The chosen day or time in the booking calendar settles in: one short scale, once, nothing loops.
+   Under prefers-reduced-motion it simply is chosen. */
+@keyframes settle {
+  from { transform: scale(0.94); }
+  to { transform: scale(1); }
+}
+.settle {
+  animation: settle 160ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .settle { animation: none; }
+}

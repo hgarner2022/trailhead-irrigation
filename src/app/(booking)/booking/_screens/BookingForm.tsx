@@ -38,7 +38,7 @@ import { ACTIONS, CONFIRM_BOOK, CONFIRM_PASS, DAY_HINT, NO_EXTRAS, QUESTIONS, QU
 // The customer's booking form (docs/plans/2026-11-19-booking-form-design.md), one question per screen on the FlowShell, every heading a plain name: Address, Service, Day, Contact, Card, Review. It opens on the
 // address, the type-ahead box (the checkout's: typed fields only after a search finds nothing, the ZIP decides the area), then the service: one card per service that opens in place and holds what is
 // included, the zones with the price, the questions that belong to it, access, a note and photos, so a booking has no details step (Hannah, Nov 22 2026); on a single turn-on or blowout the open card also offers
-// "Make it a Season Pass". Then the day as a calendar with the soonest open day selected and an exact start time, and only then who we reach (a returning customer verifies by a link before any saved detail is shown),
+// "Upgrade to a Season Pass". Then the day as a calendar with the soonest open day selected and an exact start time, and only then who we reach (a repeat customer proves the email with a code before any saved detail is shown),
 // so an abandoned booking leaves nothing; then a card (Stripe's setup form, drawn), a review that says what happens, then the booked card. A service we quote is the address, services, "Details" and contact
 // ("Send to Ryan") with no day, no card and no review. Back is the one way back and is the browser's Back; the only Change links are on the review step, and a Change there returns to it. Close asks only once
 // something is entered. Nothing is sent, and nothing is kept before the contact step is submitted.
@@ -77,7 +77,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
   const [typed, setTyped] = useState<TypedValues | undefined>()
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
   const town = townOf(fields)
-  const returning = useReturning({ initial, recognise, fields, active: step === "contact" && !quote, set, setChannel, setCard })
+  const returning = useReturning({ initial, recognise, fields, set, setChannel, setCard })
   const first = useRef(true)
   const leaveLink = useRef<HTMLAnchorElement>(null)
 
@@ -169,7 +169,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       setExtras(NO_EXTRAS)
     }
   }
-  // "Make it a Season Pass": the same address and answers, down the pass path; turned off, back to the single visit.
+  // "Upgrade to a Season Pass": the same address and answers, down the pass path; turned off, back to the single visit.
   const makePass = (on: boolean) => {
     setPicks({})
     setPrefs({})
@@ -259,7 +259,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
             onChannel={setChannel}
             attempted={attempted}
             terms={!quote}
-            top={<ReturningBlock state={returning.state} via={returning.via} contact={{ email: fields.email, phone: fields.phone }} saved={returning.saved} street={[street, town].filter(Boolean).join(", ")} onFile={Boolean(returning.saved?.address.startsWith(street))} card={cardWords(card)} onSend={returning.send} onSkip={returning.skip} onOpenLink={returning.verify} onNotYou={returning.notYou} onChangeAddress={() => change("address")} onChangeCard={() => change("card")} />}
+            top={quote ? undefined : <ReturningBlock state={returning.state} email={returning.email} onEmail={returning.setEmail} problem={returning.problem} saved={returning.saved} street={[street, town].filter(Boolean).join(", ")} onFile={Boolean(returning.saved?.address.startsWith(street))} card={cardWords(card)} onAsk={returning.ask} onSend={returning.send} onCancel={returning.cancel} onVerify={returning.verify} onNotYou={returning.notYou} onChangeAddress={() => change("address")} onChangeCard={() => change("card")} />}
           />
           {quote && <p data-slot="quote-happens" className="mt-8 text-base text-foreground">{happensWords({ channel, phone: fields.phone, email: fields.email, quote: true, callback: false })}</p>}
         </>

@@ -1,10 +1,12 @@
-// A returning customer in the booking form, pure (docs/plans/2026-11-19-booking-form-design.md, "Repeat customers (Nov 22 2026)"). When the email or the phone at the contact step matches someone Trailhead
-// already has, the form offers a sign-in link by text or email. Nothing about the person (not the name, not the address, not the card) is shown until the link is opened: an unverified visitor sees only
-// the offer and where the link would go, masked. Opened, the contact fields, the preference and the card are filled in and stay changeable, and one line, "Not you?", puts them back. A visitor who leaves
-// the form leaves nothing: the match is a lookup and stores nothing, and the link is sent only when it is pressed.
+// A repeat customer in the booking form, pure (docs/plans/2026-11-23-booking-day-time-and-repeat-research.md, section 4). Someone who has booked before can use what Trailhead holds for them, but only after
+// they prove the email is theirs with a six-digit code sent to it, typed in the form (a link would take them out of a half-finished booking). The offer is the same for every visitor ("Booked with us
+// before?"): it never appears only for an email we know, which would tell anyone who types an email whether it is a customer. Nothing about the person (name, address, card) is shown until the code is
+// right. Opened, the contact fields, how we reach them and the card are filled in and stay changeable, and one line, "Not you?", puts them back. A visitor who leaves leaves nothing: the code request stores
+// nothing but its expiry. Matching the visit to the right customer, so there is never a duplicate, is the server's job after the contact step and needs no sign-in.
 import type { ContactChannel } from "@/components/blocks/ContactPreference"
+import { maskEmail } from "@/lib/auth/mask-email"
 
-/** What Trailhead holds for a customer, as the form reads it once the customer has verified. */
+/** What Trailhead holds for a customer, as the form reads it once the code is right. */
 export interface SavedCustomer {
   firstName: string
   lastName: string
@@ -17,38 +19,30 @@ export interface SavedCustomer {
   card: string
 }
 
-/** Where the form is with a returning customer: no match, the offer is showing, the link was sent, the customer verified, or said "Not you?" / "Continue without signing in". */
-export type Returning = "none" | "offer" | "sent" | "verified" | "declined"
+/** Where the form is with a repeat customer: not asked, asking for the email, the code sent, or verified. */
+export type Returning = "none" | "asking" | "sent" | "verified"
 
-/** How the link is sent: to the phone by text, or to the email. */
-export type LinkChannel = "text" | "email"
+/** The code is six digits. */
+export const CODE_LENGTH = 6
 
-const digits = (s: string) => s.replace(/\D/g, "").slice(-10)
-
-/** The stand-in lookup the stories use: one customer, found by her email or her phone. The live form asks the server, which answers the same way for every visitor. */
+/** The prototype's stand-in: one customer, and the code that is always right in Storybook. The live form asks the server, which answers the same way for every email. */
 export const FIXTURE_SAVED: SavedCustomer = { firstName: "Andrea", lastName: "Dalton", email: "andrea.dalton@example.com", phone: "(970) 555-0123", channel: "text", address: "480 Briggs St, Erie", card: "Visa ending 4242" }
-export function fixtureRecognise(contact: { email: string; phone: string }): SavedCustomer | null {
-  const email = contact.email.trim().toLowerCase()
-  return (email !== "" && email === FIXTURE_SAVED.email) || (digits(contact.phone).length === 10 && digits(contact.phone) === digits(FIXTURE_SAVED.phone)) ? FIXTURE_SAVED : null
-}
+export const FIXTURE_CODE = "123456"
+export const fixtureRecognise = (email: string): SavedCustomer | null => (email.trim().toLowerCase() === FIXTURE_SAVED.email ? FIXTURE_SAVED : null)
 
-/** "(•••) •••-0123": the phone with all but the last four hidden. */
-export const maskPhone = (phone: string) => `(•••) •••-${digits(phone).slice(6)}`
-
-/** "a•••@example.com": the email with all but the first letter of the name hidden. */
-export function maskEmail(email: string): string {
-  const [name = "", domain = ""] = email.trim().split("@")
-  return `${name.slice(0, 1)}•••@${domain}`
-}
-
-/** The words of the returning customer's block. */
+/** The words of the repeat customer's block. */
 export const RETURNING_WORDS = {
-  offer: "Booked with us before? Get a link to use your saved details.",
-  text: "Text me a link",
-  email: "Email me a link",
-  skip: "Continue without signing in",
-  sent: (channel: LinkChannel, contact: { email: string; phone: string }) => `We sent a link to ${channel === "text" ? maskPhone(contact.phone) : maskEmail(contact.email)}.`,
+  offer: "Booked with us before?",
+  start: "Use saved details",
+  emailLabel: "Email",
+  send: "Send code",
+  cancel: "Cancel",
+  sent: (email: string) => `We sent a code to ${maskEmail(email)}.`,
+  codeLabel: "Code",
+  confirm: "Confirm",
   again: "Send it again",
+  wrong: "That code isn't right.",
+  none: "We have no saved details for that email.",
   welcome: (firstName: string) => `Welcome back, ${firstName}.`,
   notYou: "Not you?",
 } as const

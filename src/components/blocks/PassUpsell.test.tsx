@@ -10,11 +10,11 @@ function Harness() {
 }
 
 describe("PassUpsell", () => {
-  it("is a switch, off until the customer turns it on, with two true lines and nothing more", async () => {
+  it("is a switch, off until the customer turns it on, and says nothing more", async () => {
     render(<Harness />)
-    const toggle = screen.getByRole("switch", { name: "Make it a Season Pass" })
+    const toggle = screen.getByRole("switch", { name: "Upgrade to a Season Pass" })
     expect(toggle).toHaveAttribute("aria-checked", "false")
-    expect(toggle).toHaveAccessibleDescription("We schedule it every season. You pay after each visit.")
+    expect(screen.getByRole("switch").closest("[data-slot=pass-upsell]")).toHaveTextContent(/^Upgrade to a Season Pass$/)
     await userEvent.click(toggle)
     expect(toggle).toHaveAttribute("aria-checked", "true")
     await userEvent.keyboard(" ")

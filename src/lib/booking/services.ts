@@ -77,13 +77,15 @@ export const PRICE_AT_VISIT = "Price set at the visit"
 export const REQUEST_QUOTE = "Need a quote? Request one"
 export const QUOTE_DONE = "Thanks. We've got your request."
 
+/** The backend services the web form does not present: the office makes a consultation itself (Hannah, Nov 22 2026: "get rid of the free consultation"). Every other backend service has an entry below, so turning it on in Settings puts it in the form. */
+export const OFFICE_ONLY: readonly string[] = ["consult"]
+
 const PRESENTATION: readonly Presentation[] = [
   { key: "season-pass", name: "Season Pass", serviceKeys: [], kind: "pass", perZone: true },
   { key: "spring-turn-on", name: "Spring turn-on", serviceKeys: ["turn-on-8", "turn-on-12", "turn-on-16"], kind: "day", perZone: true, window: "turn-on" },
   { key: "fall-blowout", name: "Fall blowout", serviceKeys: ["blowout"], kind: "day", perZone: true, window: "blowout" },
   { key: "inspection", name: "Mid-season inspection", serviceKeys: ["inspection-8", "inspection-12", "inspection-16"], kind: "day", perZone: true, window: "inspection" },
   { key: "repair", name: "Sprinkler repair", serviceKeys: ["repair"], kind: "day" },
-  { key: "consult", name: "Free consultation", serviceKeys: ["consult"], kind: "day" },
   { key: "rachio-install", name: "Rachio smart controller install", serviceKeys: ["rachio-install-8", "rachio-install-16"], kind: "day", perZone: true, details: "rachio" },
   { key: "water-efficiency", name: "Water efficiency and drip", serviceKeys: ["water-efficiency"], kind: "day", details: "efficiency" },
   { key: "install", name: "New sprinkler system installation", serviceKeys: ["install"], kind: "day", details: "install" },
@@ -128,7 +130,7 @@ function entryOf(p: Presentation, overrides: Partial<Record<string, Online>>): S
     name: p.name,
     serviceKeys: p.serviceKeys,
     online,
-    price: p.kind === "pass" ? "" : quoted ? "" : lowest === undefined ? PRICE_AT_VISIT : lowest === 0 ? "Free" : `${p.perZone ? "From " : ""}${money(lowest)}`,
+    price: p.kind === "pass" ? "" : quoted ? "" : lowest === undefined ? PRICE_AT_VISIT : `${p.perZone ? "From " : ""}${money(lowest)}`,
     ...(first && !quoted ? { length: lengthWords(first.slotMinutes) } : {}),
     ...(first ? { included: includedWords(first.description) } : {}),
     kind: online === "quote" ? "quote" : p.kind === "quote" ? "day" : p.kind,

@@ -13,22 +13,26 @@ function Harness({ initial = { day: "2027-04-15", start: null } as DayTimePick, 
 }
 
 describe("DayCalendar", () => {
-  it("shows the month with the soonest open day selected and marked, a recommended day marked and a full day greyed", () => {
+  it("shows the month with the soonest open day selected and marked, a dot on every open day and a full day plain", () => {
     render(<Harness />)
     expect(screen.getByRole("grid", { name: "Pick your day, April 2027" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Thursday, April 15, soonest" })).toHaveAttribute("aria-pressed", "true")
-    expect(screen.getByRole("button", { name: "Monday, April 19, recommended" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: "Monday, April 19" })).toHaveAttribute("aria-pressed", "false")
+    // an open day carries a dot, a full one does not, and a pressed day settles in with the one scale (reduced motion turns it off in CSS)
+    expect(screen.getByRole("button", { name: "Monday, April 19" }).querySelector("span[aria-hidden].rounded-full")).not.toBeNull()
+    expect(screen.getByRole("button", { name: "Wednesday, April 21, no times open" }).querySelector("span.rounded-full")).toBeNull()
+    expect(screen.getByRole("button", { name: "Thursday, April 15, soonest" })).toHaveClass("settle")
     expect(screen.getByRole("button", { name: "Wednesday, April 21, no times open" })).toHaveAttribute("aria-disabled", "true")
     // days before the first open day are greyed too, and nothing is hidden
     expect(screen.getByRole("button", { name: "Wednesday, April 14, no times open" })).toHaveAttribute("aria-disabled", "true")
   })
-  it("shows only the chosen day's times, soonest first, with the best fit marked and none selected", () => {
+  it("shows only the chosen day's times, earliest first, none selected and no label on any", () => {
     render(<Harness initial={{ day: "2027-04-19", start: null }} />)
-    expect(screen.getByRole("group", { name: /Times on Monday, April 19/ })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Monday, April 19" })).toBeInTheDocument()
     const times = screen.getAllByRole("radio")
     expect(times.length).toBeGreaterThan(3)
     expect(times.every((t) => !(t as HTMLInputElement).checked)).toBe(true)
-    expect(screen.getByRole("radio", { name: /10:30 am.*Best fit/ })).toBeInTheDocument()
+    expect(screen.queryByText(/Best fit|Recommended/)).toBeNull()
     const labels = times.map((t) => t.closest("label")!.textContent!)
     expect(labels[0]).toMatch(/8:00 am/)
   })

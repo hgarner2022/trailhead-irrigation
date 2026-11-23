@@ -36,7 +36,7 @@ export function priceWords(entry: ServiceEntry, zones: number, plan: PassPlan | 
   if (entry.kind === "pass" || entry.kind === "quote") return ""
   const price = priceFor(entry, zones, plan)
   if (price === null) return PRICE_AT_VISIT
-  return price === 0 ? "Free" : `About ${money(price)}`
+  return `About ${money(price)}`
 }
 
 /** The phone in the way it is read back: "(970) 555-0123". */

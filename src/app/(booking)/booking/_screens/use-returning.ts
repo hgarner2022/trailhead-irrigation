@@ -2,48 +2,60 @@
 
 import { useState } from "react"
 import type { ContactChannel } from "@/components/blocks/ContactPreference"
-import type { LinkChannel, Returning, SavedCustomer } from "@/lib/booking/returning"
+import { CODE_LENGTH, FIXTURE_CODE, type Returning, type SavedCustomer } from "@/lib/booking/returning"
 import type { CheckoutFields } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
 import type { CardChoice } from "./booking-form-model"
 
-// The returning customer's state in the booking form (docs/plans/2026-11-19-booking-form-design.md, "Repeat customers (Nov 22 2026)"): a match at the contact step offers a link; the link is sent only when
-// pressed; opened, it fills the contact fields, the way we reach them and the card in; "Not you?" empties them again. The lookup stores nothing, so a visitor who leaves leaves nothing.
+// The repeat customer's state in the booking form (docs/plans/2026-11-23-booking-day-time-and-repeat-research.md, section 4): "Use saved details" asks for the email, the code is sent only when pressed, and a
+// right code fills the contact fields, the way we reach them and the card in; "Not you?" empties them again. A wrong code says so and nothing else. The lookup stores nothing, so a visitor who leaves leaves
+// nothing. The stand-in code is the prototype's; the live form asks the server.
 
 const CONTACT = ["firstName", "lastName", "email", "phone"] as const
 
 export function useReturning(a: {
-  initial?: { returning?: Returning; via?: LinkChannel }
-  recognise: (contact: { email: string; phone: string }) => SavedCustomer | null
+  initial?: { returning?: Returning }
+  recognise: (email: string) => SavedCustomer | null
   fields: CheckoutFields
-  /** the contact step of a booking: the only place a match is looked for */
-  active: boolean
   set: <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => void
   setChannel: (c: ContactChannel) => void
   setCard: (c: CardChoice) => void
 }) {
-  const { recognise, fields, active, set, setChannel, setCard } = a
+  const { recognise, fields, set, setChannel, setCard } = a
   const [state, setState] = useState<Returning>(a.initial?.returning ?? "none")
-  const [via, setVia] = useState<LinkChannel>(a.initial?.via ?? "text")
+  // The address the code goes to, kept apart from the contact fields so asking never changes what the customer typed there.
+  const [email, setEmail] = useState(fields.email)
+  const [problem, setProblem] = useState<"wrong" | "none" | null>(null)
   const [cardOnFile, setCardOnFile] = useState(false)
-  const match = active ? recognise({ email: fields.email, phone: fields.phone }) : null
+  // A verified customer is the one the code matched: read from the email, so a story can open already signed in.
+  const [saved, setSaved] = useState<SavedCustomer | null>(() => (a.initial?.returning === "verified" ? recognise(fields.email) : null))
 
-  // Worked out each render: the offer shows while something matches and nothing has been chosen; with nothing matching, only a verified customer stays shown.
-  const shown: Returning = state === "none" ? (match ? "offer" : "none") : !match && state !== "verified" ? "none" : state
-
+  const reset = () => {
+    setState("none")
+    setProblem(null)
+  }
   return {
-    state: shown,
-    via,
+    state,
+    email,
+    problem,
     cardOnFile,
-    /** what Trailhead holds, known only once the customer has opened the link */
-    saved: state === "verified" ? match : null,
-    send: (c: LinkChannel) => (setVia(c), setState("sent")),
-    skip: () => setState("declined"),
-    verify: () => {
-      if (!match) return
+    /** what Trailhead holds, known only once the code is right */
+    saved,
+    ask: () => (setEmail(fields.email), setState("asking")),
+    setEmail,
+    send: () => setState("sent"),
+    cancel: reset,
+    /** the code typed: true when it was right. The same answer for an email we have and one we do not, until the code is entered. */
+    verify: (code: string) => {
+      if (code.replace(/\D/g, "").length !== CODE_LENGTH) return setProblem("wrong")
+      if (code !== FIXTURE_CODE) return setProblem("wrong")
+      const match = recognise(email)
+      if (!match) return setProblem("none")
       for (const k of CONTACT) set(k, match[k])
       setChannel(match.channel)
       setCard("saved")
       setCardOnFile(true)
+      setSaved(match)
+      setProblem(null)
       setState("verified")
     },
     notYou: () => {
@@ -51,7 +63,8 @@ export function useReturning(a: {
       setChannel("text")
       if (cardOnFile) setCard(null)
       setCardOnFile(false)
-      setState("declined")
+      setSaved(null)
+      reset()
     },
     replaceCard: () => (setCard(null), setCardOnFile(false)),
   }

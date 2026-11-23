@@ -52,7 +52,7 @@ const servicesApril = on(at("april", { step: "service" }), "April, service", {
     await expect(within(card).getByText("Fall blowout")).toBeInTheDocument()
     await expect(within(card).getByText("About $145")).toBeInTheDocument()
     await expect(within(card).getByText("About $115")).toBeInTheDocument()
-    await expect(within(card).getByText("Charged after each visit.")).toBeInTheDocument()
+    await expect(within(card).queryByText("Charged after each visit.")).toBeNull()
     await expect(within(card).getByText("We schedule your visits every season, so you never have to remember.")).toBeInTheDocument()
     await expect(canvas.queryByText(/Opens|Apr 25|Auto-renews|What happens for you/)).toBeNull()
     // the upsell is a single visit's card, not the pass's own

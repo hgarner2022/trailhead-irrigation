@@ -9,11 +9,12 @@ import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { longDay } from "@/lib/portal/words"
 import { cn } from "@/lib/utils"
 
-// The day-and-time question as a calendar (docs/plans/2026-11-19-booking-form-design.md, "Day and time (Nov 22 2026)"): one month at a time as a grid, days with open times enabled, the SOONEST open day
-// already selected and marked, the days the offer rule ranks best marked "Recommended", every other day quiet and the days with nothing open greyed. Picking a day shows its times under the grid, soonest
-// first, with the rule's "Best fit" on one; a time is never selected for the customer. The month arrows replace "Show more days". A real grid for keyboard and screen readers (WAI-ARIA date picker
-// grid): one day in the Tab order (roving tabindex), arrows move by day and week, Page Up and Page Down by month, Home and End to the week's ends, Enter or Space picks; each day is a 44px button named
-// with its weekday, date and marks. Controlled; the screen holds the pick. With no day open it says so and offers a box for when would suit. Pure props, client component.
+// The day-and-time question as a calendar (docs/plans/2026-11-23-booking-day-time-and-repeat-research.md, docs/plans/2026-11-19-booking-form-design.md "Third pass"): one month at a time as a grid, a quiet dot on
+// every day with an opening, days with none plain and not pressable, and the SOONEST open day already chosen, with an orange dot (Hannah, Nov 22 2026: always steer to the soonest). Picking a day shows its
+// times under the grid, earliest first; a time is never chosen for the customer. The chosen day and the chosen time settle in with one 160 ms scale (`settle`, base.css), once, and nothing pulses; under
+// prefers-reduced-motion they just are chosen. The month arrows replace "Show more days". A real grid for keyboard and screen readers (WAI-ARIA date picker grid): one day in the Tab order (roving tabindex),
+// arrows move by day and week, Page Up and Page Down by month, Home and End to the week's ends, Enter or Space picks; each day is a 44px button named with its weekday and date. No sentence about where
+// Ryan is on which day, and no "Best fit". Controlled; the screen holds the pick. With no day open it says so and offers a box for when would suit. Pure props, client component.
 
 export interface DayCalendarProps {
   offers: readonly DayTimeOffer[]
@@ -99,7 +100,7 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
     else return
     e.preventDefault()
   }
-  const marks = (day: string) => [day === soonest ? "Soonest" : null, open.get(day)?.best ? "Recommended" : null].filter((m): m is string => m !== null)
+  const soonestMark = (day: string) => day === soonest
 
   return (
     <div data-slot="day-calendar" className={cn("space-y-8", className)}>
@@ -130,28 +131,27 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
                   if (!day) return <td key={j} />
                   const enabled = open.has(day)
                   const selected = value.day === day
-                  const m = marks(day)
+                  const mark = soonestMark(day)
                   return (
                     <td key={day} aria-selected={selected} className="p-0 text-center">
                       <button
                         type="button"
                         data-day={day}
                         data-soonest={day === soonest || undefined}
-                        data-recommended={open.get(day)?.best || undefined}
                         aria-pressed={selected}
                         aria-disabled={!enabled || undefined}
-                        aria-label={`${longDay(day)}${m.length ? `, ${m.join(", ").toLowerCase()}` : ""}${enabled ? "" : ", no times open"}`}
+                        aria-label={`${longDay(day)}${mark ? ", soonest" : ""}${enabled ? "" : ", no times open"}`}
                         tabIndex={day === tabDay ? 0 : -1}
                         onClick={() => enabled && pickDay(day)}
                         onKeyDown={(e) => onKey(e, day)}
                         onFocus={() => setFocus(day)}
                         className={cn(
                           "relative mx-auto flex size-11 flex-col items-center justify-center rounded-lg text-base tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1",
-                          selected ? "bg-navy font-semibold text-white" : enabled ? "cursor-pointer border border-border bg-background text-navy hover:border-navy/50" : "cursor-not-allowed text-muted-foreground/50",
+                          selected ? "settle bg-navy font-semibold text-white" : enabled ? "cursor-pointer border border-border bg-background text-navy hover:border-navy/50" : "cursor-not-allowed text-muted-foreground/50",
                         )}
                       >
                         <span aria-hidden>{+day.slice(8)}</span>
-                        {enabled && m.length > 0 && <span aria-hidden className={cn("absolute bottom-1 size-1.5 rounded-full", day === soonest ? (selected ? "bg-primary-light" : "bg-primary") : selected ? "bg-white" : "bg-navy")} />}
+                        {enabled && <span aria-hidden className={cn("absolute bottom-1 size-1.5 rounded-full", mark ? (selected ? "bg-primary-light" : "bg-primary") : selected ? "bg-white/60" : "bg-navy/30")} />}
                       </button>
                     </td>
                   )
@@ -162,31 +162,27 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
         </table>
         <p data-slot="calendar-legend" className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden className="size-2 rounded-full bg-primary" />
+            <span aria-hidden className="size-1.5 rounded-full bg-navy/30" />
+            Open
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span aria-hidden className="size-1.5 rounded-full bg-primary" />
             Soonest
           </span>
-          {[...open.values()].some((o) => o.best) && (
-            <span className="inline-flex items-center gap-1.5">
-              <span aria-hidden className="size-2 rounded-full bg-navy" />
-              Recommended
-            </span>
-          )}
         </p>
       </div>
 
       {current && (
         <fieldset key={current.day} data-slot="time-chips" className="min-w-0">
-          <legend className="text-base font-semibold text-foreground">{`Times on ${longDay(current.day)}`}</legend>
-          <p className="mt-1 flex flex-wrap gap-2 text-sm font-semibold text-primary-deep">{marks(current.day).map((m) => <span key={m}>{m}</span>)}</p>
+          <legend className="text-base font-semibold text-foreground">{longDay(current.day)}</legend>
           <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
             {current.times.map((t) => {
               const checked = value.start === t.start
               return (
                 <label key={t.start} className="relative block">
                   <input type="radio" name={`${id}-time`} checked={checked} onChange={() => onChange({ day: current.day, start: t.start })} className="peer sr-only" />
-                  <span data-slot="time-chip" data-best={t.best || undefined} className={cn(CHIP, checked ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
+                  <span data-slot="time-chip" className={cn(CHIP, checked ? "settle border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
                     <span className="text-base font-semibold tabular-nums">{clock12(t.start)}</span>
-                    {t.best && <span className={cn("text-xs font-semibold", checked ? "text-white/85" : "text-primary-deep")}>Best fit</span>}
                   </span>
                 </label>
               )

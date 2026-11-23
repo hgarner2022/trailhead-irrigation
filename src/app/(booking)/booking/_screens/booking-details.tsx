@@ -16,7 +16,7 @@ import { ACCESS_PROBLEM, CONTROLLER_BRANDS, EFFICIENCY_GOALS, INSTALL_WORDS, WIF
 
 // What an open service card holds (docs/plans/2026-11-19-booking-form-design.md, "Service cards expand in place"): what the visit includes, how many zones when the price depends on it with the price under them,
 // the questions that belong to the service, whether we can reach the controller and the shut-off without the customer (the one required answer), a note for the crew, photos, and, on a single turn-on or
-// blowout, "Make it a Season Pass". The price shows here, once, with when it is charged. A service with no catalogue price says "Price set at the visit" and nothing more. A request for a quote gets
+// blowout, "Upgrade to a Season Pass". The price shows here, once; when it is charged is said once, on the card step. A service with no catalogue price says "Price set at the visit" and nothing more. A request for a quote gets
 // only "Details" and photos on its own step. Pure props, client component.
 
 const SAMPLES: PickedPhoto[] = [
@@ -45,7 +45,6 @@ function Price({ service, zones, plan }: { service: ServiceEntry; zones: number;
             </li>
           ))}
         </ul>
-        <p className="mt-2 text-base text-muted-foreground">Charged after each visit.</p>
       </div>
     )
   const price = priceFor(service, zones)
@@ -53,7 +52,6 @@ function Price({ service, zones, plan }: { service: ServiceEntry; zones: number;
   return (
     <div data-slot="booking-price">
       <p className="font-display text-4xl leading-none text-navy tabular-nums">{priceWords(service, zones)}</p>
-      {price > 0 && <p className="mt-2 text-base text-muted-foreground">Charged after the visit.</p>}
     </div>
   )
 }
@@ -91,7 +89,7 @@ export interface ServicePanelProps extends Shared {
   attempted: boolean
   extras: Extras
   onExtras: (x: Extras) => void
-  /** "Make it a Season Pass": on a single turn-on or blowout, and on the pass the customer made of one; omitted elsewhere */
+  /** "Upgrade to a Season Pass": on a single turn-on or blowout, and on the pass the customer made of one; omitted elsewhere */
   upsell?: { on: boolean; onChange: (on: boolean) => void }
 }
 

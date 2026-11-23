@@ -26,9 +26,9 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas, userEvent }) => {
     await expect(canvas.getByRole("button", { name: /Thursday, April 15, soonest/ })).toHaveAttribute("aria-pressed", "true")
-    await userEvent.click(canvas.getByRole("button", { name: /Monday, April 19, recommended/ }))
-    await userEvent.click(await canvas.findByRole("radio", { name: /10:30 am.*Best fit/ }))
-    await expect(canvas.getByRole("radio", { name: /10:30 am.*Best fit/ })).toBeChecked()
+    await userEvent.click(canvas.getByRole("button", { name: "Monday, April 19" }))
+    await userEvent.click(await canvas.findByRole("radio", { name: /10:30 am/ }))
+    await expect(canvas.getByRole("radio", { name: /10:30 am/ })).toBeChecked()
   },
 }
 export const Phone: Story = { globals: { viewport: { value: "phone", isRotated: false } } }
