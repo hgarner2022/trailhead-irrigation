@@ -159,7 +159,9 @@ export const PayPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.click(await c.findByRole("link", { name: "View the receipt" }))
     await expect(await c.findByText(/Receipt/i, { selector: "h1" })).toBeInTheDocument()
     await expect(await c.findByRole("heading", { name: "What we did" })).toBeInTheDocument()
-    await expect(c.getByText("Walk the customer through it")).toBeInTheDocument()
+    // only what was checked is listed: the open item (the customer walk-through) is never on the receipt
+    await expect(c.getByText("Find the leak")).toBeInTheDocument()
+    await expect(c.queryByText("Walk the customer through it")).toBeNull()
   },
 }
 

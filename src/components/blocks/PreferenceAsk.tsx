@@ -86,7 +86,7 @@ export function PreferenceAsk({ kind, value, onSave, className }: PreferenceAskP
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <div className="min-w-0 flex-1 space-y-1">
           <p className="text-base font-semibold text-foreground">{timingQuestion(kind)}</p>
-          <p className="text-base text-muted-foreground">{TIMING_NEXT}</p>
+          <p className="text-base text-foreground">{TIMING_NEXT}</p>
         </div>
         <TimingDialog kind={kind} value={value} onSave={onSave} label="Choose when" asButton />
       </div>
