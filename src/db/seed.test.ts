@@ -53,7 +53,9 @@ describe("seed", () => {
     for (const statement of statements) await db.execute(sql.raw(statement))
     const backfilled = await read()
     expect(backfilled.length).toBe(SERVICE_LIST.length)
-    for (const row of backfilled) expect(row.description, row.key).toBe(SERVICE_LIST.find((v) => v.key === row.key)?.description)
+    // A service added after migration 0013 (the water efficiency visit, Nov 22 2026) gets its description from the seed, so the backfill leaves it empty.
+    const addedLater = new Set(["water-efficiency"])
+    for (const row of backfilled) expect(row.description, row.key).toBe(addedLater.has(row.key) ? null : SERVICE_LIST.find((v) => v.key === row.key)?.description)
     for (const statement of statements) await db.execute(sql.raw(statement))
     expect(await read()).toEqual(backfilled)
   })

@@ -9,9 +9,9 @@ import { cn } from "@/lib/utils"
 
 export type Access = "yes" | "no"
 
-const CHOICES: { value: Access; name: string; detail: string }[] = [
-  { value: "yes", name: "Yes", detail: "The controller and shut-off are reachable" },
-  { value: "no", name: "No, I need to be there", detail: "Pick a day you can be there" },
+const CHOICES: { value: Access; name: string; short: string; detail: string }[] = [
+  { value: "yes", name: "Yes", short: "Yes", detail: "The controller and shut-off are reachable" },
+  { value: "no", name: "No, I need to be there", short: "No, I'll be there", detail: "Pick a day you can be there" },
 ]
 
 export interface AccessChoiceProps {
@@ -19,15 +19,17 @@ export interface AccessChoiceProps {
   onChange: (value: Access) => void
   /** what is missing, in words: "Tell us whether we can get to the system without you." */
   error?: string
+  /** the booking form (Nov 22 2026): a shorter question over two plain choices, with no line under either */
+  compact?: boolean
   className?: string
 }
 
-export function AccessChoice({ value, onChange, error, className }: AccessChoiceProps) {
+export function AccessChoice({ value, onChange, error, compact, className }: AccessChoiceProps) {
   const id = useId()
   return (
     <fieldset data-slot="access-choice" aria-describedby={error ? `${id}-error` : undefined} className={cn("min-w-0", className)}>
-      <legend className="font-display text-2xl leading-tight text-navy">Can we reach the controller and the water shut-off without you?</legend>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <legend className={cn("font-display leading-tight text-navy", compact ? "text-xl" : "text-2xl")}>{compact ? "Can we reach the controller and shut-off without you?" : "Can we reach the controller and the water shut-off without you?"}</legend>
+      <div className={cn("mt-3 grid gap-3 sm:grid-cols-2")}>
         {CHOICES.map((choice, i) => {
           const checked = value === choice.value
           return (
@@ -35,12 +37,13 @@ export function AccessChoice({ value, onChange, error, className }: AccessChoice
               <input type="radio" name={`${id}-access`} value={choice.value} checked={checked} aria-invalid={(Boolean(error) && i === 0) || undefined} onChange={() => onChange(choice.value)} className="peer sr-only" />
               <span
                 className={cn(
-                  "flex min-h-20 cursor-pointer flex-col justify-center rounded-lg border px-4 py-3 text-left transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2",
+                  "flex cursor-pointer flex-col justify-center rounded-lg border px-4 py-3 text-left transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2",
+                  compact ? "min-h-14" : "min-h-20",
                   checked ? "border-navy bg-navy text-white" : error ? "border-destructive bg-background text-navy" : "border-border bg-background text-navy hover:border-navy/40",
                 )}
               >
-                <span className="font-display text-2xl leading-none">{choice.name}</span>
-                <span className={cn("mt-1.5 text-sm", checked ? "text-white/85" : "text-muted-foreground")}>{choice.detail}</span>
+                <span className="font-display text-2xl leading-none">{compact ? choice.short : choice.name}</span>
+                {!compact && <span className={cn("mt-1.5 text-sm", checked ? "text-white/85" : "text-muted-foreground")}>{choice.detail}</span>}
               </span>
             </label>
           )

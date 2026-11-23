@@ -9,7 +9,7 @@
 import type { Consent, Pass, PassVisit, TimingPreference, Town } from "@/lib/admin/types"
 import { instantOf } from "@/lib/admin/shape"
 import { emailProblem } from "@/lib/email-check"
-import { outOfAreaMessage, serviceability, type PlaceSuggestion } from "@/lib/places"
+import { outOfAreaMessage, serviceability, zipCityMismatch, type PlaceSuggestion } from "@/lib/places"
 import { daysComplete, choicesAfterOffer, type DayChoice, type Offers } from "./checkout-days"
 import { MAX_ZONES, MIN_ZONES, TERMS_VERSION, visitPrice, visitsOnSale } from "@/lib/season-pass"
 
@@ -165,7 +165,7 @@ export const PICK_ADDRESS = "Pick your address from the list so we have it right
 export function addressProblem(state: Pick<CheckoutFields, "place">, attempted: boolean): string | null {
   if (state.place) {
     const check = serviceability(state.place)
-    return check.ok ? null : outOfAreaMessage(check)
+    return check.ok ? zipCityMismatch(state.place) : outOfAreaMessage(check)
   }
   return attempted ? PICK_ADDRESS : null
 }
@@ -189,7 +189,7 @@ export function stepProblems(state: CheckoutState): string[] {
 export function canContinue(state: CheckoutState): boolean {
   switch (STEPS[state.step - 1]?.key) {
     case "address":
-      return state.place !== null && serviceability(state.place).ok && state.access !== null
+      return state.place !== null && serviceability(state.place).ok && zipCityMismatch(state.place) === null && state.access !== null
     case "zones":
       return Number.isInteger(state.zones) && state.zones >= MIN_ZONES && state.zones <= MAX_ZONES
     // The add-on starts answered (off), and both preferences start on the recommendation.

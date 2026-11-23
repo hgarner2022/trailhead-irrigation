@@ -274,7 +274,7 @@ describe("one entry per service", () => {
     expect(labels[0]).toBe("Season Pass")
     expect(labels.slice(1, 5).map((l) => l.split(/[ ,&]/)[0])).toEqual(["Sprinkler", "Spring", "Fall", "Mid-season"])
     expect(labels.some((l) => /zones$/.test(l))).toBe(false)
-    expect(labels).toHaveLength(11)
+    expect(labels).toHaveLength(12)
   })
 
   it("the zones box picks the band that is sent, and the price line is the same for every band", async () => {

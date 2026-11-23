@@ -87,3 +87,30 @@ export function fixtureDayTimes(minutes = 120, town = "Erie", from = "2027-04-15
     { day: d5, times: timesFor(minutes, [], null) },
   ]
 }
+
+const toIso = (d: Date) => d.toISOString().slice(0, 10)
+const plusDays = (day: string, n: number) => toIso(new Date(new Date(`${day}T12:00:00Z`).getTime() + n * 86_400_000))
+
+/**
+ * The open days for the booking form's calendar, standing in for `offerFor` (docs/plans/2026-11-18-scheduling-engine-design.md, section 4): every working day (Monday to Friday, no fixed weekdays) from
+ * `from` to `until` (a service with dates is offered through its next run of dates and no further; one without looks 56 days), soonest first, with about one day in five full (no times, so the
+ * calendar greys it), the ranked best fit marked `best` on some days with its best time, and no label saying where Ryan is on which day. The calendar marks the soonest open day itself.
+ */
+export function fixtureCalendarDays(minutes = 120, from = "2027-04-15", until?: string): DayTimeOffer[] {
+  const end = until ?? plusDays(from, 55)
+  const out: DayTimeOffer[] = []
+  let weekday = 0
+  for (let d = from; d <= end; d = plusDays(d, 1)) {
+    const dow = new Date(`${d}T12:00:00Z`).getUTCDay()
+    if (dow === 0 || dow === 6) continue
+    weekday += 1
+    if (weekday > 1 && weekday % 5 === 0) {
+      out.push({ day: d, times: [] })
+      continue
+    }
+    const busy = weekday % 3 === 0 ? ["09:00", "09:30", "11:00", "13:30"] : weekday % 2 === 0 ? ["08:30", "12:00"] : ["10:00"]
+    const best = weekday % 4 === 3
+    out.push({ day: d, ...(best ? { best: true } : {}), times: timesFor(minutes, busy, best ? "10:30" : null) })
+  }
+  return out
+}

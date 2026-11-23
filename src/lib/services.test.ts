@@ -31,11 +31,14 @@ describe("SERVICES", () => {
     expect(SERVICES.repair.price).toBe(145)
   })
 
-  it("has eleven bookable services, and installs are quote-only", () => {
+  it("has eleven bookable services, installs are quote-only, the consultation is off online and water efficiency and drip is $145", () => {
     expect(SERVICE_LIST.filter((s) => s.bookable)).toHaveLength(11)
     expect(SERVICES.install.quoteOnly).toBe(true)
     expect(SERVICES.install.bookable).toBe(false)
     expect(serviceCost(SERVICES.install, 8)).toBeUndefined()
+    expect(SERVICES.consult.bookable).toBe(false)
+    expect(SERVICES["water-efficiency"]!.price).toBe(145)
+    expect(SERVICES["water-efficiency"]!.bookable).toBe(true)
   })
 
   it("has unique keys", () => {

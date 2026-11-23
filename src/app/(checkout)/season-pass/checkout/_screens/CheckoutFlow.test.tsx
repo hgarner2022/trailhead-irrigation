@@ -477,21 +477,27 @@ describe("the typed address", () => {
   afterEach(() => vi.unstubAllGlobals())
   const heading = () => screen.getByRole("heading", { level: 1 })
   const accessQuestion = () => screen.queryByText(/Can we reach the controller/)
+  // The box is the type-ahead: the typed fields open only when a search of five characters finds nothing, with the street filled in.
+  const none = async () => []
+  const openTyped = async (user: ReturnType<typeof userEvent.setup>, street: string) => {
+    await user.type(screen.getByRole("combobox", { name: "Street address" }), street)
+    return screen.findByLabelText("City")
+  }
 
   it("opens the three fields from the button, builds the address from them and sends it on as the property", async () => {
     const user = userEvent.setup()
     const onBegin = vi.fn(async (): Promise<BeginResult> => ({ ok: true, passId: "p1", sessionId: "cs_1", clientSecret: "secret" }))
-    render(<CheckoutFlow season={2027} prefill={{ ...answers, address: "", place: null, town: null, access: null }} stripeKey="pk_test_x" onBegin={onBegin} onFinish={vi.fn()} />)
-    await user.click(screen.getByRole("button", { name: "Type it instead" }))
+    render(<CheckoutFlow season={2027} prefill={{ ...answers, address: "", place: null, town: null, access: null }} stripeKey="pk_test_x" onBegin={onBegin} onFinish={vi.fn()} places={none} />)
+    await openTyped(user, "9 Elm St")
+    expect(screen.getByText("We can't find it. Enter it here.")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Type it instead" })).not.toBeInTheDocument()
     expect(screen.queryByRole("combobox", { name: "Street address" })).not.toBeInTheDocument()
-    const street = screen.getByLabelText("Street address")
-    expect(street).toHaveFocus()
-    await user.type(street, "9 Elm St")
+    expect(screen.getByLabelText("Street address")).toHaveFocus()
     expect(accessQuestion()).not.toBeInTheDocument()
     await user.type(screen.getByLabelText("City"), "Erie")
-    expect(accessQuestion()).toBeInTheDocument()
-    // A zip is optional, but a started one must be five digits before the address counts again.
-    const zip = screen.getByLabelText("ZIP (optional)")
+    // The ZIP is required, and it must be five digits before the address counts.
+    expect(accessQuestion()).not.toBeInTheDocument()
+    const zip = screen.getByLabelText("ZIP")
     await user.type(zip, "805")
     expect(accessQuestion()).not.toBeInTheDocument()
     await user.type(zip, "16")
@@ -519,26 +525,34 @@ describe("the typed address", () => {
 
   it("names each missing field when Continue is pressed too early", async () => {
     const user = userEvent.setup()
-    render(<CheckoutFlow season={2027} />)
-    await user.click(screen.getByRole("button", { name: "Type it instead" }))
+    render(<CheckoutFlow season={2027} places={none} />)
+    await openTyped(user, "9 Elm")
+    await user.clear(screen.getByLabelText("Street address"))
     await user.click(continueButton())
     expect(screen.getByText("We need your street address, with the house number.")).toBeInTheDocument()
     expect(screen.getByText("Add your city.")).toBeInTheDocument()
+    expect(screen.getByText("Add your ZIP code.")).toBeInTheDocument()
     expect(screen.queryByText("Pick your address from the list so we have it right.")).not.toBeInTheDocument()
     expect(screen.getByLabelText("Street address")).toHaveFocus()
-    expect(screen.queryByRole("button", { name: "Find it instead" })).not.toBeInTheDocument()
   })
 
-  it("shows nothing under the box but the way to type it instead, and a typed city outside the six is turned away once the box is left", async () => {
+  it("shows nothing under the box, decides the area by the ZIP and checks a typed city against it", async () => {
     const user = userEvent.setup()
-    render(<CheckoutFlow season={2027} />)
+    render(<CheckoutFlow season={2027} places={none} />)
     expect(screen.queryByText(/We work in Erie/)).not.toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: "Type it instead" }))
-    await user.type(screen.getByLabelText("Street address"), "1200 Pearl St")
-    await user.type(screen.getByLabelText("City"), "Bould")
-    expect(screen.queryByText(/We don't serve/)).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Type it instead" })).not.toBeInTheDocument()
+    await openTyped(user, "1200 Pearl St")
+    await user.type(screen.getByLabelText("City"), "Boulder")
+    await user.type(screen.getByLabelText("ZIP"), "80302")
+    expect(await screen.findByText(/We don't serve Boulder yet\. We work in Erie, Longmont/)).toBeInTheDocument()
+    // A served ZIP with another city is a quiet line under the city, and Continue does not pass.
+    await user.clear(screen.getByLabelText("ZIP"))
+    await user.type(screen.getByLabelText("ZIP"), "80516")
     await user.tab()
-    expect(await screen.findByText(/We don't serve Bould yet\. We work in Erie, Longmont/)).toBeInTheDocument()
+    expect(await screen.findByText("ZIP 80516 is in Erie.")).toBeInTheDocument()
+    expect(screen.queryByText(/We don't serve/)).not.toBeInTheDocument()
+    await user.click(continueButton())
+    expect(heading()).not.toHaveTextContent("How many zones does your system have?")
   })
 
   it("opens the fields on its own when nothing is found for five characters, with the street filled in", async () => {

@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Textarea } from "@/components/ui/textarea"
 import { AddressSearch } from "@/components/blocks/AddressSearch"
-import { SERVICE_ZIPS, isTypedPlace, needsDetails, type PlaceProvider, type PlaceSuggestion } from "@/lib/places"
+import { SERVICE_ZIPS, isTypedPlace, needsDetails, serviceability, type PlaceProvider, type PlaceSuggestion } from "@/lib/places"
 import { fixturePlaces } from "@/lib/places/fixture"
 import { googlePlaceDetails } from "@/lib/places/google"
 import { ACCESS_PROBLEM, addressProblem, type CheckoutFields } from "./checkout-state"
-import { TypedAddress } from "./checkout-address-typed"
+import { CANT_FIND, TypedAddress, type TypedValues } from "./checkout-address-typed"
 
 // The first question: one box that finds the address as the customer types
 // (Hannah, 2026-11-12: a normal address with type-ahead, no city to pick;
@@ -17,13 +17,14 @@ import { TypedAddress } from "./checkout-address-typed"
 // fixture in stories and tests, Google Places behind /api/places on the live
 // site. A Google suggestion has no zip until its details answer, so a pick
 // is dispatched at once (the check mark) and again with the whole address.
-// Under the box, always, "Type it instead" swaps the box for
-// three fields, street, city and zip (checkout-address-typed.tsx); a query of
-// five characters that finds nothing opens them on its own, which is how the
-// checkout works with no key at all. Nothing else shows until it is needed
-// (Hannah, Nov 21 2026): the six cities are listed only under an address
-// outside them, and there is no way back to the box, because the typed fields
-// are a whole address. Under that, the access question (the scheduling flow,
+// The box IS the type-ahead (Hannah, Nov 22 2026): there is no "Type it instead"
+// link. Only when a query of five characters finds nothing does the box give way to
+// "We can't find it. Enter it here." with three fields, street, city and a required
+// ZIP (checkout-address-typed.tsx), which is how the checkout works with no key at
+// all. The ZIP decides whether we serve the yard (`serviceability`). Nothing else
+// shows until it is needed (Hannah, Nov 21 2026): the six cities are listed only
+// under an address outside them, and there is no way back to the box, because the
+// typed fields are a whole address. Under that, the access question (the scheduling flow,
 // 2026-11-12): most visits need nobody home, only the controller and the
 // shut-off; a customer who must be there picks their own day later.
 
@@ -40,18 +41,18 @@ export interface AddressStepProps {
   showAccess?: boolean
   /** told when the typed fields open or close, so a screen can name a missing city in its summary */
   onTypedChange?: (open: boolean) => void
+  /** told whenever a typed field changes */
+  onTypedValues?: (values: TypedValues) => void
 }
 
 const ACCESS_PROBLEM_ID = "checkout-access-problem"
-const LINK = "cursor-pointer font-medium text-primary-dark underline underline-offset-2 hover:text-primary-deep"
-export const TYPE_INSTEAD = "Type it instead"
 
 const ACCESS = [
   { value: "yes", name: "Yes", detail: "The controller and shut-off are reachable" },
   { value: "no", name: "No, I need to be there", detail: "We'll offer you days to pick from" },
 ] as const
 
-export function AddressStep({ state, attempted, onType, onPick, set, places = fixturePlaces, details = googlePlaceDetails, showAccess = true, onTypedChange }: AddressStepProps) {
+export function AddressStep({ state, attempted, onType, onPick, set, places = fixturePlaces, details = googlePlaceDetails, showAccess = true, onTypedChange, onTypedValues }: AddressStepProps) {
   // Opens on the typed fields when the step comes back to a typed address; `opened` says the customer opened them here, so they take focus.
   // `asked`: a pick came back with no city we can read, so the fields open with the city already asked for.
   const [typed, setTyped] = useState<{ open: boolean; line1: string; opened: boolean; asked: boolean }>(() => ({ open: !!state.place && isTypedPlace(state.place.id), line1: "", opened: false, asked: false }))
@@ -90,7 +91,14 @@ export function AddressStep({ state, attempted, onType, onPick, set, places = fi
   return (
     <>
       {typed.open ? (
-        <TypedAddress place={state.place} initialLine1={typed.line1} attempted={attempted} cityAsked={typed.asked} focusOnOpen={typed.opened} onType={type} onPick={pick} />
+        <>
+          {!typed.asked && (
+            <p data-slot="address-cant-find" role="status" className="mb-4 text-base text-foreground">
+              {CANT_FIND}
+            </p>
+          )}
+          <TypedAddress place={state.place} initialLine1={typed.line1} attempted={attempted} cityAsked={typed.asked} focusOnOpen={typed.opened} onType={type} onPick={pick} onValues={onTypedValues} />
+        </>
       ) : (
         <AddressSearch
           name="address"
@@ -104,16 +112,9 @@ export function AddressStep({ state, attempted, onType, onPick, set, places = fi
           problem={addressProblem(state, attempted)}
         />
       )}
-      {typed.open && state.place && addressProblem(state, false) && (
+      {typed.open && state.place && !serviceability(state.place).ok && (
         <p id="address-outside" role="alert" className="mt-3 text-sm text-destructive">
           {addressProblem(state, false)}
-        </p>
-      )}
-      {!typed.open && (
-        <p data-slot="address-mode" className="mt-3 text-sm text-muted-foreground">
-          <button type="button" onClick={() => openTyped(state.place ? state.place.line1 : state.address)} className={cn(LINK, "inline-flex min-h-11 items-center")}>
-            {TYPE_INSTEAD}
-          </button>
         </p>
       )}
       {picked && showAccess && (
