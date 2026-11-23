@@ -8,20 +8,20 @@ import { SegmentedControl } from "@/components/blocks/SegmentedControl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { EarlierQuotes, QUIET } from "./QuoteJobParts"
-import { depositOf, lineTotal, linesTotal, money, sendBlock, type DepositInput, type DepositMode, type QuoteJob, type QuoteLine } from "./quote-model"
+import { QUIET } from "./QuoteParts"
+import { depositOf, lineTotal, linesTotal, money, sendBlock, type DepositInput, type DepositMode, type QuoteLine, type QuoteRecord } from "./quote-model"
 
-// The Quote editor (Hannah, Nov 20 2026: "Create a quote here. What's the flow?"): the one card a job in Needs a quote leads with, and the same card when Ryan presses
-// Revise. The flow is on the page: the request became a job, Ryan PRICES the quote here (a price box in each line's row, a line added or canceled, an optional deposit),
-// presses Send a quote, and the customer approves from a link. A line holds what is sold, never the customer's words: those are shown once at the top and are the
-// job's first note. A quantity is shown only when it is more than one. What stops the send is said in ONE quiet line beside the button. Pure props over the job.
+// The Quote editor (Hannah, Nov 20 2026: "Create a quote here. What's the flow?"; moved to the quote's own page on Nov 22 2026): the one card a Draft quote leads with. Ryan PRICES
+// the quote here (a price box in each line's row, a line added or canceled, an optional deposit), presses Send a quote, and the customer approves from a link; the job is made
+// then, not before. A line holds what is sold, never the customer's words: those are shown once at the top and are the quote's first note. A quantity is shown only when it is
+// more than one. What stops the send is said in ONE quiet line beside the button. Pure props over the quote.
 
 const STEPS = ["Price", "Send", "They approve"]
 const NONE: DepositInput = { mode: "none", value: "" }
 export const MISSING_ID = "quote-missing"
 
 export interface QuoteEditorProps {
-  job: QuoteJob
+  quote: QuoteRecord
   /** typing a price is the edit: whole dollars, empty for no price */
   onPrice: (lineId: string, amount: number) => void
   onCancelLine: (lineId: string) => void
@@ -31,15 +31,15 @@ export interface QuoteEditorProps {
   onAddLine: () => void
   onDeposit: (input: DepositInput) => void
   onSend: () => void
-  /** put the cursor in the first empty price box when the page opens (a job just made from a request) */
+  /** put the cursor in the first empty price box when the page opens (a quote just made from a request) */
   autoFocusPrice?: boolean
 }
 
-export function QuoteEditor({ job, onPrice, onCancelLine, onRestoreLine, onEditLine, onAddLine, onDeposit, onSend, autoFocusPrice }: QuoteEditorProps) {
-  const total = linesTotal(job.lines)
-  const draft = job.depositDraft ?? NONE
+export function QuoteEditor({ quote, onPrice, onCancelLine, onRestoreLine, onEditLine, onAddLine, onDeposit, onSend, autoFocusPrice }: QuoteEditorProps) {
+  const total = linesTotal(quote.lines)
+  const draft = quote.depositDraft ?? NONE
   const result = depositOf(total, draft)
-  const missing = sendBlock(job)
+  const missing = sendBlock(quote)
   // step 1 until a line has a price, step 2 from then on; the third is the customer's
   const step = total > 0 ? 2 : 1
   return (
@@ -51,15 +51,15 @@ export function QuoteEditor({ job, onPrice, onCancelLine, onRestoreLine, onEditL
           </li>
         ))}
       </ol>
-      {job.words && (
+      {quote.words && (
         <div data-slot="what-they-asked" className="mb-4 border-b border-border pb-4 text-sm">
           <p className="text-muted-foreground">What they asked</p>
-          <p className="mt-0.5 whitespace-pre-wrap">{job.words}</p>
+          <p className="mt-0.5 whitespace-pre-wrap">{quote.words}</p>
         </div>
       )}
       <RecordList data-slot="quote-lines" className="mt-0">
-        {job.lines.map((l, i) => (
-          <LineRow key={l.id} line={l} onPrice={onPrice} onCancel={onCancelLine} onRestore={onRestoreLine} onEdit={onEditLine} focusFirst={Boolean(autoFocusPrice) && i === firstEmpty(job)} />
+        {quote.lines.map((l, i) => (
+          <LineRow key={l.id} line={l} onPrice={onPrice} onCancel={onCancelLine} onRestore={onRestoreLine} onEdit={onEditLine} focusFirst={Boolean(autoFocusPrice) && i === firstEmpty(quote)} />
         ))}
       </RecordList>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 border-t border-border pt-2">
@@ -82,13 +82,12 @@ export function QuoteEditor({ job, onPrice, onCancelLine, onRestoreLine, onEditL
           </p>
         )}
       </div>
-      <EarlierQuotes job={job} />
     </SectionCard>
   )
 }
 
 /** The line to focus first: the first one with no price. */
-const firstEmpty = (job: QuoteJob) => job.lines.findIndex((l) => !l.canceled && l.amount === 0)
+const firstEmpty = (quote: QuoteRecord) => quote.lines.findIndex((l) => !l.canceled && l.amount === 0)
 
 function LineRow({ line, onPrice, onCancel, onRestore, onEdit, focusFirst }: { line: QuoteLine; onPrice: QuoteEditorProps["onPrice"]; onCancel: QuoteEditorProps["onCancelLine"]; onRestore: QuoteEditorProps["onRestoreLine"]; onEdit: QuoteEditorProps["onEditLine"]; focusFirst: boolean }) {
   // the box keeps what is typed; a price that is not whole dollars is not sent on until it is

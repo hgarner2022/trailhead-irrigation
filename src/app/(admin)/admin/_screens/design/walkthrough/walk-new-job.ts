@@ -3,13 +3,10 @@ import { SERVICE_LIST } from "@/lib/services"
 import type { GridJob } from "../JobsGridDesign"
 import { visitsData, VISITS_TODAY } from "../../visits-fixture"
 import type { NewPassInput, NewVisitInput, VisitActions } from "../../visit-actions-types"
+import { newCustomerFrom, type CustomerChoice } from "../../CustomerPicker"
 import { customerIdOf, markActiveAgain, registerJob } from "./jobs-data"
 import { registerWorldCustomer, WORLD_CUSTOMERS } from "./world-customers"
 import { customerPage } from "./data"
-import { walkQuotes } from "../quotes/quote-store"
-import { setLanding } from "./WalkRequests"
-import type { QuoteJob } from "../quotes/quote-model"
-import { REQUESTS_NOW } from "../requests/request-model"
 
 // What the real New job sheet (`_screens/NewJob.tsx`) needs, as fixtures: the walkthrough's three customers for the type-ahead, the site's service
 // catalogue, the people for Who, and two server actions stubbed to make a row in the prototype's Jobs grid. A new job is Unscheduled (or Scheduled
@@ -69,36 +66,9 @@ export function makeNewJobActions(onMade: () => void, onActiveAgain?: (name: str
       const service = SERVICE_LIST.find((s) => s.key === input.serviceKey)
       const { name, property } = whoFor(input.customerId, input.newCustomer)
       bringBack(input.customerId, onActiveAgain)
-      // Hannah, Nov 20 2026: a service with no catalogue price is quoted first, and "Add and send a quote" quotes any service. Either way the job opens as Needs
-      // a quote with no day, in the quote store, and its page opens on the next step (price the line, or Send a quote once the line has a price).
-      const quote = Boolean(input.sendQuote) || (service !== undefined && service.price === undefined)
-      const id = quote ? `q-new-${++seq}` : `new-${++seq}`
+      // Hannah, Nov 22 2026: a job made here is always real work: a quote is made by New quote, and its job exists only once it is approved
+      const id = `new-${++seq}`
       const title = jobName(service?.name) ?? "Job"
-      if (quote) {
-        const c = WALK_CLIENTS.find((x) => x.id === input.customerId)
-        const fresh = input.newCustomer
-        const [first = "", ...rest] = name.split(" ")
-        const job: QuoteJob = {
-          jobId: id,
-          customerId: input.customerId ?? customerIdOf(name),
-          customer: name,
-          first,
-          phone: c?.phone ?? fresh?.phone ?? "",
-          email: c?.email ?? fresh?.email ?? "",
-          contact: "text",
-          service: jobName(service?.name) ?? "Job",
-          street: c?.address ?? fresh?.property.address ?? "",
-          town: c?.town ?? fresh?.property.town ?? "",
-          lines: [{ id: "l1", name: jobName(service?.name) ?? "Job", amount: input.price ?? 0 }],
-          quotes: [],
-          history: [{ at: REQUESTS_NOW, actor: "Ryan", what: "Job added by the office" }],
-        }
-        walkQuotes.add(job)
-        registerJob({ id, name, service: job.service, title, property, stage: "needs-a-quote", who: "No one yet", season: "", visits: "0 of 1 done", total: input.price ?? 0, billingState: null, billing: "", next: "Unscheduled" })
-        if (input.sendQuote) setLanding(id, input.price ? "send" : "price")
-        onMade()
-        return { ok: true as const, data: { id: `v-${id}`, jobId: id } }
-      }
       const row: GridJob = { id, name, service: jobName(service?.name) ?? "Sprinkler repair", title, property, stage: input.scheduledOn ? "scheduled" : "unscheduled", who: "No one yet", season: "", visits: "0 of 1 done", total: input.price ?? 0, billingState: null, billing: "", next: input.scheduledOn ? DAY.format(new Date(`${input.scheduledOn}T12:00:00Z`)) : "Unscheduled" }
       registerJob(row)
       onMade()
@@ -115,4 +85,23 @@ export function makeNewJobActions(onMade: () => void, onActiveAgain?: (name: str
     },
   }
   return actions as unknown as VisitActions
+}
+
+/** The customer a quote made by hand is for: the client Ryan chose, or a new person typed into the sheet, who joins the world as one made by New job does. */
+export function partyOfChoice(choice: CustomerChoice) {
+  const fresh = choice.isNew ? newCustomerFrom(choice.person) : undefined
+  const { name } = whoFor(choice.isNew ? undefined : choice.chosen, fresh)
+  const client = choice.isNew ? undefined : WALK_CLIENTS.find((x) => x.id === choice.chosen)
+  const phone = client?.phone ?? fresh?.phone ?? ""
+  const email = client?.email ?? fresh?.email ?? ""
+  return {
+    customerId: client ? client.id : customerIdOf(name),
+    customer: name,
+    first: name.split(" ")[0] ?? "",
+    phone,
+    email,
+    contact: (email && !phone ? "email" : "text") as "text" | "email",
+    street: client?.address ?? fresh?.property.address ?? "",
+    town: client?.town ?? fresh?.property.town ?? "",
+  }
 }

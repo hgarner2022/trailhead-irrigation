@@ -25,12 +25,15 @@ import { REQUEST_PILL, SOURCE_WORDS, cameIn, cameInOn, fullName, matchOf, matchW
 // (the panel shows the match), so spam never becomes a customer. There are two ways out and the header has both: "Create job" and "Send a quote", plus
 // Archive (asks why) and, under More, Mark as seen. The catalogue decides which is primary (`isQuoteFirst`): a service with no price (an installation,
 // Christmas lights, the larger repair) leads with Send a quote, a priced one with Create job. Each opens a dialog that states the exact effect. Hannah, Nov
-// 20 2026: nobody accepts anything, the request MOVES into the job, so there is no accepted state; a stale link to a request that became a job opens a plain
-// page that says so with the job as a chip. Nothing here reaches the customer. A result is a toast and the page changes, never a message in a section.
-// Pure props: `onSeen`, `onCreateJob`, `onJobCreated` and `onArchive` let a host keep state and take Ryan to the job.
+// 20 2026: nobody accepts anything, the request MOVES into what it became, so there is no accepted state. Nov 22 2026: Send a quote makes the customer and a QUOTE in
+// Draft, never a job (the job is made when the quote is approved), and Create job on a priced service still makes a job at once; a stale link to a request that
+// became a job or a quote opens a plain page that says so with the job or the quote as a chip, and one whose quote was archived says that too (archiving the quote
+// archives the request). Nothing here reaches the customer. A result is a toast and the page changes, never a message in a section.
+// Pure props: `onSeen`, `onCreateJob`, `onJobCreated` and `onArchive` let a host keep state and take Ryan to the job or the quote.
 
 const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-const NEEDS_A_QUOTE = { status: "needs-a-day" as PillStatus, label: "Needs a quote" }
+const UNSCHEDULED = { status: "needs-a-day" as PillStatus, label: "Unscheduled" }
+const DRAFT = { status: "quote-draft" as PillStatus, label: "Draft" }
 const CHANNEL_WORDS = { text: "Text", email: "Email", both: "Text and email" }
 
 export interface RequestPageProps {
@@ -39,15 +42,17 @@ export interface RequestPageProps {
   now?: string
   /** the customers the match is read against; the fixtures' by default */
   match?: Match | null
-  /** the job's stage once made, read from the job: Needs a quote, Quote sent, Unscheduled, Canceled */
+  /** the job's stage once made (Create job), read from the job: Unscheduled, Canceled */
   jobStage?: { status: PillStatus; label: string }
+  /** the quote's status once made (Send a quote), read from the quote: Draft, Sent, Approved, Declined, Replaced, Archived */
+  quoteStage?: { status: PillStatus; label: string }
   /** opening a New request writes Seen once; a catalogue story that shows New turns it off */
   markSeenOnOpen?: boolean
   onSeen?: (request: RequestData) => void
-  /** Create job or Send a quote: answers the job it made and the customer it was added to */
-  onCreateJob?: (request: RequestData, o: { asNew: boolean; mode: CreateMode; service: ChosenService }) => { jobId: string; customerId: string }
-  /** the host takes Ryan to the new job (the request has left the list) and shows the toast there; without it the page shows "This request became a job" in place */
-  onJobCreated?: (jobId: string, message: string, mode: CreateMode) => void
+  /** Create job or Send a quote: answers the id of the job or of the quote it made (by `mode`) and the customer it was added to */
+  onCreateJob?: (request: RequestData, o: { asNew: boolean; mode: CreateMode; service: ChosenService }) => { id: string; customerId: string }
+  /** the host takes Ryan to the new job or quote (the request has left the list) and shows the toast there; without it the page shows "This request became a job" or "a quote" in place */
+  onJobCreated?: (id: string, message: string, mode: CreateMode) => void
   onArchive?: (request: RequestData, reason: ArchiveReason) => void
   /** the dialog a story opens at once */
   initialDialog?: "job" | "quote" | "archive" | null
@@ -58,6 +63,7 @@ export interface RequestPageProps {
 interface Overlay {
   seen?: boolean
   becameJob?: RequestData["becameJob"]
+  becameQuote?: RequestData["becameQuote"]
   archived?: RequestData["archived"]
 }
 
@@ -66,16 +72,17 @@ function history(r: RequestData, now: string): TimelineLine[] {
   const lines: TimelineLine[] = []
   if (r.archived) lines.push({ id: "archived", at: r.archived.at, actor: "Ryan", what: `Archived the request: ${r.archived.reason}`, kind: "event" })
   if (r.becameJob) lines.push({ id: "job", at: r.becameJob.at, actor: "Ryan", what: `${fullName(r)}'s request became a job`, kind: "event" })
-  if (r.seen && !r.becameJob && !r.archived) lines.push({ id: "seen", at: now, actor: "Ryan", what: "Looked at the request", kind: "event" })
+  if (r.becameQuote) lines.push({ id: "quote", at: r.becameQuote.at, actor: "Ryan", what: `${fullName(r)}'s request became quote ${r.becameQuote.quoteId}`, kind: "event" })
+  if (r.seen && !r.becameJob && !r.becameQuote && !r.archived) lines.push({ id: "seen", at: now, actor: "Ryan", what: "Looked at the request", kind: "event" })
   lines.push({ id: "came", at: r.receivedAt, actor: first, what: `Sent a request${r.service ? ` for ${r.service}` : ""} from the ${SOURCE_WORDS[r.source].toLowerCase()}`, kind: "event" })
   return lines
 }
 
-export function RequestPage({ request, now = NOW.toISOString(), match: matchProp, jobStage = NEEDS_A_QUOTE, markSeenOnOpen = true, onSeen, onCreateJob, onJobCreated, onArchive, initialDialog = null, initialPick }: RequestPageProps) {
+export function RequestPage({ request, now = NOW.toISOString(), match: matchProp, jobStage = UNSCHEDULED, quoteStage = DRAFT, markSeenOnOpen = true, onSeen, onCreateJob, onJobCreated, onArchive, initialDialog = null, initialPick }: RequestPageProps) {
   const toast = useToast()
   const [overlay, setOverlay] = useState<Overlay>({})
   const [dialog, setDialog] = useState<"job" | "quote" | "archive" | null>(initialDialog)
-  const r: RequestData = useMemo(() => ({ ...request, seen: request.seen || Boolean(overlay.seen), becameJob: overlay.becameJob ?? request.becameJob, archived: overlay.archived ?? request.archived }), [request, overlay])
+  const r: RequestData = useMemo(() => ({ ...request, seen: request.seen || Boolean(overlay.seen), becameJob: overlay.becameJob ?? request.becameJob, becameQuote: overlay.becameQuote ?? request.becameQuote, archived: overlay.archived ?? request.archived }), [request, overlay])
   const state = stateOf(r)
   const name = fullName(r)
   const match = matchProp === undefined ? matchOf(r) : matchProp
@@ -97,10 +104,11 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
     toast("Marked as seen")
   }
   const create = (o: { asNew: boolean; mode: CreateMode; service: ChosenService }) => {
-    const made = onCreateJob?.(r, o) ?? { jobId: `q-${r.id.replace(/^rq-/, "")}`, customerId: match && !o.asNew ? match.customer.id : `other-${r.first}-${r.last}`.toLowerCase() }
-    const message = `Job created for ${match && !o.asNew ? match.customer.name : name}`
-    setOverlay((v) => ({ ...v, seen: true, becameJob: { ...made, at: now } }))
-    if (onJobCreated) onJobCreated(made.jobId, message, o.mode)
+    const made = onCreateJob?.(r, o) ?? { id: o.mode === "quote" ? `Q-${r.id.replace(/^rq-/, "")}` : `q-${r.id.replace(/^rq-/, "")}`, customerId: match && !o.asNew ? match.customer.id : `other-${r.first}-${r.last}`.toLowerCase() }
+    const who = match && !o.asNew ? match.customer.name : name
+    const message = o.mode === "quote" ? `Quote created for ${who}` : `Job created for ${who}`
+    setOverlay((v) => ({ ...v, seen: true, ...(o.mode === "quote" ? { becameQuote: { quoteId: made.id, customerId: made.customerId, at: now } } : { becameJob: { jobId: made.id, customerId: made.customerId, at: now } }) }))
+    if (onJobCreated) onJobCreated(made.id, message, o.mode)
     else toast(message)
   }
   const archive = (reason: ArchiveReason) => {
@@ -113,10 +121,14 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
   const jobAction = act("Create job", () => setDialog("job"))
   const quoteAction = act("Send a quote", () => setDialog("quote"))
   const archiveAction = act("Archive", () => setDialog("archive"))
-  const [primary, other] = quoteFirst ? [quoteAction, jobAction] : [jobAction, quoteAction]
-  const actions = state === "new" || state === "seen" ? <RecordFooter primary={primary} secondary={[other, archiveAction]} more={state === "new" ? [act("Mark as seen", markSeen)] : undefined} /> : undefined
+  // a service with no price is quoted first: Send a quote is the way out, and Create job is not offered (a job that waits on a price is never made, Hannah, Nov 22 2026)
+  const actions =
+    state === "new" || state === "seen" ? (
+      <RecordFooter primary={quoteFirst ? quoteAction : jobAction} secondary={quoteFirst ? [archiveAction] : [quoteAction, archiveAction]} more={state === "new" ? [act("Mark as seen", markSeen)] : undefined} />
+    ) : undefined
 
   if (r.becameJob) return <BecameJobPage request={r} stage={jobStage} now={now} />
+  if (r.becameQuote) return <BecameQuotePage request={r} stage={quoteStage} now={now} />
 
   const customerValue = match ? match.customer.name : "No match"
   const customerHref = match ? recordHref.customer(match.customer.id) : undefined
@@ -199,6 +211,31 @@ export function BecameJobPage({ request, stage, now }: { request: RequestData; s
           <span className="text-muted-foreground">Made {cameIn({ ...request, receivedAt: job.at }, now)}</span>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">{request.first}&apos;s words and photos are on the job. The request is no longer in Requests.</p>
+      </SectionCard>
+    </RecordPage>
+  )
+}
+
+/** The plain page a request opens to once it became a quote (a stale link, or the moment after Send a quote): it says so and offers the quote as a chip. When the quote was archived it says that, and that the request is archived with it. Never a dead end. */
+export function BecameQuotePage({ request, stage, now }: { request: RequestData; stage: { status: PillStatus; label: string }; now: string }) {
+  const quote = request.becameQuote!
+  const service = serviceWords(request)
+  const archived = request.archived
+  return (
+    <RecordPage
+      crumb={{ label: "Requests", href: "/admin/requests" }}
+      title={archived ? "This request became a quote that was archived" : "This request became a quote"}
+      subtitle={`${fullName(request)}'s request${service === "Not said" ? "" : ` for ${service}`} · Came in ${cameInOn(request.receivedAt)}`}
+      badges={archived ? <StatusPill status={REQUEST_PILL.archived.status} label={REQUEST_PILL.archived.label} size="lg" /> : undefined}
+      actions={<RecordFooter primary={{ label: "Open quote", href: recordHref.quote(quote.quoteId) }} />}
+    >
+      <SectionCard title="Quote" id="request-quote-h">
+        <div data-slot="became-quote" className="flex flex-wrap items-center gap-2 text-sm">
+          <RecordChip kind="quote" name={quote.quoteId} href={recordHref.quote(quote.quoteId)} />
+          <StatusPill status={stage.status} label={stage.label} />
+          <span className="text-muted-foreground">Made {cameIn({ ...request, receivedAt: quote.at }, now)}</span>
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">{archived ? `The quote was archived as ${archived.reason}. This request is archived with it.` : `${request.first}'s words and photos are on the quote. The request is no longer in Requests.`}</p>
       </SectionCard>
     </RecordPage>
   )

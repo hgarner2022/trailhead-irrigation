@@ -31,12 +31,22 @@ export interface CustomerJobRow {
   who?: string
   status: PillStatus
   statusLabel: string
-  /** a job waiting on its quote: it is not yet a job that makes a customer (`customerStatusOf`) */
-  quote?: "needs-a-quote" | "quote-sent"
   /** what has happened so far; null when nothing is due yet */
   money: MoneyWord | null
   /** a quiet line under the money word, or under the dash when nothing is due: "Charged after each visit" */
   note?: string
+}
+
+/** A quote made for this customer (Hannah, Nov 22 2026: a quote is its own record). It is not a job and does not make a customer one: a customer with only a quote is New. */
+export interface CustomerQuoteRow {
+  /** "Q-2026-0007" */
+  id: string
+  service: string
+  /** "$1,200" */
+  amount: string
+  status: PillStatus
+  statusLabel: string
+  sortDay: string
 }
 
 export interface CustomerInvoiceRow {
@@ -171,6 +181,8 @@ export interface CustomerPageData {
   /** nothing has ever happened for this customer: Delete is offered */
   untouched?: boolean
   jobs: CustomerJobRow[]
+  /** the customer's quotes, newest first; a customer with none has an empty list */
+  quotes?: CustomerQuoteRow[]
   billing: CustomerBillingData
   messages: Message[]
   photos: PhotoItem[]

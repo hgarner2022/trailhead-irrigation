@@ -39,25 +39,34 @@ function openWithQuotes() {
     sellPass: vi.fn(),
   }
   const onCreated = vi.fn()
-  render(<NewJob data={data} today={TODAY} open onOpenChange={() => undefined} customerId="c100" actions={actions as unknown as VisitActions} quotes onCreated={onCreated} />)
-  return { actions, onCreated }
+  const onNewQuote = vi.fn()
+  render(<NewJob data={data} today={TODAY} open onOpenChange={() => undefined} customerId="c100" actions={actions as unknown as VisitActions} quotes onCreated={onCreated} onNewQuote={onNewQuote} />)
+  return { actions, onCreated, onNewQuote }
 }
 const actionNames = () => Array.from(document.querySelectorAll("[data-slot=new-job-actions] button")).map((b) => b.textContent)
 
 describe("New job and quotes", () => {
-  it("leads with Add job for a priced service and offers Add and send a quote beside it", async () => {
-    const { actions, onCreated } = openWithQuotes()
+  it("leads with Add job for a priced service and offers New quote beside it, which hands the customer and the service to the New quote sheet and makes no job", async () => {
+    const { actions, onCreated, onNewQuote } = openWithQuotes()
     await choose("repair")
-    expect(actionNames()).toEqual(["Add job", "Add and send a quote"])
-    await userEvent.click(screen.getByRole("button", { name: "Add and send a quote" }))
-    await waitFor(() => expect(onCreated).toHaveBeenCalledWith({ visitId: "v1", jobId: "j1", quote: true }))
-    expect(actions.createVisit).toHaveBeenCalledWith(expect.objectContaining({ serviceKey: "repair", sendQuote: true }))
+    expect(actionNames()).toEqual(["Add job", "New quote"])
+    await userEvent.click(screen.getByRole("button", { name: "New quote" }))
+    expect(onNewQuote).toHaveBeenCalledWith({ customer: expect.objectContaining({ chosen: "c100" }), serviceName: expect.stringMatching(/repair/i) })
+    expect(actions.createVisit).not.toHaveBeenCalled()
+    expect(onCreated).not.toHaveBeenCalled()
   })
-  it("leads with Add and send a quote for a service with no catalogue price, and says it needs a price", async () => {
+  it("offers New quote only for a service with no catalogue price, and says it needs a price: no job exists until the quote is approved", async () => {
     openWithQuotes()
     await choose("lights")
-    expect(actionNames()).toEqual(["Add and send a quote", "Add job"])
-    expect(screen.getByText(/Needs a price before it can be scheduled\./)).toBeInTheDocument()
+    expect(actionNames()).toEqual(["New quote"])
+    expect(screen.getByText("Needs a price before it can be scheduled. The job is made when the quote is approved.")).toBeInTheDocument()
+  })
+  it("Add job still makes a job for a priced service", async () => {
+    const { actions, onCreated } = openWithQuotes()
+    await choose("repair")
+    await userEvent.click(screen.getByRole("button", { name: "Add job" }))
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith({ visitId: "v1", jobId: "j1" }))
+    expect(actions.createVisit).toHaveBeenCalledWith(expect.not.objectContaining({ sendQuote: true }))
   })
   it("has only Add job when the host has no quotes", async () => {
     open()

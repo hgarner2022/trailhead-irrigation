@@ -7,14 +7,14 @@ import { SplitButton } from "@/components/blocks/SplitButton"
 import { priceChangeLead, priceChangeSubject, priceChangeText } from "@/lib/portal/quote-words"
 import { CHANNEL_OPTIONS, channelWords, Preview } from "./QuoteDialogs"
 import type { PriceChange } from "./price-change"
-import { money, type Channel, type QuoteJob } from "./quote-model"
+import { money, type ApprovedJob, type Channel } from "./quote-model"
 
 // "Tell the customer" after a price change on an approved job (Hannah, Nov 20 2026): Ryan changed the lines, the customer does not approve again, and this
 // dialog says the new total. It is the Send a message pattern: Text, Email or Both preselected from the contact preference, a preview of exactly what the
 // customer reads, and a caret with the way that does not notify. The words are only the facts: the job, the street, what the total was and what it is now.
 
 export interface PriceChangeDialogProps {
-  job: QuoteJob
+  job: ApprovedJob
   change: PriceChange
   onClose: () => void
   /** `via: "none"` is "Keep the change without telling": nothing is sent and the history says so */

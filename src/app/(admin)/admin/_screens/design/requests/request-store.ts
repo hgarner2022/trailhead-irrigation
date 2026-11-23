@@ -10,7 +10,7 @@ import { REQUESTS_NOW, REQUEST_FIXTURES, type ArchiveReason, type RequestData } 
 // `useSyncExternalStore`, so the list, the page, the rail's badge and Home's row all change together; `reset` is what Start over calls. Nothing is sent
 // anywhere.
 
-type Change = { seen?: boolean; becameJob?: RequestData["becameJob"]; archived?: RequestData["archived"] }
+type Change = { seen?: boolean; becameJob?: RequestData["becameJob"]; becameQuote?: RequestData["becameQuote"]; archived?: RequestData["archived"] }
 
 let changes: Record<string, Change> = {}
 let sent: SentRequest[] = []
@@ -49,7 +49,7 @@ function snapshot(): RequestData[] {
   if (cache && cache.version === version) return cache.list
   const list = [...sent.map(fromSent), ...REQUEST_FIXTURES].map((r) => {
     const c = changes[r.id]
-    return c ? { ...r, seen: r.seen || Boolean(c.seen), becameJob: c.becameJob ?? r.becameJob, archived: c.archived ?? r.archived } : r
+    return c ? { ...r, seen: r.seen || Boolean(c.seen), becameJob: c.becameJob ?? r.becameJob, becameQuote: c.becameQuote ?? r.becameQuote, archived: c.archived ?? r.archived } : r
   })
   cache = { version, list }
   return list
@@ -75,6 +75,11 @@ export const requestStore = {
   /** Create job or Send a quote: the request moves into the job and leaves the list. */
   becomeJob(id: string, becameJob: NonNullable<RequestData["becameJob"]>) {
     changes = { ...changes, [id]: { ...changes[id], seen: true, becameJob } }
+    bump()
+  },
+  /** Send a quote: the request moves into a Draft quote and leaves the list (until that quote is archived). */
+  becomeQuote(id: string, becameQuote: NonNullable<RequestData["becameQuote"]>) {
+    changes = { ...changes, [id]: { ...changes[id], seen: true, becameQuote } }
     bump()
   },
   archive(id: string, reason: ArchiveReason, at: string) {

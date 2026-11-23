@@ -42,10 +42,12 @@ export interface NewJobProps {
   actions?: VisitActions
   /** what the sheet opens with; the catalog's filled-in stories */
   initial?: NewJobInitial
-  /** after Add job: the screen opens the record it shows; without it the new job's panel opens in place of the sheet. `quote` is "Add and send a quote": the job opens as Needs a quote */
-  onCreated?: (made: { visitId: string; jobId: string; quote?: boolean }) => void
-  /** offers "Add and send a quote" beside "Add job" (Hannah, Nov 20 2026); the live admin has no quotes yet and leaves it off */
+  /** after Add job: the screen opens the record it shows; without it the new job's panel opens in place of the sheet */
+  onCreated?: (made: { visitId: string; jobId: string }) => void
+  /** offers "New quote" (Hannah, Nov 22 2026: a quote is its own record and a job is made when it is approved); the live admin has no quotes yet and leaves it off */
   quotes?: boolean
+  /** New quote: the sheet closes and the host opens its New quote sheet with the customer and the service chosen here */
+  onNewQuote?: (o: { customer: CustomerChoice; serviceName: string }) => void
   /** opened from a day on the Schedule (yyyy-mm-dd): the sheet says "Tuesday, Nov 24" at the top and the day is set */
   day?: string
 }
@@ -56,7 +58,7 @@ export const sheetDay = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDa
 /** The active services the sheet offers: the screen's own, else the site's catalogue. */
 const offered = (data: AdminData): readonly ServiceItem[] => (data.services ?? (SERVICE_LIST as readonly ServiceItem[])).filter((s) => s.active !== false)
 
-export function NewJob({ data, today, open, onOpenChange, customerId, actions, initial = {}, onCreated, day, quotes }: NewJobProps) {
+export function NewJob({ data, today, open, onOpenChange, customerId, actions, initial = {}, onCreated, day, quotes, onNewQuote }: NewJobProps) {
   const host = useOpenRecord()
   const [choice, setChoice] = useState<CustomerChoice>(initial.customer ?? emptyChoice(customerId))
   const startWith = initial.choice === SEASON_PASS ? SEASON_PASS : initial.choice ? serviceGroupId(initial.choice) : ""
@@ -137,9 +139,13 @@ export function NewJob({ data, today, open, onOpenChange, customerId, actions, i
               actions={actions}
               initialDay={day}
               quotes={quotes}
-              onDone={(made, quote) => {
+              onNewQuote={() => {
                 done()
-                if (onCreated) onCreated({ visitId: made.id, jobId: made.jobId, ...(quote ? { quote: true } : {}) })
+                onNewQuote?.({ customer: choice, serviceName: service.name })
+              }}
+              onDone={(made) => {
+                done()
+                if (onCreated) onCreated({ visitId: made.id, jobId: made.jobId })
                 else host?.open("job", made.jobId)
               }}
             />

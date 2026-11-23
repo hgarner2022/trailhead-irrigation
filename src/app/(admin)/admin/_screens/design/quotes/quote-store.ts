@@ -1,60 +1,94 @@
 "use client"
 
 import { useSyncExternalStore } from "react"
-import { QUOTE_HISTORY_FIXTURES } from "./quote-history-fixtures"
-import { QUOTES_NOW, QUOTE_JOB_FIXTURES, STAGE_PILL, liveQuote, linesTotal, money, nextNumber, stageOf, type Channel, type DepositHow, type DepositInput, type QuoteJob, type QuoteLine, type QuoteState } from "./quote-model"
+import { ALL_QUOTE_FIXTURES, JOB_FIXTURES, quoteByHand, quoteFromRequest } from "./quote-fixtures"
+import { QUOTES_NOW, QUOTE_PILL, jobFromQuote, jobStageOf, linesTotal, money, nextNumber, STAGE_PILL, type ApprovedJob, type Channel, type DepositHow, type DepositInput, type QuoteLine, type QuoteRecord } from "./quote-model"
 import { currentTotal, isApproved, untoldChange, type PriceChange } from "./price-change"
+import type { QuoteArchiveReason } from "../requests/request-model"
 
-// The quotes of the prototype: each job's lines and the quotes made on it, held in a small store that a page subscribes to. A story makes its own store (so a
-// story that sends a quote never changes another); the walkthrough has one that Start over resets. Every action here is what Ryan's buttons do, and each
-// writes the line of Notes and history it would write. Nothing is sent anywhere.
+// The quotes of the prototype and the jobs they became (Hannah, Nov 22 2026: a quote is its own record; the job is made only at approval), held in a small store that a
+// page subscribes to. A story makes its own store (so a story that sends a quote never changes another); the walkthrough has one that Start over resets. Every action here
+// is what Ryan's buttons do, and each writes the line of Notes and history it would write. Approving a quote is the one thing that makes a job: the frozen lines are copied
+// once and the deposit payment is attached to the job. Nothing is sent anywhere.
+
+export interface QuoteWorld {
+  quotes: Record<string, QuoteRecord>
+  jobs: Record<string, ApprovedJob>
+}
 
 export interface QuoteStore {
   subscribe: (l: () => void) => () => void
-  getSnapshot: () => Record<string, QuoteJob>
-  getServerSnapshot: () => Record<string, QuoteJob>
-  add: (job: QuoteJob) => void
-  /** Each line edit answers what the customer has not been told when it moved the total of an approved job (`price-change.ts`), else null. `at` is the history's time. */
-  addLine: (jobId: string, line: Omit<QuoteLine, "id">, at?: string) => PriceChange | null
-  updateLine: (jobId: string, id: string, patch: Partial<Omit<QuoteLine, "id">>, at?: string) => PriceChange | null
-  removeLine: (jobId: string, id: string, at?: string) => PriceChange | null
+  getSnapshot: () => QuoteWorld
+  getServerSnapshot: () => QuoteWorld
+  add: (quote: QuoteRecord) => void
+  /** A quote made from a request, as Draft: it answers its number. The customer and the service come from the convert sheet. */
+  createFromRequest: (o: Omit<Parameters<typeof quoteFromRequest>[0], "id">) => string
+  /** A quote made by hand, with no request (New quote), as Draft: it answers its number. */
+  createByHand: (o: Omit<Parameters<typeof quoteByHand>[0], "id">) => string
+  addLine: (quoteId: string, line: Omit<QuoteLine, "id">) => void
+  updateLine: (quoteId: string, id: string, patch: Partial<Omit<QuoteLine, "id">>) => void
+  removeLine: (quoteId: string, id: string) => void
+  /** Change service, on a Draft: the service line takes the new service's name and price, the notes and the other lines stay, and the history says so */
+  changeService: (quoteId: string, o: { name: string; price?: number; at: string }) => void
+  /** The deposit Ryan sets in the quote editor before sending: kept on the quote, frozen as dollars by `send` */
+  setDeposit: (quoteId: string, input: DepositInput) => void
+  /** Sends the Draft: its lines and deposit are frozen into it from this moment. */
+  send: (quoteId: string, o: { via: Channel | "none"; deposit: { amount: number; percent?: number } | null; at: string }) => void
+  remind: (quoteId: string, o: { via: Channel; at: string }) => void
+  /** Revise a Sent quote: it becomes Replaced and the revision is its own quote, a Draft with the same lines and deposit; answers the new number. */
+  revise: (quoteId: string, at: string) => string
+  /** The customer taps Approve (the deposit paid first), or Ryan marks it approved: THE moment the job is made. Answers the job's id, or null when the quote was not Sent. */
+  approve: (quoteId: string, o: { by: "customer" | "Ryan"; deposit?: { how: DepositHow; reference?: string }; at: string }) => string | null
+  /** The customer declined: the quote is Declined and no job is made. */
+  decline: (quoteId: string, at: string) => void
+  /** Archive a Draft, Sent or Declined quote with a reason; the host archives the request it came from with the same reason. */
+  archive: (quoteId: string, reason: QuoteArchiveReason, at: string) => void
+  // the job made from a quote: a price change after approval stays here, on the job
+  /** Each line edit answers what the customer has not been told when it moved the total of the job (`price-change.ts`), else null. `at` is the history's time. */
+  addJobLine: (jobId: string, line: Omit<QuoteLine, "id">, at?: string) => PriceChange | null
+  updateJobLine: (jobId: string, id: string, patch: Partial<Omit<QuoteLine, "id">>, at?: string) => PriceChange | null
   /** After approval a line is canceled, not removed: struck through, out of the total */
-  cancelLine: (jobId: string, id: string, at?: string) => PriceChange | null
-  /** Change service, before any quote was sent: the service line takes the new service's name and price, the notes and the other lines stay, and the history says so */
-  changeService: (jobId: string, o: { name: string; price?: number; at: string }) => void
-  /** The deposit Ryan sets in the quote editor before sending: kept on the job, frozen as dollars by `send` */
-  setDeposit: (jobId: string, input: DepositInput) => void
+  cancelJobLine: (jobId: string, id: string, at?: string) => PriceChange | null
   /** Ryan tells the customer the new total (`via`), or keeps the change without notifying (`none`): either way it is the last step */
   tellPrice: (jobId: string, o: { via: Channel | "none"; at: string }) => void
-  send: (jobId: string, o: { via: Channel | "none"; deposit: { amount: number; percent?: number } | null; at: string }) => string
-  remind: (jobId: string, o: { via: Channel; at: string }) => void
-  revise: (jobId: string, at: string) => void
-  approve: (jobId: string, o: { by: "customer" | "Ryan"; deposit?: { how: DepositHow; reference?: string }; at: string }) => void
-  decline: (jobId: string, at: string) => void
   refund: (jobId: string, at: string) => void
   cancelJob: (jobId: string, at: string) => void
   reset: () => void
 }
 
 const VIA = { text: "text", email: "email", both: "text and email", none: "" }
+const worldOf = (quotes: readonly QuoteRecord[], jobs: readonly ApprovedJob[]): QuoteWorld => ({ quotes: Object.fromEntries(quotes.map((q) => [q.id, structuredClone(q)])), jobs: Object.fromEntries(jobs.map((j) => [j.jobId, structuredClone(j)])) })
 
-export function createQuoteStore(initial: readonly QuoteJob[] = [...QUOTE_JOB_FIXTURES, ...QUOTE_HISTORY_FIXTURES]): QuoteStore {
-  const seed = () => Object.fromEntries(initial.map((j) => [j.jobId, structuredClone(j)]))
-  let jobs: Record<string, QuoteJob> = seed()
-  const first = jobs
+export function createQuoteStore(initial: readonly QuoteRecord[] = ALL_QUOTE_FIXTURES, jobs: readonly ApprovedJob[] = initial === ALL_QUOTE_FIXTURES ? JOB_FIXTURES : []): QuoteStore {
+  let world = worldOf(initial, jobs)
+  const first = world
   const listeners = new Set<() => void>()
-  const set = (id: string, change: (j: QuoteJob) => QuoteJob) => {
-    const j = jobs[id]
-    if (!j) return
-    jobs = { ...jobs, [id]: change(structuredClone(j)) }
+  const emit = (next: QuoteWorld) => {
+    world = next
     listeners.forEach((l) => l())
   }
-  const note = (j: QuoteJob, at: string, what: string) => (j.history = [...j.history, { at, actor: "Ryan", what }])
-  const live = (j: QuoteJob) => liveQuote(j)
-  // A line edit. On an approved job whose total moved, the history says "Price changed from $1,200 to $1,500" and the answer is what the customer has not been told.
-  const edit = (id: string, at: string = QUOTES_NOW, change: (j: QuoteJob) => void): PriceChange | null => {
+  const setQuote = (id: string, change: (q: QuoteRecord) => void) => {
+    const q = world.quotes[id]
+    if (!q) return
+    const copy = structuredClone(q)
+    change(copy)
+    emit({ ...world, quotes: { ...world.quotes, [id]: copy } })
+  }
+  const setJob = (id: string, change: (j: ApprovedJob) => void) => {
+    const j = world.jobs[id]
+    if (!j) return
+    const copy = structuredClone(j)
+    change(copy)
+    emit({ ...world, jobs: { ...world.jobs, [id]: copy } })
+  }
+  const add = (quote: QuoteRecord) => emit({ ...world, quotes: { ...world.quotes, [quote.id]: structuredClone(quote) } })
+  const note = (h: { history: QuoteRecord["history"] }, at: string, what: string) => (h.history = [...h.history, { at, actor: "Ryan", what }])
+  // an edit of a Draft's lines: nothing else can change them
+  const draft = (id: string, change: (q: QuoteRecord) => void) => setQuote(id, (q) => q.state === "draft" && change(q))
+  // A line edit on the job. When the total moved, the history says "Price changed from $1,200 to $1,500" and the answer is what the customer has not been told.
+  const edit = (id: string, at: string = QUOTES_NOW, change: (j: ApprovedJob) => void): PriceChange | null => {
     let out = null as PriceChange | null
-    set(id, (j) => {
+    setJob(id, (j) => {
       const before = currentTotal(j)
       change(j)
       const after = currentTotal(j)
@@ -62,7 +96,6 @@ export function createQuoteStore(initial: readonly QuoteJob[] = [...QUOTE_JOB_FI
         j.history = [...j.history, { at, actor: "Ryan", what: `Price changed from ${money(before)} to ${money(after)}`, kind: "price-changed", price: { from: before, to: after } }]
         out = untoldChange(j)
       }
-      return j
     })
     return out
   }
@@ -71,115 +104,135 @@ export function createQuoteStore(initial: readonly QuoteJob[] = [...QUOTE_JOB_FI
       listeners.add(l)
       return () => void listeners.delete(l)
     },
-    getSnapshot: () => jobs,
+    getSnapshot: () => world,
     getServerSnapshot: () => first,
-    add(job) {
-      jobs = { ...jobs, [job.jobId]: structuredClone(job) }
-      listeners.forEach((l) => l())
+    add,
+    createFromRequest(o) {
+      const id = nextNumber(Object.values(world.quotes))
+      add(quoteFromRequest({ ...o, id }))
+      return id
     },
-    addLine: (id, line, at) => edit(id, at, (j) => (j.lines = [...j.lines, { ...line, id: `l${j.lines.length + 1}-${Date.now() % 100000}` }])),
-    updateLine: (id, lineId, patch, at) => edit(id, at, (j) => (j.lines = j.lines.map((l) => (l.id === lineId ? { ...l, ...patch } : l)))),
-    removeLine: (id, lineId, at) => edit(id, at, (j) => (j.lines = j.lines.filter((l) => l.id !== lineId))),
-    cancelLine: (id, lineId, at) => edit(id, at, (j) => (j.lines = j.lines.map((l) => (l.id === lineId ? { ...l, canceled: true } : l)))),
+    createByHand(o) {
+      const id = nextNumber(Object.values(world.quotes))
+      add(quoteByHand({ ...o, id }))
+      return id
+    },
+    addLine: (id, line) => draft(id, (q) => (q.lines = [...q.lines, { ...line, id: `l${q.lines.length + 1}-${Date.now() % 100000}` }])),
+    updateLine: (id, lineId, patch) => draft(id, (q) => (q.lines = q.lines.map((l) => (l.id === lineId ? { ...l, ...patch } : l)))),
+    removeLine: (id, lineId) => draft(id, (q) => (q.lines = q.lines.filter((l) => l.id !== lineId))),
     changeService(id, o) {
-      set(id, (j) => {
-        if (j.quotes.length > 0 || j.service === o.name) return j
-        const old = j.service
-        const at = j.lines.findIndex((l) => l.name === old)
+      draft(id, (q) => {
+        if (q.service === o.name) return
+        const old = q.service
+        const at = q.lines.findIndex((l) => l.name === old)
         const i = at >= 0 ? at : 0
-        const line = { id: j.lines[i]?.id ?? "l1", name: o.name, amount: o.price ?? 0 }
-        j.lines = j.lines.length ? j.lines.map((l, n) => (n === i ? line : l)) : [line]
-        j.service = o.name
-        // a job made ready to schedule stays so only while its new service has a price
-        if (o.price === undefined) j.direct = undefined
-        note(j, o.at, `Service changed from ${old} to ${o.name}`)
-        return j
+        const line = { id: q.lines[i]?.id ?? "l1", name: o.name, amount: o.price ?? 0 }
+        q.lines = q.lines.length ? q.lines.map((l, n) => (n === i ? line : l)) : [line]
+        q.service = o.name
+        note(q, o.at, `Service changed from ${old} to ${o.name}`)
       })
     },
     setDeposit(id, input) {
-      set(id, (j) => ((j.depositDraft = input.mode === "none" ? undefined : input), j))
-    },
-    tellPrice(id, o) {
-      set(id, (j) => {
-        const to = currentTotal(j)
-        const what = o.via === "none" ? `Kept the new total, ${money(to)}, without notifying ${j.first}` : `Told ${j.first} the new total, ${money(to)}, by ${VIA[o.via]}`
-        j.history = [...j.history, { at: o.at, actor: "Ryan", what, kind: "price-told" }]
-        return j
-      })
+      draft(id, (q) => void (q.depositDraft = input.mode === "none" ? undefined : input))
     },
     send(id, o) {
-      let number = ""
-      set(id, (j) => {
-        number = nextNumber(Object.values(jobs))
+      setQuote(id, (q) => {
+        if (q.state !== "draft") return
         // a canceled line is not part of the quote: only the lines that count are frozen into it
-        const frozen = structuredClone(j.lines.filter((l) => !l.canceled))
-        const total = linesTotal(frozen)
-        j.depositDraft = undefined
-        j.quotes = [...j.quotes, { id: number, jobId: id, lines: frozen, total, ...(o.deposit ? { deposit: { amount: o.deposit.amount, ...(o.deposit.percent ? { percent: o.deposit.percent } : {}) } } : {}), sentOn: o.at, sentVia: o.via, state: "sent", reminders: [] }]
-        note(j, o.at, `Sent quote ${number}${o.via === "none" ? " without notifying" : ` by ${VIA[o.via]}`}`)
-        return j
+        q.lines = structuredClone(q.lines.filter((l) => !l.canceled))
+        q.total = linesTotal(q.lines)
+        q.depositDraft = undefined
+        if (o.deposit) q.deposit = { amount: o.deposit.amount, ...(o.deposit.percent ? { percent: o.deposit.percent } : {}) }
+        q.state = "sent"
+        q.sentOn = o.at
+        q.sentVia = o.via
+        note(q, o.at, `Sent quote ${q.id}${o.via === "none" ? " without notifying" : ` by ${VIA[o.via]}`}`)
       })
-      return number
     },
     remind(id, o) {
-      set(id, (j) => {
-        const q = live(j)
-        if (!q || q.state !== "sent") return j
+      setQuote(id, (q) => {
+        if (q.state !== "sent") return
         q.reminders = [...q.reminders, { at: o.at, via: o.via }]
-        note(j, o.at, `Sent a reminder for quote ${q.id} by ${VIA[o.via]}`)
-        return j
+        note(q, o.at, `Sent a reminder for quote ${q.id} by ${VIA[o.via]}`)
       })
     },
     revise(id, at) {
-      set(id, (j) => {
-        const q = live(j)
-        if (!q || q.state !== "sent") return j
-        q.state = "replaced" as QuoteState
-        // the replaced quote's deposit is where the next one starts
-        if (q.deposit) j.depositDraft = q.deposit.percent ? { mode: "percent", value: String(q.deposit.percent) } : { mode: "dollars", value: String(q.deposit.amount) }
-        note(j, at, `Revised quote ${q.id}: it is now Replaced and the job needs a quote`)
-        return j
+      const q = world.quotes[id]
+      if (!q || q.state !== "sent") return ""
+      const number = nextNumber(Object.values(world.quotes))
+      const lines = structuredClone(q.lines)
+      // the replaced quote's deposit is where the next one starts
+      const depositDraft: DepositInput | undefined = q.deposit ? (q.deposit.percent ? { mode: "percent", value: String(q.deposit.percent) } : { mode: "dollars", value: String(q.deposit.amount) }) : undefined
+      emit({
+        ...world,
+        quotes: {
+          ...world.quotes,
+          [id]: { ...structuredClone(q), state: "replaced", replacedBy: number, history: [...q.history, { at, actor: "Ryan", what: `Revised quote ${id}: it is now Replaced by ${number}` }] },
+          [number]: { ...structuredClone(q), id: number, lines, total: 0, deposit: undefined, depositDraft, state: "draft", sentOn: undefined, sentVia: undefined, decidedOn: undefined, decidedBy: undefined, reminders: [], replaces: id, replacedBy: undefined, jobId: undefined, createdOn: at, history: [{ at, actor: "Ryan", what: `Revision of quote ${id}` }] },
+        },
       })
+      return number
     },
     approve(id, o) {
-      set(id, (j) => {
-        const q = live(j)
-        if (!q || q.state !== "sent") return j
-        q.state = "approved"
-        q.decidedOn = o.at
-        q.decidedBy = o.by
-        if (q.deposit && o.deposit) q.deposit.paid = { ...o.deposit, on: o.at }
-        j.history = [...j.history, { at: o.at, actor: o.by === "customer" ? j.first : "Ryan", what: o.by === "customer" ? `Approved quote ${q.id}` : `Marked quote ${q.id} approved${q.deposit?.paid ? `, deposit by ${q.deposit.paid.how}` : ""}` }]
-        return j
-      })
+      const q = world.quotes[id]
+      if (!q || q.state !== "sent") return null
+      const job = jobFromQuote(q, o)
+      const next = structuredClone(q)
+      next.state = "approved"
+      next.decidedOn = o.at
+      next.decidedBy = o.by
+      next.jobId = job.jobId
+      if (next.deposit && o.deposit) next.deposit.paid = { ...o.deposit, on: o.at }
+      const paid = next.deposit?.paid
+      next.history = [
+        ...next.history,
+        { at: o.at, actor: o.by === "customer" ? q.first : "Ryan", what: o.by === "customer" ? `Approved quote ${id}` : `Marked quote ${id} approved${paid ? `, deposit by ${paid.how}` : ""}` },
+        { at: o.at, actor: "Ryan", what: `Job created from quote ${id}` },
+      ]
+      emit({ quotes: { ...world.quotes, [id]: next }, jobs: { ...world.jobs, [job.jobId]: job } })
+      return job.jobId
     },
     decline(id, at) {
-      set(id, (j) => {
-        const q = live(j)
-        if (!q || q.state !== "sent") return j
+      setQuote(id, (q) => {
+        if (q.state !== "sent") return
         q.state = "declined"
         q.decidedOn = at
         q.decidedBy = "customer"
-        j.history = [...j.history, { at, actor: j.first, what: `Declined quote ${q.id}` }]
-        return j
+        q.history = [...q.history, { at, actor: q.first, what: `Declined quote ${q.id}` }]
+      })
+    },
+    archive(id, reason, at) {
+      setQuote(id, (q) => {
+        if (q.state !== "draft" && q.state !== "sent" && q.state !== "declined") return
+        q.state = "archived"
+        q.archived = { reason, on: at }
+        note(q, at, `Archived quote ${q.id}: ${reason}`)
+      })
+    },
+    addJobLine: (id, line, at) => edit(id, at, (j) => (j.lines = [...j.lines, { ...line, id: `l${j.lines.length + 1}-${Date.now() % 100000}` }])),
+    updateJobLine: (id, lineId, patch, at) => edit(id, at, (j) => (j.lines = j.lines.map((l) => (l.id === lineId ? { ...l, ...patch } : l)))),
+    cancelJobLine: (id, lineId, at) => edit(id, at, (j) => (j.lines = j.lines.map((l) => (l.id === lineId ? { ...l, canceled: true } : l)))),
+    tellPrice(id, o) {
+      setJob(id, (j) => {
+        const to = currentTotal(j)
+        const what = o.via === "none" ? `Kept the new total, ${money(to)}, without notifying ${j.first}` : `Told ${j.first} the new total, ${money(to)}, by ${VIA[o.via]}`
+        j.history = [...j.history, { at: o.at, actor: "Ryan", what, kind: "price-told" }]
       })
     },
     refund(id, at) {
-      set(id, (j) => {
-        const q = live(j)
-        if (q?.deposit?.paid) {
-          q.deposit.paid.refundedOn = at
-          note(j, at, `Refunded the $${q.deposit.amount} deposit for quote ${q.id}`)
-        }
-        return j
+      const j = world.jobs[id]
+      if (!j?.deposit?.paid) return
+      setJob(id, (job) => {
+        job.deposit!.paid!.refundedOn = at
+        note(job, at, `Refunded the $${job.deposit!.amount} deposit for quote ${job.quoteId}`)
       })
+      setQuote(j.quoteId, (q) => void (q.deposit!.paid!.refundedOn = at))
     },
     cancelJob(id, at) {
-      set(id, (j) => ((j.canceled = true), note(j, at, "Canceled the job"), j))
+      setJob(id, (j) => ((j.canceled = true), note(j, at, "Canceled the job")))
     },
     reset() {
-      jobs = seed()
-      listeners.forEach((l) => l())
+      emit(worldOf(initial, jobs))
     },
   }
 }
@@ -187,16 +240,22 @@ export function createQuoteStore(initial: readonly QuoteJob[] = [...QUOTE_JOB_FI
 /** The one store of the walkthrough; Start over resets it. */
 export const walkQuotes = createQuoteStore()
 
-export function useQuoteJobs(store: QuoteStore = walkQuotes): Record<string, QuoteJob> {
+export function useQuoteWorld(store: QuoteStore = walkQuotes): QuoteWorld {
   return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot)
 }
 
-export function useQuoteJob(store: QuoteStore, jobId: string): QuoteJob | undefined {
-  return useQuoteJobs(store)[jobId]
+export const useQuotes = (store: QuoteStore = walkQuotes) => useQuoteWorld(store).quotes
+export const useQuote = (store: QuoteStore, id: string): QuoteRecord | undefined => useQuoteWorld(store).quotes[id]
+export const useApprovedJob = (store: QuoteStore, id: string): ApprovedJob | undefined => useQuoteWorld(store).jobs[id]
+
+/** The pill a request page shows for the job it became (Create job): read from the job in the walkthrough's store, Unscheduled when it is not one of the quotes' jobs. */
+export function useJobPill(jobId: string | undefined) {
+  const job = useQuoteWorld().jobs[jobId ?? ""]
+  return job ? STAGE_PILL[jobStageOf(job)] : STAGE_PILL.open
 }
 
-/** The pill a request page shows for the job it became: read from the job's quotes in the walkthrough's store. */
-export function useQuoteJobStage(jobId: string | undefined): { status: (typeof STAGE_PILL)["needs-a-quote"]["status"]; label: string } {
-  const job = useQuoteJobs()[jobId ?? ""]
-  return job ? STAGE_PILL[stageOf(job)] : STAGE_PILL["needs-a-quote"]
+/** The pill a request page shows for the quote it became (Send a quote): the quote's own status, Draft when the store does not hold it. */
+export function useQuotePill(quoteId: string | undefined) {
+  const quote = useQuoteWorld().quotes[quoteId ?? ""]
+  return QUOTE_PILL[quote?.state ?? "draft"]
 }

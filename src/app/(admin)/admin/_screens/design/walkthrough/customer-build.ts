@@ -3,9 +3,9 @@ import type { TimelineLine } from "@/lib/events/timeline"
 import type { RecordFact } from "@/components/blocks/RecordPanel"
 import { INVOICE_PILL, dayWords, money, type InvoiceListRow } from "../invoice-fixtures"
 import { GRID_TONE, GRID_WORDS, type GridJob } from "../JobsGridDesign"
-import type { CustomerBillingData, CustomerInvoiceRow, CustomerJobRow, CustomerPageData, CustomerPaymentRow, MoneyWord } from "../customer-types"
+import type { CustomerBillingData, CustomerInvoiceRow, CustomerJobRow, CustomerPageData, CustomerPaymentRow, CustomerQuoteRow, MoneyWord } from "../customer-types"
 import { withStatus, AS_OF } from "../customer-status-fixtures"
-import { liveQuote, type QuoteJob } from "../quotes/quote-model"
+import { money as quoteMoney, quoteTotal, QUOTE_PILL, type ApprovedJob, type QuoteRecord } from "../quotes/quote-model"
 import { worldCustomer, type WorldCustomer } from "./world-customers"
 
 // The customer page of every person in the walkthrough's world who has no hand-shaped one (docs/plans/2026-11-20-handoff.md, gap 2), worked out from
@@ -20,7 +20,7 @@ const MONTH_YEAR = new Intl.DateTimeFormat("en-US", { month: "short", year: "num
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 const plus = (digits: string) => `tel:+1${digits.replace(/\D/g, "")}`
 const NO_YARD: RecordFact[] = [["Zones", "Not set"], ["Controller", "Not set"], ["Gate code", "None"], ["Must be home", "Not set"]]
-const OPEN: GridJob["stage"][] = ["needs-a-quote", "quote-sent", "unscheduled", "scheduled", "today", "late", "active"]
+const OPEN: GridJob["stage"][] = ["unscheduled", "scheduled", "today", "late", "active"]
 
 /** The day a row's Next words name ("Mon, Nov 16", "Today"), as an ISO day; none when it has no day. */
 function nextDay(next: string): string | null {
@@ -31,8 +31,6 @@ function nextDay(next: string): string | null {
   return `${at >= 6 ? 2026 : 2027}-${String(at + 1).padStart(2, "0")}-${m[2]!.padStart(2, "0")}`
 }
 
-const quoteJobOf = (jobs: readonly QuoteJob[], row: GridJob) => jobs.find((j) => j.jobId === row.id)
-
 function moneyOf(row: GridJob, invoice: InvoiceListRow | undefined): MoneyWord | null {
   if (!row.billingState) return null
   if (row.billingState === "paid") return { word: row.billing }
@@ -41,14 +39,13 @@ function moneyOf(row: GridJob, invoice: InvoiceListRow | undefined): MoneyWord |
   return { word: row.billing }
 }
 
-function jobRowOf(row: GridJob, invoices: readonly InvoiceListRow[], quotes: readonly QuoteJob[]): CustomerJobRow {
+function jobRowOf(row: GridJob, invoices: readonly InvoiceListRow[], jobs: readonly ApprovedJob[]): CustomerJobRow {
   const invoice = invoices.find((i) => i.jobId === row.id)
-  const q = quoteJobOf(quotes, row)
+  const made = jobs.find((j) => j.jobId === row.id)
   const when = row.stage === "done" ? (invoice?.sentOn ?? null) : nextDay(row.next)
-  const decided = q && liveQuote(q)?.decidedOn?.slice(0, 10)
-  const last = q?.history.length ? q.history[q.history.length - 1]!.at.slice(0, 10) : undefined
+  const decided = made?.soldOn.slice(0, 10)
+  const last = made?.history.length ? made.history[made.history.length - 1]!.at.slice(0, 10) : undefined
   const open = OPEN.includes(row.stage)
-  const quote = row.stage === "needs-a-quote" || row.stage === "quote-sent" ? row.stage : undefined
   return {
     id: row.id,
     name: row.title,
@@ -58,7 +55,6 @@ function jobRowOf(row: GridJob, invoices: readonly InvoiceListRow[], quotes: rea
     ...(row.who && !/^No one/.test(row.who) ? { who: row.who } : {}),
     status: GRID_TONE[row.stage],
     statusLabel: GRID_WORDS[row.stage],
-    ...(quote ? { quote } : {}),
     money: moneyOf(row, invoice),
   }
 }
@@ -75,7 +71,7 @@ const howOf = (rows: readonly GridJob[], jobId: string) => {
 }
 
 /** The payments: each paid invoice's, a paid job that has no invoice, and a deposit paid at a quote's approval. */
-function paymentsOf(mine: readonly GridJob[], invoices: readonly InvoiceListRow[], quotes: readonly QuoteJob[]): CustomerPaymentRow[] {
+function paymentsOf(mine: readonly GridJob[], invoices: readonly InvoiceListRow[], made: readonly ApprovedJob[]): CustomerPaymentRow[] {
   const fromInvoices = invoices
     .filter((i) => i.status === "paid" && i.paidOn)
     .map((i): CustomerPaymentRow => {
@@ -85,11 +81,11 @@ function paymentsOf(mine: readonly GridJob[], invoices: readonly InvoiceListRow[
   const bare = mine
     .filter((r) => r.billingState === "paid" && !invoices.some((i) => i.jobId === r.id))
     .map((r): CustomerPaymentRow => ({ id: `p-${r.id}`, receipt: `R-${1000 + r.id.length}`, date: "Nov 13", sortDay: "2026-11-13", jobId: r.id, jobName: r.title, how: howOf(mine, r.id), amount: money(r.total) }))
-  const deposits = quotes.flatMap((j): CustomerPaymentRow[] => {
-    const q = liveQuote(j)
-    if (q?.state !== "approved" || !q.deposit?.paid) return []
-    const on = q.deposit.paid.on.slice(0, 10)
-    return [{ id: `dep-${q.id}`, receipt: receiptOf(q.id), date: dayWords(on), sortDay: on, jobId: j.jobId, jobName: j.service, how: q.deposit.paid.how === "card" ? "Card" : q.deposit.paid.how, amount: money(q.deposit.amount), note: "Deposit", ...(q.deposit.paid.how === "card" ? { stripeUrl: "https://dashboard.stripe.com/payments/pi_demo" } : {}) }]
+  const deposits = made.flatMap((j): CustomerPaymentRow[] => {
+    const d = j.deposit
+    if (!d?.paid) return []
+    const on = d.paid.on.slice(0, 10)
+    return [{ id: `dep-${j.quoteId}`, receipt: receiptOf(j.quoteId), date: dayWords(on), sortDay: on, jobId: j.jobId, jobName: j.service, how: d.paid.how === "card" ? "Card" : d.paid.how, amount: money(d.amount), note: "Deposit", ...(d.paid.how === "card" ? { stripeUrl: "https://dashboard.stripe.com/payments/pi_demo" } : {}) }]
   })
   return [...fromInvoices, ...bare, ...deposits]
 }
@@ -128,23 +124,25 @@ function messagesOf(w: WorldCustomer, invoices: readonly InvoiceListRow[]): Mess
   })
 }
 
-function notesOf(invoices: readonly InvoiceListRow[], payments: readonly CustomerPaymentRow[], quotes: readonly QuoteJob[]): TimelineLine[] {
+function notesOf(invoices: readonly InvoiceListRow[], payments: readonly CustomerPaymentRow[], quotes: readonly QuoteRecord[], made: readonly ApprovedJob[]): TimelineLine[] {
   const ev = (id: string, at: string, actor: string, what: string, note?: string): TimelineLine => ({ id, at, actor, what, kind: "event", ...(note ? { note } : {}) })
   const sent = invoices.map((i) => ev(`n-${i.id}`, `${i.sentOn}T17:00:00Z`, "Ryan", `Sent invoice ${i.number}, ${money(i.amount)}, due ${dayWords(i.dueOn)}`))
   const paid = payments.filter((p) => p.invoiceId).map((p) => ev(`n-${p.id}`, `${p.sortDay}T17:00:00Z`, "Ryan", `Recorded a ${p.amount} ${p.how.toLowerCase()} payment`))
-  const fromQuotes = quotes.flatMap((j) => j.history.map((h, k) => ev(`n-${j.jobId}-${k}`, h.at, h.actor, h.what, h.note)))
-  return [...sent, ...paid, ...fromQuotes].sort((a, b) => b.at.localeCompare(a.at))
+  const fromQuotes = quotes.flatMap((q) => q.history.map((h, k) => ev(`n-${q.id}-${k}`, h.at, h.actor, h.what, h.note)))
+  const fromJobs = made.flatMap((j) => j.history.map((h, k) => ev(`n-${j.jobId}-${k}`, h.at, h.actor, h.what, h.note)))
+  return [...sent, ...paid, ...fromQuotes, ...fromJobs].sort((a, b) => b.at.localeCompare(a.at))
 }
 
 /** The identity of someone with no fixture: a person made in the prototype, or one a request became. Read from the job's quote when it has one. */
-export function identityOf(id: string, rows: readonly GridJob[], quotes: readonly QuoteJob[]): WorldCustomer | null {
+export function identityOf(id: string, rows: readonly GridJob[], quotes: readonly QuoteRecord[]): WorldCustomer | null {
   const known = worldCustomer(id)
   if (known) return known
   const row = rows[0]
-  if (!row) return null
-  const q = quotes.find((j) => rows.some((r) => r.id === j.jobId))
-  const [street = "", town = ""] = row.property.split(", ")
-  return { name: row.name, phone: q?.phone ?? "(970) 555-0123", email: q?.email ?? `${row.name.toLowerCase().replace(/\s+/g, ".")}@example.com`, channel: q?.contact === "email" ? "email" : "text", street: q?.street ?? street, town: q?.town ?? town, since: "2026-11-18" }
+  const q = quotes.find((x) => x.customerId === id)
+  if (!row && !q) return null
+  const name = row?.name ?? q!.customer
+  const [street = "", town = ""] = row ? row.property.split(", ") : []
+  return { name, phone: q?.phone ?? "(970) 555-0123", email: q?.email ?? `${name.toLowerCase().replace(/\s+/g, ".")}@example.com`, channel: q?.contact === "email" ? "email" : "text", street: q?.street ?? street, town: q?.town ?? town, since: "2026-11-18" }
 }
 
 export interface WorldInput {
@@ -152,9 +150,17 @@ export interface WorldInput {
   rows: readonly GridJob[]
   /** every invoice of the world; this customer's are picked out */
   invoices: readonly InvoiceListRow[]
-  /** every quote job of the world; this customer's are picked out */
-  quotes: readonly QuoteJob[]
+  /** every quote of the world; this customer's are picked out */
+  quotes: readonly QuoteRecord[]
+  /** every job made from an approved quote; this customer's are picked out by their rows */
+  jobs: readonly ApprovedJob[]
 }
+
+/** The rows of a customer's Quotes card, newest first. */
+export const quoteRowsFor = (quotes: readonly QuoteRecord[]): CustomerQuoteRow[] =>
+  quotes
+    .map((q): CustomerQuoteRow => ({ id: q.id, service: q.service, amount: quoteMoney(quoteTotal(q)), status: QUOTE_PILL[q.state].status, statusLabel: QUOTE_PILL[q.state].label, sortDay: q.decidedOn ?? q.sentOn ?? q.createdOn }))
+    .sort((a, b) => b.sortDay.localeCompare(a.sortDay))
 
 /** The page of one customer, or null when nothing in the world is theirs. */
 export function buildWorldCustomer(id: string, input: WorldInput): CustomerPageData | null {
@@ -162,13 +168,14 @@ export function buildWorldCustomer(id: string, input: WorldInput): CustomerPageD
   const w = identityOf(id, mine, input.quotes)
   if (!w) return null
   const invoices = input.invoices.filter((i) => i.customerId === id)
-  const quotes = input.quotes.filter((j) => mine.some((r) => r.id === j.jobId))
-  const jobs = mine.map((r) => jobRowOf(r, invoices, quotes))
-  const payments = paymentsOf(mine, invoices, quotes)
+  const quotes = input.quotes.filter((q) => q.customerId === id)
+  const made = input.jobs.filter((j) => mine.some((r) => r.id === j.jobId))
+  const jobs = mine.map((r) => jobRowOf(r, invoices, made))
+  const payments = paymentsOf(mine, invoices, made)
   const billing = billingOf(invoices, payments, w.card)
   const out = invoices.filter((i) => i.balance > 0).sort((a, b) => (a.status === "past-due" ? 0 : 1) - (b.status === "past-due" ? 0 : 1) || a.dueOn.localeCompare(b.dueOn))[0]
   const unpaid = invoices.reduce((n, i) => n + i.balance, 0)
-  const next = jobs.filter((j) => j.open && !j.quote).sort((a, b) => a.sortDay.localeCompare(b.sortDay))[0]
+  const next = jobs.filter((j) => j.open).sort((a, b) => a.sortDay.localeCompare(b.sortDay))[0]
   const first = w.name.split(" ")[0]!
   const [zones, controller, gate] = w.yard ?? []
   const marketing = w.marketingEmail ? `Opted in ${dayWords(w.since)} by the customer on the website` : undefined
@@ -191,10 +198,11 @@ export function buildWorldCustomer(id: string, input: WorldInput): CustomerPageD
     },
     ...(unpaid > 0 && out ? { unpaid: money(unpaid), openInvoice: { id: out.id, number: out.number, amount: money(out.balance), jobName: out.jobName, due: dayWords(out.dueOn) } } : {}),
     jobs,
+    quotes: quoteRowsFor(quotes),
     billing,
     messages: messagesOf(w, invoices).sort((a, b) => b.at.localeCompare(a.at)),
     photos: [],
-    notes: notesOf(invoices, payments, quotes),
+    notes: notesOf(invoices, payments, quotes, made),
     property: zones ? [["Zones", zones], ["Controller", controller!], ["Gate code", gate!], ["Must be home", "No"]] : NO_YARD,
     consent: {
       agreed: `Agreed ${dayLong(w.since)} ${source === "Website" ? "on the website" : "by phone, with the office"}, terms v3`,

@@ -5,16 +5,20 @@ import type { PhotoItem } from "@/lib/photos/types"
 
 // A request, as the admin holds it (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.3 to 4.5; Hannah's answers of Nov 20 2026): a held record of
 // someone who is not yet a customer. It keeps the person's own words and contact on its own row and never touches a customer, a property or a job until
-// Ryan makes a job of it (Create job, or Send a quote), even when the email matches a customer already (the page shows the match). Spam never becomes a
-// customer. Hannah, Nov 20 2026: a request has three states only, New, Seen and Archived; making the job MOVES the request into the job, so it leaves the
-// Requests list and is never "accepted". Archived, with a reason, is the one typed state; New and Seen are read from facts. Pure data and functions.
+// Ryan makes a job of it (Create job) or a quote of it (Send a quote), even when the email matches a customer already (the page shows the match). Spam never becomes a
+// customer. Hannah, Nov 20 2026: a request has three states only, New, Seen and Archived; making the job or the quote MOVES the request into it, so it leaves the
+// Requests list and is never "accepted"; archiving the quote brings it back as Archived with the quote's reason. Archived, with a reason, is the one typed state; New and Seen are read from facts. Pure data and functions.
 
 export type RequestState = "new" | "seen" | "archived"
 export const REQUEST_STATES: readonly RequestState[] = ["new", "seen", "archived"]
 
 /** The reasons Ryan picks when he archives a request (the research, 4.4). */
 export const ARCHIVE_REASONS = ["Spam", "Question answered", "Not a fit", "Duplicate"] as const
-export type ArchiveReason = (typeof ARCHIVE_REASONS)[number]
+export type ArchiveReason = (typeof ARCHIVE_REASONS)[number] | QuoteArchiveReason
+
+/** The reasons Ryan picks when he archives a quote (Hannah, Nov 22 2026): archiving it archives the request it came from with the same reason. */
+export const QUOTE_ARCHIVE_REASONS = ["No answer", "Not a fit", "Duplicate"] as const
+export type QuoteArchiveReason = (typeof QUOTE_ARCHIVE_REASONS)[number]
 
 export type RequestSource = "booking-quote" | "contact-form"
 export const SOURCE_WORDS: Record<RequestSource, string> = { "booking-quote": "Booking form", "contact-form": "Contact form" }
@@ -39,8 +43,10 @@ export interface RequestData {
   photos: PhotoItem[]
   /** a staff event exists (the page was opened, or a note was written) */
   seen: boolean
-  /** set when Ryan made a job of it: the job it became and the customer it was added to. The request has left the list; its address says where it went. */
+  /** set when Ryan made a job of it (Create job on a priced service): the job it became and the customer it was added to. The request has left the list; its address says where it went. */
   becameJob?: { jobId: string; customerId: string; at: string }
+  /** set when Ryan pressed Send a quote (Hannah, Nov 22 2026): the quote it became, a Draft that is its own record, and the customer it was added to. The request has left the list, unless the quote was archived: archiving the quote archives the request. */
+  becameQuote?: { quoteId: string; customerId: string; at: string }
   archived?: { reason: ArchiveReason; at: string }
 }
 
@@ -49,11 +55,11 @@ export const fullName = (r: Pick<RequestData, "first" | "last">) => `${r.first} 
 /** New, Seen or Archived, read from the facts: archived wins, then whether anyone has looked. */
 export function stateOf(r: RequestData): RequestState {
   if (r.archived) return "archived"
-  return r.seen || r.becameJob ? "seen" : "new"
+  return r.seen || r.becameJob || r.becameQuote ? "seen" : "new"
 }
 
-/** The requests that are still requests: one that became a job has left. */
-export const openRequests = <T extends Pick<RequestData, "becameJob">>(list: readonly T[]): T[] => list.filter((r) => !r.becameJob)
+/** The requests that are still requests: one that became a job or a quote has left, and comes back only when its quote was archived (it then reads Archived, with the quote's reason). */
+export const openRequests = <T extends Pick<RequestData, "becameJob" | "becameQuote" | "archived">>(list: readonly T[]): T[] => list.filter((r) => !r.becameJob && (!r.becameQuote || r.archived))
 
 export const REQUEST_PILL: Record<RequestState, { status: PillStatus; label: string }> = {
   new: { status: "request-new", label: "New" },
@@ -210,7 +216,7 @@ export const REQUEST_FIXTURES: RequestData[] = [
     words: "Front of the house and the porch columns, please. We are away until the 20th of December.",
     photos: [theirs(4, "2026-11-09T19:45:00Z")],
     seen: true,
-    becameJob: { jobId: "q-beth", customerId: "other-beth-orr", at: "2026-11-10T15:00:00Z" },
+    becameQuote: { quoteId: "Q-2026-0007", customerId: "other-beth-orr", at: "2026-11-10T15:00:00Z" },
   },
   {
     id: "rq-dana",
@@ -227,7 +233,7 @@ export const REQUEST_FIXTURES: RequestData[] = [
     words: "Zone 3 has a geyser by the driveway after the blowout. I would like a price to redo that line.",
     photos: [],
     seen: true,
-    becameJob: { jobId: "q-dana", customerId: "other-dana-cho", at: "2026-11-13T17:00:00Z" },
+    becameQuote: { quoteId: "Q-2026-0004", customerId: "other-dana-cho", at: "2026-11-13T17:00:00Z" },
   },
   {
     id: "rq-ben",
