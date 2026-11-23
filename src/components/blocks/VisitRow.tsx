@@ -10,7 +10,7 @@ import { StatusPill } from "./StatusPill"
 export interface VisitRowProps {
   /** the visit page */
   href: string
-  /** "Tue, Apr 28", or for a visit with no day its preference with the real days ("Our recommended, Oct 1 to Oct 15") */
+  /** "Tue, Apr 28", or for a visit with no day its preference in her words ("Our recommended, Mid October") */
   dayWords: string
   /** the line under a visit with no day: "We'll schedule it about two weeks before and tell you the day." */
   note?: string | null

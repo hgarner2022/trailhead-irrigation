@@ -43,7 +43,7 @@ describe("visitPageOf", () => {
 
   it("with no card, the price is paid after the visit; a visit with no day never says to pick one", () => {
     expect(page(oneOffJob, "v6", dana).priceLine).toBe("$145, paid after the visit")
-    expect(page(passJob, "v2").dayLine).toBe("Our recommended, Oct 16 to Oct 30. We'll schedule it about two weeks before and tell you the day.")
+    expect(page(passJob, "v2").dayLine).toBe("Our recommended, Mid October. We'll schedule it about two weeks before and tell you the day.")
     expect(page({ ...passJob, visits: passJob.visits.map((v) => (v.id === "v2" ? { ...v, preference: null } : v)) }, "v2").dayLine).toBe("Not scheduled yet. We'll text you when Ryan has one.")
   })
 

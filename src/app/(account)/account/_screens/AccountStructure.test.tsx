@@ -45,7 +45,7 @@ describe("Home", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Late season/ }))
     fireEvent.click(screen.getByRole("button", { name: "Save" }))
     expect(onSavePreference).toHaveBeenCalledWith("blowout", "later")
-    expect(screen.getByRole("dialog", { name: "Saved: Late season, Oct 31 to Nov 15." })).toBeInTheDocument()
+    expect(screen.getByRole("dialog", { name: "Saved: Late season, Late October." })).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Done" }))
     rerender(<HomeScreen customer={andrea} jobs={[passJob]} today="2027-09-10" pass={pass} />)
     expect(screen.queryByRole("region", { name: "Timing for your next visit" })).toBeNull()
@@ -69,8 +69,8 @@ describe("Details › Preferences", () => {
     expect(within(card).getByRole("group", { name: "Fall blowout" })).toBeInTheDocument()
     for (const radio of within(card).getAllByRole("radio", { name: /Our recommended/ })) expect(radio).toBeChecked()
     expect(within(card).getAllByRole("radio")).toHaveLength(6)
-    expect(within(card).getByRole("radio", { name: /Our recommended.*May 1 to May 15/ })).toBeInTheDocument()
-    expect(within(card).getByRole("radio", { name: /Late season.*Oct 31 to Nov 15/ })).toBeInTheDocument()
+    expect(within(card).getByRole("radio", { name: /Our recommended.*Mid May/ })).toBeInTheDocument()
+    expect(within(card).getByRole("radio", { name: /Late season.*Late October/ })).toBeInTheDocument()
   })
 
   it("is not shown to a customer who never held a pass", () => {

@@ -7,7 +7,7 @@ import { HomeScreen } from "./HomeScreen"
 import { aprilPass, aprilTimes, januaryPass } from "./pass-purchase-fixtures"
 
 // A Season Pass in the customer's account right after buying (docs/plans/2026-11-20-season-pass-booking-research.md, Hannah's decisions of Nov 20 2026), at 375 and 1280. After an April purchase the next
-// visit has its exact day and time and the other visit shows "Preference: Early season, Oct 1 to Oct 15" with a Change control, the sentence about scheduling once under the list. After a January
+// visit has its exact day and time and the other visit shows "Preference: Early season, Early October" with a Change control, the sentence about scheduling once under the list. After a January
 // purchase both visits show a preference and no day. Home shows the pass card and the next visit; the plan lines live on the Season Pass tab only. Stories open still; each play is in a hidden twin (`!dev`, `!autodocs`).
 const phone = { globals: { viewport: { value: "phone", isRotated: false } } } as const
 const laptop = { globals: { viewport: { value: "laptop", isRotated: false } } } as const
@@ -65,7 +65,7 @@ export const PassPageAprilPlay: Story = {
   render: passApril,
   play: async ({ canvasElement }) => {
     const rows = within(canvasElement.querySelector("[data-slot=pass-visit-rows]") as HTMLElement)
-    await expect(rows.getByText("Preference: Early season, Oct 1 to Oct 15")).toBeInTheDocument()
+    await expect(rows.getByText("Preference: Early season, Early October")).toBeInTheDocument()
     await expect(rows.getByText(/Wednesday, April 28 at 10:30 am/)).toBeInTheDocument()
     await expect(rows.getByRole("button", { name: /Change: your fall blowout/ })).toBeInTheDocument()
     await expect(within(canvasElement).getAllByText("We'll schedule it about two weeks before and tell you the day.")).toHaveLength(1)

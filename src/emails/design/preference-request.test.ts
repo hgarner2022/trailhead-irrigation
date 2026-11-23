@@ -23,7 +23,7 @@ describe("the preference request email", () => {
   const email = preferenceRequestEmail(d)
   it("names the visit and the street, lists the three choices with their months, and has one button to the visit's page", () => {
     expect(email.subject).toBe("Tell us when you'd like your fall blowout")
-    for (const w of ["Early season", "Oct 1 to Oct 15", "Our recommended", "Oct 16 to Oct 30", "Late season", "Oct 31 to Nov 15", "We'll schedule it about two weeks before and tell you the day."]) expect(email.text).toContain(w)
+    for (const w of ["Early season", "Early October", "Our recommended", "Mid October", "Late season", "Late October", "We'll schedule it about two weeks before and tell you the day."]) expect(email.text).toContain(w)
     expect(email.html.match(/class="cta"/g)).toHaveLength(1)
     expect(email.html).toContain(d.chooseUrl)
   })

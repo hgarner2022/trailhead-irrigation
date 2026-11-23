@@ -104,7 +104,7 @@ describe("VisitsScreen", () => {
     const coming = within(screen.getByRole("region", { name: "Coming up" }))
     expect(coming.getAllByRole("link", { name: /Apr 28/ })[0]).toHaveAttribute("href", "/account/visits/v1")
     expect(coming.getByText("Booked")).toBeInTheDocument()
-    expect(coming.getByText("Our recommended, Oct 16 to Oct 30")).toBeInTheDocument()
+    expect(coming.getByText("Our recommended, Mid October")).toBeInTheDocument()
     expect(coming.queryByText(/pick a day|coming soon/i)).toBeNull()
     expect(coming.getAllByText("$120, charged after the visit")).toHaveLength(2)
     const past = within(screen.getByRole("region", { name: "Past" }))

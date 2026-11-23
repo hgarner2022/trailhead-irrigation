@@ -16,7 +16,7 @@ describe("PassPageScreen", () => {
     expect(rows().map((r) => r.textContent)).toEqual([
       "Spring turn-on · $145May 3Done",
       "Mid-season inspection · $145July",
-      "Fall blowout · $95Preference: Our recommended, Oct 16 to Oct 30ChangePreferred",
+      "Fall blowout · $95Preference: Our recommended, Mid OctoberChangePreferred",
     ])
     // the sentence about when we schedule is said once under the list, not on every line
     expect(screen.getAllByText("We'll schedule it about two weeks before and tell you the day.")).toHaveLength(1)
@@ -44,7 +44,7 @@ describe("PassPageScreen", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Early season/ }))
     fireEvent.click(screen.getByRole("button", { name: "Save" }))
     expect(onChangePreference).toHaveBeenCalledWith("blowout", "earlier")
-    expect(screen.getByRole("dialog", { name: "Saved: Early season, Oct 1 to Oct 15." })).toBeInTheDocument()
+    expect(screen.getByRole("dialog", { name: "Saved: Early season, Early October." })).toBeInTheDocument()
   })
 
   it("shows the quiet timing banner while we are asking, and the same choice opens from it", () => {
