@@ -50,7 +50,7 @@ export function receiptOf(way: Exclude<Way, "refund">, ref?: string): ReceiptOut
 }
 
 /** The receipt text: the fact first, the service and the street. */
-export const receiptText = (way: Way) => (way === "refund" ? `Trailhead: $145 refunded to your ${CARD}. It can take 5 to 10 days to show on your statement.` : `Trailhead: receipt for $145, your ${SERVICE} at 480 Briggs St. Reply STOP to opt out.`)
+export const receiptText = (way: Way) => (way === "refund" ? `Trailhead: $145 refunded to your ${CARD}. It can take 5 to 10 days to show on your statement.` : `Trailhead: receipt for $145, your ${SERVICE} at 480 Briggs St.`)
 
 /** The receipt email as HTML, from the real renderer (a refund from the same frame). */
 export function receiptEmailOf(way: Way, ref?: string): { subject: string; html: string } {

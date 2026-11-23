@@ -38,6 +38,18 @@ describe("the pay page's summary and report", () => {
     expect(screen.queryByRole("heading", { name: "What we did" })).toBeNull()
   })
 
+  it("never lists an item that was not checked, on the open page or the paid one, and shows only the photos when nothing was checked", () => {
+    const { rerender } = render(<PayScreen bill={bill} payAction={ok} />)
+    expect(screen.queryByText("Walk the customer through it")).toBeNull()
+    expect(screen.queryByText("Not done")).toBeNull()
+    rerender(<PayScreen bill={{ ...bill, status: "paid", paidOn: "2027-04-29", report: reportFor("repair", 0, 2, "") }} payAction={ok} />)
+    expect(screen.getByRole("heading", { name: "What we did" })).toBeInTheDocument()
+    expect(screen.queryByText("Walk the zones")).toBeNull()
+    expect(screen.getByRole("list", { name: "Photos from the visit" })).toBeInTheDocument()
+    rerender(<PayScreen bill={{ ...bill, report: reportFor("repair", 0, 0, "") }} payAction={ok} />)
+    expect(screen.queryByRole("heading", { name: "What we did" })).toBeNull()
+  })
+
   it("keeps What we did on the page once it is paid", () => {
     render(<PayScreen bill={{ ...bill, status: "paid", paidOn: "2027-04-29" }} payAction={ok} />)
     expect(screen.getByRole("heading", { name: "What we did" })).toBeInTheDocument()

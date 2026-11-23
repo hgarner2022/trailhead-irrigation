@@ -77,7 +77,7 @@ export function VisitsScreen({ customer, jobs, today, street, times }: VisitsScr
       ) : (
         <>
           <Section id="visits-coming" title="Coming up" rows={upcoming} empty="Nothing booked right now." times={times} />
-          <Section id="visits-past" title="Past" rows={past} empty="No past visits yet." />
+          {past.length > 0 && <Section id="visits-past" title="Past" rows={past} empty="" />}
         </>
       )}
     </main>

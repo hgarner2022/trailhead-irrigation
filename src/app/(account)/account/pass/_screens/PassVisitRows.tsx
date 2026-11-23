@@ -1,53 +1,61 @@
 import { StatusPill } from "@/components/blocks/StatusPill"
-import { PreferenceDialog } from "@/components/blocks/PreferenceDialog"
+import { TimingDialog } from "@/components/blocks/PreferenceAsk"
 import type { Pass, TimingPreference } from "@/lib/admin/types"
 import { preferenceOf } from "@/lib/admin/format"
-import { SCHEDULE_NOTE } from "@/lib/booking/pass-words"
 import type { BookedTimes } from "@/lib/portal/booked-time"
+import { TIMING_NEXT, type TimingKind } from "@/lib/portal/preference-words"
 import { AddToCalendar } from "./AddToCalendar"
 import { bookedWhen, canChange, visitLineInfo, visitRows } from "./pass-page-model"
 
-// The pass's visits, one row each, for the pass page and Home (docs/plans/2026-11-20-season-pass-booking-research.md): a visit with a day reads its day and exact time (the next visit); a visit that is
-// months away reads "Preference: Mid October" and "We'll schedule it about two weeks before and tell you the day." with a Change control until its day is set. The state pill is Done, Booked or Preferred.
-// Only the Season Pass tab lists these rows: Home shows the pass card and its timeline, never this list (Hannah, Nov 21 2026). Server component; the dialog carries its own client boundary.
+// The plan's lines, one per visit the pass holds, for the Season Pass tab: what the plan includes and where each one stands (docs/plans/2026-11-19-customer-side-design.md, "Account structure (Nov 22 2026)").
+// A visit with a day reads its day and exact time; one that is done reads when; one with no day yet reads the customer's timing ("Preference: Our recommended, mid October") with a Change link until
+// its day is set. These are plan lines, not visit rows: no money word, no receipt (those are the Visits tab's) and no description of what the visit includes (the visit's own page has it), and the sentence about when we schedule is said once under the list, not on every
+// line. The state pill is Done, Booked or Preferred. Server component; the dialog carries its own client boundary.
 
 export interface PassVisitRowsProps {
   pass: Pass
-  onChangePreference?: (kind: "turn-on" | "blowout", preference: TimingPreference) => void
+  onChangePreference?: (kind: TimingKind, preference: TimingPreference) => void | Promise<unknown>
   /** the booked start of each visit by visit id ("10:30"), for the exact time */
   times?: BookedTimes
+  /** the sentence about when we schedule under the list; left off while the banner above says it */
+  note?: boolean
 }
 
-export function PassVisitRows({ pass, onChangePreference, times }: PassVisitRowsProps) {
+export function PassVisitRows({ pass, onChangePreference, times, note = true }: PassVisitRowsProps) {
   const rows = visitRows(pass)
+  const asking = pass.visits.some((v) => canChange(v))
   return (
-    <ul data-slot="pass-visit-rows" className="divide-y divide-border">
-      {pass.visits.map((visit) => {
-        const row = rows.find((r) => r.kind === visit.kind)!
-        const info = visitLineInfo(visit)
-        const changeable = canChange(visit)
-        const preference = changeable ? preferenceOf(pass, visit.kind) : null
-        return (
-          <li key={row.kind} data-slot="pass-visit-row" className="flex flex-wrap items-center gap-3 py-3">
-            <span className="min-w-0 flex-1">
-              <span className="block text-base font-semibold text-foreground">
-                {row.name}
-                <span className="font-normal text-muted-foreground">{` · ${info.price}`}</span>
-              </span>
-              <span className="block text-sm text-muted-foreground">{bookedWhen(visit, visit.id ? times?.[visit.id] : undefined) ?? row.when}</span>
-              {preference && (
-                <span data-slot="schedule-note" className="block text-sm text-muted-foreground">
-                  {SCHEDULE_NOTE}
+    <div data-slot="pass-visit-list" className="space-y-3">
+      <ul data-slot="pass-visit-rows" className="divide-y divide-border">
+        {pass.visits.map((visit) => {
+          const row = rows.find((r) => r.kind === visit.kind)!
+          const info = visitLineInfo(visit)
+          const changeable = canChange(visit)
+          const preference = changeable ? preferenceOf(pass, visit.kind) : null
+          const when = bookedWhen(visit, visit.id ? times?.[visit.id] : undefined) ?? row.when
+          return (
+            <li key={row.kind} data-slot="pass-visit-row" className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:gap-3">
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-semibold text-foreground">
+                  {row.name}
+                  <span className="font-normal text-muted-foreground">{` · ${info.price}`}</span>
                 </span>
-              )}
-              {info.description && <span className="block text-sm text-muted-foreground">{info.description}</span>}
-            </span>
-            {preference && canChange(visit) && <PreferenceDialog kind={visit.kind} value={preference} onSave={onChangePreference} />}
-            <StatusPill status={row.status} label={row.label} />
-            {<AddToCalendar pass={pass} visit={visit} name={row.name} />}
-          </li>
-        )
-      })}
-    </ul>
+                {when !== row.label && <span className="block text-sm text-muted-foreground">{when}</span>}
+              </span>
+              <span className="flex flex-wrap items-center gap-3">
+                {preference && canChange(visit) && <TimingDialog kind={visit.kind} value={preference} onSave={onChangePreference} />}
+                <StatusPill status={row.status} label={row.label} />
+                <AddToCalendar pass={pass} visit={visit} name={row.name} />
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+      {asking && note && (
+        <p data-slot="schedule-note" className="text-sm text-muted-foreground">
+          {TIMING_NEXT}
+        </p>
+      )}
+    </div>
   )
 }

@@ -48,8 +48,8 @@ describe("what a server screen hands the day buttons", () => {
     expect(onPickOf(tree)).toEqual([serverAction])
   })
 
-  it("the pass page passes the server action itself when a booked day can be changed", () => {
+  it("the pass page offers no day buttons for a booked day: changing it is the visit's own Reschedule", () => {
     const tree = PassPageScreen({ pass: withBlowout("2027-10-12"), today: "2027-10-01", pickDays: { blowout: ["2027-10-19"] }, onPickDay: serverAction })
-    expect(onPickOf(tree)).toEqual([serverAction])
+    expect(onPickOf(tree)).toEqual([])
   })
 })

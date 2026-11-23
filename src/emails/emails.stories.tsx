@@ -40,7 +40,7 @@ export const TwoWeeksOut = story("date-confirm")
 export const Receipt = story("receipt")
 /** An invoice: the same table, the amount due, the due day and one Pay button. */
 export const Invoice = story("invoice")
-/** The invoice with the visit report: What we did under the lines, the checklist (an open item reads "Not done") and the photos in a grid. */
+/** The invoice with the visit report: What we did under the lines, the checked items (an unchecked one is not shown) and the photos in a grid. */
 const withReport = invoiceEmail({ ...(EMAIL_FIXTURES.invoice as unknown as InvoiceData), report: REPORT_FIXTURE })
 export const InvoiceWithVisitReport: Story = { name: "Invoice with the visit report", args: { subject: withReport.subject, html: withReport.html, width: 640 } }
 export const InvoiceWithVisitReportOnAPhone: Story = { name: "Invoice with the visit report on a phone", args: { subject: withReport.subject, html: withReport.html, width: 375 } }

@@ -23,13 +23,13 @@ describe("visit rows", () => {
     expect(visitRows(pass)).toEqual([
       { kind: "turn-on", name: "Spring turn-on", when: "May 3", status: "charged", label: "Done" },
       { kind: "inspection", name: "Mid-season inspection", when: "July", status: "needs-a-day", label: "July" },
-      { kind: "blowout", name: "Fall blowout", when: "Preference: Mid October", status: "needs-a-day", label: "Preferred" },
+      { kind: "blowout", name: "Fall blowout", when: "Preference: Our recommended, mid October", status: "needs-a-day", label: "Preferred" },
     ])
   })
 
   it("shows the turn-on preference until it has a day", () => {
-    expect(visitRows(fresh)[0]).toEqual({ kind: "turn-on", name: "Spring turn-on", when: "Preference: Early May", status: "needs-a-day", label: "Preferred" })
-    expect(visitRows({ ...fresh, blowoutPreference: "later" })[2]).toEqual({ kind: "blowout", name: "Fall blowout", when: "Preference: Late October", status: "needs-a-day", label: "Preferred" })
+    expect(visitRows(fresh)[0]).toEqual({ kind: "turn-on", name: "Spring turn-on", when: "Preference: Early season, early May", status: "needs-a-day", label: "Preferred" })
+    expect(visitRows({ ...fresh, blowoutPreference: "later" })[2]).toEqual({ kind: "blowout", name: "Fall blowout", when: "Preference: Late season, late October", status: "needs-a-day", label: "Preferred" })
   })
 
   it("shows the date once a visit is booked", () => {
@@ -76,10 +76,10 @@ describe("season caption", () => {
   })
 
   it("names the preference when the turn-on or the blowout is next", () => {
-    expect(seasonCaption(fresh)).toBe("Preference: Early May. We'll schedule it about two weeks before and tell you the day.")
+    expect(seasonCaption(fresh)).toBe("Preference: Early season, early May. We'll schedule it about two weeks before and tell you the day.")
     const blowoutNext: Pass = { ...pass, visits: pass.visits.map((v, i) => (i < 2 ? { ...v, completedAt: "2027-07-13T16:05:00Z" } : v)) }
-    expect(seasonCaption(blowoutNext)).toBe("Preference: Mid October. We'll schedule it about two weeks before and tell you the day.")
-    expect(seasonCaption({ ...blowoutNext, blowoutPreference: "earlier" })).toBe("Preference: Early October. We'll schedule it about two weeks before and tell you the day.")
+    expect(seasonCaption(blowoutNext)).toBe("Preference: Our recommended, mid October. We'll schedule it about two weeks before and tell you the day.")
+    expect(seasonCaption({ ...blowoutNext, blowoutPreference: "earlier" })).toBe("Preference: Early season, early October. We'll schedule it about two weeks before and tell you the day.")
   })
 
   it("closes the season when every visit is done", () => {
@@ -137,11 +137,11 @@ describe("a pass bought in the spring or the winter", () => {
   it("reads the next visit's exact time and the other visit's preference with when it is scheduled", () => {
     const april = aprilPass
     expect(bookedWhen(april.visits[0]!, "10:30")).toBe("Wednesday, April 28 at 10:30 am")
-    expect(visitRows(april)[1]).toMatchObject({ kind: "blowout", when: "Preference: Early October", label: "Preferred" })
-    expect(seasonCaption({ ...april, visits: [{ ...april.visits[0]!, completedAt: "2027-04-28T17:00:00Z" }, april.visits[1]!] })).toBe("Preference: Early October. We'll schedule it about two weeks before and tell you the day.")
+    expect(visitRows(april)[1]).toMatchObject({ kind: "blowout", when: "Preference: Early season, early October", label: "Preferred" })
+    expect(seasonCaption({ ...april, visits: [{ ...april.visits[0]!, completedAt: "2027-04-28T17:00:00Z" }, april.visits[1]!] })).toBe("Preference: Early season, early October. We'll schedule it about two weeks before and tell you the day.")
   })
   it("says the preference and when it is scheduled when no visit has a day", () => {
-    expect(passHeadline(januaryPass, "2027-01-12")).toMatchObject({ title: "Your 2027 season is reserved.", line: "Preference: Early May. We'll schedule it about two weeks before and tell you the day." })
+    expect(passHeadline(januaryPass, "2027-01-12")).toMatchObject({ title: "Your 2027 season is reserved.", line: "Preference: Early season, early May. We'll schedule it about two weeks before and tell you the day." })
   })
 })
 

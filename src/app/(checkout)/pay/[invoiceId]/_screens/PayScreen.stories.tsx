@@ -28,7 +28,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Sent with the visit report: What we did under the lines, the checklist, the notes and the photos. */
+/** Sent with the visit report: What we did under the lines: the checked items and the photos. */
 export const SentWithVisitReport: Story = { args: { bill: { ...sent, report: REPORT_FIXTURE } } }
 
 /** Sent: the lines, the total, "Due Dec 1", the one button and the two lines around it. */

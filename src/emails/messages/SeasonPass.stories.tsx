@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { MessageStory } from "./MessageStory"
 import { MESSAGES } from "./catalog"
 
-// Season Pass: the purchase confirmation, the renewal offer and the cancel message. Each message has two stories: on a laptop (the text, then the Current and Proposed emails side by side) and on a phone (the Proposed email and the text at 375px).
+// Season Pass: the purchase confirmation, the preference request (a prototype), the renewal offer and the cancel message. Each message has two stories: on a laptop (the text, then the Current and Proposed emails side by side) and on a phone (the Proposed email and the text at 375px).
 
 const meta = {
   title: "Messages/Season Pass",
@@ -18,6 +18,8 @@ const phone = (id: string): Story => ({ args: { id, view: "phone" }, globals: { 
 
 export const PurchaseConfirmation = laptop("purchase-confirmation")
 export const PurchaseConfirmationOnAPhone = phone("purchase-confirmation")
+export const PreferenceRequest = laptop("preference-request")
+export const PreferenceRequestOnAPhone = phone("preference-request")
 export const Renewal = laptop("renewal")
 export const RenewalOnAPhone = phone("renewal")
 export const SeasonPassCanceled = laptop("cancelled")

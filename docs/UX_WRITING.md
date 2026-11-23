@@ -29,6 +29,8 @@ Always: sentence case, contractions in customer text ("we'll", "didn't"), no em 
 | day | the date we come | slot, appointment time |
 | window | the time range inside that day ("8 to 10") | arrival time, ETA |
 | timing preference, "mid October" | what the customer asked for before a day is set | request, demand |
+| Early season, Our recommended, Late season | the three timing choices a customer sees for a visit we schedule for them (the data's earlier, recommended, later), each with its month under it ("Mid May"); Our recommended is the middle of the window and the default; Hannah, Nov 22 2026 | Mid season (there is no fourth value), Earlier, Later |
+| Season Pass tab, "Become a Season Pass holder" | the plan: the card, each visit's state or timing, how it is paid; for a customer with none, the one quiet page that explains it; never a card on Home or Visits | Season Pass in a Visits list, membership, plan |
 | truck | what the admin schedules | route, unit |
 | reserved | the pass is bought and the season is held | confirmed, approved, firm, locked in |
 | set, moved | a visit has a day; a day changed | scheduled (customer side), rescheduled, proposed |

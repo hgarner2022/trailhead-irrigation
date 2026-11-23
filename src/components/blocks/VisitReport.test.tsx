@@ -4,14 +4,12 @@ import { reportFor } from "@/emails/fixtures"
 import { VisitReport } from "./VisitReport"
 
 describe("VisitReport", () => {
-  it("says What we did, lists every checklist item and marks the open one Not done", () => {
+  it("says What we did and lists only the checked items: an open one is never drawn, not even as Not done", () => {
     render(<VisitReport report={reportFor("repair", 4, 2, "")} />)
     expect(screen.getByRole("heading", { name: "What we did" })).toBeInTheDocument()
-    const items = screen.getAllByRole("listitem").filter((li) => li.hasAttribute("data-done"))
-    expect(items.map((i) => i.getAttribute("data-done"))).toEqual(["true", "true", "true", "true", "false"])
-    expect(screen.getByText("Walk the zones")).toBeInTheDocument()
-    expect(within(items[4]!).getByText("Not done")).toBeInTheDocument()
-    expect(within(items[0]!).queryByText("Not done")).toBeNull()
+    expect(screen.getAllByRole("listitem").filter((li) => !li.querySelector("img")).map((li) => li.textContent)).toEqual(["Walk the zones", "Find the leak", "Fix what we can", "Set the controller"])
+    expect(screen.queryByText(/Walk the customer through it/)).toBeNull()
+    expect(screen.queryByText("Not done")).toBeNull()
   })
 
   it("shows the photos Ryan shared as a grid of images with no caption", () => {
@@ -31,8 +29,16 @@ describe("VisitReport", () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it("uses nothing but the heading, the checklist items, a screen-reader Done and Not done: no sentence of ours", () => {
+  it("uses nothing but the heading and the checked items: no sentence of ours", () => {
     const { container } = render(<VisitReport report={reportFor("fall blowout", 3, 0, "")} />)
-    expect(container.textContent).toBe("What we didDone: Shut the waterDone: Blow out each zoneDone: Drain the backflowSet the controller to offNot done")
+    expect(container.textContent).toBe("What we didShut the waterBlow out each zoneDrain the backflow")
+  })
+
+  it("shows only the photos when no item is checked, and renders nothing when there is nothing checked and no photo", () => {
+    const { container, rerender } = render(<VisitReport report={reportFor("repair", 0, 2, "")} />)
+    expect(screen.getByRole("list", { name: "Photos from the visit" })).toBeInTheDocument()
+    expect(container.textContent).toBe("What we did")
+    rerender(<VisitReport report={reportFor("repair", 0, 0, "")} />)
+    expect(container).toBeEmptyDOMElement()
   })
 })

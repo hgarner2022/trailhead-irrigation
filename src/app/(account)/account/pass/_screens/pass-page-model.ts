@@ -3,13 +3,17 @@
  * state), the card on file line and the season caption. Kept out of the
  * screen so the wording can be unit tested.
  */
-import type { Pass, PassVisit } from "@/lib/admin/types"
+import type { Pass, PassVisit, TimingPreference } from "@/lib/admin/types"
 import { TIME_ZONE, preferenceOf, preferencePhrase, writtenDate } from "@/lib/admin/format"
 import { formatMoney } from "@/lib/admin/metrics"
 import { customerFacingFirstName } from "@/lib/portal/words"
 import { passVisitJob, visitPaidTotal, type JobState } from "@/lib/admin/jobs"
-import { SCHEDULE_NOTE, preferenceStatement } from "@/lib/booking/pass-words"
+import { SCHEDULE_NOTE } from "@/lib/booking/pass-words"
 import { clock12 } from "@/lib/booking/day-time"
+import { timingLine } from "@/lib/portal/preference-words"
+
+/** "Preference: Our recommended, mid October": a saved timing in the one phrasing the Season Pass tab uses. */
+export const prefStatement = (kind: "turn-on" | "blowout", preference: TimingPreference) => `Preference: ${timingLine(kind, preference)}`
 
 export const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Spring turn-on", inspection: "Mid-season inspection", blowout: "Fall blowout" }
 
@@ -34,7 +38,7 @@ const HAS_DAY: readonly RowStatus[] = ["scheduled", "routed"]
 /** The pass's preference for a visit in the customer's words; the inspection has none. */
 function preferenceWords(visit: PassVisit, pass: Pass): string | null {
   const preference = preferenceOf(pass, visit.kind)
-  return preference && visit.kind !== "inspection" ? preferenceStatement(visit.kind, preference) : null
+  return preference && visit.kind !== "inspection" ? prefStatement(visit.kind, preference) : null
 }
 
 export function visitRow(visit: PassVisit, pass: Pass): VisitRow {
@@ -104,7 +108,7 @@ export function passHeadline(pass: Pass, today: string, pickable: readonly strin
   const when = next.kind === "inspection" ? "in July" : preferencePhrase(next.kind, preferenceOf(pass, next.kind) ?? "recommended")
   // A visit with a preference and no day says the preference and when it is scheduled (Hannah, Nov 20 2026); the July inspection, an add-on, keeps its own line.
   const tell = next.kind === "inspection" ? "We'll text your date in June." : SCHEDULE_NOTE
-  const asked = next.kind === "inspection" ? `${row.name} ${when}. ${tell}` : `${preferenceStatement(next.kind, preferenceOf(pass, next.kind) ?? "recommended")}. ${tell}`
+  const asked = next.kind === "inspection" ? `${row.name} ${when}. ${tell}` : `${prefStatement(next.kind, preferenceOf(pass, next.kind) ?? "recommended")}. ${tell}`
   return { title: last ? `${lastWords}Next up: ${row.name.toLowerCase()}, ${when}.` : `Your ${pass.season} season is reserved.`, line: last ? tell : asked, action: null, kind: next.kind }
 }
 
@@ -150,6 +154,9 @@ export function cardLine(pass: Pass): string {
   return pass.cardExpires ? `${ending}, expires ${expiry(pass.cardExpires)}` : ending
 }
 
+/** The one line on the plan about how it is paid: after each visit, to the card on file, or at each visit when there is none. The card itself is changed on Details. */
+export const chargeLine = (pass: Pick<Pass, "cardLast4">): string => (pass.cardLast4 ? `You pay after each visit, to your Visa ending ${pass.cardLast4}.` : "No card on file yet. You pay at each visit.")
+
 /** The card button's verb: a pass with a card updates it, a pass with none adds one. Both open Stripe's hosted page. */
 export const cardAction = (pass: Pick<Pass, "cardLast4">): string => (pass.cardLast4 ? "Update card" : "Add a card")
 
@@ -159,7 +166,7 @@ export function seasonCaption(pass: Pass): string {
   if (!next) return `Every visit is done. We'll email you in January about ${pass.season + 1}.`
   const row = visitRow(next, pass)
   if (next.scheduledAt) return `Next up: ${row.name.toLowerCase()} on ${row.when}.`
-  if (next.kind === "blowout") return `${preferenceStatement("blowout", pass.blowoutPreference)}. ${SCHEDULE_NOTE}`
-  if (next.kind === "turn-on") return `${preferenceStatement("turn-on", pass.turnOnPreference)}. ${SCHEDULE_NOTE}`
+  if (next.kind === "blowout") return `${prefStatement("blowout", pass.blowoutPreference)}. ${SCHEDULE_NOTE}`
+  if (next.kind === "turn-on") return `${prefStatement("turn-on", pass.turnOnPreference)}. ${SCHEDULE_NOTE}`
   return `Next up: ${row.name.toLowerCase()} in ${row.when}.`
 }

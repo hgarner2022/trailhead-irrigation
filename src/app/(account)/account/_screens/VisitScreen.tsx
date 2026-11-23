@@ -1,5 +1,8 @@
 import { AddToCalendarLinks } from "@/components/blocks/AddToCalendarLinks"
+import { PreferenceAsk } from "@/components/blocks/PreferenceAsk"
 import { VisitPage } from "@/components/blocks/VisitPage"
+import type { TimingPreference } from "@/lib/admin/types"
+import type { TimingKind } from "@/lib/portal/preference-words"
 import type { PortalCustomerType, PortalJobType } from "@/api/v1/portal/schemas"
 import type { PhotoItem } from "@/lib/photos/types"
 import { visitPageOf } from "@/lib/portal/visit-page"
@@ -23,11 +26,13 @@ export interface VisitScreenProps extends VisitActions {
   offers?: readonly DayTimeOffer[]
   /** Google's add-event link and the app's signed .ics link, for a booked visit */
   calendar?: { googleHref: string; icsHref: string }
+  /** we are asking for this visit's timing (the Preference request's link opens here): the quiet banner shows above the visit, with the choice on file */
+  ask?: { kind: TimingKind; value: TimingPreference; onSave?: (kind: TimingKind, preference: TimingPreference) => void | Promise<unknown> }
   /** this visit's photos as this customer may see them (their own, and Ryan's marked ones once it is Done); left out where photos are not offered */
   photos?: { items: PhotoItem[]; configured: boolean; link?: string; onAdd: VisitPhotosProps["onAdd"]; onRemove?: VisitPhotosProps["onRemove"] }
 }
 
-export function VisitScreen({ customer, job, visitId, today, days, calendar, photos, times, offers, onReschedule, onRescheduleTime, onCancel }: VisitScreenProps) {
+export function VisitScreen({ customer, job, visitId, today, days, calendar, photos, times, offers, ask, onReschedule, onRescheduleTime, onCancel }: VisitScreenProps) {
   const visit = job.visits.find((v) => v.id === visitId)
   if (!visit) return null
   const start = times?.[visit.id]
@@ -35,5 +40,5 @@ export function VisitScreen({ customer, job, visitId, today, days, calendar, pho
   const props = { job, visit, today, days, offers, currentStart: start, textHref: model.textHref, onReschedule, onRescheduleTime, onCancel }
   const gone = visit.status === "cancelled" || visit.status === "skipped"
   const photosSlot = photos ? <VisitPhotos visitId={visitId} photos={photos.items} configured={photos.configured} canAdd={!gone} link={photos.link} onAdd={photos.onAdd} onRemove={photos.onRemove} /> : null
-  return <VisitPage model={model} rescheduleSlot={<RescheduleControl {...props} />} cancelSlot={<CancelControl {...props} />} calendarSlot={calendar ? <AddToCalendarLinks googleHref={calendar.googleHref} icsHref={calendar.icsHref} /> : null} photosSlot={photosSlot} />
+  return <VisitPage model={model} topSlot={ask ? <PreferenceAsk kind={ask.kind} value={ask.value} onSave={ask.onSave} /> : undefined} rescheduleSlot={<RescheduleControl {...props} />} cancelSlot={<CancelControl {...props} />} calendarSlot={calendar ? <AddToCalendarLinks googleHref={calendar.googleHref} icsHref={calendar.icsHref} /> : null} photosSlot={photosSlot} />
 }

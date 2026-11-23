@@ -9,6 +9,7 @@ import type {
 } from "../types"
 import type { CanceledByUsData, RefundData, TipsData } from "../design/messages"
 import type { NewRequestStaffData, QuoteDecidedStaffData, QuoteEmailData, RequestReceivedData } from "../design/quote-messages"
+import type { PreferenceRequestData } from "../design/preference-request"
 
 export const ORIGIN = "https://www.trailheadirrigation.com"
 export const STREET = "412 Briggs Street"
@@ -64,6 +65,8 @@ export const PURCHASE: PurchaseConfirmationData = {
     { kind: "blowout", name: "fall blowout", amount: 95, visit: BLOWOUT_VISIT, fallback: "" },
   ],
 }
+/** The fall blowout of the pass, a visit with no day yet: the signed link opens that visit's page, where the timing choice is. */
+export const PREFERENCE_REQUEST: PreferenceRequestData = { ...base, kind: "blowout", address: STREET, chooseUrl: `${ORIGIN}/account/visits/v3?t=def` }
 export const RENEWAL: RenewalData = { ...base, season: 2028, town: "Erie", buyUrl: `${ORIGIN}/season-pass` }
 export const CANCELLED: CancelledData = { ...base, season: 2027 }
 export const VISIT_CANCELLED: VisitCancelledData = { ...base, serviceName: "repair", address: STREET, day: "2027-04-28", paid: 0, visitUrl: `${ORIGIN}/account/visits/v1?t=abc` }

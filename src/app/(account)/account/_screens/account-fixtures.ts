@@ -24,6 +24,12 @@ export const passJob: PortalJobType = {
   payments: [], invoices: [],
 }
 
+/** September: the turn-on is done and the blowout has no day yet, only a timing preference we are asking for. The customer does not pick a day for it (we schedule it), so it offers no Reschedule or Cancel. */
+export const passJobAsking: PortalJobType = {
+  ...passJob,
+  visits: [{ ...passJob.visits[0]!, status: "completed", scheduledOn: "2027-04-28", completedOn: "2027-04-28", reschedule: "no", cancel: "no", cancelsBy: null }, { ...passJob.visits[1]!, reschedule: "no", cancel: "no" }],
+}
+
 /** The turn-on once the day-before text went out (the day before, so inside the 24 hours): the window and who is coming are told, and Text Ryan replaces the buttons. */
 export const passJobWindowTold: PortalJobType = { ...passJob, visits: [{ ...passJob.visits[0]!, windowTold: true, window: "8:00 am", personFirstName: "Ryan", reschedule: "text", cancel: "text", cancelsBy: null }, passJob.visits[1]!] }
 

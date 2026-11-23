@@ -6,7 +6,7 @@ import { receiptEmail } from "./account-messages"
 import { EMAIL_FIXTURES, REPORT_STEPS, reportFor } from "./fixtures"
 import { invoiceEmail } from "./invoice"
 import type { InvoiceData, ReceiptData } from "./types"
-import { visitReport } from "./visit-report"
+import { checkedItems, hasReport, visitReport } from "./visit-report"
 
 const receipt = EMAIL_FIXTURES.receipt as unknown as ReceiptData
 const invoice = EMAIL_FIXTURES.invoice as unknown as InvoiceData
@@ -19,21 +19,31 @@ describe("the visit report fixtures match the job page's checklists", () => {
 })
 
 describe("visitReport", () => {
-  it("lists every item with a check, marks an open item Not done and leaves notes and captions out", () => {
-    const { html, text } = visitReport(reportFor("repair", 4, 2), "receipt")
+  it("lists only the checked items, never an open one (not even as Not done), and leaves notes and captions out", () => {
+    const { html, text } = visitReport(reportFor("repair", 4, 2), "receipt")!
     expect(html).toContain("What we did")
     expect(html.match(/&#10003;/g)).toHaveLength(4)
-    expect(html.match(/&#9675;/g)).toHaveLength(1)
-    expect(html.match(/Not done/g)).toHaveLength(1)
+    expect(html).not.toMatch(/&#9675;|Not done|Walk the customer through it/)
     expect(html.match(/<img /g)).toHaveLength(2)
     expect(html).not.toMatch(/figcaption|Notes from the crew/)
-    expect(text).toEqual(["What we did", "[x] Walk the zones", "[x] Find the leak", "[x] Fix what we can", "[x] Set the controller", "[ ] Walk the customer through it (not done)", "", "2 photos are on your receipt page.", ""])
+    expect(text).toEqual(["What we did", "[x] Walk the zones", "[x] Find the leak", "[x] Fix what we can", "[x] Set the controller", "", "2 photos are on your receipt page.", ""])
+    expect(text.join("\n")).not.toMatch(/not done|\[ \]|customer through/i)
   })
 
   it("has no photo sentence or grid when no photo was shared", () => {
-    const { html, text } = visitReport(reportFor("spring turn-on", undefined, 0), "invoice")
+    const { html, text } = visitReport(reportFor("spring turn-on", undefined, 0), "invoice")!
     expect(html).not.toContain("<img")
     expect(text.join("\n")).not.toMatch(/photo/)
+  })
+
+  it("shows only the photos when no item is checked, and nothing at all when there is no photo either", () => {
+    const photosOnly = visitReport(reportFor("repair", 0, 2), "receipt")!
+    expect(photosOnly.html).toContain("<img")
+    expect(photosOnly.html).not.toMatch(/&#10003;|&#9675;|Not done|Walk the zones/)
+    expect(photosOnly.text).toEqual(["What we did", "", "2 photos are on your receipt page.", ""])
+    expect(visitReport(reportFor("repair", 0, 0), "receipt")).toBeNull()
+    expect(hasReport(reportFor("repair", 0, 0))).toBe(false)
+    expect(checkedItems(reportFor("repair", 2, 0))).toEqual(["Walk the zones", "Find the leak"])
   })
 })
 
@@ -42,10 +52,12 @@ describe("the receipt email carries What we did", () => {
     for (const make of [receiptEmail, proposedReceipt]) {
       const e = make({ ...receipt, report: reportFor("repair", 4, 2) })
       expect(e.html).toContain("What we did")
-      expect(e.html).toContain("Walk the customer through it")
+      expect(e.html).not.toContain("Walk the customer through it")
+      expect(e.html).not.toMatch(/Not done/)
       // under the money table, before the button
       expect(e.html.indexOf("What we did")).toBeGreaterThan(e.html.indexOf("Paid"))
       expect(e.text).toContain("[x] Find the leak")
+      expect(e.text).not.toMatch(/not done|\[ \]/i)
       expect(e.text).toContain("2 photos are on your receipt page.")
     }
   })

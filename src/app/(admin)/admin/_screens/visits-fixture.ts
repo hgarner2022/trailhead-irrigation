@@ -52,7 +52,7 @@ const people: Client[] = [
 
 const messages: Message[] = [
   { id: "m1", clientId: "c-dana", visitId: "office-scheduled", channel: "sms", kind: "date-set", body: "Trailhead: your repair is Thu, Nov 19. Calendar and changes: link Reply STOP to opt out.", at: "2026-11-11T16:00:00Z", status: "delivered" },
-  { id: "m2", clientId: "c-dana", visitId: "office-scheduled", channel: "sms", kind: "note", body: "Trailhead: Ryan will call when he is ten minutes out. Reply STOP to opt out.", at: "2026-11-12T15:00:00Z", status: "sent" },
+  { id: "m2", clientId: "c-dana", visitId: "office-scheduled", channel: "sms", kind: "note", body: "Trailhead: Ryan will call when he is ten minutes out.", at: "2026-11-12T15:00:00Z", status: "sent" },
   { id: "m3", clientId: "c-joe", visitId: "office-paid", channel: "email", kind: "receipt", body: "Receipt: $145 for your repair", at: "2026-11-09T22:05:00Z", status: "delivered" },
 ]
 

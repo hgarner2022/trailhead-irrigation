@@ -7,6 +7,7 @@ import * as proposed from "../design/messages"
 import { SMS_TEMPLATES, type SmsKind } from "@/sms/texts"
 import * as f from "./fixtures"
 import * as q from "../design/quote-messages"
+import { preferenceRequestEmail, preferenceRequestText } from "../design/preference-request"
 import { canceledByUsText, crewAssignedText, customerChangedText, newRequestStaffText, quoteApprovedSms, quoteDeclinedSms, quoteDecidedStaffText, quoteReminderSms, quoteSms, receiptText, refundText } from "./prototype-texts"
 
 export type Journey = "Booking and visits" | "Billing" | "Requests and quotes" | "Season Pass" | "Marketing" | "Account" | "To the crew, not the customer"
@@ -117,6 +118,8 @@ export const MESSAGES: MessageDef[] = [
 
   { id: "purchase-confirmation", name: "Purchase confirmation", journey: "Season Pass", kind: "purchase-confirmation", channels: ["email"], klass: "transactional", renderer: "src/emails/purchase-confirmation.ts", exportName: "PurchaseConfirmation",
     when: "When a Season Pass is sold, on the website or by the office: the card, each visit's day, what Ryan does, the money line and the account.", current: live("purchase-confirmation", f.PURCHASE), proposed: () => proposed.purchaseConfirmationEmail(f.PURCHASE) },
+  { id: "preference-request", name: "Preference request", journey: "Season Pass", kind: "none", channels: ["text", "email"], klass: "transactional", renderer: "not built", prototype: ["text", "email"], exportName: "PreferenceRequest",
+    when: "Before the window of a visit we schedule for the customer (the fall blowout, the spring turn-on) when it needs a timing: the visit, the street, the three choices and the one sentence about scheduling. A text or an email by the contact preference; its link opens that visit's page, where the same choice sits as a quiet banner (and on Home, the Season Pass tab and Details).", text: (first) => preferenceRequestText(f.PREFERENCE_REQUEST, { optOut: first }), proposed: () => preferenceRequestEmail(f.PREFERENCE_REQUEST) },
   { id: "renewal", name: "Renewal", journey: "Season Pass", kind: "renewal", channels: ["email"], klass: "marketing", renderer: "src/emails/account-messages.ts", exportName: "Renewal",
     when: "Once next season opens, to customers who chose marketing emails: reserve next season and pick the days in the same step. It is marketing, so it carries an Unsubscribe link in the proposed layout.", current: live("renewal", f.RENEWAL), proposed: () => proposed.renewalEmail(f.RENEWAL, f.TIPS.unsubscribeUrl) },
   { id: "cancelled", name: "Season Pass canceled", journey: "Season Pass", kind: "cancelled", channels: ["email"], klass: "transactional", renderer: "src/emails/account-messages.ts", exportName: "SeasonPassCanceled",
