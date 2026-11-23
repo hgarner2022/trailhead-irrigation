@@ -23,18 +23,14 @@ export const Empty: Story = { args: { service: "Spring turn-on, 12 zones", where
 
 export const Phone: Story = { globals: { viewport: { value: "phone", isRotated: false } } }
 
-const passVisits = [
-  { name: "Spring turn-on", when: "Tuesday, April 27 at 10:30 am" },
-  { name: "Fall blowout", when: "Preference: Early October", note: "We'll schedule it about two weeks before and tell you the day." },
-]
-
-/** A Season Pass: every visit on the card, one with its exact day and time and one with a preference and when it is scheduled. */
+/** A Season Pass: the clean wallet card, nothing dark over the art, exactly like the account's PassCard; its visits are a plain list under it. */
 export const SeasonPass: Story = {
-  args: { service: "Season Pass 2027", day: undefined, time: undefined, visits: passVisits },
+  args: { service: "Season Pass 2027", day: undefined, time: undefined, status: "Set up", detail: "Erie · 8 zones" },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Tuesday, April 27 at 10:30 am")).toBeInTheDocument()
-    await expect(canvas.getByText("Preference: Early October")).toBeInTheDocument()
-    await expect(canvas.getByText("We'll schedule it about two weeks before and tell you the day.")).toBeInTheDocument()
+    await expect(canvas.getByText("Season Pass 2027")).toBeInTheDocument()
+    await expect(canvas.getByText("Set up")).toBeInTheDocument()
+    await expect(canvas.getByText("Erie · 8 zones")).toBeInTheDocument()
+    await expect(canvas.queryByText(/Preference|Spring turn-on/)).toBeNull()
   },
 }
 export const SeasonPassPhone: Story = { ...SeasonPass, globals: { viewport: { value: "phone", isRotated: false } } }

@@ -89,16 +89,18 @@ export function reviewRows(i: ReviewInput): ReviewRow[] {
   const when = i.quote ? null : i.callback ? [i.when.trim() ? `No day yet. You asked for: ${i.when.trim()}` : "No day yet."] : i.pick?.day && i.pick.start ? [dayAtTime(i.pick.day, i.pick.start)] : null
   const passRows: ReviewRow[] = i.plan ? passReviewRows(i.plan, i.picks ?? {}, i.prefs ?? {}, i.go, f.zones) : []
   const service: FormStep = i.quote ? "quote-service" : "service"
+  // The zones, access, note and photos are asked on the Details step of a booking.
+  const details: FormStep = "details"
   const rows: (ReviewRow | null)[] = [
     { label: "Service", value: serviceLine, onChange: () => i.go(service) },
     { label: "Address", value: [street, `${i.town ?? ""}${i.town ? ", CO " : ""}${f.place?.zip ?? ""}`.trim(), ...(i.quote ? [] : [i.onFile ? PROPERTY_MARK.onFile : PROPERTY_MARK.fresh])], onChange: () => i.go("address") },
     when && !i.plan ? { label: "Day", value: when, onChange: () => i.go("day") } : null,
     ...passRows,
     { label: "Contact", value: [`${f.firstName} ${f.lastName}`.trim(), phoneWords(f.phone), f.email, channelLine(i.channel)], onChange: () => i.go("contact") },
-    i.quote ? null : { label: "Access", value: f.access === "yes" ? "You don't need to be there." : "You'll be there.", onChange: () => i.go(service) },
-    ...(i.quote ? [] : extraRows(i.service, i.extras ?? NO_EXTRAS, () => i.go(service))),
-    i.photos > 0 ? { label: "Photos", value: `${i.photos} photo${i.photos === 1 ? "" : "s"}`, onChange: () => i.go(i.quote ? "details" : service) } : null,
-    f.accessNote.trim() ? { label: i.quote ? "Details" : "Note", value: f.accessNote.trim(), onChange: () => i.go(i.quote ? "details" : service) } : null,
+    i.quote ? null : { label: "Access", value: f.access === "yes" ? "You don't need to be there." : "You'll be there.", onChange: () => i.go(details) },
+    ...(i.quote ? [] : extraRows(i.service, i.extras ?? NO_EXTRAS, () => i.go(details))),
+    i.photos > 0 ? { label: "Photos", value: `${i.photos} photo${i.photos === 1 ? "" : "s"}`, onChange: () => i.go(details) } : null,
+    f.accessNote.trim() ? { label: i.quote ? "Details" : "Note", value: f.accessNote.trim(), onChange: () => i.go(details) } : null,
     i.quote ? null : { label: "Card", value: cardWords(i.card ?? null, i.cardOnFile), onChange: () => i.go("card") },
     priceWords(i.service, f.zones, i.plan ?? null) ? { label: "Price", value: priceWords(i.service, f.zones, i.plan ?? null) } : null,
   ]

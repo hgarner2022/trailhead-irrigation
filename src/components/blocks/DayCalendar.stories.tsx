@@ -4,7 +4,7 @@ import { expect } from "storybook/test"
 import { fixtureCalendarDays, type DayTimePick } from "@/lib/booking/day-time"
 import { DayCalendar } from "./DayCalendar"
 
-// The day-and-time question as a calendar: one month, the soonest open day selected and marked, recommended days marked, days with nothing open greyed, then the chosen day's times with a best fit.
+// The day-and-time question as a calendar: one month, the soonest open day chosen and marked, a dot on every open day, days with nothing open plain, then the chosen day's times.
 function Harness({ offers, initial }: { offers: ReturnType<typeof fixtureCalendarDays>; initial?: DayTimePick }) {
   const [pick, setPick] = useState<DayTimePick>(initial ?? { day: offers.find((o) => o.times.length > 0)?.day ?? null, start: null })
   return (

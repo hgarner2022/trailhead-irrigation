@@ -9,6 +9,7 @@ import { ServicePicker } from "@/components/blocks/ServicePicker"
 import { fixtureCalendarDays, type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
 import { bookingEntries } from "@/lib/booking/pass-entry"
 import { passPlanFor, preferenceVisits } from "@/lib/booking/pass-visits"
+import { TERMS_VERSION } from "@/lib/season-pass"
 import { emailDiffers, fixtureKnown } from "@/lib/booking/known-address"
 import { CATALOGUE, bookableOf, quotableOf } from "@/lib/booking/services"
 import type { TimingPreference } from "@/lib/admin/types"
@@ -20,9 +21,9 @@ import type { CheckoutFields } from "@/app/(checkout)/season-pass/checkout/_scre
 import { useCheckoutState } from "@/app/(checkout)/season-pass/checkout/_screens/use-checkout-state"
 import { BookingCard } from "./booking-card"
 import { BookingBooked, type BookedPass } from "./booking-booked"
-import { BookingContact } from "./booking-contact"
+import { BookingContact, TermsLine } from "./booking-contact"
 import { CalendarGroups } from "./booking-day"
-import { QuoteDetails, ServicePanel } from "./booking-details"
+import { QuoteDetails, ServiceDetails } from "./booking-details"
 import { dayGroups, heldPicksOf, heldPrefsOf, type OffersFor } from "./booking-groups"
 import { bookedPassOf } from "./booking-pass-model"
 import { PreferenceGroups, preferenceQuestion } from "./booking-preference"
@@ -66,6 +67,8 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
   const [extras, setExtras] = useState<Extras>({ ...NO_EXTRAS, ...initial.extras })
   const [leaving, setLeaving] = useState(initial.leaving ?? false)
   const [card, setCard] = useState<CardChoice>(initial.card ?? null)
+  // Agreement to the terms is pressing Continue on the contact step: the time and the version are recorded then, source "booking" (Hannah, Nov 23 2026).
+  const [termsAt, setTermsAt] = useState<string | null>(initial.termsAt ?? null)
   // The customer pressed Change on the review step: Continue takes them straight back to it.
   const [fromConfirm, setFromConfirm] = useState(false)
   const [addressTyped, setAddressTyped] = useState(false)
@@ -132,7 +135,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
   useEffect(() => {
-    if (step === "done" && !quote && !callback && service && pick?.day && pick.start) onBooked?.({ service: service.name, day: pick.day, start: pick.start, street: street || "480 Briggs St", town: town ?? "Erie", firstName: fields.firstName || "Andrea", email: fields.email, phone: fields.phone, channel, photos: photos.length, marketing: fields.marketingEmail, card: cardWords(cardNow, offered), onFile: Boolean(property), emailDiffers: emailDiffers(property, fields.email) })
+    if (step === "done" && !quote && !callback && service && pick?.day && pick.start) onBooked?.({ service: service.name, day: pick.day, start: pick.start, street: street || "480 Briggs St", town: town ?? "Erie", firstName: fields.firstName || "Andrea", email: fields.email, phone: fields.phone, channel, photos: photos.length, marketing: fields.marketingEmail, card: cardWords(cardNow, offered), onFile: Boolean(property), emailDiffers: emailDiffers(property, fields.email), terms: { version: TERMS_VERSION, acceptedAt: termsAt ?? new Date().toISOString(), source: "booking" } })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
 
@@ -141,6 +144,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       setAttempted(true)
       return setPresses((n) => n + 1)
     }
+    if (step === "contact" && !quote) setTermsAt(new Date().toISOString())
     // The yard's non-sensitive facts of a property on file prefill once: the zone count and the controller.
     if (step === "address")
       prefillOnce((p) => {
@@ -203,7 +207,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
     next()
   }
 
-  const bookedPass: BookedPass | undefined = service?.kind === "pass" && plan ? bookedPassOf(service.name, plan, heldPicks, heldPrefs) : undefined
+  const bookedPass: BookedPass | undefined = service?.kind === "pass" && plan ? { ...bookedPassOf(service.name, plan, heldPicks, heldPrefs), detail: [town, `${fields.zones} zones`].filter(Boolean).join(" · ") } : undefined
   const confirmLabel = quote || callback ? SEND_REQUEST : service?.kind === "pass" ? CONFIRM_PASS : CONFIRM_BOOK
   const label = step === "confirm" ? confirmLabel : step === "contact" && quote ? SEND_REQUEST : step === "card" && (card === "saved" || (offered && !otherCard)) ? "Continue" : (ACTIONS[step] ?? "Continue")
   // Continue is off only where the screen says why: a choice not yet made (service, a start time) or a dead end (an address we do not serve). Everywhere else it stays on and a press names what is missing.
@@ -216,17 +220,14 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
   switch (step) {
     case "service":
       body = (
-        <ServicePicker
-          entries={lists.bookable}
-          value={serviceKey}
-          onChange={choose}
-          onRequestQuote={startQuote}
-          renderPanel={(e) => <ServicePanel service={e} plan={e.kind === "pass" ? passPlanFor(today) : null} zones={fields.zones} onZones={(n) => set("zones", n)} access={fields.access} onAccess={(a) => set("access", a)} attempted={attempted} extras={extras} onExtras={setExtras} upsell={upsell(e.key)} {...details} />}
-        />
+        <>
+          <p className="-mt-3 mb-6 text-base text-muted-foreground">Choose what you need.</p>
+          <ServicePicker entries={lists.bookable} value={serviceKey} onChange={choose} onRequestQuote={startQuote} />
+        </>
       )
       break
     case "quote-service":
-      body = <ServicePicker entries={lists.quotable} value={serviceKey} onChange={choose} />
+      body = <ServicePicker entries={lists.quotable} value={serviceKey} onChange={choose} mode="quote" />
       break
     case "address":
       body = (
@@ -245,7 +246,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       )
       break
     case "details":
-      body = <QuoteDetails {...details} />
+      body = quote || !service ? <QuoteDetails {...details} /> : <ServiceDetails service={service} plan={service.kind === "pass" ? passPlanFor(today) : null} zones={fields.zones} onZones={(n) => set("zones", n)} access={fields.access} onAccess={(a) => set("access", a)} attempted={attempted} extras={extras} onExtras={setExtras} upsell={upsell(service.key)} {...details} />
       break
     case "day":
       body = <CalendarGroups groups={groups} picks={heldPicks} onPick={(k, p) => setPicks((prev) => ({ ...prev, [k]: p }))} note={when} onNote={setWhen} />
@@ -265,7 +266,6 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
             channel={channel}
             onChannel={setChannel}
             attempted={attempted}
-            terms={!quote}
           />
           {quote && <p data-slot="quote-happens" className="mt-8 text-base text-foreground">{happensWords({ channel, phone: fields.phone, email: fields.email, quote: true, callback: false })}</p>}
         </>
@@ -280,7 +280,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
 
   return (
     <div onKeyDown={onKeyDown}>
-      <FlowShell question={heading} step={Math.min(at + 1, total)} total={total} notice={<StepProblems problems={problems} />} onBack={back} onNext={next} nextLabel={label} nextDisabled={off} hint={hint} done={done} onClose={dirty && !done ? () => setLeaving(true) : undefined}>
+      <FlowShell question={heading} step={Math.min(at + 1, total)} total={total} notice={<StepProblems problems={problems} />} onBack={back} onNext={next} nextLabel={label} nextDisabled={off} hint={hint} legal={step === "contact" && !quote ? <TermsLine /> : undefined} done={done} onClose={dirty && !done ? () => setLeaving(true) : undefined}>
         {body}
       </FlowShell>
       <LeaveDialog open={leaving} onOpenChange={setLeaving} />

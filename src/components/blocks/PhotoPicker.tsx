@@ -22,14 +22,14 @@ export interface PhotoPickerProps {
   samples?: readonly PickedPhoto[]
   /** the most photos taken; default 6 */
   max?: number
-  /** the line under the button before any photo is added; "Optional." by default, "Strongly suggested." where the service wants them */
+  /** the line under the button before any photo is added; nothing by default (adding photos is optional by nature), "Strongly suggested." where the service wants them */
   hint?: string
   className?: string
 }
 
 export const photoCount = (n: number) => `${n} photo${n === 1 ? "" : "s"}`
 
-export function PhotoPicker({ photos, onAdd, onRemove, samples, max = 6, hint = "Optional.", className }: PhotoPickerProps) {
+export function PhotoPicker({ photos, onAdd, onRemove, samples, max = 6, hint, className }: PhotoPickerProps) {
   const room = max - photos.length
   const fresh = (list: readonly PickedPhoto[]) => list.filter((p) => !photos.some((x) => x.name === p.name)).slice(0, Math.max(0, room))
   return (

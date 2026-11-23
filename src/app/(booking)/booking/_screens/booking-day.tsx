@@ -39,7 +39,7 @@ export function DayTimeGroups({ groups, picks, onPick, note, onNote }: { groups:
   )
 }
 
-/** The booking form's day step: the calendar per visit (soonest day selected, recommended days marked), with a heading over each when a Season Pass has two. */
+/** The booking form's day step: the calendar per visit (the soonest day chosen), with a heading over each when a Season Pass has two. */
 export function CalendarGroups({ groups, picks, onPick, note, onNote }: { groups: readonly DayGroup[]; picks: Record<string, DayTimePick>; onPick: (key: string, pick: DayTimePick) => void; note?: string; onNote?: (text: string) => void }) {
   return (
     <div data-slot="day-time-groups" className="space-y-12">

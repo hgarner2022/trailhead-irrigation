@@ -9,11 +9,11 @@ import { Label } from "@/components/ui/label"
 import { emailSuggestion } from "@/lib/email-check"
 import { cn } from "@/lib/utils"
 import type { CheckoutFields } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
-import { TERMS_PROBLEM, contactProblem } from "./booking-form-model"
+import { contactProblem } from "./booking-form-model"
 
 // The contact step: first and last name, email, phone (labels above, one column, a problem written as help under the field once the customer leaves it or presses Continue), then how we
-// reach them (text, email or both, asked once here and read everywhere after), then two groups that never mix: the required line that accepts the terms, and under a hairline the one
-// optional box, "Send me tips and offers from Trailhead by email", unticked. A request for a quote has no terms line. Pure props, client component.
+// reach them (text, email or both, asked once here and read everywhere after), then, under a hairline, the one optional box, "Send me tips and offers from Trailhead by email", unticked. Agreement to the terms is pressing Continue, said by
+// one line above the button bar (`TermsLine`); there is no checkbox for it (Hannah, Nov 23 2026). Pure props, client component.
 
 const LINK = "font-medium text-primary-dark underline underline-offset-2 hover:text-primary-deep"
 const FIELD = "h-12 rounded-lg bg-background px-4 text-base shadow-sm"
@@ -31,14 +31,28 @@ export interface BookingContactProps {
   channel: ContactChannel
   onChannel: (c: ContactChannel) => void
   attempted: boolean
-  /** a request for a quote has no terms line */
-  terms: boolean
 }
 
-export function BookingContact({ fields, set, channel, onChannel, attempted, terms }: BookingContactProps) {
+/** The one line above the Back and Continue bar on the contact step of a booking: agreement is pressing Continue. Never a box, never an error. */
+export function TermsLine() {
+  return (
+    <p data-slot="booking-terms" className="basis-full text-sm text-muted-foreground">
+      {"By continuing, you agree to the "}
+      <a href="/terms#booking" target="_blank" rel="noreferrer" className={LINK}>
+        booking terms<span className="sr-only"> (opens in a new tab)</span>
+      </a>
+      {" and the "}
+      <a href="/terms" target="_blank" rel="noreferrer" className={LINK}>
+        Trailhead terms of service<span className="sr-only"> (opens in a new tab)</span>
+      </a>
+      .
+    </p>
+  )
+}
+
+export function BookingContact({ fields, set, channel, onChannel, attempted }: BookingContactProps) {
   const id = useId()
   const [touched, setTouched] = useState<Set<string>>(() => new Set())
-  const termsProblem = terms && attempted && !fields.termsAccepted
   return (
     <div data-slot="booking-contact" className="space-y-8">
       <div className="grid grid-cols-2 gap-x-3 gap-y-5">
@@ -74,29 +88,7 @@ export function BookingContact({ fields, set, channel, onChannel, attempted, ter
           )
         })}
       </div>
-      <ContactPreference plain value={channel} onChange={onChannel} name={`${id}-preference`} />
-      {terms && (
-        <div data-slot="booking-terms" className="border-t border-border pt-6">
-          <div className="flex items-start gap-3">
-            <Checkbox id={`${id}-terms`} name="termsAccepted" checked={fields.termsAccepted} onCheckedChange={(c) => set("termsAccepted", c === true)} aria-invalid={termsProblem || undefined} aria-describedby={termsProblem ? `${id}-terms-problem` : undefined} className="mt-1 size-5" />
-            <Label htmlFor={`${id}-terms`} className="inline text-base font-normal leading-snug text-foreground">
-              I accept the{" "}
-              <a href="/terms#booking" target="_blank" rel="noreferrer" className={LINK}>
-                booking terms<span className="sr-only"> (opens in a new tab)</span>
-              </a>{" "}
-              and the{" "}
-              <a href="/terms" target="_blank" rel="noreferrer" className={LINK}>
-                Trailhead terms of service<span className="sr-only"> (opens in a new tab)</span>
-              </a>
-            </Label>
-          </div>
-          {termsProblem && (
-            <p id={`${id}-terms-problem`} role="alert" className="mt-2 pl-8 text-sm text-destructive">
-              {TERMS_PROBLEM}
-            </p>
-          )}
-        </div>
-      )}
+      <ContactPreference value={channel} onChange={onChannel} name={`${id}-preference`} />
       <div data-slot="booking-marketing" className="flex items-start gap-3 border-t border-border pt-6">
         <Checkbox id={`${id}-marketing`} name="marketingEmail" checked={fields.marketingEmail} onCheckedChange={(c) => set("marketingEmail", c === true)} className="mt-1 size-5" />
         <div>

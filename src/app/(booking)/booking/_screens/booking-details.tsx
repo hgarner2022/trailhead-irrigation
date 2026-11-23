@@ -1,23 +1,25 @@
 "use client"
 
+import { useId, useState } from "react"
+import { ChevronDown } from "lucide-react"
 import { AccessChoice, type Access } from "@/components/blocks/AccessChoice"
 import { ChoiceChips } from "@/components/blocks/ChoiceChips"
 import { FormRow } from "@/components/blocks/FormRow"
+import { InfoTip } from "@/components/blocks/InfoTip"
 import { PassUpsell } from "@/components/blocks/PassUpsell"
 import { PhotoPicker, type PickedPhoto } from "@/components/blocks/PhotoPicker"
 import { ZonePicker } from "@/components/blocks/ZonePicker"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 import type { PassPlan } from "@/lib/booking/pass-visits"
-import { PASS_SCHEDULES } from "@/lib/booking/pass-words"
 import { PRICE_AT_VISIT, type ServiceEntry } from "@/lib/booking/services"
 import { visitCostWords, visitName } from "./booking-pass-model"
 import { ACCESS_PROBLEM, CONTROLLER_BRANDS, EFFICIENCY_GOALS, INSTALL_WORDS, WIFI_WORDS, priceFor, priceWords, type Extras, type InstallType, type Wifi } from "./booking-form-model"
 
-// What an open service card holds (docs/plans/2026-11-19-booking-form-design.md, "Service cards expand in place"): what the visit includes, how many zones when the price depends on it with the price under them,
-// the questions that belong to the service, whether we can reach the controller and the shut-off without the customer (the one required answer), a note for the crew, photos, and, on a single turn-on or
-// blowout, "Upgrade to a Season Pass". The price shows here, once; when it is charged is said once, on the card step. A service with no catalogue price says "Price set at the visit" and nothing more. A request for a quote gets
-// only "Details" and photos on its own step. Pure props, client component.
+// The Details step of a booking (docs/plans/2026-11-19-booking-form-design.md, "Third pass"): what belongs to the chosen service, split out of the service card where it was too much for one screen (Hannah, Nov 23
+// 2026: "just a detail section, should be elegant and able to pull out"). One quiet section per question, the optional note and photos folded behind a single row, the price shown here once. A service with
+// no catalogue price says "Price set at the visit" and nothing more. A request for a quote gets only "Details" and photos on its own step. Pure props, client component.
 
 const SAMPLES: PickedPhoto[] = [
   { name: "zone-3-head.jpg", src: "/images/sprinkler-spray-head-lawn.jpg" },
@@ -79,7 +81,7 @@ function ServiceQuestions({ service, extras, onExtras }: { service: ServiceEntry
   return null
 }
 
-export interface ServicePanelProps extends Shared {
+export interface ServiceDetailsProps extends Shared {
   service: ServiceEntry
   plan?: PassPlan | null
   zones: number
@@ -93,33 +95,65 @@ export interface ServicePanelProps extends Shared {
   upsell?: { on: boolean; onChange: (on: boolean) => void }
 }
 
-export function ServicePanel({ service, plan = null, zones, onZones, access, onAccess, attempted, extras, onExtras, upsell, ...shared }: ServicePanelProps) {
+const LABEL = "font-display text-xl leading-tight text-navy"
+
+/** One quiet section: a short label (with its tooltip when the choice needs explaining) and the control under it. */
+function Section({ id, label, tip, children }: { id: string; label: string; tip?: string; children: React.ReactNode }) {
   return (
-    <div data-slot="service-details" className="space-y-8">
-      {(service.kind === "pass" ? PASS_SCHEDULES : service.included) && <p className="text-base text-foreground">{service.kind === "pass" ? PASS_SCHEDULES : service.included}</p>}
-      {service.perZone && (
-        <section aria-labelledby={`zones-${service.key}`}>
-          <h2 id={`zones-${service.key}`} className="mb-3 text-base font-semibold text-foreground">
-            Zones
-          </h2>
-          <ZonePicker value={zones} onChange={onZones} />
-          <p className="mt-3 text-sm text-muted-foreground">Count the stations on your controller.</p>
-        </section>
+    <section aria-labelledby={id}>
+      <h2 id={id} className={cn(LABEL, "mb-3 flex items-center gap-1")}>
+        {label}
+        {tip && <InfoTip label={`About ${label.toLowerCase()}`}>{tip}</InfoTip>}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
+/** The optional part, folded behind one row that pulls out when pressed: a note for the crew and photos. Open from the start when either already holds something. */
+function NoteAndPhotos({ id, service, ...shared }: Shared & { id: string; service: ServiceEntry }) {
+  const [open, setOpen] = useState(shared.note.trim() !== "" || shared.photos.length > 0)
+  const panel = `${id}-more`
+  return (
+    <div data-slot="details-more">
+      <button type="button" aria-expanded={open} aria-controls={panel} onClick={() => setOpen((o) => !o)} className="flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 text-left text-base font-semibold text-navy transition-colors hover:border-navy/50 hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+        Add a note or photos
+        <ChevronDown aria-hidden className={cn("size-5 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div id={panel} className="mt-6 space-y-8">
+          <FormRow label="Note for the crew">
+            <Textarea value={shared.note} onChange={(e) => shared.onNote(e.target.value)} className="min-h-20 text-base" />
+          </FormRow>
+          <Section id={`${id}-photos`} label="Photos">
+            <PhotoPicker photos={shared.photos} onAdd={shared.onAddPhotos} onRemove={shared.onRemovePhoto} samples={SAMPLES} hint={service.details === "install" ? "Strongly suggested." : undefined} />
+          </Section>
+        </div>
       )}
-      <section aria-label="Price">
+    </div>
+  )
+}
+
+/**
+ * The Details step: what belongs to the chosen service and nothing else, one quiet question per section with generous space between them. Zones (when the price depends on them), the price (a pass:
+ * each visit's price), the questions that belong to the service, whether we can reach the controller and shut-off without the customer (the one required answer), the optional note and photos folded
+ * behind one row, and on a single turn-on or blowout "Upgrade to a Season Pass".
+ */
+export function ServiceDetails({ service, plan = null, zones, onZones, access, onAccess, attempted, extras, onExtras, upsell, ...shared }: ServiceDetailsProps) {
+  const id = useId()
+  return (
+    <div data-slot="service-details" className="space-y-10">
+      {service.perZone && (
+        <Section id={`${id}-zones`} label="Zones" tip="Count the stations on your controller.">
+          <ZonePicker value={zones} onChange={onZones} />
+        </Section>
+      )}
+      <Section id={`${id}-price`} label="Price">
         <Price service={service} zones={zones} plan={plan} />
-      </section>
+      </Section>
       <ServiceQuestions service={service} extras={extras} onExtras={onExtras} />
       <AccessChoice compact value={access} onChange={onAccess} error={attempted && access === null ? ACCESS_PROBLEM : undefined} />
-      <FormRow label="Note for the crew">
-        <Textarea value={shared.note} onChange={(e) => shared.onNote(e.target.value)} className="min-h-20 text-base" />
-      </FormRow>
-      <section aria-labelledby={`photos-${service.key}`}>
-        <h2 id={`photos-${service.key}`} className="mb-3 text-base font-semibold text-foreground">
-          Photos
-        </h2>
-        <PhotoPicker photos={shared.photos} onAdd={shared.onAddPhotos} onRemove={shared.onRemovePhoto} samples={SAMPLES} hint={service.details === "install" ? "Strongly suggested." : undefined} />
-      </section>
+      <NoteAndPhotos id={id} service={service} {...shared} />
       {upsell && <PassUpsell on={upsell.on} onChange={upsell.onChange} />}
     </div>
   )

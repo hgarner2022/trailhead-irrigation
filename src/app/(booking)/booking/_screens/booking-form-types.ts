@@ -30,6 +30,8 @@ export interface Booked {
   onFile: boolean
   /** the address is on file but the email typed is not the one on file: it still books, as the same property, and the office is told ("Email differs from the one on file") */
   emailDiffers: boolean
+  /** agreement to the booking terms and the Trailhead terms of service, recorded when Continue was pressed on the contact step: the version, the time and where it was given (the consent source "booking") */
+  terms: { version: string; acceptedAt: string; source: "booking" }
 }
 
 /** What a request for a quote holds when "Send to Ryan" is pressed: the person's own words, photos and address (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.3). It becomes a request in the admin, held outside Customers until Ryan accepts it. */
@@ -65,7 +67,7 @@ export interface BookingFormProps {
   catalogue?: readonly ServiceEntry[]
   today?: string
   /** open on a step with earlier answers filled in; stories use it */
-  initial?: { step?: FormStep; service?: string; quote?: boolean; fields?: Partial<CheckoutState>; picks?: Record<string, DayTimePick>; prefs?: Record<string, TimingPreference>; upsellFrom?: string; other?: boolean; when?: string; channel?: ContactChannel; photos?: PickedPhoto[]; extras?: Partial<Extras>; card?: CardChoice; attempted?: boolean; leaving?: boolean }
+  initial?: { step?: FormStep; service?: string; quote?: boolean; fields?: Partial<CheckoutState>; picks?: Record<string, DayTimePick>; prefs?: Record<string, TimingPreference>; upsellFrom?: string; other?: boolean; termsAt?: string; when?: string; channel?: ContactChannel; photos?: PickedPhoto[]; extras?: Partial<Extras>; card?: CardChoice; attempted?: boolean; leaving?: boolean }
   /** the open days for a visit, from `from` (the first day it may be offered: tomorrow, or the day its window opens) to `until` (the day its window closes); the fixture days by default, `[]` for a full calendar */
   offersFor?: OffersFor
   /** the property Trailhead already holds for a picked address, found by its normalized street and ZIP; the stand-in knows one, the live form asks the server. Nothing personal comes back from it. */
