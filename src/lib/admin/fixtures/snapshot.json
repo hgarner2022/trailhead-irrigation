@@ -15947,7 +15947,7 @@
     "windows": [
       {
         "kind": "turn-on",
-        "opensOn": "2027-04-26",
+        "opensOn": "2027-04-15",
         "closesOn": "2027-05-31",
         "leadWeeks": 4
       },

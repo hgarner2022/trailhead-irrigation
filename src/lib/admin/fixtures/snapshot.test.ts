@@ -1,4 +1,5 @@
 import { templateProblem } from "@/emails/editable"
+import { defaultWindows } from "@/lib/settings/defaults"
 import { it, expect } from "vitest"
 import snapshot from "./snapshot.json"
 import type { AdminData } from "../types"
@@ -77,10 +78,12 @@ it("settings carry two people with a truck each, three areas, three 2027 windows
   expect(s.areas.map((a) => a.towns)).toEqual([["Erie", "Firestone"], ["Longmont"], ["Louisville", "Lafayette", "Broomfield"]])
   expect(s.areas.flatMap((a) => a.towns).sort()).toEqual([...TOWNS].sort())
   expect(s.windows).toEqual([
-    { kind: "turn-on", opensOn: "2027-04-26", closesOn: "2027-05-31", leadWeeks: 4 },
+    { kind: "turn-on", opensOn: "2027-04-15", closesOn: "2027-05-31", leadWeeks: 4 },
     { kind: "inspection", opensOn: "2027-07-01", closesOn: "2027-07-31", leadWeeks: 4 },
     { kind: "blowout", opensOn: "2027-10-01", closesOn: "2027-10-31", leadWeeks: 4 },
   ])
+  // the turn-on's dates are written once, in defaultWindows; the snapshot only repeats them
+  expect(s.windows.find((w) => w.kind === "turn-on")).toEqual(defaultWindows(2027).find((w) => w.kind === "turn-on"))
   expect(s.bufferPercentEarly).toBe(20)
   expect(s.bufferPercentLate).toBe(12)
   expect(s.fallTownOrder).toEqual(["Firestone", "Erie", "Longmont", "Broomfield", "Louisville", "Lafayette"])

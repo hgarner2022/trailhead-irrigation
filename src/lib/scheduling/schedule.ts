@@ -7,6 +7,7 @@
  */
 import { addDays, areaIdOf, areaOrder, blockedMinutes, capacityAfterBlocks, capacityFor, isInWindow, weekdayOf } from "./calendar"
 import { capacityKindOf } from "./slots"
+import { timingRanges } from "./timing"
 import { TIME_ZONE, defaultMinutes, seasonOfKind, type BusyBlock, type Placement, type Preference, type SchedArea, type SchedSettings, type SchedPerson, type SchedVisit, type Taken, type Unplaced } from "./types"
 
 export interface ScheduleInput {
@@ -32,10 +33,12 @@ export interface ScheduleResult {
 const RANK: Record<Preference, number> = { earlier: 0, recommended: 1, later: 2 }
 const rank = (p?: Preference | null) => RANK[p ?? "recommended"]
 
-/** The third of a window a preference names: Early, Mid or Late (the checkout's words). */
-export function preferredRange(window: { opensOn: string; closesOn: string }, preference?: Preference | null): { from: string; to: string } {
+/** The part of a window a preference names: the recommended span where the kind has one (the turn-on's is early to mid May), else a third (the checkout's words: Early, Mid or Late). */
+export function preferredRange(window: { opensOn: string; closesOn: string; kind?: string }, preference?: Preference | null): { from: string; to: string } {
   const opens = window.opensOn.slice(0, 10)
   const closes = window.closesOn.slice(0, 10)
+  const around = timingRanges(window.kind, opens, closes)
+  if (around) return around[preference ?? "recommended"]
   const length = Math.round((Date.parse(closes) - Date.parse(opens)) / 86_400_000) + 1
   const third = Math.max(1, Math.ceil(length / 3))
   const p = preference ?? "recommended"
