@@ -7,7 +7,7 @@ import { AccountNav } from "@/components/blocks/AccountNav"
 import { SignInCard } from "@/components/blocks/SignInCard"
 import { andrea, passJob, repairJob, TODAY } from "./account-fixtures"
 import { DetailsScreen } from "./DetailsScreen"
-import { HomeScreen } from "./HomeScreen"
+import { VisitsScreen } from "./VisitsScreen"
 import { VisitScreen } from "./VisitScreen"
 
 // UX audit rows 15 and 16: every link and control a customer taps on the account pages is 44px tall (`min-h-11`, or the `py-3` of an inline link in a sentence), and the
@@ -32,8 +32,8 @@ describe("44px tap targets on the account", () => {
     render(<AccountMenu firstName="Andrea" />)
     expect(tall(screen.getByRole("button", { name: /Andrea/ }))).toBe(true)
   })
-  it("Home: every Receipt link", () => {
-    render(<HomeScreen customer={andrea} jobs={[passJob, repairJob]} today={TODAY} pass={pass} />)
+  it("Visits: every Receipt link", () => {
+    render(<VisitsScreen customer={andrea} jobs={[passJob, repairJob]} today={TODAY} />)
     const receipts = screen.getAllByRole("link", { name: "Receipt" })
     expect(receipts.length).toBeGreaterThan(0)
     for (const r of receipts) expect(tall(r)).toBe(true)

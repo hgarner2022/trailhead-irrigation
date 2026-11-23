@@ -120,6 +120,103 @@ Hannah: "On the invoice, how do they collect payment? Did you not show the Strip
 
 ## What we did, on the receipt, the invoice and the pay page (Nov 21 2026)
 
+*Superseded Nov 22 2026: the customer's report lists only the checked items and the shared photos; an unchecked item is never shown, not even as "Not done". See "What we did, the visit report" under "Account structure (Nov 22 2026)" below. The paragraph is kept as it was written.*
+
 Hannah: "I thought the receipt was supposed to have the checklist of things that they did, including the photos and stuff." The invoice already carried a report (the Include the visit report box, checked by default); the receipt did not. One block, `VisitReport`, and one email part, `visitReport`, now carry it on: the receipt page (under Amount paid), the receipt email (live and proposed layout, with a plain-text twin), the invoice email and the pay page (open and paid). It is the visit's checklist, a check mark on each done item and an open circle with "Not done" on an open one (the service's checklist template: turn-on, blowout, repair, inspection, the same words as the job page, held equal by a test), and the photos Ryan shared (`shown_to_customer` on, the visit done) as a small grid. **Only the heading and the checklist items are words**: no caption (photos have none in the data), no crew note, no sentence of ours; the old report had both and they were removed. Unchecked on the invoice, the section is absent everywhere, including on the receipt of that invoice; with nothing to list, nothing is drawn.
 
 Build notes: `ReceiptOut.report` and `ReceiptData.report` are optional and nothing fills them yet (nothing is wired); the sender builds them from the visit's checklist rows and its shared photos, and a photo in an email needs a signed address (see the messages inventory, open question 13).
+
+
+## Account structure (Nov 22 2026)
+
+Hannah, on her second phone review: "Season pass is confusing with visits. Should season pass be under visits? I don't know. I guess I'm confused how we're doing this a little bit. Go ask a marketer how they would market it. I would like them to opt in anytime we need their preferences. We schedule them before that timeframe, like blowouts two weeks ahead of time or turn-ons. They get reminders. I just want this to all be crystal clear. It's not quite crystal clear. I do love the cards. I love the character and the brand. I think it's excellent, so it makes me want to weave that in. Maybe it's fine to have them separated and everything, but run a UX, run a marketer agent, see what they say. Review everything for clarity. Go back through the account with this fine tooth to make sure the information hierarchy and things are visible, and language is clear. 'Reply STOP to opt out': do we need to include that in every message? Their details should also have what they prefer for spring turn-ons: our recommended, mid season, late season. We should never send anything that's not checked. That's weird."
+
+What was wrong, read from the code: the pass's visits were drawn in at least five places (the pass card, a season line and the Recent visits list on Home, the Visits tab, and on the Season Pass page a season line and plan rows again), so a customer could not tell which place was the plan and which was the list.
+
+### Research (a research pass, Nov 22 2026; F = page fetched, U = UNVERIFIED: a search summary, memory, or the page would not load)
+
+| Source | What it says | Used for |
+|---|---|---|
+| F, [Peloton, membership](https://www.onepeloton.com/app/membership) | A non-member sees the plans and a free trial; a member manages the plan on a separate "My Memberships" page with Upgrade and Manage buttons | The plan has its own place, with its own name, apart from the things you use |
+| F, [Costco Canada, auto-renew](https://www.costco.ca/f/-/auto-renew) | The membership is managed from the "My Account" menu (Renew Membership), where the card and auto-renew live. Canada page only; the US page returned 404 (U) | The plan is its own place inside the account, with the card |
+| F, [Housecall Pro, selling a service plan](https://help.housecallpro.com/en/articles/2921514-how-to-sell-a-service-plan) | The customer opens "View My Agreement" to see the visits, duration and cost; a recurring plan prompts a portal account to review terms, the billing schedule and the card; the plan is tracked apart from jobs and gets its own receipts | The closest field-service case: the plan is an agreement, separate from the visits it produces |
+| F, [Housecall Pro, customer portal](https://www.housecallpro.com/features/customer-portal/) and Jobber, [what clients see in Client Hub](https://help.getjobber.com/en/articles/what-do-your-clients-see-in-client-hub/) | Housecall Pro's portal areas are Bookings, Referrals, Estimates, Payments; Jobber's are Requests, Quotes, Appointments, Invoices. Neither lists a plan | Neither competitor gives a plan a place in the portal. We have the chance to, and must not bury it under appointments |
+| F, [ServiceTitan, membership types](https://help.servicetitan.com/residential-s-r/docs/create-membership-types) | A membership has an internal Name and an optional Display Name shown to the customer in the portal | The customer's name for it ("Season Pass") is deliberate; the office's word (a pass job) never reaches the screen |
+| F, NN/g, [Designing empty states](https://www.nngroup.com/articles/empty-state-interface-design/) | An empty place should say what the thing does, how it gets filled and where to start, with one direct button. It does not discuss selling to someone who is not eligible | The tab of someone with no pass |
+| F, NN/g, [Progressive disclosure](https://www.nngroup.com/articles/progressive-disclosure/) | Put what is needed often up front, keep the rare behind one labeled control; what is on the main view signals priority | Home holds what is next; the plan's settings are one tab away |
+| F, Shopify, [membership programs](https://www.shopify.com/blog/membership-program) | Name it as belonging, not a transaction; lead with a few perks members will use; make it easy to find | The heading is Hannah's "Become a Season Pass holder"; the lines lead with what the customer gets |
+| F (third-party summaries), [Commoncog on April Dunford](https://commoncog.com/obviously-awesome/), [Lenny's Newsletter](https://www.lennysnewsletter.com/p/summary-april-dunford-on-product) | Lead with the value for a specific audience; choose the category name last because it sets expectations; vague grand claims backfire | Lead with "scheduled for you every season" and repair priority; "billed after each visit" is reassurance, not the headline |
+| U | Amazon Prime help (503), Chewy Autoship (429; a search summary says a "Manage Autoship" page holds skip, change and cancel), Costco US (404), TruGreen (404; a summary says a "My Account" shows the next service date), a Jobber community post that conflicts with Jobber's own help, Recurly and Chargebee guides, any NN/g page on selling to ineligible users, April Dunford's own pages (404), and what a non-member sees inside a signed-in Costco, Prime or Chewy account | Nothing is claimed from these |
+
+**Where the evidence is thin.** No fetched page shows a non-member's view inside a signed-in account, and none covers lawn-plan account layouts or upsell placement. The verdicts on the no-pass tab and on where the brand goes are judgment from the NN/g empty-state and progressive-disclosure pages, not a sourced rule; test the tab with a few customers.
+
+### The one structure
+
+The Season Pass is **the customer's plan and has its own tab**; Visits is **the list of every visit, the pass's included**; the two never draw the same rows. Four tabs, each named by what the customer came to do or see, in the header and nowhere else:
+
+| Tab | The customer's question | What it holds, once | What it never holds |
+|---|---|---|---|
+| **Home** | What is next? | The invoice to pay; the quiet timing banner while we ask; the next visit with its exact time and Reschedule; the Season Pass card | A list of visits, a season timeline, anything sold |
+| **Visits** | What is coming and what has been done? | Every visit, Coming up then Past, each with its day, the pill, the money word and its Receipt; a pass visit wears the label "Season Pass 2027" | The plan, preferences, a card button |
+| **Season Pass** | What is my plan? | The pass card at full size; Your season (one plan line per visit the pass holds: its state, or its timing with Change); how it is paid; add the July inspection, skip a visit, cancel; next season; earlier seasons | A money word, a receipt, an Update card button (Details has it), "Change your day" (the visit's own Reschedule) |
+| **Details** | What do you have on me? | You; **Preferences**; each service address with the yard; the card on file | Anything about visits or the plan |
+
+Where each fact lives once: a visit's day and money are Visits' (Home repeats only the next one); the plan's timing is the Season Pass tab's, with the same choice in Details › Preferences and in the quiet banner; the card is Details'; the receipt is on its visit.
+
+**A customer with no pass** sees the same four tabs, so the header never changes shape. The Season Pass tab for them is one quiet page, "Become a Season Pass holder": the two visits and that we schedule them every season, repair visits first, the price per zone, one button, "Get a Season Pass", and the card artwork beside it. Home and Visits sell nothing, ever. (If Hannah would rather the tab is hidden for them and one line sits at the foot of Home instead, that is a small change; question 1.)
+
+**Brand, woven and not scattered.** The pass card is the one showcase: the card at full size at the top of the Season Pass tab, with its moving sheen (Hannah chose the flat artwork with the sheen over the baked-in holographic art, Nov 12; the holographic art stays for the email and the saved image); the same card, smaller, beside the next visit on Home, so a holder sees it where they land; the bare artwork on the no-pass page as the picture of what they would hold. The headings stay in the display face. Nothing else on an account screen gets a flourish, so the card keeps its power. I found no separate "sunrise character" asset in the repo: the card artwork carries the badge's sun, and the ridge-and-sun band is Hannah's rule for the marketing closing strip only (question 2).
+
+**What we market, in the words we have.** Lead: "Become a Season Pass holder" (Hannah's words), then "We schedule your visits every season, so you never have to remember." (Hannah, Nov 21), then "Repair visits go to Season Pass customers first." (the site's existing copy), then "From $240 for 6 zones, $20 more for each extra zone." (`src/lib/season-pass.ts`). The old line "Pick your days once for the whole season" is gone: it described the checkout, not the plan.
+
+### Preferences
+
+Hannah: "Their details should also have what they prefer for spring turn-ons: our recommended, mid season, late season", "I would like them to opt in anytime we need their preferences".
+
+**What I chose, and why.** The data model has three values, `earlier`, `recommended` and `later` (`TimingPreference`), and the date words already call the middle one "Mid" (Early, Mid, Late with the month). There is no fourth value, so "mid season" and "our recommended" are the same choice. The customer sees **Early season**, **Our recommended** (the default, with "Mid May" or "Mid October" under it) and **Late season**, each with its month. One value per visit kind (spring turn-on, fall blowout), kept for every season, as decided Nov 21. (The booking form, which another designer owns, still says Early, Mid and Late; it is the same three values.)
+
+**The flow, as a prototype.**
+1. **Details › Preferences** holds the standing choice for each kind, for a customer who holds a pass.
+2. **Whenever we need it** (before a visit's window), the customer is asked, three ways that write the same value: the new **Preference request** message (a text or an email by their contact preference; its link opens that visit's page), a quiet banner on **Home** and on the **Season Pass** tab ("When would you like your fall blowout?" with one outline button, "Choose when"), and the same banner on that visit's page. The button opens a dialog with the three choices and Save.
+3. **We schedule the visit about two weeks before and tell them the day.** That is Hannah's existing sentence ("We'll schedule it about two weeks before and tell you the day.") and the only promise on any of these screens or in the message.
+4. **They get reminders:** the messages that already exist, the two-weeks-out and day-before texts. The Preference request promises none of them.
+
+The words are in `src/lib/portal/preference-words.ts`; the blocks are `PreferencePicker` and `PreferenceAsk` (with `TimingDialog`); the message is in `src/emails/design/preference-request.ts` and the Messages section ("Preference request", a prototype in both channels). Nothing is wired: the page has no action behind Details' Save yet, and nothing decides when the request goes out (question 3).
+
+### The first pass over every screen: what was removed
+
+| Screen | Removed | Why |
+|---|---|---|
+| Home | The Recent visits list (3 rows) | They are the Visits tab's rows |
+| Home | The season line under the pass card | The card's own band says what each visit is |
+| Home | The sell card for a customer with no pass | Sold once, on its own tab |
+| Season Pass | The big headline when the pass is simply on its way ("Next up: ...", "Your 2027 season is reserved.") | The card and the plan lines say it; a headline stays only for a card that failed, a day to pick, next season, a canceled pass |
+| Season Pass | The season line and its caption | The plan lines say it |
+| Season Pass | "We'll schedule it about two weeks before and tell you the day." on every line | Said once under the list |
+| Season Pass | The "Card on file" card with its Update card button | Details has the card; one line says how it is paid, and a pass with no card keeps an Add a card button |
+| Season Pass | The "Need to change something?" card and its paragraph ("Change a day from the link on a visit above. Skip a visit or add the July inspection here. To change your address, reply to any of our emails or call Ryan. You can end the pass here too.") | The buttons say it; the day is changed on the visit |
+| Season Pass | The "Change your day" and "Call or text Ryan" block for a booked visit | A day is changed on the visit (Reschedule), once |
+| Season Pass | The cream page behind the content | Account content sits on the stone page, white cards (the polish rules) |
+| Visits | "No past visits yet." under an empty Past heading | An empty section is not drawn |
+| A receipt | The "For" row when the lines already name the service | Said twice |
+| Receipt, invoice, pay page | Every "Not done" row | See the report section below |
+| Sign in (link sent) | "It comes from Trailhead." | The sender is in the inbox already |
+| No-pass page | "Pick your days once for the whole season." and the eyebrow "Season Pass" | Old checkout wording; the heading is Hannah's |
+
+Kept on purpose: the visit page's one summary band and its single Cancel visit, Reschedule and Add to calendar (one primary per screen), Details' "text us" lines for the email and the address (a fact and an instruction each).
+
+### "Reply STOP to opt out." (Hannah: "do we need to include that in every message?")
+
+No. The rule is `isFirstText` (`src/lib/messaging/saved.ts`): the line ends the first text a phone number ever gets and no later one, and the live queue already does exactly that. The samples did not: the customer walkthrough's phone thread, the account flow's texts and the receipt text ended every text with it. Now only the first text in a thread has it (`allMessages`, `bookingMessages`, `src/app/_flows/flow-texts.ts`, the receipt text, an admin fixture), an email twin never has it, the Messages stories already show the first text with it and every other without (`firstText` in the catalog), and `src/app/_flows/texts.test.ts` pins it.
+
+### What we did, the visit report (Hannah: "We should never send anything that's not checked")
+
+This supersedes the "Not done" description in the section above. The customer's "What we did" (the receipt page and email, the invoice email, the pay page) lists **only the items that were checked, and the photos shared**. An unchecked item is not drawn anywhere, not even as "Not done". If nothing was checked the section shows only the photos; if there is no photo either, there is no heading. One function, `checkedItems` in `src/emails/visit-report.ts`, is the only reader of the checklist for a customer, so no renderer can show an open item. The crew's checklist on the job page keeps showing unchecked items for Ryan.
+
+### Questions for Hannah
+
+1. **The Season Pass tab for someone with no pass.** I kept the tab (the header never changes) with one quiet "Become a Season Pass holder" page. The alternative is no tab for them and one line at the foot of Home. The research cannot choose between them. Which?
+2. **The "sunrise character".** I found no separate asset; I used the card artwork (it carries the badge's sun) and the display face. If you mean a separate character, where does it live, and where should it appear?
+3. **When is a customer asked?** The prototype shows the banner and the message but nothing decides the moment. "Before the window" is yours: how many weeks before the turn-on window (opens Apr 26) and the blowout window (opens Oct 1)? And should a customer who already chose once, and sits on Our recommended, be asked again every season, or only the first time? (Their choice is kept either way.)
+4. **Mid season.** The data has no fourth value, so "Our recommended" is the middle of the window and there is no separate "Mid season". Is that what you meant by "our recommended, mid season, late season"?
+5. **Preferences for a customer with no pass.** Details shows Preferences only to someone who holds a pass, because a one-off visit gets an exact day when it is booked. Right?

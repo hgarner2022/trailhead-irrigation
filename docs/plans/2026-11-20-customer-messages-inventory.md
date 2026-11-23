@@ -28,7 +28,7 @@ How a kind goes: a kind in `SMS_TEMPLATES` goes by text to the customer's mobile
 | **Billing** | | | | | | | | |
 | 11 | Invoice | `invoice` | text; email fallback | "Send an invoice" (`api/v1/invoices/send.ts`), from Done or any Done and Unpaid job | transactional | `invoiceText`; `emails/invoice.ts` `invoiceEmail` (with "What we did" when the visit report is on) | built | yes |
 | 12 | Invoice reminder | `invoice-reminder` | text; email fallback | The office's Remind button, once a day per invoice, never automatic | transactional | `invoiceReminderText` (the office edits the words); `invoiceReminderEmail` | built | CP 1 |
-| 13 | Receipt, by card, check, Venmo or cash | `receipt` | email only | A payment exists: `chargeVisit` after a card charge, `payments.record` for check, Venmo, cash, the pay page's webhook for an invoice paid | transactional | `emails/account-messages.ts` `receiptEmail` (the method is `paidBy`, or the card; since Nov 21 2026 it carries "What we did", the visit's checklist and the photos shared with the customer, from `ReceiptData.report`, absent when the invoice it paid left the report out) | built | yes |
+| 13 | Receipt, by card, check, Venmo or cash | `receipt` | email only | A payment exists: `chargeVisit` after a card charge, `payments.record` for check, Venmo, cash, the pay page's webhook for an invoice paid | transactional | `emails/account-messages.ts` `receiptEmail` (the method is `paidBy`, or the card; since Nov 21 2026 it carries "What we did", the visit's checked items and the photos shared with the customer, from `ReceiptData.report`, absent when the invoice it paid left the report out; an unchecked item is never shown, Nov 22 2026) | built | yes |
 | 14 | Receipt as a text | none | text | Hannah's walkthrough assumes a receipt text; the receipt has no text template | transactional | none | **not built, prototyped** | n/a |
 | 15 | Refund receipt | none | email and text | The office refunds a payment (a negative payment row, `payments.refund`): no message goes today | transactional | none (the walkthrough draws one inline, with an unsourced claim, CP 11) | **not built, prototyped** | CP 11 |
 | 16 | Card didn't go through | `card-failed` | email only | A card charge fails after Mark done (`pass/server/charge-visit.ts`) | transactional | `account-messages.ts` `cardFailedEmail` | built | CP 2 |
@@ -38,6 +38,7 @@ How a kind goes: a kind in `SMS_TEMPLATES` goes by text to the customer's mobile
 | 19 | Purchase confirmation | `purchase-confirmation` | email only | A Season Pass is sold: the website checkout, or the office's New job (`pass/server/purchase.ts`) | transactional | `emails/purchase-confirmation.ts` | built | yes |
 | 20 | Renewal (reserve next season) | `renewal` | email only | The January offer and the "Renewal" message on a pass (`messages.send`), to customers who chose marketing emails | **marketing** | `account-messages.ts` `renewalEmail` | built | CP 5 (no Unsubscribe link) |
 | 21 | Season Pass canceled | `cancelled` | email only | The pass is canceled (`pass/server/cancel.ts`) | transactional | `cancelledEmail` | built | CP 6 |
+| 28 | Preference request | none | text; email fallback | Before the window of a visit we schedule for the customer (the fall blowout, the spring turn-on) when it needs a timing; its link opens that visit's page, where the same choice sits as a quiet banner (and on Home, the Season Pass tab and Details) | transactional | none (`src/emails/design/preference-request.ts`) | **not built, prototyped** | n/a |
 | **Marketing** | | | | | | | | |
 | 22 | The tips email | `pre-sell` (named in `MARKETING_KINDS`, nothing sends it) | email | Hannah's marketing opt-in ("Tips and offers by email") promises it; "Send pass offer" has no API behind it | **marketing** | none | **not built, prototyped** | n/a |
 | **Account** | | | | | | | | |
@@ -76,7 +77,7 @@ Every factual claim in every message, and where its value comes from. A claim wi
 | the pay link / "Pay $145" | the signed `invoice-pay` token, `/pay/<invoiceId>?token=` |
 | "Paid, Check #2210", "Venmo @andrea-d", "Cash", "Visa ending 4242" | the payment row's `method` and `reference` (`payments.record`); the card from `cardWords(customer)` |
 | "R-1A2B3C4D" | `receiptNumber(paymentId)` |
-| "Reply STOP to opt out." | `OPT_OUT`, on the first text to a number only (`isFirstText`; Hannah chose first only, Nov 18) |
+| "Reply STOP to opt out." | `OPT_OUT`, on the first text to a number only: **the rule is `isFirstText`** (`src/lib/messaging/saved.ts`), which the queue asks for every text; Hannah chose first only, Nov 18, and asked again Nov 22 ("do we need to include that in every message?"). In every sample thread (the walkthrough's phone, the flows, the Messages stories) only the first text carries it, an email twin never does, and `src/app/_flows/texts.test.ts` pins it |
 | "Trailhead:" opening, ASCII only | `docs/UX_WRITING.md` rule 9 |
 | "The Trailhead crew" sign-off | `SIGN_OFF`; the purchase confirmation keeps the tagline (`PURCHASE_SIGN_OFF`) |
 | "Your Trailhead account" | `ACCOUNT_NAME`, settled in the portal design |
@@ -242,7 +243,7 @@ Each is a fact I did not have; the message says the minimum until you answer.
 10. **Fixture year.** The brief's visit is Wed Apr 28 (2027) and the invoice is INV-2026-0042; pick one year for the walkthrough's story.
 11. **Settled lines I only listed.** "We won't charge you again" (Season Pass canceled) and "The link is good for 24 hours" (Stripe's own default for the card link, not set by us).
 12. **Paused texts.** What should the email say about why it came by email? The proposal says only "You are getting this by email instead of a text."
-13. **What we did, Nov 21 2026.** The receipt (page and email), the invoice email and the pay page carry the visit's checklist and the photos Ryan shared; there is no caption and no crew note because the data has neither. (a) Should a receipt for a payment with no invoice (card on file, Venmo, cash) always carry it when the visit is done? It does in the prototype. (b) Should the crew's per-item notes ever be shared with the customer? They are not. (c) A photo in an email needs an address that works without a sign-in; the build must sign each one like a visit link (the photo route reads a `?t=` token today).
+13. **What we did, Nov 21 2026.** The receipt (page and email), the invoice email and the pay page carry the visit's checked items and the photos Ryan shared (never an unchecked item, Nov 22); there is no caption and no crew note because the data has neither. (a) Should a receipt for a payment with no invoice (card on file, Venmo, cash) always carry it when the visit is done? It does in the prototype. (b) Should the crew's per-item notes ever be shared with the customer? They are not. (c) A photo in an email needs an address that works without a sign-in; the build must sign each one like a visit link (the photo route reads a `?t=` token today).
 
 ## 9. Requests and quotes (prototypes, Nov 20 2026)
 
@@ -276,3 +277,21 @@ Seven messages added to the Messages section (`Messages / Requests and quotes`, 
 
 **Open questions for Hannah** (each is a fact the messages do not have): (1) Should the first email after a request carry the sign-in link? It does not now, because someone could type another person's address. (2) The quote email's headline is "Your quote is ready" and its button "View your quote": are those the words you want? (3) Should the approval message to the customer go every time Ryan marks a quote approved by hand, or only when he chooses (the prototype lets him choose)? (4) The quote's text subject patterns follow the invoice ("Quote: $1,200 for Christmas lights at 412 Briggs Street"); is that right?
 
+## 10. Preference request (prototype, Nov 22 2026)
+
+Hannah, Nov 22 2026: "I would like them to opt in anytime we need their preferences. We schedule them before that timeframe, like blowouts two weeks ahead of time or turn-ons. They get reminders." One message added (row 28): **Preference request**, a text and an email, a prototype in both channels, in the Messages section under Season Pass ("Prototype, not built yet"), on the proposed layout (`src/emails/design/preference-request.ts`, the words in `src/lib/portal/preference-words.ts`). The same choice is the quiet banner on Home, the Season Pass tab and the visit page, and Details › Preferences (`docs/plans/2026-11-19-customer-side-design.md`, "Account structure (Nov 22 2026)").
+
+| Part | Words | Source |
+|---|---|---|
+| Subject and heading | "Tell us when you'd like your fall blowout" / "Choose when for your fall blowout" | the visit's service, the voice rules (a verb, the fact) |
+| Lead and text | "Tell us when you'd like your fall blowout at 412 Briggs Street." | the visit and the property's street |
+| The three choices | Early season, Our recommended, Late season, each with its month (Early, Mid or Late October) | `TimingPreference` (earlier, recommended, later) and `preferenceLabel` |
+| What happens next | "We'll schedule it about two weeks before and tell you the day." | Hannah's sentence (`SCHEDULE_NOTE`), the only promise in the message |
+| Button and link | "Choose when", the signed one-visit link (`visitLinkUrl`) | the same link every visit text carries |
+| Why line | "You are getting this because we are scheduling your fall blowout." | the visit |
+| Opt-out line | "Reply STOP to opt out." only when it is the first text the number gets | `isFirstText` |
+| Nothing | no deadline, no response time, no reminder of its own, no "Season Pass" | the no-invented-copy rule; the reminders are the two-weeks-out and day-before messages that already exist |
+
+**Open questions for Hannah** (facts the message does not have): (1) How long before a visit's window does it go out, and is it sent to a customer who already chose, every season? (2) Should a customer who does not answer get a second request, or is silence "Our recommended"? The prototype assumes silence means the choice on file (Our recommended until they say otherwise), and says nothing about it. (3) Should the link open that visit's page (the prototype) or the Season Pass tab, which needs a sign-in?
+
+**Counts, Nov 22 2026.** `npx tsx scripts/count-messages.mts`: 36 messages; 20 built; 12 whole prototypes (the one new one is the Preference request); 4 built emails with a prototype text (the receipts).

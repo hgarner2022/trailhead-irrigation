@@ -60,7 +60,7 @@ export function SignInCard({ audience, state = "form", email = "", action, retry
               <p className="text-sm text-foreground">
                 We sent a sign-in link to {email ? <strong data-slot="sent-to" className="break-all font-semibold">{maskEmail(email)}</strong> : "your email"}.
               </p>
-              <p className="text-sm text-muted-foreground">It comes from Trailhead. If you don&apos;t see it in a minute, look in your spam folder.</p>
+              <p className="text-sm text-muted-foreground">If you don&apos;t see it in a minute, look in your spam folder.</p>
               <p className="text-sm text-muted-foreground">The link works one time and expires in 10 minutes.</p>
               {email && resendAction && (
                 <form action={resendAction}>

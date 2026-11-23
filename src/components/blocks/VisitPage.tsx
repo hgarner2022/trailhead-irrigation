@@ -22,6 +22,8 @@ export interface VisitPageProps {
   calendarSlot?: ReactNode
   /** the Photos section (a client block that carries the upload and the server actions); left out where photos are not offered */
   photosSlot?: ReactNode
+  /** above everything: the quiet timing banner when this visit has no day and we are asking for a preference (the Preference request's link opens here) */
+  topSlot?: ReactNode
 }
 
 const moneyStatus: Record<VisitPageModel["money"]["tone"], PillStatus> = { paid: "paid", unpaid: "owed", "invoice-sent": "bill-sent", "past-due": "overdue", none: "not-yet" }
@@ -35,12 +37,13 @@ function Fact({ icon: Icon, children }: { icon: typeof Home; children: ReactNode
   )
 }
 
-export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot, photosSlot }: VisitPageProps) {
+export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot, photosSlot, topSlot }: VisitPageProps) {
   const inside = m.reschedule === "text" && m.cancel === "text"
   // the card holds what is included, the price and the receipts; with none of them it is not drawn at all (an empty white card under the band was "too much going on")
   const hasDetails = Boolean(m.mustBeHome || m.included || m.priceLine || m.receipts.length > 0)
   return (
     <main data-slot="account-visit" className="mx-auto max-w-3xl space-y-6 container-padding-x py-8 sm:py-12">
+      {topSlot}
       {m.invoice && <InvoiceBanner jobName={m.service} total={m.invoice.total} dueOn={m.invoice.dueOn} status={m.invoice.status} payHref={m.invoice.payHref} />}
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div className="min-w-0 space-y-2">

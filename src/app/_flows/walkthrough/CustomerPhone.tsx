@@ -152,7 +152,7 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   const shown = route.page === "visit" ? s.jobs.find((j) => j.visits.some((v) => v.id === route.id)) : undefined
   const bill = { number: invoice?.number ?? "INV-2027-0001", firstName: "Andrea", serviceName: "repair", address: "412 Briggs Street", lines: [{ name: "Repair", description: "One hour on site, parts at cost.", quantity: 1, unitPrice: 115 }], tax: 0, total: 115, dueOn: invoice?.dueOn ?? "2027-12-01", paidOn: null, status: "sent" as const, receiptUrl: null, savedCard: payCard === "saved" ? "Visa ending 4242" : null, report: reportFor("repair", 4, 2, "") }
   const withNav = (el: ReactNode, at: string) => (
-    <div className="bg-cream">
+    <div className="bg-stone">
       <AccountNav firstName="Andrea" current={at} />
       {el}
     </div>
@@ -225,7 +225,7 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
     }
     case "pass":
       body = (
-        <div className="bg-cream">
+        <div className="bg-stone">
           {withNav(
             <>
               <div className="mx-auto flex max-w-3xl gap-2 pt-6 container-padding-x" role="group" aria-label="Today in the prototype">

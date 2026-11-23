@@ -38,7 +38,7 @@ export function ReceiptScreen({ receipt }: { receipt: ReceiptOutType }) {
                 <dd className="text-base text-foreground">{receipt.address}</dd>
               </>
             )}
-            {receipt.jobName && (
+            {receipt.jobName && receipt.lines.length === 0 && (
               <>
                 <dt className="text-sm font-medium text-muted-foreground">For</dt>
                 <dd className="text-base text-foreground">{receipt.jobName}</dd>

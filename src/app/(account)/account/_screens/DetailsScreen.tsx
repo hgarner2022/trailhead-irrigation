@@ -2,15 +2,20 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import type { PortalCustomerType } from "@/api/v1/portal/schemas"
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
-import { ContactForm, YardForm, type SaveResult } from "./DetailsForms"
+import { SCHEDULE_NOTE_EACH } from "@/lib/booking/pass-words"
+import { TIMING_KEPT } from "@/lib/portal/preference-words"
+import { ContactForm, PreferencesForm, YardForm, type SaveResult, type TimingPreferences } from "./DetailsForms"
 
-// Details: the name and mobile (editable), the email (shown, with how to change it), each service address with the yard facts the customer knows best
-// (editable), and the card on file with Update card. Sign out is in the account menu, once. The email is not editable here: a sign-in link must only ever go to an address on record,
+// Details: the name and mobile (editable), the email (shown, with how to change it), Preferences (for a Season Pass holder: the timing they want for the spring turn-on and the fall blowout, kept for
+// every season; Hannah, Nov 22 2026), each service address with the yard facts the customer knows best (editable), and the card on file with Update card. Sign out is in the account menu, once. The email is not editable here: a sign-in link must only ever go to an address on record,
 // so a change is one text to Ryan. Pure composition; the three actions are server actions the page binds.
 
 export interface DetailsScreenProps {
   customer: PortalCustomerType
   onSaveContact?: (fields: { firstName: string; lastName: string; phone: string }) => Promise<SaveResult> | SaveResult
+  /** the timing the customer prefers for each visit we schedule for them; our recommended until they say otherwise. Shown only to someone who holds a Season Pass. */
+  preferences?: TimingPreferences
+  onSavePreferences?: (preferences: TimingPreferences) => Promise<SaveResult> | SaveResult
   onSaveYard?: (propertyId: string, fields: Record<string, unknown>) => Promise<SaveResult> | SaveResult
   /** sends the customer to Stripe's hosted page; a form action */
   onUpdateCard?: () => void | Promise<void>
@@ -27,7 +32,9 @@ function Title({ id, children }: { id: string; children: string }) {
   )
 }
 
-export function DetailsScreen({ customer, onSaveContact, onSaveYard, onUpdateCard }: DetailsScreenProps) {
+const RECOMMENDED: TimingPreferences = { "turn-on": "recommended", blowout: "recommended" }
+
+export function DetailsScreen({ customer, preferences = RECOMMENDED, onSavePreferences, onSaveContact, onSaveYard, onUpdateCard }: DetailsScreenProps) {
   const card = customer.card
   return (
     <main data-slot="account-details" className="mx-auto max-w-3xl space-y-6 container-padding-x py-8">
@@ -52,6 +59,18 @@ export function DetailsScreen({ customer, onSaveContact, onSaveYard, onUpdateCar
           </div>
         </CardContent>
       </Card>
+
+      {customer.hasHeldPass && (
+        <Card data-slot="details-preferences">
+          <CardHeader>
+            <Title id="details-preferences">Preferences</Title>
+            <p className="text-base text-muted-foreground">{`${SCHEDULE_NOTE_EACH} ${TIMING_KEPT}`}</p>
+          </CardHeader>
+          <CardContent>
+            <PreferencesForm value={preferences} onSave={onSavePreferences} />
+          </CardContent>
+        </Card>
+      )}
 
       {customer.properties.map((p) => (
         <Card key={p.id} data-slot="details-property">

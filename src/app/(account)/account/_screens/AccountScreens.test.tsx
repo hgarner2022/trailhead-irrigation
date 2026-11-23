@@ -60,7 +60,9 @@ describe("HomeScreen", () => {
     expect(screen.queryByRole("heading", { name: /Season Pass 2027/ })).toBeNull()
     expect(screen.getByRole("heading", { name: "Nothing booked right now." })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Book Online" })).toBeInTheDocument()
-    expect(screen.getByText(/^Repair/)).toBeInTheDocument()
+    // Home shows the next visit and the pass: the visits that are done are the Visits tab's, and no pass is sold on Home
+    expect(screen.queryByText(/^Repair/)).toBeNull()
+    expect(screen.queryByText(/Become a Season Pass holder/)).toBeNull()
   })
 
   it("shows a customer with nothing at all the empty card and no Recent list", () => {
@@ -273,12 +275,13 @@ describe("ReceiptScreen", () => {
 
   const paid = { id: "pay_2", business: { name: "Trailhead Lawn & Irrigation LLC", phone: "(970) 692-7270" }, customerName: "Andrea Lopez", address: "412 Briggs Street", jobName: "Repair", lines: [{ name: "Repair", quantity: 1, unitPrice: 145 }], amount: 145, method: "card_now" as const, reference: null, paidOn: "2027-04-29", receiptUrl: null }
 
-  it("carries What we did under the amount: the checklist with the open item Not done, and the shared photos", () => {
+  it("carries What we did under the amount: only the checked items, never the open one, and the shared photos", () => {
     render(<ReceiptScreen receipt={{ ...paid, report: reportFor("repair", 4, 2, "") }} />)
     const heading = screen.getByRole("heading", { name: "What we did" })
     expect(heading.compareDocumentPosition(screen.getByText("Amount paid")) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
     expect(screen.getByText("Walk the zones")).toBeInTheDocument()
-    expect(screen.getByText("Not done")).toBeInTheDocument()
+    expect(screen.queryByText("Not done")).toBeNull()
+    expect(screen.queryByText("Walk the customer through it")).toBeNull()
     expect(screen.getAllByRole("img", { name: /from the visit/ })).toHaveLength(2)
   })
 

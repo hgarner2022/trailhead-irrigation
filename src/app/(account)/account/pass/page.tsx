@@ -1,6 +1,6 @@
 import "server-only"
 import type { Metadata } from "next"
-import { PassSellCard } from "@/components/blocks/PassSellCard"
+import { PassEmptyScreen } from "./_screens/PassEmptyScreen"
 import { ctxFromAccount } from "@/lib/admin/api-ctx"
 import { requireCustomer } from "@/lib/auth/guard"
 import { loadPassPage } from "@/lib/pass/server/pass-page"
@@ -16,13 +16,7 @@ export default async function PassPage() {
   const principal = await requireCustomer()
   // An admin who opens this page holds no pass of their own; `passes.list` would show them everyone's.
   const data = principal.type === "customer" ? await loadPassPage(await ctxFromAccount()) : null
-  if (!data) {
-    return (
-      <main data-slot="pass-empty" className="mx-auto max-w-xl container-padding-x py-8 sm:py-12">
-        <PassSellCard />
-      </main>
-    )
-  }
+  if (!data) return <PassEmptyScreen />
   const { pass, passes, today, pickDays } = data
   return (
     <PassPageScreen

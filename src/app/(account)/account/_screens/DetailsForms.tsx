@@ -7,9 +7,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { PortalCustomerType } from "@/api/v1/portal/schemas"
+import type { TimingPreference } from "@/lib/admin/types"
+import { PreferencePicker } from "@/components/blocks/PreferencePicker"
+import { TIMING_KINDS, type TimingKind } from "@/lib/portal/preference-words"
 import { formatPhone } from "@/lib/format/contact"
 
-// The two things a customer edits on Details: their own name and mobile, and the yard facts of a property. Each saves through a server action that
+// The things a customer edits on Details: their own name and mobile, the timing they prefer for each visit we schedule for them, and the yard facts of a property. Each saves through a server action that
 // answers `{ ok, message }`, so a failure is said in place and a save is confirmed. The email and the street address are shown, not edited here.
 
 export type SaveResult = { ok: true } | { ok: false; message: string }
@@ -66,6 +69,29 @@ export function ContactForm({ customer, onSave }: { customer: Pick<PortalCustome
       </div>
       <Input label="Mobile" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
       <Footer pending={pending} note={note} label="Save your details" />
+    </form>
+  )
+}
+
+export type TimingPreferences = Record<TimingKind, TimingPreference>
+
+/** Preferences: the customer's timing for the spring turn-on and the fall blowout, each Early season, Our recommended (the default) or Late season, kept for every season. */
+export function PreferencesForm({ value, onSave }: { value: TimingPreferences; onSave?: (preferences: TimingPreferences) => Promise<SaveResult> | SaveResult }) {
+  const [chosen, setChosen] = useState<TimingPreferences>(value)
+  const { pending, note, save } = useSave(() => onSave?.(chosen))
+  return (
+    <form
+      data-slot="preferences-form"
+      className="space-y-5"
+      onSubmit={(e) => {
+        e.preventDefault()
+        save()
+      }}
+    >
+      {TIMING_KINDS.map((kind) => (
+        <PreferencePicker key={kind} kind={kind} legend value={chosen[kind]} onChange={(p) => setChosen((c) => ({ ...c, [kind]: p }))} />
+      ))}
+      <Footer pending={pending} note={note} label="Save preferences" />
     </form>
   )
 }
