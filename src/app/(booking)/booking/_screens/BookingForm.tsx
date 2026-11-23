@@ -1,9 +1,7 @@
 "use client"
 
-import Link from "next/link"
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { BookingReview } from "@/components/blocks/BookingReview"
-import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import type { ContactChannel } from "@/components/blocks/ContactPreference"
 import { FlowShell } from "@/components/blocks/FlowShell"
 import type { PickedPhoto } from "@/components/blocks/PhotoPicker"
@@ -11,7 +9,7 @@ import { ServicePicker } from "@/components/blocks/ServicePicker"
 import { fixtureCalendarDays, type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
 import { bookingEntries } from "@/lib/booking/pass-entry"
 import { passPlanFor, preferenceVisits } from "@/lib/booking/pass-visits"
-import { fixtureRecognise } from "@/lib/booking/returning"
+import { emailDiffers, fixtureKnown } from "@/lib/booking/known-address"
 import { CATALOGUE, bookableOf, quotableOf } from "@/lib/booking/services"
 import type { TimingPreference } from "@/lib/admin/types"
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
@@ -28,20 +26,17 @@ import { QuoteDetails, ServicePanel } from "./booking-details"
 import { dayGroups, heldPicksOf, heldPrefsOf, type OffersFor } from "./booking-groups"
 import { bookedPassOf } from "./booking-pass-model"
 import { PreferenceGroups, preferenceQuestion } from "./booking-preference"
+import { LeaveDialog } from "./booking-leave"
 import { StepProblems } from "./booking-problems"
-import { ReturningBlock } from "./booking-returning"
 import type { BookingFormProps } from "./booking-form-types"
-import { useReturning } from "./use-returning"
+import { useKnownProperty } from "./use-known-property"
 import { useStepHistory } from "./use-step-history"
 import { ACTIONS, CONFIRM_BOOK, CONFIRM_PASS, DAY_HINT, NO_EXTRAS, QUESTIONS, QUOTE_QUESTIONS, SEND_REQUEST, SERVICE_HINT, areaState, callbackMode, canContinue, cardWords, hasEntries, happensWords, problemList, reviewRows, stepTotal, stepsFor, townOf, type CardChoice, type Extras, type FormStep } from "./booking-form-model"
 
-// The customer's booking form (docs/plans/2026-11-19-booking-form-design.md), one question per screen on the FlowShell, every heading a plain name: Address, Service, Day, Contact, Card, Review. It opens on the
-// address, the type-ahead box (the checkout's: typed fields only after a search finds nothing, the ZIP decides the area), then the service: one card per service that opens in place and holds what is
-// included, the zones with the price, the questions that belong to it, access, a note and photos, so a booking has no details step (Hannah, Nov 22 2026); on a single turn-on or blowout the open card also offers
-// "Upgrade to a Season Pass". Then the day as a calendar with the soonest open day selected and an exact start time, and only then who we reach (a repeat customer proves the email with a code before any saved detail is shown),
-// so an abandoned booking leaves nothing; then a card (Stripe's setup form, drawn), a review that says what happens, then the booked card. A service we quote is the address, services, "Details" and contact
-// ("Send to Ryan") with no day, no card and no review. Back is the one way back and is the browser's Back; the only Change links are on the review step, and a Change there returns to it. Close asks only once
-// something is entered. Nothing is sent, and nothing is kept before the contact step is submitted.
+// The customer's booking form (docs/plans/2026-11-19-booking-form-design.md), one question per screen on the FlowShell, every heading a plain name: Address, Service, Day, Contact, Card, Review. The address is the
+// type-ahead (the ZIP decides the area; a repeat customer is recognised by it alone, with no sign-in and nothing personal shown), then the service: one card per service that opens in place and holds what is
+// included, zones, questions, access, a note and photos, and on a single turn-on or blowout "Upgrade to a Season Pass". Then the day as a calendar, who we reach, a card (the card on file only to the email on
+// file), a review, the booked card. A service we quote is address, services, "Details" and contact with no day. Back is the browser's Back; Close asks only once something is entered. Nothing is kept before contact.
 
 export type { Booked, BookingFormProps, BookingProgress, Requested } from "./booking-form-types"
 
@@ -50,7 +45,7 @@ const PASS_KEY = "season-pass"
 const SINGLE_PASS = new Set(["spring-turn-on", "fall-blowout"])
 const defaultOffers: OffersFor = (_k, m, _t, from, until) => fixtureCalendarDays(m, from, until)
 
-export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initial = {}, offersFor = defaultOffers, recognise = fixtureRecognise, places = fixturePlaces, onBooked, onRequested, onOpenAccount, onStep }: BookingFormProps) {
+export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initial = {}, offersFor = defaultOffers, known = fixtureKnown, places = fixturePlaces, onBooked, onRequested, onOpenAccount, onStep }: BookingFormProps) {
   const [fields, dispatch] = useCheckoutState({ today, ...initial.fields })
   const [quote, setQuote] = useState(initial.quote ?? false)
   const [serviceKey, setServiceKey] = useState<string | null>(initial.service ?? null)
@@ -77,9 +72,10 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
   const [typed, setTyped] = useState<TypedValues | undefined>()
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
   const town = townOf(fields)
-  const returning = useReturning({ initial, recognise, fields, set, setChannel, setCard })
+  // A repeat customer is recognised by the address alone (Hannah, Nov 23 2026): nothing personal is shown, the yard's zone count and controller prefill, and the card on file is offered on the card step to the email on file only.
+  const { property, offered, otherCard, setOtherCard, prefillOnce } = useKnownProperty({ place: fields.place, email: fields.email, known, other: initial.other })
+  const cardNow: CardChoice = card === "file" && !offered ? null : card
   const first = useRef(true)
-  const leaveLink = useRef<HTMLAnchorElement>(null)
 
   const groups = useMemo(() => dayGroups({ service, plan, today, town, zones: fields.zones, offersFor }), [service, plan, today, town, fields.zones, offersFor])
   const heldPicks = heldPicksOf(groups, picks)
@@ -136,7 +132,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
   useEffect(() => {
-    if (step === "done" && !quote && !callback && service && pick?.day && pick.start) onBooked?.({ service: service.name, day: pick.day, start: pick.start, street: street || "480 Briggs St", town: town ?? "Erie", firstName: fields.firstName || "Andrea", email: fields.email, phone: fields.phone, channel, photos: photos.length, marketing: fields.marketingEmail, card: cardWords(card) })
+    if (step === "done" && !quote && !callback && service && pick?.day && pick.start) onBooked?.({ service: service.name, day: pick.day, start: pick.start, street: street || "480 Briggs St", town: town ?? "Erie", firstName: fields.firstName || "Andrea", email: fields.email, phone: fields.phone, channel, photos: photos.length, marketing: fields.marketingEmail, card: cardWords(cardNow, offered), onFile: Boolean(property), emailDiffers: emailDiffers(property, fields.email) })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
 
@@ -145,7 +141,18 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       setAttempted(true)
       return setPresses((n) => n + 1)
     }
-    if (step === "card") setCard("saved")
+    // The yard's non-sensitive facts of a property on file prefill once: the zone count and the controller.
+    if (step === "address")
+      prefillOnce((p) => {
+        set("zones", p.zones)
+        if (p.controller) setExtras((x) => ({ ...x, brand: x.brand || p.controller! }))
+      })
+    // An email that is no longer the one on file takes the card on file away: the card step asks again, as for a new customer.
+    if (step === "contact" && card === "file" && !offered) {
+      setCard(null)
+      return go("card")
+    }
+    if (step === "card") setCard(offered && !otherCard ? "file" : "saved")
     go(fromConfirm ? "confirm" : steps[Math.min(at + 1, steps.length - 1)]!)
   }
   // "Not now" on the card step, for a one-off only: no card is kept and the form goes on.
@@ -198,7 +205,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
 
   const bookedPass: BookedPass | undefined = service?.kind === "pass" && plan ? bookedPassOf(service.name, plan, heldPicks, heldPrefs) : undefined
   const confirmLabel = quote || callback ? SEND_REQUEST : service?.kind === "pass" ? CONFIRM_PASS : CONFIRM_BOOK
-  const label = step === "confirm" ? confirmLabel : step === "contact" && quote ? SEND_REQUEST : step === "card" && card === "saved" ? "Continue" : (ACTIONS[step] ?? "Continue")
+  const label = step === "confirm" ? confirmLabel : step === "contact" && quote ? SEND_REQUEST : step === "card" && (card === "saved" || (offered && !otherCard)) ? "Continue" : (ACTIONS[step] ?? "Continue")
   // Continue is off only where the screen says why: a choice not yet made (service, a start time) or a dead end (an address we do not serve). Everywhere else it stays on and a press names what is missing.
   const deadEnd = step === "address" && areaState(fields.place) === "outside"
   const off = !valid && (deadEnd || (step === "service" && service === null) || step === "quote-service" || step === "day")
@@ -247,7 +254,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       body = plan && <PreferenceGroups visits={preferenceVisits(plan)} prefs={heldPrefs} onPref={(k, p) => setPrefs((prev) => ({ ...prev, [k]: p }))} />
       break
     case "card":
-      body = <BookingCard saved={card === "saved"} pass={service?.kind === "pass"} onSkip={skipCard} onReplace={returning.cardOnFile ? returning.replaceCard : undefined} />
+      body = <BookingCard saved={card === "saved"} pass={service?.kind === "pass"} onSkip={skipCard} onFile={offered ?? undefined} other={otherCard} onOther={setOtherCard} />
       break
     case "contact":
       body = (
@@ -259,17 +266,16 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
             onChannel={setChannel}
             attempted={attempted}
             terms={!quote}
-            top={quote ? undefined : <ReturningBlock state={returning.state} email={returning.email} onEmail={returning.setEmail} problem={returning.problem} saved={returning.saved} street={[street, town].filter(Boolean).join(", ")} onFile={Boolean(returning.saved?.address.startsWith(street))} card={cardWords(card)} onAsk={returning.ask} onSend={returning.send} onCancel={returning.cancel} onVerify={returning.verify} onNotYou={returning.notYou} onChangeAddress={() => change("address")} onChangeCard={() => change("card")} />}
           />
           {quote && <p data-slot="quote-happens" className="mt-8 text-base text-foreground">{happensWords({ channel, phone: fields.phone, email: fields.email, quote: true, callback: false })}</p>}
         </>
       )
       break
     case "confirm":
-      body = service && <BookingReview rows={reviewRows({ service, fields, town, pick, plan, picks: heldPicks, prefs: heldPrefs, when, callback, channel, photos: photos.length, quote, extras, card, go: change })} happens={happensWords({ channel, phone: fields.phone, email: fields.email, quote, callback, pass: service.kind === "pass" })} />
+      body = service && <BookingReview rows={reviewRows({ service, fields, town, pick, plan, picks: heldPicks, prefs: heldPrefs, when, callback, channel, photos: photos.length, quote, extras, card: cardNow, cardOnFile: offered, onFile: Boolean(property), go: change })} happens={happensWords({ channel, phone: fields.phone, email: fields.email, quote, callback, pass: service.kind === "pass" })} />
       break
     default:
-      body = <BookingBooked service={service?.name ?? "Visit"} where={[street, town].filter(Boolean).join(", ")} channel={channel} phone={fields.phone} email={fields.email} pick={quote || callback ? undefined : pick} photos={photos.length} callback={callback} quote={quote} onOpenAccount={onOpenAccount} pass={bookedPass} card={cardWords(card)} />
+      body = <BookingBooked service={service?.name ?? "Visit"} where={[street, town].filter(Boolean).join(", ")} channel={channel} phone={fields.phone} email={fields.email} pick={quote || callback ? undefined : pick} photos={photos.length} callback={callback} quote={quote} onOpenAccount={onOpenAccount} pass={bookedPass} card={cardWords(cardNow, offered)} />
   }
 
   return (
@@ -277,22 +283,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       <FlowShell question={heading} step={Math.min(at + 1, total)} total={total} notice={<StepProblems problems={problems} />} onBack={back} onNext={next} nextLabel={label} nextDisabled={off} hint={hint} done={done} onClose={dirty && !done ? () => setLeaving(true) : undefined}>
         {body}
       </FlowShell>
-      {/* Where Close goes once the customer has said so; a link, so the host can catch it. */}
-      <Link ref={leaveLink} href="/" tabIndex={-1} aria-hidden className="sr-only">
-        Back to the website
-      </Link>
-      <ConfirmDialog
-        title="Leave without booking?"
-        message="Your answers aren't saved."
-        confirmLabel="Leave"
-        dismissLabel="Keep booking"
-        open={leaving}
-        onOpenChange={setLeaving}
-        onConfirm={async () => {
-          leaveLink.current?.click()
-          return { ok: true }
-        }}
-      />
+      <LeaveDialog open={leaving} onOpenChange={setLeaving} />
     </div>
   )
 }

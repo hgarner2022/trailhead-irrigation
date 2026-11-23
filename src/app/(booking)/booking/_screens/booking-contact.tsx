@@ -1,6 +1,6 @@
 "use client"
 
-import { useId, useState, type ReactNode } from "react"
+import { useId, useState } from "react"
 import { ContactPreference, type ContactChannel } from "@/components/blocks/ContactPreference"
 import { FormRow } from "@/components/blocks/FormRow"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -33,17 +33,14 @@ export interface BookingContactProps {
   attempted: boolean
   /** a request for a quote has no terms line */
   terms: boolean
-  /** the returning customer's block, above the fields */
-  top?: ReactNode
 }
 
-export function BookingContact({ fields, set, channel, onChannel, attempted, terms, top }: BookingContactProps) {
+export function BookingContact({ fields, set, channel, onChannel, attempted, terms }: BookingContactProps) {
   const id = useId()
   const [touched, setTouched] = useState<Set<string>>(() => new Set())
   const termsProblem = terms && attempted && !fields.termsAccepted
   return (
     <div data-slot="booking-contact" className="space-y-8">
-      {top}
       <div className="grid grid-cols-2 gap-x-3 gap-y-5">
         {FIELDS.map((field, i) => {
           const problem = contactProblem(field.key, fields[field.key])

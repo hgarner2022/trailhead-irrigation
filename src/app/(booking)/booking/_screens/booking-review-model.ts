@@ -6,6 +6,7 @@ import type { TimingPreference } from "@/lib/admin/types"
 import { dayAtTime, type DayTimePick } from "@/lib/booking/day-time"
 import type { PassPlan } from "@/lib/booking/pass-visits"
 import { CARD_FOR_PASS, PASS_LINES } from "@/lib/booking/pass-words"
+import { PROPERTY_MARK } from "@/lib/booking/known-address"
 import { PRICE_AT_VISIT, money, type ServiceEntry } from "@/lib/booking/services"
 import { SEASON_PASS_VISITS, seasonPassPrice, visitPrice } from "@/lib/season-pass"
 import type { CheckoutFields } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
@@ -16,10 +17,11 @@ import type { FormStep } from "./booking-form-model"
 export { money }
 
 /** The card step's answer: saved, or put off ("Not now", a one-off only), or not asked yet. The stories draw Stripe's form and a saved card is always this Visa. */
-export type CardChoice = "saved" | "skipped" | null
+export type CardChoice = "saved" | "file" | "skipped" | null
 export const CARD_SAVED = "Visa ending 4242"
 export const CARD_NONE = "No card"
-export const cardWords = (card: CardChoice) => (card === "saved" ? CARD_SAVED : CARD_NONE)
+/** "file" is the card on file, offered only after the contact step and only to the email on file (`cardToOffer`); its words are the brand and last four it was given. */
+export const cardWords = (card: CardChoice, onFile?: string | null) => (card === "file" && onFile ? onFile : card === "saved" ? CARD_SAVED : CARD_NONE)
 /** The one line on the card step: when the card is charged, which is how a saved card is used. */
 export const cardCharged = (pass: boolean) => (pass ? CARD_FOR_PASS : "Charged after the visit.")
 
@@ -72,6 +74,10 @@ export interface ReviewInput {
   quote: boolean
   extras?: Extras
   card?: CardChoice
+  /** the card on file that was offered and used */
+  cardOnFile?: string | null
+  /** the address is a property Trailhead already has: its mark reads On file, any other New */
+  onFile?: boolean
   go: (step: FormStep) => void
 }
 
@@ -85,7 +91,7 @@ export function reviewRows(i: ReviewInput): ReviewRow[] {
   const service: FormStep = i.quote ? "quote-service" : "service"
   const rows: (ReviewRow | null)[] = [
     { label: "Service", value: serviceLine, onChange: () => i.go(service) },
-    { label: "Address", value: [street, `${i.town ?? ""}${i.town ? ", CO " : ""}${f.place?.zip ?? ""}`.trim()], onChange: () => i.go("address") },
+    { label: "Address", value: [street, `${i.town ?? ""}${i.town ? ", CO " : ""}${f.place?.zip ?? ""}`.trim(), ...(i.quote ? [] : [i.onFile ? PROPERTY_MARK.onFile : PROPERTY_MARK.fresh])], onChange: () => i.go("address") },
     when && !i.plan ? { label: "Day", value: when, onChange: () => i.go("day") } : null,
     ...passRows,
     { label: "Contact", value: [`${f.firstName} ${f.lastName}`.trim(), phoneWords(f.phone), f.email, channelLine(i.channel)], onChange: () => i.go("contact") },
@@ -93,7 +99,7 @@ export function reviewRows(i: ReviewInput): ReviewRow[] {
     ...(i.quote ? [] : extraRows(i.service, i.extras ?? NO_EXTRAS, () => i.go(service))),
     i.photos > 0 ? { label: "Photos", value: `${i.photos} photo${i.photos === 1 ? "" : "s"}`, onChange: () => i.go(i.quote ? "details" : service) } : null,
     f.accessNote.trim() ? { label: i.quote ? "Details" : "Note", value: f.accessNote.trim(), onChange: () => i.go(i.quote ? "details" : service) } : null,
-    i.quote ? null : { label: "Card", value: cardWords(i.card ?? null), onChange: () => i.go("card") },
+    i.quote ? null : { label: "Card", value: cardWords(i.card ?? null, i.cardOnFile), onChange: () => i.go("card") },
     priceWords(i.service, f.zones, i.plan ?? null) ? { label: "Price", value: priceWords(i.service, f.zones, i.plan ?? null) } : null,
   ]
   return rows.filter((r): r is ReviewRow => r !== null)
