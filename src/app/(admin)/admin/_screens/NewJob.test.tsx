@@ -4,6 +4,7 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import { withFixtureContact } from "@/lib/admin/fixtures/contact"
+import { pickDay } from "@/components/blocks/day-calendar-kit"
 import { SERVICES } from "@/lib/services"
 import type { AdminData, Client } from "@/lib/admin/types"
 import { NewJob } from "./NewJob"
@@ -105,7 +106,7 @@ describe("New job", () => {
   it("with no day Add job is on, says nothing is sent, and the job is made with no day and no time", async () => {
     const actions = open()
     await choose("repair")
-    expect(screen.getByLabelText("Day (optional)")).toHaveValue("")
+    expect(screen.getByRole("button", { name: "Day (optional), No day yet" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Add job" })).toBeEnabled()
     expect(screen.getByText(/No day yet, nothing is sent/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole("button", { name: "Add job" }))
@@ -118,7 +119,8 @@ describe("New job", () => {
   it("with a day it says the customer is told, sends the day, and Time stays Any time unless one is picked", async () => {
     const actions = open()
     await choose("repair")
-    await userEvent.type(screen.getByLabelText("Day (optional)"), "2026-11-20")
+    await userEvent.click(screen.getByRole("button", { name: /^Day \(optional\)/ }))
+    await pickDay(screen, userEvent, "2026-11-20")
     expect(screen.getByText(/With a day, the customer is told/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole("button", { name: "Add job" }))
     await waitFor(() => expect(actions.createVisit).toHaveBeenCalledTimes(1))
@@ -296,10 +298,11 @@ describe("one entry per service", () => {
   it("keeps the day and notes while the zones move between bands", async () => {
     open()
     await choose("turn-on")
-    await userEvent.type(screen.getByLabelText("Day (optional)"), "2026-12-01")
+    await userEvent.click(screen.getByRole("button", { name: /^Day \(optional\)/ }))
+    await pickDay(screen, userEvent, "2026-12-01")
     const zones = screen.getByLabelText("Zones")
     await userEvent.clear(zones)
     await userEvent.type(zones, "14")
-    expect(screen.getByLabelText("Day (optional)")).toHaveValue("2026-12-01")
+    expect(screen.getByRole("button", { name: "Day (optional), Tuesday, December 1 at any time" })).toBeInTheDocument()
   })
 })

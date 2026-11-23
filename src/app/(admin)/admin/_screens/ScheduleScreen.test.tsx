@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import { weekOf } from "@/lib/admin/calendar"
+import { longDay } from "@/lib/portal/words"
 import { ScheduleScreen } from "./ScheduleScreen"
 import { VISITS_TODAY, visitsData } from "./visits-fixture"
 import { visitRows } from "./visits-model"
@@ -334,7 +335,7 @@ describe("ScheduleScreen views and New job from a day", () => {
     const sheet = within(await screen.findByRole("dialog"))
     expect(sheet.getByText(new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" }))).toBeInTheDocument()
     await userEvent.selectOptions(sheet.getByLabelText("What are we doing?"), "repair")
-    expect(sheet.getByLabelText("Day (optional)")).toHaveValue(day)
+    expect(sheet.getByRole("button", { name: `Day (optional), ${longDay(day)} at any time` })).toBeInTheDocument()
   })
 
   it("each week column has New job with its own day filled in, and a tech gets none", async () => {
@@ -430,7 +431,7 @@ describe("ScheduleScreen drag of a promised time", () => {
     expect(within(section("person_truck-1")).getByText("Percy", { exact: false })).toBeInTheDocument()
     const dialog = within(await screen.findByRole("dialog"))
     expect(dialog.getByText("With Tech Two.")).toBeInTheDocument()
-    expect(dialog.getByLabelText("Day")).toHaveValue("2026-11-12")
+    expect(dialog.getByRole("button", { name: /^Thursday, November 12/, pressed: true })).toBeInTheDocument()
     await userEvent.click(dialog.getByRole("button", { name: "More ways to move" }))
     expect(await screen.findByRole("menuitem", { name: "Move without texting" })).toHaveAttribute("aria-disabled", "true")
     await userEvent.keyboard("{Escape}")

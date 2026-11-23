@@ -2,10 +2,9 @@
 
 import { useState } from "react"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
-import { FormRow } from "@/components/blocks/FormRow"
+import { DayField } from "@/components/blocks/DayField"
 import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
 import { useUndoToast } from "@/components/blocks/UndoToast"
-import { Input } from "@/components/ui/input"
 import { jobUrl } from "@/lib/admin/links"
 import { dollars } from "@/lib/money/collect"
 import type { AdminData, Pass, Visit } from "@/lib/admin/types"
@@ -43,6 +42,8 @@ const LABELS: Record<BarId, string> = {
   refund: "Refund",
 }
 
+const yearBefore = (day: string) => `${+day.slice(0, 4) - 1}${day.slice(4, 10)}`
+
 function MarkDoneDialog({ visit, today, visitDay, open, onOpenChange, onDone, actions }: { visit: Visit; today: string; visitDay?: string; open: boolean; onOpenChange: (open: boolean) => void; onDone: () => void; actions?: VisitActions }) {
   const [day, setDay] = useState(today)
   const toast = useUndoToast()
@@ -68,9 +69,7 @@ function MarkDoneDialog({ visit, today, visitDay, open, onOpenChange, onDone, ac
       onConfirm={done}
     >
       <p className="text-sm text-muted-foreground">Nothing is charged. How it is paid is the next step.</p>
-      <FormRow label="Done on" className="max-w-48">
-        <Input type="date" value={day} max={today} onChange={(e) => setDay(e.target.value)} className="min-h-11" />
-      </FormRow>
+      <DayField label="Done on" value={day} onChange={(d) => setDay(d || today)} from={yearBefore(today)} to={today} />
     </ConfirmDialog>
   )
 }
