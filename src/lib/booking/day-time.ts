@@ -1,19 +1,19 @@
 // The day-and-time offer a customer picks from, pure (docs/plans/2026-11-18-scheduling-engine-design.md sections 2 and 4.4). A day with the start times still open on it,
-// the best day and the best time marked but never selected for the customer, and the words for a booked day and time. Stories use `fixtureDayTimes`; the live screens will
+// the soonest open day the one the calendar starts on, a time never chosen for the customer, and the words for a booked day and time. Stories use `fixtureDayTimes`; the live screens will
 // read the same shape from `schedule.offerDays` and `visits.areaDays` once the slots are built. Nothing here knows about the server.
 import { longDay } from "@/lib/portal/words"
 
-/** One open start time: "HH:MM" on a 24-hour clock. `best` is the slot the engine ranks first for that day ("Best fit"); it is marked, never selected. */
+/** One open start time: "HH:MM" on a 24-hour clock. `best` is the slot the engine ranks first for that day; the calendar does not mark it, and it is never selected for the customer. */
 export interface StartOption {
   start: string
   best?: boolean
 }
 
-/** One offered day: the day, why it is a good one when it is ("We're already in Erie that day."), and the start times open on it. */
+/** One offered day and the start times open on it. `note` and `best` are the engine's own ranking; the calendar shows neither (Hannah, Nov 23 2026: the soonest open day is the only mark). */
 export interface DayTimeOffer {
   day: string
   note?: string | null
-  /** the day the engine ranks first: the day card that starts selected */
+  /** the day the engine ranks first; unmarked on every screen */
   best?: boolean
   times: StartOption[]
 }
@@ -27,7 +27,9 @@ export interface DayTimePick {
 export const NO_PICK: DayTimePick = { day: null, start: null }
 
 export const DAYS_FULL = "These days are full. We'll call you to find one."
-export const NONE_FIT = "None of these work? Tell us when"
+
+/** Whether a pick can pass: a day and a tapped time, or (with no offers) nothing to wait for. */
+export const pickComplete = (offers: readonly DayTimeOffer[], pick: DayTimePick): boolean => offers.length === 0 || (pick.day !== null && pick.start !== null)
 
 /** "13:30" gives "1:30 pm"; "09:00" gives "9:00 am". */
 export function clock12(start: string): string {
@@ -37,11 +39,14 @@ export function clock12(start: string): string {
 
 const hhmm = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`
 
+/** The starts the office may give a visit: every half hour from 7:00 am to 5:00 pm, whatever is booked (the customer is offered only the open ones). */
+export const OFFICE_STARTS: readonly StartOption[] = Array.from({ length: 21 }, (_, i) => ({ start: hhmm(7 * 60 + i * 30) }))
+
 /** "Tuesday, April 28 at 10:00 am". */
 export const dayAtTime = (day: string, start: string) => `${longDay(day)} at ${clock12(start)}`
 
-/** The day to start selected: the best one, else the soonest. */
-export const startDay = (offers: readonly DayTimeOffer[]): string | null => (offers.find((o) => o.best) ?? offers[0])?.day ?? null
+/** The day to start selected: the soonest open one (a day with no times is not open). */
+export const startDay = (offers: readonly DayTimeOffer[]): string | null => offers.filter((o) => o.times.length > 0).map((o) => o.day).sort()[0] ?? null
 
 /** What one day holds in the fixture: every half hour from 8:00 until the visit still ends by 5:00, thinned by what is already booked. */
 function timesFor(minutes: number, taken: readonly string[], best: string | null): { start: string; best?: boolean }[] {
@@ -52,10 +57,6 @@ function timesFor(minutes: number, taken: readonly string[], best: string | null
   }
   return out
 }
-
-/** The days the offer rule gives a customer (docs/plans/2026-11-18-scheduling-engine-design.md, 4.2), as it labels them. The stories draw these labels; the live screen reads them from `offerFor`. */
-export const LABEL_SOONEST = "Soonest open day."
-export const labelSameCity = (town: string) => `We're already in ${town} that day.`
 
 /**
  * Five open days for the stories, standing in for `offerFor`: working days (Monday to Friday, no fixed weekdays) on or after `from`, the soonest first, with a few days skipped because they are full.
@@ -72,17 +73,16 @@ function openDays(from: string): string[] {
 }
 
 /**
- * Five open days for the stories, soonest first, from `from` (the first day the visit may be offered: tomorrow, or the day its window opens, whichever is later). The first is "Soonest open day.",
- * the third is the ranked best with "We're already in Erie that day." and its best time "10:30 am", the first nearly full. `minutes` sizes the times to the service (a 60 minute turn-on has more
- * starts than a 120 minute repair). With no `from` they are the April days of 2027 the stories open on.
+ * Five open days for the stories, soonest first, from `from` (the first day the visit may be offered: tomorrow, or the day its window opens, whichever is later), the first nearly full.
+ * `minutes` sizes the times to the service (a 60 minute turn-on has more starts than a 120 minute repair). With no `from` they are the April days of 2027 the stories open on.
  */
-export function fixtureDayTimes(minutes = 120, town = "Erie", from = "2027-04-15"): DayTimeOffer[] {
+export function fixtureDayTimes(minutes = 120, from = "2027-04-15"): DayTimeOffer[] {
   const busy = ["08:30", "09:30", "11:30", "13:00", "14:30"]
   const [d1, d2, d3, d4, d5] = openDays(from) as [string, string, string, string, string]
   return [
-    { day: d1, note: LABEL_SOONEST, times: timesFor(minutes, [...busy, "08:00", "09:00", "10:00", "10:30", "11:00", "12:00", "12:30", "13:30", "14:00"], null) },
+    { day: d1, times: timesFor(minutes, [...busy, "08:00", "09:00", "10:00", "10:30", "11:00", "12:00", "12:30", "13:30", "14:00"], null) },
     { day: d2, times: timesFor(minutes, busy, null) },
-    { day: d3, best: true, note: labelSameCity(town), times: timesFor(minutes, ["08:00", "12:00"], "10:30") },
+    { day: d3, times: timesFor(minutes, ["08:00", "12:00"], null) },
     { day: d4, times: timesFor(minutes, ["09:00"], null) },
     { day: d5, times: timesFor(minutes, [], null) },
   ]
@@ -94,7 +94,7 @@ const plusDays = (day: string, n: number) => toIso(new Date(new Date(`${day}T12:
 /**
  * The open days for the booking form's calendar, standing in for `offerFor` (docs/plans/2026-11-18-scheduling-engine-design.md, section 4): every working day (Monday to Friday, no fixed weekdays) from
  * `from` to `until` (a service with dates is offered through its next run of dates and no further; one without looks 56 days), soonest first, with about one day in five full (no times, so the
- * calendar greys it), the ranked best fit marked `best` on some days with its best time, and no label saying where Ryan is on which day. The calendar marks the soonest open day itself.
+ * calendar greys it), and no label saying where Ryan is on which day. The calendar marks the soonest open day itself.
  */
 export function fixtureCalendarDays(minutes = 120, from = "2027-04-15", until?: string): DayTimeOffer[] {
   const end = until ?? plusDays(from, 55)
@@ -109,8 +109,7 @@ export function fixtureCalendarDays(minutes = 120, from = "2027-04-15", until?: 
       continue
     }
     const busy = weekday % 3 === 0 ? ["09:00", "09:30", "11:00", "13:30"] : weekday % 2 === 0 ? ["08:30", "12:00"] : ["10:00"]
-    const best = weekday % 4 === 3
-    out.push({ day: d, ...(best ? { best: true } : {}), times: timesFor(minutes, busy, best ? "10:30" : null) })
+    out.push({ day: d, times: timesFor(minutes, busy, null) })
   }
   return out
 }
