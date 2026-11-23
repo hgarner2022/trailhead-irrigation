@@ -25,9 +25,8 @@ describe("visitPill", () => {
     expect(visitPill({ status: "completed" }).label).toBe("Done")
     expect(visitPill({ status: "cancelled" }).label).toBe("Canceled")
     expect(visitPill({ status: "skipped" }).label).toBe("Canceled")
-    expect(visitPill({ status: "unscheduled", canPick: true }).label).toBe("Pick a day")
-    expect(visitPill({ status: "unscheduled", canPick: false }).label).toBe("Day coming soon")
-    expect(visitPill({ status: "unscheduled", notDoneReason: "no water on", canPick: true }).label).toBe("Needs a new day")
+    expect(visitPill({ status: "unscheduled" }).label).toBe("Not scheduled yet")
+    expect(visitPill({ status: "unscheduled", notDoneReason: "no water on" }).label).toBe("Needs a new day")
   })
 })
 

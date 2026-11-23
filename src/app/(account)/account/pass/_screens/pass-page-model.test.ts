@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
 import { aprilPass, januaryPass } from "../../_screens/pass-purchase-fixtures"
-import { bookedWhen, cardAction, cardLine, earlierSeasons, expiry, passHeadline, pickDayOptions, seasonCaption, seasonSummary, visitLineInfo, visitRows, visitStatus } from "./pass-page-model"
+import { bookedWhen, cardAction, cardLine, earlierSeasons, expiry, passHeadline, seasonCaption, seasonSummary, visitLineInfo, visitRows, visitStatus } from "./pass-page-model"
 
 // passes[0] is Andrea in Erie: turn-on done May 3, inspection in July, blowout preferred for mid October.
 // passes[2] has no visit yet, with the turn-on preferred earlier.
@@ -23,13 +23,13 @@ describe("visit rows", () => {
     expect(visitRows(pass)).toEqual([
       { kind: "turn-on", name: "Spring turn-on", when: "May 3", status: "charged", label: "Done" },
       { kind: "inspection", name: "Mid-season inspection", when: "July", status: "needs-a-day", label: "July" },
-      { kind: "blowout", name: "Fall blowout", when: "Preference: Our recommended, mid October", status: "needs-a-day", label: "Preferred" },
+      { kind: "blowout", name: "Fall blowout", when: "Preference: Our recommended, Oct 16 to Oct 30", status: "needs-a-day", label: "Preferred" },
     ])
   })
 
   it("shows the turn-on preference until it has a day", () => {
-    expect(visitRows(fresh)[0]).toEqual({ kind: "turn-on", name: "Spring turn-on", when: "Preference: Early season, early May", status: "needs-a-day", label: "Preferred" })
-    expect(visitRows({ ...fresh, blowoutPreference: "later" })[2]).toEqual({ kind: "blowout", name: "Fall blowout", when: "Preference: Late season, late October", status: "needs-a-day", label: "Preferred" })
+    expect(visitRows(fresh)[0]).toEqual({ kind: "turn-on", name: "Spring turn-on", when: "Preference: Early season, Apr 15 to Apr 30", status: "needs-a-day", label: "Preferred" })
+    expect(visitRows({ ...fresh, blowoutPreference: "later" })[2]).toEqual({ kind: "blowout", name: "Fall blowout", when: "Preference: Late season, Oct 31 to Nov 15", status: "needs-a-day", label: "Preferred" })
   })
 
   it("shows the date once a visit is booked", () => {
@@ -76,10 +76,10 @@ describe("season caption", () => {
   })
 
   it("names the preference when the turn-on or the blowout is next", () => {
-    expect(seasonCaption(fresh)).toBe("Preference: Early season, early May. We'll schedule it about two weeks before and tell you the day.")
+    expect(seasonCaption(fresh)).toBe("Preference: Early season, Apr 15 to Apr 30. We'll schedule it about two weeks before and tell you the day.")
     const blowoutNext: Pass = { ...pass, visits: pass.visits.map((v, i) => (i < 2 ? { ...v, completedAt: "2027-07-13T16:05:00Z" } : v)) }
-    expect(seasonCaption(blowoutNext)).toBe("Preference: Our recommended, mid October. We'll schedule it about two weeks before and tell you the day.")
-    expect(seasonCaption({ ...blowoutNext, blowoutPreference: "earlier" })).toBe("Preference: Early season, early October. We'll schedule it about two weeks before and tell you the day.")
+    expect(seasonCaption(blowoutNext)).toBe("Preference: Our recommended, Oct 16 to Oct 30. We'll schedule it about two weeks before and tell you the day.")
+    expect(seasonCaption({ ...blowoutNext, blowoutPreference: "earlier" })).toBe("Preference: Early season, Oct 1 to Oct 15. We'll schedule it about two weeks before and tell you the day.")
   })
 
   it("closes the season when every visit is done", () => {
@@ -111,10 +111,11 @@ describe("earlier seasons", () => {
 
 describe("passHeadline", () => {
   const fresh = snapshot.passes[2] as Pass
-  it("reads the state top to bottom: card failed, cancelled, pick a day, next visit, reserved, done", () => {
+  it("reads the state top to bottom: card failed, cancelled, next visit, reserved, done (a visit with no day is never a prompt to pick one)", () => {
     expect(passHeadline({ ...pass, cardFailedAt: "2027-05-03T17:12:00Z" }, "2027-05-04")).toMatchObject({ action: "update-card", title: "Your card didn't go through." })
     expect(passHeadline({ ...pass, status: "cancelled", cardFailedAt: "2027-05-03T17:12:00Z" }, "2027-05-04").action).toBe("book")
-    expect(passHeadline(fresh, "2027-04-20", ["turn-on", "blowout"])).toMatchObject({ action: "pick-day", kind: "turn-on", title: "Pick your spring turn-on day." })
+    expect(passHeadline(fresh, "2027-04-20").action).toBeNull()
+    expect(passHeadline(fresh, "2027-04-20").title).not.toMatch(/pick/i)
     expect(passHeadline(fresh, "2026-11-12")).toMatchObject({ action: null, title: "Your 2027 season is reserved." })
     expect(passHeadline(pass, "2027-05-04")).toMatchObject({ action: null, title: "Spring turn-on done May 3. Next up: mid-season inspection, in July." })
     const booked: Pass = { ...fresh, visits: fresh.visits.map((v, i) => (i === 0 ? { ...v, scheduledAt: "2027-05-05T15:00:00Z" } : v)) }
@@ -123,25 +124,17 @@ describe("passHeadline", () => {
     expect(passHeadline(done, "2027-10-20")).toMatchObject({ action: null, title: "Your 2027 season is done." })
     expect(passHeadline(done, "2027-11-02")).toMatchObject({ action: "reserve-next" })
   })
-
-  it("offers three Tuesdays or Thursdays inside the preferred part of the window", () => {
-    const days = pickDayOptions({ ...fresh, turnOnPreference: "recommended" }, "turn-on")
-    expect(days).toHaveLength(3)
-    expect(days.every((d) => d.startsWith("2027-05-"))).toBe(true)
-    expect(days.every((d) => [2, 4].includes(new Date(`${d}T12:00:00Z`).getUTCDay()))).toBe(true)
-    expect(pickDayOptions({ ...fresh, blowoutPreference: "later" }, "blowout")[0] >= "2027-10-18").toBe(true)
-  })
 })
 
 describe("a pass bought in the spring or the winter", () => {
   it("reads the next visit's exact time and the other visit's preference with when it is scheduled", () => {
     const april = aprilPass
     expect(bookedWhen(april.visits[0]!, "10:30")).toBe("Wednesday, April 28 at 10:30 am")
-    expect(visitRows(april)[1]).toMatchObject({ kind: "blowout", when: "Preference: Early season, early October", label: "Preferred" })
-    expect(seasonCaption({ ...april, visits: [{ ...april.visits[0]!, completedAt: "2027-04-28T17:00:00Z" }, april.visits[1]!] })).toBe("Preference: Early season, early October. We'll schedule it about two weeks before and tell you the day.")
+    expect(visitRows(april)[1]).toMatchObject({ kind: "blowout", when: "Preference: Early season, Oct 1 to Oct 15", label: "Preferred" })
+    expect(seasonCaption({ ...april, visits: [{ ...april.visits[0]!, completedAt: "2027-04-28T17:00:00Z" }, april.visits[1]!] })).toBe("Preference: Early season, Oct 1 to Oct 15. We'll schedule it about two weeks before and tell you the day.")
   })
   it("says the preference and when it is scheduled when no visit has a day", () => {
-    expect(passHeadline(januaryPass, "2027-01-12")).toMatchObject({ title: "Your 2027 season is reserved.", line: "Preference: Early season, early May. We'll schedule it about two weeks before and tell you the day." })
+    expect(passHeadline(januaryPass, "2027-01-12")).toMatchObject({ title: "Your 2027 season is reserved.", line: "Preference: Early season, Apr 15 to Apr 30. We'll schedule it about two weeks before and tell you the day." })
   })
 })
 

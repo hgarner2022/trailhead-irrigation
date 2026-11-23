@@ -6,8 +6,9 @@
 // IS the middle of the window: the same value, named for what it is to the customer, with the month under it ("Mid May"). Early and late are "Early season" and "Late season".
 // The only sentence about scheduling is the one Hannah allowed (`SCHEDULE_NOTE`); nothing here is a promise she did not make.
 import type { TimingPreference } from "@/lib/admin/types"
-import { TIMING_PREFERENCES, preferenceLabel } from "@/lib/admin/format"
+import { TIMING_PREFERENCES } from "@/lib/admin/format"
 import { SCHEDULE_NOTE } from "@/lib/booking/pass-words"
+import { WINDOWS, preferenceDates, rangeWords } from "@/lib/booking/pass-visits"
 
 export type TimingKind = "turn-on" | "blowout"
 
@@ -21,13 +22,22 @@ export const TIMING_TITLE: Record<TimingKind, string> = { "turn-on": "Spring tur
 export const TIMING_CHOICES: readonly TimingPreference[] = TIMING_PREFERENCES
 export const TIMING_LABEL: Record<TimingPreference, string> = { earlier: "Early season", recommended: "Our recommended", later: "Late season" }
 
-/** "Mid May": the dates behind a choice. */
-export const timingMonth = (kind: TimingKind, preference: TimingPreference) => preferenceLabel(kind, preference)
+/**
+ * "May 1 to May 15": the real days behind a choice, from the window source (`WINDOWS`, which reads `defaultWindows`; the turn-on's recommended days are early to mid May, the other
+ * choices are the days before and after). The blowout's ranges are placeholders until Hannah confirms the blowout window. The ranges repeat every year, so the year is a stand-in.
+ */
+export const timingMonth = (kind: TimingKind, preference: TimingPreference) => rangeWords(preferenceDates({ kind, opens: `2001-${WINDOWS[kind].opens}`, closes: `2001-${WINDOWS[kind].closes}` })[preference])
 
-/** "Our recommended, mid May": a saved choice in one line. */
-export const timingLine = (kind: TimingKind, preference: TimingPreference) => {
-  const month = timingMonth(kind, preference)
-  return `${TIMING_LABEL[preference]}, ${month.charAt(0).toLowerCase()}${month.slice(1)}`
+/** "Our recommended, May 1 to May 15": a saved choice in one line. */
+export const timingLine = (kind: TimingKind, preference: TimingPreference) => `${TIMING_LABEL[preference]}, ${timingMonth(kind, preference)}`
+
+/**
+ * What a visit with no day reads (Hannah, Nov 22 2026: a visit months away takes only a preference, and we schedule it about two weeks before and tell the customer). A Season Pass visit
+ * reads its preference with the real days and the one sentence she allowed; any other waiting visit says it is not scheduled and that we will text when it is. Never a prompt to pick a day.
+ */
+export function waitingDay(kind: string, preference: TimingPreference | null | undefined): { heading: string; detail: string } {
+  if (preference && (kind === "turn-on" || kind === "blowout")) return { heading: timingLine(kind, preference), detail: SCHEDULE_NOTE }
+  return { heading: "Not scheduled yet", detail: "We'll text you when Ryan has one." }
 }
 
 /** What is asked, as a heading: "When would you like your fall blowout?" */

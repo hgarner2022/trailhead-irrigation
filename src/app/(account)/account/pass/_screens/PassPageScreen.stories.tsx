@@ -51,7 +51,7 @@ const meta = {
       </div>
     ),
   ],
-  args: { pass: active, today: "2026-11-12", onCancel: fn(), onChangePreference: fn(), onPickDay: fn() },
+  args: { pass: active, today: "2026-11-12", onCancel: fn(), onChangePreference: fn() },
 } satisfies Meta<typeof PassPageScreen>
 export default meta
 type Story = StoryObj<typeof meta>
@@ -89,7 +89,6 @@ export const Canceled: Story = { args: { pass: cancelled }, globals: wide }
 export const Returning: Story = { args: { passes: [active, lastYear] }, globals: wide }
 
 /** Must be home, the window about to open: the days to pick from come first. */
-export const PickDay: Story = { args: { pass: { ...fresh, needsCustomerHome: true }, today: "2027-04-20" }, globals: wide }
 
 /** The card failed: the warning comes before everything else. */
 export const CardFailed: Story = { args: { pass: { ...active, cardFailedAt: "2027-05-03T17:12:00Z" }, today: "2027-05-04" }, globals: wide }
@@ -124,7 +123,7 @@ export const ChangePreferencePlay: Story = {
     await expect(await screen.findByRole("radio", { name: /Our recommended/ })).toBeChecked()
     await userEvent.click(await screen.findByRole("radio", { name: /Late season/ }))
     await userEvent.click(await screen.findByRole("button", { name: "Save" }))
-    await expect(await screen.findByRole("dialog", { name: "Saved: Late season, late October." })).toBeInTheDocument()
+    await expect(await screen.findByRole("dialog", { name: "Saved: Late season, Oct 31 to Nov 15." })).toBeInTheDocument()
     await expect(args.onChangePreference).toHaveBeenCalledWith("blowout", "later")
   },
 }
@@ -149,18 +148,6 @@ export const ReturningPlay: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByText("2026 season"))
     await expect((await canvas.findAllByText("Fall blowout")).length).toBeGreaterThan(1)
-  },
-}
-
-export const PickDayPlay: Story = {
-  tags: HIDDEN,
-  args: { pass: { ...fresh, needsCustomerHome: true }, today: "2027-04-20" },
-  globals: wide,
-  play: async ({ canvas, userEvent, args }) => {
-    const [first] = await canvas.findAllByRole("button", { name: /^(Tuesday|Thursday)/ })
-    await userEvent.click(first)
-    await expect(await canvas.findByText(/You're set for .*\. We'll text you the time the day before\./)).toBeInTheDocument()
-    await expect(args.onPickDay).toHaveBeenCalledTimes(1)
   },
 }
 

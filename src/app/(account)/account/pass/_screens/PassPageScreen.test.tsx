@@ -16,7 +16,7 @@ describe("PassPageScreen", () => {
     expect(rows().map((r) => r.textContent)).toEqual([
       "Spring turn-on · $145May 3Done",
       "Mid-season inspection · $145July",
-      "Fall blowout · $95Preference: Our recommended, mid OctoberChangePreferred",
+      "Fall blowout · $95Preference: Our recommended, Oct 16 to Oct 30ChangePreferred",
     ])
     // the sentence about when we schedule is said once under the list, not on every line
     expect(screen.getAllByText("We'll schedule it about two weeks before and tell you the day.")).toHaveLength(1)
@@ -44,7 +44,7 @@ describe("PassPageScreen", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Early season/ }))
     fireEvent.click(screen.getByRole("button", { name: "Save" }))
     expect(onChangePreference).toHaveBeenCalledWith("blowout", "earlier")
-    expect(screen.getByRole("dialog", { name: "Saved: Early season, early October." })).toBeInTheDocument()
+    expect(screen.getByRole("dialog", { name: "Saved: Early season, Oct 1 to Oct 15." })).toBeInTheDocument()
   })
 
   it("shows the quiet timing banner while we are asking, and the same choice opens from it", () => {
@@ -122,7 +122,7 @@ describe("PassPageScreen", () => {
 
   it("says no headline for a booked visit: the plan line is its day, and changing the day is the visit's own Reschedule", () => {
     const booked: Pass = { ...pass, visits: pass.visits.filter((v) => v.kind !== "inspection").map((v) => (v.kind === "blowout" ? { ...v, scheduledOn: "2027-10-12", scheduledAt: "2027-10-12T14:00:00Z" } : v)) }
-    render(<PassPageScreen pass={booked} today="2027-10-01" pickDays={{ blowout: ["2027-10-19"] }} />)
+    render(<PassPageScreen pass={booked} today="2027-10-01" />)
     expect(document.querySelector('[data-slot="pass-headline"]')).toBeNull()
     expect(screen.queryByRole("button", { name: "Change your day" })).not.toBeInTheDocument()
     expect(rows()[1]!.textContent).toContain("Tuesday, October 12")
