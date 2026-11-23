@@ -31,3 +31,13 @@ export const pickTime = (scope: Scope, user: User, start: string | null) => user
 
 /** The start time held, as the chip's words ("9:00 am", "Any time"), or null when none is held. */
 export const heldTime = (scope: Scope): string | null => scope.queryAllByRole("radio").find((r) => (r as HTMLInputElement).checked)?.closest("label")?.textContent ?? null
+
+const monthNameOfGrid = (scope: Scope) => /([A-Z][a-z]+)$/.exec(scope.getByRole("grid").getAttribute("aria-label") ?? "")?.[1]
+
+/** Press a day on a year-less calendar ("09-28" is "September 28"): walks the month arrows to the month first. */
+export async function pickMonthDay(scope: Scope, user: User, monthDay: string) {
+  const month = MONTHS[Number(monthDay.slice(0, 2)) - 1]!
+  const button = () => scope.queryByRole("button", { name: new RegExp(`^${month} ${Number(monthDay.slice(3, 5))}(,|$)`) })
+  for (let i = 0; i < 12 && !button(); i++) await user.click(scope.getByRole("button", { name: MONTHS.indexOf(monthNameOfGrid(scope)!) < MONTHS.indexOf(month) ? "Next month" : "Previous month" }))
+  await user.click(button()!)
+}

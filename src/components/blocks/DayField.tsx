@@ -4,6 +4,7 @@ import { useId, useState } from "react"
 import { CalendarDays, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DayCalendar } from "@/components/blocks/DayCalendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { FormRow } from "@/components/blocks/FormRow"
 import { OFFICE_STARTS, clock12, type DayTimeOffer, type StartOption } from "@/lib/booking/day-time"
 import { longDay } from "@/lib/portal/words"
@@ -81,5 +82,65 @@ export function DayField({ label, value, start = "", onChange, from, to, timed =
         </div>
       )}
     </div>
+  )
+}
+
+// A plain date field (Hannah, Nov 23 2026: every date is chosen on the one calendar): the same trigger as `DayField`, with the calendar in a popover under it, for a place with no room to open one in the
+// flow, such as a row of Settings or the Schedule's Move strip. It reads the day in words, or `empty`. With `yearless` the value is "MM-DD" (a service's bookable-from day, repeating every year) and the
+// calendar is the days of one leap year with no weekdays. `from` and `to` bound it. Choosing a day closes it. Pure props, client.
+
+export interface DayPopoverFieldProps {
+  id?: string
+  /** names the button for a screen reader: "Spring turn-on bookable from" */
+  label: string
+  /** "2026-11-24", or "04-15" with `yearless`; "" or null while none */
+  value: string | null
+  onChange: (value: string | null) => void
+  /** bounds as "2026-11-24" (ignored with `yearless`, which is one whole year) */
+  from?: string
+  to?: string
+  yearless?: boolean
+  /** the words while no day is held */
+  empty?: string
+  /** a "Clear the day" button inside the popover once a day is held */
+  clearable?: boolean
+  className?: string
+}
+
+const LEAP = 2028
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+
+export function DayPopoverField({ id, label, value, onChange, from, to, yearless = false, empty = "No day yet", clearable = false, className }: DayPopoverFieldProps) {
+  const [open, setOpen] = useState(false)
+  const iso = value ? (yearless ? `${LEAP}-${value}` : value) : ""
+  const words = value ? (yearless ? `${MONTH_NAMES[+value.slice(0, 2) - 1]} ${+value.slice(3, 5)}` : longDay(value)) : empty
+  const range = yearless ? { from: `${LEAP}-01-01`, to: `${LEAP}-12-31` } : { from: from!, ...(to ? { to } : {}) }
+  const set = (day: string | null) => {
+    onChange(day ? (yearless ? day.slice(5) : day) : null)
+    setOpen(false)
+  }
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          id={id}
+          type="button"
+          aria-label={`${label}, ${words}`}
+          className={cn("flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg border border-input bg-background px-3 text-left text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 md:min-h-9 md:text-sm", className)}
+        >
+          <CalendarDays aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+          <span className={cn("min-w-0 flex-1 truncate", !value && "text-muted-foreground")}>{words}</span>
+          <ChevronDown aria-hidden className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" aria-label={label} data-slot="day-popover" className="max-h-[min(80svh,var(--radix-popover-content-available-height))] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto p-3 data-[state=closed]:animate-none data-[state=open]:animate-none">
+        <DayCalendar offers={[]} free={range} timed={false} yearless={yearless} density="sheet" headingLevel={3} legend={label} value={{ day: iso || null, start: null }} onChange={(next) => next.day && set(next.day)} />
+        {clearable && value && (
+          <Button type="button" variant="ghost" className="mt-2 min-h-11 px-0 font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent" onClick={() => set(null)}>
+            Clear the day
+          </Button>
+        )}
+      </PopoverContent>
+    </Popover>
   )
 }

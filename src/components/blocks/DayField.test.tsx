@@ -2,8 +2,8 @@ import { useState } from "react"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
-import { pickDay, pickTime } from "./day-calendar-kit"
-import { DayField, type DayFieldProps } from "./DayField"
+import { pickDay, pickMonthDay, pickTime } from "./day-calendar-kit"
+import { DayField, DayPopoverField, type DayFieldProps } from "./DayField"
 
 function Harness(props: Partial<DayFieldProps>) {
   const [held, setHeld] = useState({ day: "", start: "" })
@@ -39,5 +39,33 @@ describe("DayField", () => {
     expect(screen.getByRole("button", { name: "Previous month" })).toBeDisabled()
     await pickDay(screen, userEvent, "2026-11-20")
     expect(screen.queryByRole("button", { name: "Clear the day" })).toBeNull()
+  })
+
+  it("DayPopoverField reads the day, opens the calendar in a popover, bounds it, and a chosen day closes it", async () => {
+    function Pop() {
+      const [value, setValue] = useState<string | null>("2026-11-12")
+      return <DayPopoverField label="Move to day" value={value} onChange={setValue} from="2026-11-09" to="2026-11-15" />
+    }
+    render(<Pop />)
+    await userEvent.click(screen.getByRole("button", { name: "Move to day, Thursday, November 12" }))
+    expect(screen.getByRole("button", { name: "Sunday, November 8, not available" })).toHaveAttribute("aria-disabled", "true")
+    await userEvent.click(screen.getByRole("button", { name: "Friday, November 13" }))
+    expect(screen.getByRole("button", { name: "Move to day, Friday, November 13" })).toBeInTheDocument()
+    expect(screen.queryByRole("grid")).toBeNull()
+  })
+  it("DayPopoverField yearless holds a month and a day with no year, clears to Open, and shows no weekday names", async () => {
+    function Pop() {
+      const [value, setValue] = useState<string | null>(null)
+      return <DayPopoverField label="Blowout bookable from" value={value} onChange={setValue} yearless empty="Open" clearable />
+    }
+    render(<Pop />)
+    await userEvent.click(screen.getByRole("button", { name: "Blowout bookable from, Open" }))
+    expect(screen.queryByRole("columnheader")).toBeNull()
+    expect(screen.getByRole("heading", { name: "January" })).toBeInTheDocument()
+    await pickMonthDay(screen, userEvent, "02-29")
+    expect(screen.getByRole("button", { name: "Blowout bookable from, February 29" })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Blowout bookable from, February 29" }))
+    await userEvent.click(screen.getByRole("button", { name: "Clear the day" }))
+    expect(screen.getByRole("button", { name: "Blowout bookable from, Open" })).toBeInTheDocument()
   })
 })

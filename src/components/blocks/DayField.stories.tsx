@@ -1,8 +1,8 @@
 import { useState } from "react"
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect } from "storybook/test"
+import { expect, within } from "storybook/test"
 import { pickDay, pickTime } from "./day-calendar-kit"
-import { DayField, type DayFieldProps } from "./DayField"
+import { DayField, DayPopoverField, type DayFieldProps, type DayPopoverFieldProps } from "./DayField"
 
 // A day in an office form: one field that reads the answer and opens the one calendar under itself (a form with three days is not three calendars tall until one is wanted). "Done on" is a past day,
 // New job's day is optional and has a time, a Season Pass visit is a day only.
@@ -40,3 +40,33 @@ export const PassVisitDayOnly: Story = { args: { label: "Spring turn-on", empty:
 
 /** Done on: a past day, today the latest. */
 export const DoneOn: Story = { args: { label: "Done on", from: "2025-11-18", to: "2026-11-18", initial: { day: "2026-11-18", start: "" }, defaultOpen: true }, globals: { viewport: { value: "laptop", isRotated: false } } }
+
+function PopoverHarness(props: Partial<DayPopoverFieldProps> & { initial?: string | null }) {
+  const [value, setValue] = useState<string | null>(props.initial ?? null)
+  return (
+    <div className="mx-auto max-w-md container-padding-x py-8">
+      <DayPopoverField label="Move to day" from="2026-11-09" to="2026-11-15" {...props} value={value} onChange={setValue} />
+    </div>
+  )
+}
+
+/** A plain date field with no room for a calendar in the flow (the Schedule's Move strip): the field reads the day and opens the calendar in a popover, bounded to the week. */
+export const PopoverDayPhone: StoryObj<typeof PopoverHarness> = {
+  render: () => <PopoverHarness initial="2026-11-12" />,
+  globals: { viewport: { value: "phone", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Move to day, Thursday, November 12" }))
+    await userEvent.click(await within(document.body).findByRole("button", { name: "Friday, November 13" }))
+    await expect(canvas.getByRole("button", { name: "Move to day, Friday, November 13" })).toBeInTheDocument()
+  },
+}
+
+/** A date with no year (Settings' bookable from and to, repeating every year): "April 15", no weekdays, "Open" while empty. */
+export const YearlessPhone: StoryObj<typeof PopoverHarness> = {
+  render: () => <PopoverHarness label="Spring turn-on bookable from" yearless clearable empty="Open" initial="04-15" />,
+  globals: { viewport: { value: "phone", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Spring turn-on bookable from, April 15" }))
+    await expect(await within(document.body).findByRole("heading", { name: "April" })).toBeInTheDocument()
+  },
+}

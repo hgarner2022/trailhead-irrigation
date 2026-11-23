@@ -4,7 +4,8 @@ import { useId, useRef, useState, type KeyboardEvent } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { FormRow } from "@/components/blocks/FormRow"
 import { Textarea } from "@/components/ui/textarea"
-import { DAYS_FULL, clock12, type DayTimeOffer, type DayTimePick, type StartOption } from "@/lib/booking/day-time"
+import { TimeChips } from "@/components/blocks/TimeChips"
+import { DAYS_FULL, type DayTimeOffer, type DayTimePick, type StartOption } from "@/lib/booking/day-time"
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { longDay } from "@/lib/portal/words"
 import { cn } from "@/lib/utils"
@@ -49,6 +50,8 @@ export interface DayCalendarProps {
   density?: "page" | "sheet"
   /** a step's shell focuses `[data-autofocus]` when it opens: put it on the day in the tab order */
   autoFocusDay?: boolean
+  /** a date with no year (a service's "bookable from", repeating every year): the heading and the days read "April 15", no weekday names; give it the days of one leap year */
+  yearless?: boolean
 }
 
 const WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -60,8 +63,9 @@ const monthOf = (day: string) => day.slice(0, 7)
 const shiftMonth = (ym: string, n: number) => iso(new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1, 12))).slice(0, 7)
 
 /** The weeks of a month, Sunday first, with null for the days that belong to the months around it. */
-function weeksOf(ym: string): (string | null)[][] {
-  const first = at(`${ym}-01`)
+function weeksOf(ym: string, yearless = false): (string | null)[][] {
+  // a year-less month has no weekdays, so its first day opens the first row
+  const first = yearless ? { getUTCDay: () => 0 } : at(`${ym}-01`)
   const days = new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7), 0)).getUTCDate()
   const cells: (string | null)[] = [...Array(first.getUTCDay()).fill(null), ...Array.from({ length: days }, (_, i) => `${ym}-${String(i + 1).padStart(2, "0")}`)]
   while (cells.length % 7) cells.push(null)
@@ -69,9 +73,8 @@ function weeksOf(ym: string): (string | null)[][] {
 }
 
 const LINK = "inline-flex min-h-11 items-center font-semibold text-primary-deep underline underline-offset-2"
-const CHIP = "flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2"
 
-export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2, note = "", onNote, className, timed = true, current: yourDay = null, currentLabel = "Your day", free, anyTime = false, timesHint, density = "page", autoFocusDay = false }: DayCalendarProps) {
+export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2, note = "", onNote, className, timed = true, current: yourDay = null, currentLabel = "Your day", free, anyTime = false, timesHint, density = "page", autoFocusDay = false, yearless = false }: DayCalendarProps) {
   const Month = headingLevel === 2 ? "h2" : "h3"
   const id = useId()
   const grid = useRef<HTMLTableElement>(null)
@@ -85,6 +88,10 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
   const [month, setMonth] = useState(() => monthOf(value.day ?? soonest ?? free?.from ?? yourDay ?? "2000-01-01"))
   const [focus, setFocus] = useState<string | null>(null)
   const sheet = density === "sheet"
+  const dayWords = (day: string) => (yearless ? `${MONTHS[+day.slice(5, 7) - 1]} ${+day.slice(8)}` : longDay(day))
+  // the column a day sits in: its weekday, or (year-less, where the first of the month opens the row) its place in the week of seven
+  const column = (day: string) => (yearless ? (+day.slice(8) - 1) % 7 : at(day).getUTCDay())
+  const monthWords = yearless ? MONTHS[+month.slice(5) - 1] : `${MONTHS[+month.slice(5) - 1]} ${month.slice(0, 4)}`
   const isOpenDay = (day: string) => open.has(day) || (free !== undefined && day >= free.from && day <= freeTo!)
 
   if (days.length === 0 && !free)
@@ -123,8 +130,8 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
     const step: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }
     if (e.key in step) moveTo(add(day, step[e.key]!))
     else if (e.key === "PageUp" || e.key === "PageDown") moveTo(add(`${shiftMonth(monthOf(day), e.key === "PageUp" ? -1 : 1)}-01`, +day.slice(8) - 1))
-    else if (e.key === "Home") moveTo(add(day, -at(day).getUTCDay()))
-    else if (e.key === "End") moveTo(add(day, 6 - at(day).getUTCDay()))
+    else if (e.key === "Home") moveTo(add(day, -column(day)))
+    else if (e.key === "End") moveTo(add(day, 6 - column(day)))
     else return
     e.preventDefault()
   }
@@ -137,23 +144,25 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
           <button type="button" aria-label="Previous month" disabled={month <= first} onClick={() => setMonth(shiftMonth(month, -1))} className="flex size-11 cursor-pointer items-center justify-center rounded-lg border border-border text-navy disabled:cursor-not-allowed disabled:opacity-40">
             <ChevronLeft aria-hidden className="size-5" />
           </button>
-          <Month id={`${id}-month`} aria-live="polite" className={cn("font-display leading-none text-navy", sheet ? "text-xl" : "text-2xl")}>{`${MONTHS[+month.slice(5) - 1]} ${month.slice(0, 4)}`}</Month>
+          <Month id={`${id}-month`} aria-live="polite" className={cn("font-display leading-none text-navy", sheet ? "text-xl" : "text-2xl")}>{monthWords}</Month>
           <button type="button" aria-label="Next month" disabled={month >= last} onClick={() => setMonth(shiftMonth(month, 1))} className="flex size-11 cursor-pointer items-center justify-center rounded-lg border border-border text-navy disabled:cursor-not-allowed disabled:opacity-40">
             <ChevronRight aria-hidden className="size-5" />
           </button>
         </div>
-        <table ref={grid} role="grid" aria-label={`${legend}, ${MONTHS[+month.slice(5) - 1]} ${month.slice(0, 4)}`} className="mt-3 w-full table-fixed border-separate border-spacing-y-1">
-          <thead>
-            <tr>
-              {WEEK.map((w) => (
-                <th key={w} scope="col" abbr={w} className="pb-1 text-center text-sm font-medium text-muted-foreground">
-                  {w.slice(0, 3)}
-                </th>
-              ))}
-            </tr>
-          </thead>
+        <table ref={grid} role="grid" aria-label={`${legend}, ${monthWords}`} className="mt-3 w-full table-fixed border-separate border-spacing-y-1">
+          {!yearless && (
+            <thead>
+              <tr>
+                {WEEK.map((w) => (
+                  <th key={w} scope="col" abbr={w} className="pb-1 text-center text-sm font-medium text-muted-foreground">
+                    {w.slice(0, 3)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+          )}
           <tbody>
-            {weeksOf(month).map((week, i) => (
+            {weeksOf(month, yearless).map((week, i) => (
               <tr key={i}>
                 {week.map((day, j) => {
                   if (!day) return <td key={j} />
@@ -172,7 +181,7 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
                         data-autofocus={(autoFocusDay && day === tabDay) || undefined}
                         aria-pressed={selected}
                         aria-disabled={!enabled || undefined}
-                        aria-label={`${longDay(day)}${mark ? ", soonest" : ""}${yours ? `, ${currentLabel.toLowerCase()}` : ""}${enabled ? "" : free ? ", not available" : timed ? ", no times open" : ", not open"}`}
+                        aria-label={`${dayWords(day)}${mark ? ", soonest" : ""}${yours ? `, ${currentLabel.toLowerCase()}` : ""}${enabled ? "" : free ? ", not available" : timed ? ", no times open" : ", not open"}`}
                         tabIndex={day === tabDay ? 0 : -1}
                         onClick={() => enabled && pickDay(day)}
                         onKeyDown={(e) => onKey(e, day)}
@@ -218,32 +227,10 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
       </div>
 
       {showTimes && held && (
-        <fieldset key={held} data-slot="time-chips" className="min-w-0">
-          <legend className="text-base font-semibold text-foreground">{longDay(held)}</legend>
-          {timesHint && <p className="mt-1 text-sm text-muted-foreground">{timesHint}</p>}
-          <div className={cn("mt-3 grid grid-cols-3 gap-2", sheet ? "sm:grid-cols-4" : "sm:grid-cols-4 lg:grid-cols-6")}>
-            {anyTime && (
-              <label className="relative block">
-                <input type="radio" name={`${id}-time`} checked={value.start === null} onChange={() => onChange({ day: held, start: null })} className="peer sr-only" />
-                <span data-slot="time-chip" className={cn(CHIP, value.start === null ? "settle border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
-                  <span className="text-base font-semibold">Any time</span>
-                </span>
-              </label>
-            )}
-            {heldTimes.map((t) => {
-              const checked = value.start === t.start
-              return (
-                <label key={t.start} className="relative block">
-                  <input type="radio" name={`${id}-time`} checked={checked} onChange={() => onChange({ day: held, start: t.start })} className="peer sr-only" />
-                  <span data-slot="time-chip" className={cn(CHIP, checked ? "settle border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
-                    <span className="text-base font-semibold tabular-nums">{clock12(t.start)}</span>
-                  </span>
-                </label>
-              )
-            })}
-          </div>
+        <div key={held}>
+          <TimeChips options={heldTimes} value={value.start} onChange={(start) => onChange({ day: held, start })} anyTime={anyTime} legend={longDay(held)} hint={timesHint} density={density} />
           {heldTimes.length === 0 && !anyTime && <p className="mt-3 text-base text-muted-foreground">No times are left on this day. Pick another day.</p>}
-        </fieldset>
+        </div>
       )}
     </div>
   )
