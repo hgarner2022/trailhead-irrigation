@@ -4,12 +4,13 @@ import { expect, fn } from "storybook/test"
 import { QUOTE_SERVICES, SERVICES, type ServiceEntry } from "@/lib/booking/services"
 import { ServicePicker } from "./ServicePicker"
 
-// The service list a customer picks from: the Season Pass first, a closed service shown with its opening day, and under the list one link to request a quote. Services we quote are not in it.
-function Harness({ entries, initial, onRequestQuote }: { entries: readonly ServiceEntry[]; initial?: string | null; onRequestQuote?: () => void }) {
+// The service list a customer picks from: one card per service with its price and a chevron, the whole header the button. The open card is the picked service and holds what the screen puts in it. The Season
+// Pass is first, and under the list one link requests a quote. Services we quote are not in it.
+function Harness({ entries, initial, onRequestQuote, quote }: { entries: readonly ServiceEntry[]; initial?: string | null; onRequestQuote?: () => void; quote?: boolean }) {
   const [value, setValue] = useState<string | null>(initial ?? null)
   return (
     <div className="mx-auto max-w-3xl container-padding-x py-8">
-      <ServicePicker entries={entries} value={value} onChange={setValue} onRequestQuote={onRequestQuote} />
+      <ServicePicker entries={entries} value={value} onChange={setValue} onRequestQuote={onRequestQuote} renderPanel={quote ? undefined : (e) => <p className="text-base text-foreground">{e.included ?? `What ${e.name} includes, and its questions, go here.`}</p>} />
     </div>
   )
 }
@@ -26,10 +27,10 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   args: { initial: "repair" },
   play: async ({ canvas, userEvent, args }) => {
-    await expect(canvas.getByRole("radio", { name: /Sprinkler repair/ })).toBeChecked()
-    await expect(canvas.getByRole("radio", { name: /^Spring turn-on/ })).toBeDisabled()
-    await userEvent.click(canvas.getByRole("radio", { name: /Season Pass 2027/ }))
-    await expect(canvas.getByRole("radio", { name: /Season Pass 2027/ })).toBeChecked()
+    await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-expanded", "true")
+    await userEvent.click(canvas.getByRole("button", { name: /^Spring turn-on/ }))
+    await expect(canvas.getByRole("button", { name: /^Spring turn-on/ })).toHaveAttribute("aria-expanded", "true")
+    await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-expanded", "false")
     await userEvent.click(canvas.getByRole("button", { name: "Need a quote? Request one" }))
     await expect(args.onRequestQuote).toHaveBeenCalled()
   },
@@ -38,11 +39,8 @@ export const Default: Story = {
 /** One service only, no request link. */
 export const Empty: Story = { args: { entries: SERVICES.slice(0, 1), onRequestQuote: undefined } }
 
-/** Nothing is closed: no "Opens" lines and no pass suggestion. */
-export const InSeason: Story = { args: { entries: SERVICES.map(({ opens: _o, ...e }) => e as ServiceEntry) } }
-
-/** The request path's own list: the services we quote, no prices, no link. */
-export const QuoteList: Story = { args: { entries: QUOTE_SERVICES, onRequestQuote: undefined } }
+/** The request path's own list: the services we quote, plain choices with no prices and no link. */
+export const QuoteList: Story = { args: { entries: QUOTE_SERVICES, onRequestQuote: undefined, quote: true } }
 
 export const Phone: Story = { args: { initial: "season-pass" }, globals: { viewport: { value: "phone", isRotated: false } } }
 

@@ -8,8 +8,8 @@ const group = (id: string) => groups.find((g) => g.id === id)!
 
 describe("one entry per service", () => {
   it("folds the zone bands into one entry each, with no band suffix in the name", () => {
-    expect(SERVICE_LIST.length).toBe(15)
-    expect(groups.length).toBe(10)
+    expect(SERVICE_LIST.length).toBe(16)
+    expect(groups.length).toBe(11)
     expect(groups.every((g) => !/zones$/.test(g.name))).toBe(true)
     expect(group("turn-on").bands.map((b) => b.key)).toEqual(["turn-on-8", "turn-on-12", "turn-on-16"])
     expect(group("rachio-install").bands.map((b) => b.key)).toEqual(["rachio-install-8", "rachio-install-16"])

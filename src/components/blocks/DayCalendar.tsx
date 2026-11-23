@@ -1,0 +1,199 @@
+"use client"
+
+import { useId, useRef, useState, type KeyboardEvent } from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { FormRow } from "@/components/blocks/FormRow"
+import { Textarea } from "@/components/ui/textarea"
+import { DAYS_FULL, clock12, type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
+import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
+import { longDay } from "@/lib/portal/words"
+import { cn } from "@/lib/utils"
+
+// The day-and-time question as a calendar (docs/plans/2026-11-19-booking-form-design.md, "Day and time (Nov 22 2026)"): one month at a time as a grid, days with open times enabled, the SOONEST open day
+// already selected and marked, the days the offer rule ranks best marked "Recommended", every other day quiet and the days with nothing open greyed. Picking a day shows its times under the grid, soonest
+// first, with the rule's "Best fit" on one; a time is never selected for the customer. The month arrows replace "Show more days". A real grid for keyboard and screen readers (WAI-ARIA date picker
+// grid): one day in the Tab order (roving tabindex), arrows move by day and week, Page Up and Page Down by month, Home and End to the week's ends, Enter or Space picks; each day is a 44px button named
+// with its weekday, date and marks. Controlled; the screen holds the pick. With no day open it says so and offers a box for when would suit. Pure props, client component.
+
+export interface DayCalendarProps {
+  offers: readonly DayTimeOffer[]
+  value: DayTimePick
+  onChange: (next: DayTimePick) => void
+  /** names the grid for a screen reader: "Pick your day", "Your spring turn-on" */
+  legend: string
+  /** the level of the month heading: 2 when the step's own heading is the h1, 3 under a heading of its own */
+  headingLevel?: 2 | 3
+  /** the box under a full calendar, when a screen offers one */
+  note?: string
+  onNote?: (text: string) => void
+  className?: string
+}
+
+const WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+const iso = (d: Date) => d.toISOString().slice(0, 10)
+const at = (day: string) => new Date(`${day}T12:00:00Z`)
+const add = (day: string, n: number) => iso(new Date(at(day).getTime() + n * 86_400_000))
+const monthOf = (day: string) => day.slice(0, 7)
+const shiftMonth = (ym: string, n: number) => iso(new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1, 12))).slice(0, 7)
+
+/** The weeks of a month, Sunday first, with null for the days that belong to the months around it. */
+function weeksOf(ym: string): (string | null)[][] {
+  const first = at(`${ym}-01`)
+  const days = new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7), 0)).getUTCDate()
+  const cells: (string | null)[] = [...Array(first.getUTCDay()).fill(null), ...Array.from({ length: days }, (_, i) => `${ym}-${String(i + 1).padStart(2, "0")}`)]
+  while (cells.length % 7) cells.push(null)
+  return Array.from({ length: cells.length / 7 }, (_, w) => cells.slice(w * 7, w * 7 + 7))
+}
+
+const LINK = "inline-flex min-h-11 items-center font-semibold text-primary-deep underline underline-offset-2"
+const CHIP = "flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2"
+
+export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2, note = "", onNote, className }: DayCalendarProps) {
+  const Month = headingLevel === 2 ? "h2" : "h3"
+  const id = useId()
+  const grid = useRef<HTMLTableElement>(null)
+  const open = new Map(offers.filter((o) => o.times.length > 0).map((o) => [o.day, o]))
+  const days = [...open.keys()].sort()
+  const soonest = days[0] ?? null
+  const first = monthOf(days[0] ?? "2000-01-01")
+  const last = monthOf(days.at(-1) ?? "2000-01-01")
+  const [month, setMonth] = useState(() => monthOf(value.day ?? soonest ?? "2000-01-01"))
+  const [focus, setFocus] = useState<string | null>(null)
+
+  if (days.length === 0)
+    return (
+      <div data-slot="day-calendar" data-state="full" className={cn("space-y-3", className)}>
+        <p role="status" className="text-base text-foreground">
+          {DAYS_FULL}
+        </p>
+        {onNote && (
+          <FormRow label="When would suit you?" hint="Optional.">
+            <Textarea value={note} onChange={(e) => onNote(e.target.value)} className="min-h-24 text-base" />
+          </FormRow>
+        )}
+        <p className="text-base text-muted-foreground">
+          {"Or call Ryan at "}
+          <a href={PHONE_TEL} className={LINK}>
+            {PHONE_DISPLAY}
+          </a>
+          .
+        </p>
+      </div>
+    )
+
+  const current = value.day ? (open.get(value.day) ?? null) : null
+  const tabDay = (focus && monthOf(focus) === month ? focus : null) ?? (value.day && monthOf(value.day) === month ? value.day : null) ?? days.find((d) => monthOf(d) === month) ?? `${month}-01`
+  const pickDay = (day: string) => onChange({ day, start: value.day === day ? value.start : null })
+  const moveTo = (day: string) => {
+    setFocus(day)
+    setMonth(monthOf(day))
+    requestAnimationFrame(() => grid.current?.querySelector<HTMLElement>(`[data-day="${day}"]`)?.focus())
+  }
+  const onKey = (e: KeyboardEvent<HTMLElement>, day: string) => {
+    const step: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }
+    if (e.key in step) moveTo(add(day, step[e.key]!))
+    else if (e.key === "PageUp" || e.key === "PageDown") moveTo(add(`${shiftMonth(monthOf(day), e.key === "PageUp" ? -1 : 1)}-01`, +day.slice(8) - 1))
+    else if (e.key === "Home") moveTo(add(day, -at(day).getUTCDay()))
+    else if (e.key === "End") moveTo(add(day, 6 - at(day).getUTCDay()))
+    else return
+    e.preventDefault()
+  }
+  const marks = (day: string) => [day === soonest ? "Soonest" : null, open.get(day)?.best ? "Recommended" : null].filter((m): m is string => m !== null)
+
+  return (
+    <div data-slot="day-calendar" className={cn("space-y-8", className)}>
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <button type="button" aria-label="Previous month" disabled={month <= first} onClick={() => setMonth(shiftMonth(month, -1))} className="flex size-11 cursor-pointer items-center justify-center rounded-lg border border-border text-navy disabled:cursor-not-allowed disabled:opacity-40">
+            <ChevronLeft aria-hidden className="size-5" />
+          </button>
+          <Month id={`${id}-month`} aria-live="polite" className="font-display text-2xl leading-none text-navy">{`${MONTHS[+month.slice(5) - 1]} ${month.slice(0, 4)}`}</Month>
+          <button type="button" aria-label="Next month" disabled={month >= last} onClick={() => setMonth(shiftMonth(month, 1))} className="flex size-11 cursor-pointer items-center justify-center rounded-lg border border-border text-navy disabled:cursor-not-allowed disabled:opacity-40">
+            <ChevronRight aria-hidden className="size-5" />
+          </button>
+        </div>
+        <table ref={grid} role="grid" aria-label={`${legend}, ${MONTHS[+month.slice(5) - 1]} ${month.slice(0, 4)}`} className="mt-3 w-full table-fixed border-separate border-spacing-y-1">
+          <thead>
+            <tr>
+              {WEEK.map((w) => (
+                <th key={w} scope="col" abbr={w} className="pb-1 text-center text-sm font-medium text-muted-foreground">
+                  {w.slice(0, 3)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {weeksOf(month).map((week, i) => (
+              <tr key={i}>
+                {week.map((day, j) => {
+                  if (!day) return <td key={j} />
+                  const enabled = open.has(day)
+                  const selected = value.day === day
+                  const m = marks(day)
+                  return (
+                    <td key={day} aria-selected={selected} className="p-0 text-center">
+                      <button
+                        type="button"
+                        data-day={day}
+                        data-soonest={day === soonest || undefined}
+                        data-recommended={open.get(day)?.best || undefined}
+                        aria-pressed={selected}
+                        aria-disabled={!enabled || undefined}
+                        aria-label={`${longDay(day)}${m.length ? `, ${m.join(", ").toLowerCase()}` : ""}${enabled ? "" : ", no times open"}`}
+                        tabIndex={day === tabDay ? 0 : -1}
+                        onClick={() => enabled && pickDay(day)}
+                        onKeyDown={(e) => onKey(e, day)}
+                        onFocus={() => setFocus(day)}
+                        className={cn(
+                          "relative mx-auto flex size-11 flex-col items-center justify-center rounded-lg text-base tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1",
+                          selected ? "bg-navy font-semibold text-white" : enabled ? "cursor-pointer border border-border bg-background text-navy hover:border-navy/50" : "cursor-not-allowed text-muted-foreground/50",
+                        )}
+                      >
+                        <span aria-hidden>{+day.slice(8)}</span>
+                        {enabled && m.length > 0 && <span aria-hidden className={cn("absolute bottom-1 size-1.5 rounded-full", day === soonest ? (selected ? "bg-primary-light" : "bg-primary") : selected ? "bg-white" : "bg-navy")} />}
+                      </button>
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p data-slot="calendar-legend" className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <span aria-hidden className="size-2 rounded-full bg-primary" />
+            Soonest
+          </span>
+          {[...open.values()].some((o) => o.best) && (
+            <span className="inline-flex items-center gap-1.5">
+              <span aria-hidden className="size-2 rounded-full bg-navy" />
+              Recommended
+            </span>
+          )}
+        </p>
+      </div>
+
+      {current && (
+        <fieldset key={current.day} data-slot="time-chips" className="min-w-0">
+          <legend className="text-base font-semibold text-foreground">{`Times on ${longDay(current.day)}`}</legend>
+          <p className="mt-1 flex flex-wrap gap-2 text-sm font-semibold text-primary-deep">{marks(current.day).map((m) => <span key={m}>{m}</span>)}</p>
+          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+            {current.times.map((t) => {
+              const checked = value.start === t.start
+              return (
+                <label key={t.start} className="relative block">
+                  <input type="radio" name={`${id}-time`} checked={checked} onChange={() => onChange({ day: current.day, start: t.start })} className="peer sr-only" />
+                  <span data-slot="time-chip" data-best={t.best || undefined} className={cn(CHIP, checked ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
+                    <span className="text-base font-semibold tabular-nums">{clock12(t.start)}</span>
+                    {t.best && <span className={cn("text-xs font-semibold", checked ? "text-white/85" : "text-primary-deep")}>Best fit</span>}
+                  </span>
+                </label>
+              )
+            })}
+          </div>
+        </fieldset>
+      )}
+    </div>
+  )
+}

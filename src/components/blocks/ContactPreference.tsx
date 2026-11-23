@@ -17,7 +17,7 @@ const CHOICES: { value: ContactChannel; label: string; line: string }[] = [
 
 export const channelWords = (c: ContactChannel) => (c === "text" ? "text" : c === "email" ? "email" : "text and email")
 
-export function ContactPreference({ value, onChange, name = "contact-preference", className }: { value: ContactChannel; onChange: (v: ContactChannel) => void; name?: string; className?: string }) {
+export function ContactPreference({ value, onChange, name = "contact-preference", plain, className }: { value: ContactChannel; onChange: (v: ContactChannel) => void; name?: string; /** the booking form: the three choices and nothing under them */ plain?: boolean; className?: string }) {
   const chosen = CHOICES.find((c) => c.value === value) ?? CHOICES[0]!
   return (
     <div data-slot="contact-preference" data-name={name} className={cn("space-y-2", className)}>
@@ -25,7 +25,7 @@ export function ContactPreference({ value, onChange, name = "contact-preference"
         How should we reach you?
       </p>
       <SegmentedControl label="How should we reach you?" options={CHOICES.map(({ value: v, label }) => ({ value: v, label }))} value={value} onChange={(v) => onChange(v as ContactChannel)} className="flex w-full [&>button]:flex-1 [&>button]:px-2 [&>button]:whitespace-nowrap" />
-      <p className="text-sm text-muted-foreground">{chosen.line}</p>
+      {!plain && <p className="text-sm text-muted-foreground">{chosen.line}</p>}
     </div>
   )
 }

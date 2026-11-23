@@ -16,9 +16,11 @@ export interface BookingCardProps {
   /** a Season Pass needs the card; a one-off may say "Not now" */
   pass: boolean
   onSkip: () => void
+  /** the card is one a returning customer already has on file: "Use a different card" puts the form back */
+  onReplace?: () => void
 }
 
-export function BookingCard({ saved, pass, onSkip }: BookingCardProps) {
+export function BookingCard({ saved, pass, onSkip, onReplace }: BookingCardProps) {
   return (
     <div data-slot="booking-card" className="space-y-6">
       {saved ? (
@@ -40,6 +42,11 @@ export function BookingCard({ saved, pass, onSkip }: BookingCardProps) {
             Stripe&apos;s card form is drawn here. No card is entered.
           </p>
         </div>
+      )}
+      {saved && onReplace && (
+        <Button type="button" variant="ghost" onClick={onReplace} className="h-auto min-h-11 px-0 text-base font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent">
+          Use a different card
+        </Button>
       )}
       <p data-slot="card-charged" className="text-base text-foreground">
         {cardCharged(pass)}

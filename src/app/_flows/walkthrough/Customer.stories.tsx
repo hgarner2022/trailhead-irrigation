@@ -82,7 +82,7 @@ export const PhoneSteps: StoryObj<typeof CustomerPhone> = {
   render: () => <CustomerPhone />,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
-    await expect(await c.findByText("Where is the yard?")).toBeInTheDocument()
+    await expect(await c.findByRole("heading", { level: 1, name: "Address" })).toBeInTheDocument()
     const order = [["texts", "texts"], ["account", "home"], ["visits", "visit"], ["pay", "pay"], ["receipts", null], ["pass", null], ["details", "details"]] as const
     for (const [lit, shown] of order) {
       tell("next")
@@ -98,7 +98,7 @@ export const PhoneSteps: StoryObj<typeof CustomerPhone> = {
   },
 }
 
-/** Book online end to end: address, service, details with two photos, a day and an exact time, contact with how we reach you, a card, Confirm and book, and the holographic card. */
+/** Book online end to end: address, the service card opened with access and two photos, the soonest day and an exact time, contact with how we reach you, a card, Review, Confirm and book, and the holographic card. Six steps. */
 export const BookingPath: StoryObj<typeof CustomerPhone> = {
   name: "Booking path",
   tags: ["!dev", "!autodocs"],
@@ -109,9 +109,8 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
     await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
-    await userEvent.click(await c.findByRole("radio", { name: /Sprinkler repair/ }))
-    await next()
-    // access, then two photos, then an exact start time (never a window), and only then who we reach
+    // the card opens in place: access and two photos are answered inside it, then the soonest day is already chosen and only an exact start time (never a window) is tapped, and only then who we reach
+    await userEvent.click(await c.findByRole("button", { name: /^Sprinkler repair/ }))
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
     await userEvent.click(await c.findByRole("button", { name: "Add 2 sample photos" }))
     await next()
@@ -146,7 +145,7 @@ export const PayPath: StoryObj<typeof CustomerPhone> = {
   render: () => <CustomerPhone />,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
-    await expect(await c.findByText("Where is the yard?")).toBeInTheDocument()
+    await expect(await c.findByRole("heading", { level: 1, name: "Address" })).toBeInTheDocument()
     window.postMessage({ walk: "cmd", cmd: "go", step: "account" }, "*")
     await userEvent.click(await c.findByRole("link", { name: /Pay now/ }))
     await expect(await c.findByText(/for your repair at 412 Briggs Street/)).toBeInTheDocument()
@@ -170,7 +169,7 @@ export const PaySavedCardPath: StoryObj<typeof CustomerPhone> = {
   render: () => <CustomerPhone />,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
-    await expect(await c.findByText("Where is the yard?")).toBeInTheDocument()
+    await expect(await c.findByRole("heading", { level: 1, name: "Address" })).toBeInTheDocument()
     window.postMessage({ walk: "cmd", cmd: "go", step: "pay" }, "*")
     await userEvent.click(await c.findByRole("button", { name: "Visa ending 4242" }))
     await userEvent.click(await c.findByRole("button", { name: "Pay $115 with Visa ending 4242" }))
@@ -192,7 +191,7 @@ export const RequestPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.click(await c.findByRole("button", { name: "Need a quote? Request one" }))
     await userEvent.click(await c.findByRole("radio", { name: /Christmas lights/ }))
     await next()
-    await userEvent.type(await c.findByLabelText(/A (few words|note)/), "The roofline and two trees.")
+    await userEvent.type(await c.findByLabelText("What do you need?"), "The roofline and two trees.")
     await userEvent.click(await c.findByRole("button", { name: "Add 2 sample photos" }))
     await next()
     await userEvent.type(await c.findByLabelText("First name"), "Rosa")
@@ -214,7 +213,7 @@ export const QuotePath: StoryObj<typeof CustomerPhone> = {
   render: () => <CustomerPhone />,
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
-    await expect(await c.findByText("Where is the yard?")).toBeInTheDocument()
+    await expect(await c.findByRole("heading", { level: 1, name: "Address" })).toBeInTheDocument()
     window.postMessage({ walk: "cmd", cmd: "go", step: "quote" }, "*")
     await userEvent.click(await c.findByRole("button", { name: "trailheadirrigation.com/q/4d8w" }))
     await userEvent.click(await c.findByRole("button", { name: "Approve and pay $300" }))

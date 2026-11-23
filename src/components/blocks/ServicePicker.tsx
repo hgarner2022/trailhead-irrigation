@@ -1,100 +1,81 @@
 "use client"
 
-import { useId } from "react"
-import { Clock } from "lucide-react"
-import { CHARGED_AFTER, HAPPENS_FOR_YOU, HOW_EXACT, HOW_PREFERENCE, PASS_HAPPENS } from "@/lib/booking/pass-words"
-import { REQUEST_QUOTE, OUT_OF_SEASON_NOTE, type ServiceEntry } from "@/lib/booking/services"
+import { useId, type ReactNode } from "react"
+import { ChevronDown } from "lucide-react"
+import { REQUEST_QUOTE, type ServiceEntry } from "@/lib/booking/services"
 import { cn } from "@/lib/utils"
 
-// The one service list (docs/plans/2026-11-18-online-booking-design.md sections 4.1 and 6): one large radio card per service with its price line and length, the Season Pass first, and an
-// out-of-season service shown and not selectable with its opening day. Only services set to "Book a day" are in the list (Hannah, Nov 18 2026); the ones we quote are not, and one link at the
-// bottom, "Need a quote? Request one", starts the request path. The same block lists the quoted services on that path (`quote` mode: no prices, no opening days). "What's included" opens the
-// rest of the catalogue text under the card. Native radios, one tab stop, the arrow keys move. Controlled. Pure props, client component.
+// The one service list (docs/plans/2026-11-19-booking-form-design.md, "Service cards expand in place"): one card per service with its name, its price and a chevron. The whole header is the button
+// (Hannah, Nov 22 2026: "it needs to be really clear that it's clickable"): pressing it picks the service and opens the card in place, and the card then holds what is included and the questions
+// that belong to it (`renderPanel`), so there is no "What's included" link and no separate details step. Pressing the open card closes it and unpicks the service. One card is open at a time, the
+// Season Pass first. Only services set to "Book a day" are in the list; one link at the bottom, "Need a quote? Request one", starts the request path. The same block lists the quoted services on
+// that path (`quote` mode: no `renderPanel`, so plain radio cards with no price). Controlled. Pure props, client component.
 
 export interface ServicePickerProps {
   entries: readonly ServiceEntry[]
+  /** the key of the service picked, which is the card that is open */
   value: string | null
-  onChange: (key: string) => void
+  /** the card pressed; the same key as `value` means it was closed */
+  onChange: (key: string | null) => void
+  /** what the open card holds: what is included and the questions that belong to the service */
+  renderPanel?: (entry: ServiceEntry) => ReactNode
   /** shows "Need a quote? Request one" under the list; omit on the request path itself */
   onRequestQuote?: () => void
   className?: string
 }
 
-const CARD = "flex cursor-pointer flex-col gap-1 rounded-lg border px-4 py-4 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-60"
+const OPEN = "border-navy bg-background shadow-sm"
+const SHUT = "border-border bg-background hover:border-navy/50"
 
-function Entry({ entry, name, checked, onChange }: { entry: ServiceEntry; name: string; checked: boolean; onChange: () => void }) {
-  const off = Boolean(entry.opens)
-  const quote = entry.kind === "quote"
+function Card({ entry, open, onToggle, panel }: { entry: ServiceEntry; open: boolean; onToggle: () => void; panel: ReactNode }) {
+  const id = useId()
   return (
-    <li data-slot="service-entry" data-kind={entry.kind} className={cn(entry.kind === "pass" && "md:col-span-2")}>
-      <label className="relative block">
-        <input type="radio" name={name} checked={checked} disabled={off} onChange={onChange} data-autofocus={checked || undefined} className="peer sr-only" />
-        <span className={cn(CARD, checked ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
-          <span className="flex items-baseline justify-between gap-4">
-            <span className="font-display text-2xl leading-none">{entry.name}</span>
-            {!quote && (off || entry.price) && <span className="shrink-0 text-base font-semibold tabular-nums">{off ? `Opens ${entry.opens}` : entry.price}</span>}
-          </span>
-          <span className={cn("text-base", checked ? "text-white/90" : "text-foreground")}>{entry.line}</span>
-          {entry.passVisits && (
-            <ol data-slot="pass-visits" aria-label="When the visits happen" className={cn("mt-2 ml-1.5 border-l-2", checked ? "border-white/30" : "border-navy/15")}>
-              {entry.passVisits.map((v) => (
-                <li key={v.kind} data-slot="pass-visit" data-kind={v.kind} className="relative pb-3 pl-5 last:pb-0">
-                  <span aria-hidden className={cn("absolute top-[0.45rem] -left-[0.4375rem] size-3 rounded-full border-2", checked ? "border-navy bg-white" : "border-background bg-primary")} />
-                  <span className="flex flex-wrap items-baseline justify-between gap-x-4">
-                    <span className="text-base font-semibold">{v.name}</span>
-                    <span className={cn("text-sm tabular-nums", checked ? "text-white/90" : "text-foreground")}>{v.price}</span>
-                  </span>
-                  <span className={cn("block text-sm", checked ? "text-white/85" : "text-muted-foreground")}>{[v.length, v.opens ? `Opens ${v.opens}` : "Open now"].filter(Boolean).join(" · ")}</span>
-                  <span className={cn("block text-sm", checked ? "text-white/85" : "text-muted-foreground")}>{`${v.mode === "exact" ? HOW_EXACT : HOW_PREFERENCE} ${CHARGED_AFTER}`}</span>
-                </li>
-              ))}
-            </ol>
-          )}
-          {entry.passVisits && checked && (
-            <div data-slot="pass-happens" className="mt-3">
-              <p className="text-sm font-semibold">{HAPPENS_FOR_YOU}</p>
-              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-white/90">
-                {PASS_HAPPENS.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {entry.length && (
-            <span data-slot="service-length" className={cn("mt-1 flex items-center gap-1.5 text-sm", checked ? "text-white/85" : "text-muted-foreground")}>
-              <Clock aria-hidden className="size-4 shrink-0" />
-              {entry.length}
-            </span>
-          )}
+    <li data-slot="service-entry" data-kind={entry.kind} data-open={open || undefined} className={cn("overflow-hidden rounded-lg border-2 transition-colors", open ? OPEN : SHUT)}>
+      <button type="button" aria-expanded={open} aria-controls={`${id}-panel`} onClick={onToggle} data-autofocus={open || undefined} className="flex min-h-16 w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-inset">
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-2xl leading-none text-navy">{entry.name}</span>
+          {entry.kind === "pass" && entry.length && <span className="mt-1.5 block text-sm text-muted-foreground">{entry.length}</span>}
         </span>
-      </label>
-      {entry.included && (
-        <details className="group">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center text-sm font-semibold text-primary-deep underline underline-offset-2">{"What's included"}</summary>
-          <p className="pb-2 text-base text-foreground">{entry.included}</p>
-        </details>
+        {entry.price && <span className="shrink-0 text-base font-semibold tabular-nums text-navy">{entry.price}</span>}
+        <span aria-hidden className={cn("flex size-11 shrink-0 items-center justify-center rounded-full border transition-colors", open ? "border-navy bg-navy text-white" : "border-border bg-background text-navy")}>
+          <ChevronDown className={cn("size-5 transition-transform", open && "rotate-180")} />
+        </span>
+        {open && <span className="sr-only">Selected</span>}
+      </button>
+      {open && (
+        <div id={`${id}-panel`} role="region" aria-label={entry.name} data-slot="service-panel" className="border-t border-border bg-background px-4 py-6">
+          {panel}
+        </div>
       )}
     </li>
   )
 }
 
-export function ServicePicker({ entries, value, onChange, onRequestQuote, className }: ServicePickerProps) {
+/** A plain radio card, for the request path's list of what we quote. */
+function QuoteCard({ entry, name, checked, onChange }: { entry: ServiceEntry; name: string; checked: boolean; onChange: () => void }) {
+  return (
+    <li data-slot="service-entry" data-kind="quote">
+      <label className="relative block">
+        <input type="radio" name={name} checked={checked} onChange={onChange} data-autofocus={checked || undefined} className="peer sr-only" />
+        <span className={cn("flex min-h-16 cursor-pointer items-center rounded-lg border-2 px-4 py-3 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2", checked ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/50")}>
+          <span className="font-display text-2xl leading-none">{entry.name}</span>
+        </span>
+      </label>
+    </li>
+  )
+}
+
+export function ServicePicker({ entries, value, onChange, renderPanel, onRequestQuote, className }: ServicePickerProps) {
   const name = useId()
-  // The note points at the pass, so it shows only when the pass is on the list and holds a visit whose single card is closed (a pass with no visit list is the old catalogue card and holds both).
-  const pass = entries.find((e) => e.kind === "pass")
-  const heldKinds = pass?.passVisits?.map((v) => v.kind)
-  const SINGLE: Record<string, string> = { "spring-turn-on": "turn-on", "fall-blowout": "blowout" }
-  const closed = Boolean(pass) && entries.some((e) => e.opens && (!heldKinds || heldKinds.includes(SINGLE[e.key] as "turn-on" | "blowout")))
   return (
     <div data-slot="service-picker" className={cn("space-y-4", className)}>
       <fieldset className="min-w-0">
         <legend className="sr-only">Services</legend>
-        <ul className="grid gap-3 md:grid-cols-2">
-          {entries.map((e) => (
-            <Entry key={e.key} entry={e} name={name} checked={value === e.key} onChange={() => onChange(e.key)} />
-          ))}
+        <ul className="grid gap-3">
+          {entries.map((e) =>
+            renderPanel ? <Card key={e.key} entry={e} open={value === e.key} onToggle={() => onChange(value === e.key ? null : e.key)} panel={value === e.key ? renderPanel(e) : null} /> : <QuoteCard key={e.key} entry={e} name={name} checked={value === e.key} onChange={() => onChange(e.key)} />,
+          )}
         </ul>
-        {closed && <p className="mt-3 text-base text-muted-foreground">{OUT_OF_SEASON_NOTE}</p>}
       </fieldset>
       {onRequestQuote && (
         <p className="border-t border-border pt-4 text-base text-muted-foreground">

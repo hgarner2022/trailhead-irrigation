@@ -59,9 +59,10 @@ export function typedPlace(line1: string, city: string, zip = ""): PlaceSuggesti
 export const SERVICE_TOWNS: readonly Town[] = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
 
 /**
- * USPS zip codes of the six towns, the second check behind the town name: a
- * county address with an Erie mailing address carries the Erie zip. Ryan
- * confirms this list before the checkout goes live (wiring plan, Phase 8).
+ * USPS zip codes of the six towns: the ZIP decides whether Trailhead serves a
+ * yard (a county address with an Erie mailing address carries the Erie zip).
+ * Ryan confirms this list before the checkout or the booking form goes live
+ * (wiring plan, Phase 8).
  */
 export const SERVICE_ZIPS: Readonly<Record<string, Town>> = {
   "80516": "Erie",
@@ -78,14 +79,35 @@ export const SERVICE_ZIPS: Readonly<Record<string, Town>> = {
 
 export type Serviceability = { ok: true; town: Town } | { ok: false; place: string }
 
-/** Whether Trailhead serves the address: by its town name in Colorado first, then by its zip. */
+/** Five digits: a ZIP code a person can have typed or a provider can have answered. */
+export const isZip = (zip: string) => /^\d{5}$/.test(zip.trim())
+
+/**
+ * Whether Trailhead serves the address. **The ZIP decides** (Hannah, Nov 22 2026: "we are validating the city by ZIP code, that's our region"): a ZIP in `SERVICE_ZIPS` is served and gives the town,
+ * any other ZIP is outside, whatever the city says. Only an address with no ZIP yet (a Google suggestion before its details answer) falls back to the town name in Colorado for the moment the
+ * details take to come. `SERVICE_ZIPS` is still to be confirmed by Ryan.
+ */
 export function serviceability(place: Pick<PlaceSuggestion, "town" | "state" | "zip">): Serviceability {
+  const zip = place.zip.trim()
+  if (isZip(zip)) {
+    const byZip = SERVICE_ZIPS[zip]
+    if (byZip) return { ok: true, town: byZip }
+    const city = place.state && place.state !== "CO" ? `${place.town}, ${place.state}` : place.town
+    return { ok: false, place: city.trim() || zip }
+  }
   const town = SERVICE_TOWNS.find((t) => t.toLowerCase() === place.town.trim().toLowerCase())
   if (town && place.state === "CO") return { ok: true, town }
-  const byZip = SERVICE_ZIPS[place.zip]
-  if (byZip) return { ok: true, town: byZip }
-  const outside = place.state && place.state !== "CO" ? `${place.town}, ${place.state}` : place.town
-  return { ok: false, place: outside || "that address" }
+  return { ok: false, place: place.town || "that address" }
+}
+
+/**
+ * The quiet error for a typed address whose city is not the town of its ZIP ("ZIP 80516 is in Erie."), or null when they agree, the ZIP is not one we serve (that is the out-of-area line), or no city
+ * has been typed. A picked address is never checked: the provider's own city is not ours to second-guess.
+ */
+export function zipCityMismatch(place: Pick<PlaceSuggestion, "id" | "town" | "zip">): string | null {
+  const town = SERVICE_ZIPS[place.zip.trim()]
+  if (!isTypedPlace(place.id) || !town || place.town.trim() === "") return null
+  return place.town.trim().toLowerCase() === town.toLowerCase() ? null : `ZIP ${place.zip.trim()} is in ${town}.`
 }
 
 export const SERVICE_AREA_SENTENCE = "We work in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield."
