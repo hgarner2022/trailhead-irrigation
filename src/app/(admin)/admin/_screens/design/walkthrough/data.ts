@@ -9,8 +9,9 @@ import { fullName, serviceWords, stateOf } from "../requests/request-model"
 import { requestStore } from "../requests/request-store"
 import { quoteRowsOf } from "../quotes/quote-list-model"
 import { QUOTES_NOW, QUOTE_PILL, money as quoteMoney } from "../quotes/quote-model"
+import { recordHref } from "@/components/blocks/record-preview-model"
 import { walkQuotes } from "../quotes/quote-store"
-import { buildWorldCustomer } from "./customer-build"
+import { buildWorldCustomer, quoteRowsFor } from "./customer-build"
 import { worldCustomerIds } from "./world-customers"
 
 export * from "./jobs-data"
@@ -41,17 +42,18 @@ function withChoice(page: CustomerPageData): CustomerPageData {
   return { ...page, consent: { ...page.consent, email: line(c.email, page.consent.email), text: line(c.text, page.consent.text) } }
 }
 
-/** The page of any customer in the world: the seven shaped by hand below, and everyone else built from their jobs, invoices and quotes (`customer-build.ts`). */
+/** The page of any customer in the world: the seven shaped by hand below, and everyone else built from their jobs, invoices and quotes (`customer-build.ts`). A quote is not a job: it is in the customer's Quotes card and does not change their status. */
 export function customerPage(id: string): CustomerPageData | null {
   const page = customerPageBase(id)
+  const world = walkQuotes.getSnapshot()
   // the status is read from the jobs by `customerStatusOf`, never typed here
   if (!page) {
     const rows = allRows().filter((r) => customerIdOf(r.name) === id)
-    return isRealCustomer(id) ? null : buildWorldCustomer(id, { rows, invoices: INVOICES, quotes: Object.values(walkQuotes.getSnapshot()) })
+    return isRealCustomer(id) ? null : buildWorldCustomer(id, { rows, invoices: INVOICES, quotes: Object.values(world.quotes), jobs: Object.values(world.jobs) })
   }
   // an archived customer for whom a job was made here is back: no archive date, so the function reads Active from the new open job
   const statusFacts = isActiveAgain(id) ? { ...page.statusFacts, archivedAt: null } : page.statusFacts
-  return withChoice(withStatus({ ...page, statusFacts, jobs: [...madeHere(id), ...page.jobs] }))
+  return withChoice(withStatus({ ...page, statusFacts, jobs: [...madeHere(id), ...page.jobs], quotes: quoteRowsFor(Object.values(world.quotes).filter((q) => q.customerId === id)) }))
 }
 
 function customerPageBase(id: string): CustomerPageData | null {
@@ -125,7 +127,7 @@ export function customerRows(): CustomerListRow[] {
   const others = ids.flatMap((id): CustomerListRow[] => {
     const p = customerPage(id)
     if (!p) return []
-    const open = p.jobs.find((j) => j.open && !j.quote)
+    const open = p.jobs.find((j) => j.open)
     return [{ id, name: p.name, street: p.address.join(", ").replace(", CO", ""), next: open ? (open.day ? (open.day.iso === "2026-11-20" ? "Today" : dayWords(open.day.iso)) : "Unscheduled") : "None", unpaid: Number((p.unpaid ?? "$0").replace(/\D/g, "")), pass: "" }]
   })
   return [...CUSTOMER_ROWS, ...others]
@@ -230,6 +232,7 @@ export function resolveRoute(route: Route, owner?: string): Route {
 
 export function knownRoute(route: Route): boolean {
   if (route.screen === "job") return Boolean(rowOf(route.id ?? ""))
+  if (route.screen === "quote") return Boolean(walkQuotes.getSnapshot().quotes[route.id ?? ""])
   if (route.screen === "invoice") return INVOICES.some((i) => i.id === route.id)
   if (route.screen === "customer") return Boolean(route.id && customerPage(route.id))
   return true
@@ -240,6 +243,7 @@ export function ownerOf(route: Route): string | undefined {
   if (route.screen === "customer") return route.id
   if (route.screen === "job") return customerOfJob(route.id ?? "")
   if (route.screen === "invoice") return INVOICES.find((i) => i.id === route.id)?.customerId
+  if (route.screen === "quote") return walkQuotes.getSnapshot().quotes[route.id ?? ""]?.customerId
   return undefined
 }
 
@@ -255,6 +259,7 @@ export function nameOfRoute(route: Route): string | undefined {
     return r ? (r.service === "Season Pass" ? r.title : r.name) : undefined
   }
   if (route.screen === "invoice") return INVOICES.find((i) => i.id === route.id)?.number
+  if (route.screen === "quote") return route.id
   return undefined
 }
 
@@ -283,12 +288,12 @@ export function searchWorld(query: string): SearchHit[] {
   // a request that is New or Seen is found here and nowhere else; once a job is made of it its customer and job are
   const requests: SearchHit[] = requestStore
     .getSnapshot()
-    .filter((r) => !r.becameJob && ["new", "seen"].includes(stateOf(r)))
+    .filter((r) => !r.becameJob && !r.becameQuote && ["new", "seen"].includes(stateOf(r)))
     .filter((r) => `${fullName(r)} ${r.street} ${r.email} ${r.service}`.toLowerCase().includes(q) || (qd.length >= 3 && digits(r.phone).includes(qd)))
     .map((r) => ({ kind: "request" as const, id: r.id, title: fullName(r), detail: [serviceWords(r), r.town].filter((x) => x !== "Not said" && x).join(" · "), href: `/admin/requests?request=${r.id}`, contact: r.phone }))
-  // a quote is found by its number, its customer's name or the street, and opens its job at the Quote section
-  const quotes: SearchHit[] = quoteRowsOf(Object.values(walkQuotes.getSnapshot()), QUOTES_NOW)
+  // a quote is found by its number, its customer's name or the street, and opens its own page
+  const quotes: SearchHit[] = quoteRowsOf(Object.values(walkQuotes.getSnapshot().quotes), QUOTES_NOW)
     .filter((r) => `${r.id} ${r.customer} ${r.street}`.toLowerCase().includes(q))
-    .map((r) => ({ kind: "quote" as const, id: r.id, title: r.id, detail: `${r.customer}, ${r.jobName}, ${quoteMoney(r.amount)} · ${QUOTE_PILL[r.state].label}`, href: `/admin/jobs?job=${r.jobId}#quote-h` }))
+    .map((r) => ({ kind: "quote" as const, id: r.id, title: r.id, detail: `${r.customer}, ${r.service}, ${quoteMoney(r.amount)} · ${QUOTE_PILL[r.state].label}`, href: recordHref.quote(r.id) }))
   return [...requests, ...customers, ...jobs, ...quotes]
 }

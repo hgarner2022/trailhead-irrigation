@@ -25,7 +25,7 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import { HomeScreen } from "../../HomeScreen"
 import { NewJob } from "../../NewJob"
-import { EMPTY_PERSON } from "../../CustomerPicker"
+import { EMPTY_PERSON, type CustomerChoice } from "../../CustomerPicker"
 import { NewJobContext } from "./new-job-context"
 import { ReportsScreen } from "../../ReportsScreen"
 import { ScheduleScreen } from "../../ScheduleScreen"
@@ -33,7 +33,7 @@ import { SettingsScreen } from "../../SettingsScreen"
 import { makeNewJobActions, WALK_DATA, WALK_TODAY } from "./walk-new-job"
 import { Placeholder } from "./Placeholder"
 import { HomeRequestRows, RequestRoute, RequestsRoute } from "./WalkRequests"
-import { QuoteJobRoute, QuotesRoute } from "./WalkQuotes"
+import { ApprovedJobRoute, QuoteRoute, QuotesRoute } from "./WalkQuotes"
 import { ReceiptRoute } from "./receipts"
 import { type Route } from "./routes"
 
@@ -80,14 +80,14 @@ export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen:
 }
 
 /** The real New job sheet (`_screens/NewJob.tsx`) over the walkthrough's customers and catalogue; Add job makes a row and opens its page. */
-export function NewJobSheet({ sheet, onClose, onCreated, onMade, onActiveAgain }: { sheet: { customer?: string; key: number } | null; onClose: () => void; onCreated: (jobId: string) => void; onMade: () => void; onActiveAgain?: (name: string) => void }) {
+export function NewJobSheet({ sheet, onClose, onCreated, onMade, onActiveAgain, onNewQuote }: { sheet: { customer?: string; key: number } | null; onClose: () => void; onCreated: (jobId: string) => void; onMade: () => void; onActiveAgain?: (name: string) => void; onNewQuote: (o: { customer: CustomerChoice; serviceName: string }) => void }) {
   const actions = useMemo(() => makeNewJobActions(onMade, onActiveAgain), [onMade, onActiveAgain])
   if (!sheet) return null
   // Started from a customer: the customer is already chosen (with Change), as if picked from the list. Opened empty from the Jobs grid, the header or search.
   const initial = sheet.customer ? { customer: { chosen: sheet.customer, isNew: false, person: EMPTY_PERSON, query: "", email: "" } } : undefined
   return (
     <>
-      <NewJob key={sheet.key} data={WALK_DATA} today={WALK_TODAY} open onOpenChange={(o) => !o && onClose()} actions={actions} initial={initial} quotes onCreated={(made) => onCreated(made.jobId)} />
+      <NewJob key={sheet.key} data={WALK_DATA} today={WALK_TODAY} open onOpenChange={(o) => !o && onClose()} actions={actions} initial={initial} quotes onNewQuote={onNewQuote} onCreated={(made) => onCreated(made.jobId)} />
       <NewJobContext focusWhat={Boolean(sheet.customer)} />
     </>
   )
@@ -149,14 +149,16 @@ const NotFound = ({ what }: { what: string }) => (
 )
 
 /** One route, rendered. Keyed by the caller so a record's state resets when another opens. */
-export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, onOpenRequest, onNew, onJobCreated }: { route: Route; rows: GridJob[]; onBack: () => void; onOpenJob: (id: string) => void; onOpenCustomer: (id: string) => void; onOpenRequest: (id: string) => void; onNew: () => void; onJobCreated?: (jobId: string, message: string) => void }) {
+export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, onOpenRequest, onNew, onNewQuote, onJobCreated }: { route: Route; rows: GridJob[]; onBack: () => void; onOpenJob: (id: string) => void; onOpenCustomer: (id: string) => void; onOpenRequest: (id: string) => void; onNew: () => void; onNewQuote: () => void; onJobCreated?: (id: string, message: string, mode: "job" | "quote") => void }) {
   switch (route.screen) {
     case "requests":
       return <RequestsRoute filter={route.filter === "new" ? "new" : undefined} onOpen={onOpenRequest} />
     case "request":
       return <RequestRoute id={route.id ?? ""} onJobCreated={onJobCreated} />
     case "quotes":
-      return <QuotesRoute filter={route.filter === "sent" ? "sent" : undefined} />
+      return <QuotesRoute filter={route.filter === "sent" ? "sent" : undefined} onNewQuote={onNewQuote} />
+    case "quote":
+      return <QuoteRoute id={route.id ?? ""} />
     case "jobs":
       return <WalkJobsGrid rows={rows} onOpen={onOpenJob} onNew={onNew} />
     case "customers":
@@ -165,7 +167,7 @@ export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, on
       return <InvoicesPage rows={INVOICES} />
     case "job": {
       const v = jobView(route.id ?? "")
-      if (v.kind === "quote") return <QuoteJobRoute id={route.id ?? ""} anchor={route.anchor} />
+      if (v.kind === "quote-job") return <ApprovedJobRoute id={route.id ?? ""} />
       if (v.kind === "flow") return <JobFlow embedded invoice={{ id: "inv-42", number: "INV-2026-0042" }} />
       if (v.kind === "trips") return <JobPagePass data={v.data} customer={v.customer} />
       if (v.kind === "page") return <StaticJob id={route.id!} />

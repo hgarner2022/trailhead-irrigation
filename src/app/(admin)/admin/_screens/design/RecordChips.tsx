@@ -31,8 +31,8 @@ export const InvoiceChip = ({ id, number, customer, status, statusLabel, total, 
   <RecordChip kind="invoice" name={number} href={recordHref.invoice(id)} size={size} className={tableCls(table, true)} preview={invoicePreview({ id, number, customer, status, statusLabel, total, balance, due })} />
 )
 
-/** A quote is a section of its job: the chip opens the job at its Quote card. */
-export const QuoteChip = ({ jobId, number, table }: { jobId: string; number: string; table?: boolean }) => <RecordChip kind="quote" name={number} href={recordHref.quote(jobId)} className={tableCls(table, true)} />
+/** A quote is its own record: the chip opens its page by its number. */
+export const QuoteChip = ({ number, table }: { number: string; table?: boolean }) => <RecordChip kind="quote" name={number} href={recordHref.quote(number)} className={tableCls(table, true)} />
 
 export const PaymentChip = ({ id, receipt, table }: { id: string; receipt: string; table?: boolean }) => <RecordChip kind="payment" name={`Receipt ${receipt}`} href={paymentHref(id)} className={tableCls(table, true)} />
 

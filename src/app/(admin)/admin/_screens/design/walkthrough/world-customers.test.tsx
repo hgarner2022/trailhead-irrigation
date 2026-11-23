@@ -28,7 +28,7 @@ afterEach(() => {
   walkQuotes.reset()
 })
 
-const quoteJobs = () => Object.values(walkQuotes.getSnapshot())
+const quotes = () => Object.values(walkQuotes.getSnapshot().quotes)
 
 describe("every customer resolves to a page", () => {
   it("opens from every chip: each job's customer, each invoice's, each quote's, each request match and each row of the list", () => {
@@ -36,7 +36,7 @@ describe("every customer resolves to a page", () => {
       ...allRows().map((r) => customerIdOf(r.name)),
       ...allRows().map((r) => customerOfJob(r.id)),
       ...INVOICES.map((i) => i.customerId),
-      ...quoteJobs().map((j) => j.customerId),
+      ...quotes().map((q) => q.customerId),
       ...KNOWN_CUSTOMERS.map((c) => c.id),
       ...customerRows().map((r) => r.id),
       ...Object.keys(WORLD_CUSTOMERS),
@@ -75,10 +75,10 @@ describe("every customer resolves to a page", () => {
   })
 
   it("agrees with the quote, the invoice and the request about how to reach each person", () => {
-    for (const j of quoteJobs()) {
-      const p = customerPage(j.customerId)!
-      expect(p.contact.phone.text, j.customer).toBe(j.phone)
-      expect(p.contact.email, j.customer).toBe(j.email)
+    for (const q of quotes()) {
+      const p = customerPage(q.customerId)!
+      expect(p.contact.phone.text, q.customer).toBe(q.phone)
+      expect(p.contact.email, q.customer).toBe(q.email)
     }
     for (const c of KNOWN_CUSTOMERS) {
       const p = customerPage(c.id)!
@@ -100,9 +100,10 @@ describe("a customer built from their records", () => {
     expect(p.band.card).toEqual({ value: "No card", sub: "Add one when you collect" })
   })
 
-  it("Dana: a paid job with its card payment and a job that needs a quote, so her facts come from both", () => {
+  it("Dana: a paid job with its card payment and a quote in Draft that is not a job, so her facts come from the job and her Quotes card from the quote", () => {
     const p = customerPage("other-dana-cho")!
-    expect(p.jobs.map((j) => j.statusLabel).sort()).toEqual(["Done", "Needs a quote"])
+    expect(p.jobs.map((j) => j.statusLabel)).toEqual(["Done"])
+    expect(p.quotes).toEqual([expect.objectContaining({ id: "Q-2026-0004", statusLabel: "Draft", amount: "$0" })])
     expect(p.billing).toMatchObject({ line: "Paid in full", settled: "paid", paid: "$115", unpaid: "$0" })
     expect(p.billing.payments[0]).toMatchObject({ how: "Card", amount: "$115", invoiceId: "inv-33" })
     expect(p.billing.card).toMatchObject({ last4: "4242" })
@@ -110,11 +111,11 @@ describe("a customer built from their records", () => {
     expect(p.notes.some((n) => /Created from a request/.test(n.what))).toBe(true)
   })
 
-  it("Beth: a quote is out and nothing else has happened, so she is New and every money section is empty", () => {
+  it("Beth: a quote is out and nothing else has happened, so she is New, has no job and every money section is empty", () => {
     const p = customerPage("other-beth-orr")!
     expect(p.status).toBe("new")
-    expect(p.jobs).toHaveLength(1)
-    expect(p.jobs[0]).toMatchObject({ statusLabel: "Quote sent", quote: "quote-sent" })
+    expect(p.jobs).toEqual([])
+    expect(p.quotes).toEqual([expect.objectContaining({ id: "Q-2026-0007", statusLabel: "Sent", amount: "$1,200" })])
     expect(p.billing).toMatchObject({ line: "Nothing billed yet", total: "$0" })
     expect(p.billing.invoices).toEqual([])
     expect(p.billing.payments).toEqual([])
@@ -131,9 +132,10 @@ describe("a customer built from their records", () => {
     expect(p.jobs[0]).toMatchObject({ statusLabel: "Unscheduled", open: true })
   })
 
-  it("Owen declined his quote: the job is canceled and he is New, not a customer yet", () => {
+  it("Owen declined his quote: no job was ever made and he is New, not a customer yet", () => {
     const p = customerPage("other-owen-pratt")!
-    expect(p.jobs[0]).toMatchObject({ statusLabel: "Canceled", open: false })
+    expect(p.jobs).toEqual([])
+    expect(p.quotes).toEqual([expect.objectContaining({ id: "Q-2026-0006", statusLabel: "Declined" })])
     expect(p.status).toBe("new")
   })
 
@@ -156,15 +158,27 @@ describe("a customer built from their records", () => {
 })
 
 describe("a customer made in the prototype", () => {
-  it("a request turned into a job has a page with the request's contact details", () => {
+  it("a request turned into a quote has a customer page with the request's contact details, the quote on it, and no job", () => {
     const rosa = REQUEST_FIXTURES.find((r) => r.id === "rq-rosa")!
-    const { customerId } = createJobFromRequest(rosa, { asNew: true, mode: "quote", service: { name: "Christmas lights" } })
+    const { customerId, id } = createJobFromRequest(rosa, { asNew: true, mode: "quote", service: { name: "Christmas lights" } })
+    expect(id).toBe("Q-2026-0009")
     const p = customerPage(customerId)
     expect(p).toMatchObject({ name: "Rosa Delgado", status: "new" })
     expect(p!.contact.email).toBe(rosa.email)
     expect(p!.contact.phone.text).toBe(rosa.phone)
-    expect(p!.jobs).toHaveLength(1)
+    expect(p!.jobs).toEqual([])
+    expect(p!.quotes).toEqual([expect.objectContaining({ id, statusLabel: "Draft" })])
     expect(customerRows().some((r) => r.id === customerId)).toBe(true)
+    // the quote is not on the Jobs list
+    expect(allRows().some((r) => r.name === "Rosa Delgado")).toBe(false)
+  })
+
+  it("Create job on a priced service makes a real job at once, ready to schedule, and no quote", () => {
+    const tom = REQUEST_FIXTURES.find((r) => r.id === "rq-tom")!
+    const { customerId, id } = createJobFromRequest(tom, { asNew: true, mode: "job", service: { name: "Sprinkler repair", price: 145 } })
+    expect(allRows().find((r) => r.id === id)).toMatchObject({ name: "Tom Ellis", stage: "unscheduled", total: 145 })
+    expect(customerPage(customerId)!.jobs).toHaveLength(1)
+    expect(Object.keys(walkQuotes.getSnapshot().quotes)).toHaveLength(7)
   })
 
   it("a new customer typed into New job has a page the moment the job exists", async () => {
@@ -193,6 +207,10 @@ describe("the page renders", () => {
     expect(screen.getByRole("heading", { name: "Beth Orr" })).toBeInTheDocument()
     expect(screen.getByText("No messages yet")).toBeInTheDocument()
     expect(screen.getByText(/No invoice or payment yet/)).toBeInTheDocument()
+    // her quote is on her page, as a chip, and is not a job
+    expect(screen.getByText("Quotes")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Quote: Q-2026-0007" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "New quote" })).toHaveAttribute("href", "/admin/quotes?new=1&customer=other-beth-orr")
   })
 
   it("shows the jobs, the invoice and the payment of a customer who has them", () => {

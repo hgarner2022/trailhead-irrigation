@@ -1,6 +1,6 @@
 import { dayWords, invoicePageOf, money as invoiceMoney, type InvoicePageData } from "../invoice-fixtures"
 import { activeLines, currentTotal } from "./price-change"
-import { lineTotal, liveQuote, type QuoteJob } from "./quote-model"
+import { lineTotal, type ApprovedJob } from "./quote-model"
 
 // The final invoice of an approved job whose price changed after approval (Hannah, Nov 20 2026): its lines are the job's lines that are not canceled, its
 // total is the job's total now, and a deposit the customer already paid is credited as its own line, so what is unpaid is the new total less the deposit.
@@ -9,11 +9,10 @@ import { lineTotal, liveQuote, type QuoteJob } from "./quote-model"
 const threeBefore = (iso: string) => new Date(new Date(`${iso}T12:00:00Z`).getTime() - 3 * 86400000).toISOString().slice(0, 10)
 
 /** The invoice Ryan sends on `sentOn` for this job, with its terms of `dueDays` days. */
-export function finalInvoiceOf(job: QuoteJob, o: { number: string; sentOn: string; dueOn: string }): InvoicePageData {
+export function finalInvoiceOf(job: ApprovedJob, o: { number: string; sentOn: string; dueOn: string }): InvoicePageData {
   const base = invoicePageOf("sent")
-  const q = liveQuote(job)
   const total = currentTotal(job)
-  const dep = q?.deposit?.paid && !q.deposit.paid.refundedOn ? q.deposit : undefined
+  const dep = job.deposit?.paid && !job.deposit.paid.refundedOn ? job.deposit : undefined
   const owed = total - (dep?.amount ?? 0)
   const lines = activeLines(job.lines).map((l) => ({ name: l.name, description: l.description, amount: invoiceMoney(lineTotal(l)) }))
   const paidOn = dep?.paid ? dep.paid.on.slice(0, 10) : undefined

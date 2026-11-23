@@ -1,26 +1,32 @@
-import type { GridJob, GridStatus } from "../JobsGridDesign"
+import type { GridJob } from "../JobsGridDesign"
 import { currentTotal } from "./price-change"
-import { liveQuote, money, stageOf, type QuoteJob } from "./quote-model"
+import { jobStageOf, money, type ApprovedJob } from "./quote-model"
 
-// The Jobs grid's row for a job that has a quote: its Status is the job's stage read from the quotes (Needs a quote, Quote sent, then Unscheduled once
-// approved and ready for a day, or Canceled), the Total is the quote's or the lines', and Billing is the balance once a deposit is paid. Pure.
+// The Jobs grid's row for a job made from an approved quote (Hannah, Nov 22 2026: the job is made only at approval, so the Jobs list holds only real work and has no Needs a quote
+// or Quote sent): its Status is Unscheduled until it has a day, or Canceled, the Total follows the job's lines (a price change after approval), and Billing is the balance once a
+// deposit is paid. A row is made for every job in the quote store. Pure.
 
-const STAGE_GRID: Record<ReturnType<typeof stageOf>, GridStatus> = { "needs-a-quote": "needs-a-quote", "quote-sent": "quote-sent", open: "unscheduled", canceled: "cancelled" }
+const NO_ONE = "No one yet"
 
-export function quoteGridRow(base: GridJob, job: QuoteJob): GridJob {
-  const q = liveQuote(job)
-  // an approved job's total follows its lines (a price change after approval), a quote that is out keeps its frozen total
+/** The row of the grid for a job made from a quote: a new one, or a fixture's row read again from the job. */
+export function jobGridRow(job: ApprovedJob, base?: GridJob): GridJob {
   const total = currentTotal(job)
-  const paid = q?.state === "approved" && q.deposit?.paid && !q.deposit.paid.refundedOn ? q.deposit.amount : 0
+  const paid = job.deposit?.paid && !job.deposit.paid.refundedOn ? job.deposit.amount : 0
+  const canceled = jobStageOf(job) === "canceled"
   return {
-    ...base,
-    // Change service renames the job in the grid too
+    id: job.jobId,
+    name: job.customer,
     service: job.service,
     title: job.service,
-    stage: STAGE_GRID[stageOf(job)],
+    property: `${job.street}, ${job.town}`,
+    who: NO_ONE,
+    season: "",
+    visits: "0 of 1 done",
+    ...base,
+    stage: canceled ? "cancelled" : "unscheduled",
     total,
     billingState: paid ? "owed" : null,
     billing: paid ? `${money(total - paid)} unpaid` : "",
-    next: stageOf(job) === "canceled" ? "None" : stageOf(job) === "open" ? "Unscheduled" : base.next,
+    next: canceled ? "None" : "Unscheduled",
   }
 }

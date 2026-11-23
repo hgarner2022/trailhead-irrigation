@@ -1,9 +1,9 @@
-import { linesTotal, liveQuote, type QuoteJob, type QuoteLine } from "./quote-model"
+import { linesTotal, type ApprovedJob, type QuoteLine } from "./quote-model"
 
-// A price change after the customer approved (Hannah, Nov 20 2026, quote versus job Q3): Ryan changes the job's lines and tells the customer. There is no
-// second approval and no change-order quote. Once a quote is approved its lines are Ryan's to change (add a line, change a price, cancel a line); while a
-// quote is out and waiting they stay locked. The job's total is then its lines that are not canceled, the history says "Price changed from $1,200 to
-// $1,500" each time the total moves, and the customer is told in a dialog (or Ryan chooses not to). Pure.
+// A price change after the customer approved (Hannah, Nov 20 2026, quote versus job Q3; Nov 22 2026: it stays on the JOB, which was made when the quote was approved): Ryan
+// changes the job's lines and tells the customer. There is no second approval and no change-order quote, and the quote itself never changes: it stays frozen. The job's
+// total is its lines that are not canceled, the history says "Price changed from $1,200 to $1,500" each time the total moves, and the customer is told in a dialog (or
+// Ryan chooses not to). Pure.
 
 export interface PriceChange {
   from: number
@@ -13,24 +13,17 @@ export interface PriceChange {
 /** The lines that count: a line canceled after approval is struck through and out of the total. */
 export const activeLines = (lines: readonly QuoteLine[]): QuoteLine[] => lines.filter((l) => !l.canceled)
 
-/** The customer approved the quote and the job is still on: its lines may change. */
-export const isApproved = (job: QuoteJob): boolean => !job.canceled && liveQuote(job)?.state === "approved"
+/** A job made from an approved quote is still on: its lines may change. */
+export const isApproved = (job: ApprovedJob): boolean => !job.canceled
 
-/** The job's total now: after approval, its lines that are not canceled; before, the quote's frozen total or the lines. */
-export function currentTotal(job: QuoteJob): number {
-  const q = liveQuote(job)
-  if (q?.state === "approved") return linesTotal(activeLines(job.lines))
-  return q ? q.total : linesTotal(job.lines)
-}
+/** The job's total now: its lines that are not canceled. */
+export const currentTotal = (job: ApprovedJob): number => linesTotal(activeLines(job.lines))
 
-/** The total the customer approved, when the job is approved and the total has moved since. */
-export const approvedTotal = (job: QuoteJob): number | undefined => {
-  const q = liveQuote(job)
-  return isApproved(job) && q && currentTotal(job) !== q.total ? q.total : undefined
-}
+/** The total the customer approved, when the job's total has moved since. */
+export const approvedTotal = (job: ApprovedJob): number | undefined => (isApproved(job) && currentTotal(job) !== job.approvedTotal ? job.approvedTotal : undefined)
 
 /** What the customer has not been told: from the total at the last telling (or the approval) to the total now, or null when nothing moved or the last step was telling them. */
-export function untoldChange(job: QuoteJob): PriceChange | null {
+export function untoldChange(job: ApprovedJob): PriceChange | null {
   const changes: PriceChange[] = []
   for (let i = job.history.length - 1; i >= 0; i--) {
     const h = job.history[i]!

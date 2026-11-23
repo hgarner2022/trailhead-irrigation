@@ -27,15 +27,16 @@ import { MessagesTable, JobsTable } from "./CustomerTables"
 import { AddressChip, JobChip } from "./RecordChips"
 import { cardLinkCopy, deleteCustomerCopy, mergeCopy, refundCopy } from "./confirm-copy"
 import { AS_OF, STATUS_PILL, type CustomerPageData, type PassArea, type SeasonLink } from "./customer-fixtures"
+import { CustomerQuotes } from "./CustomerQuotes"
 import { MessageDialog } from "./MessageDialog"
 import { ReminderDialog } from "./ReminderDialog"
 import { NOW, noteOk } from "./job-fixtures"
 
 // The customer page (Hannah: "update the customer layout to look like this"), on the page frame of the job page and the rules of
 // docs/plans/2026-11-19-admin-page-layout-research.md and her rules of Nov 19 2026. Header: the name, the badges, and the actions at the top
-// right: New job (primary), Send a message, Collect payment when anything is unpaid, More (Edit details, Send card link, Merge, and Delete only
+// right: New job (primary), Send a message, Collect payment when anything is unpaid, More (Edit details, New quote, Send card link, Merge, and Delete only
 // while nothing has happened). The summary band: Next visit, Unpaid, Season Pass, Card on file, each a link to what it summarises and a plain
-// cell when it has nothing behind it. Main column: Jobs, Season Pass, Billing, Messages, Photos, Notes and history. Aside: Contact (with how
+// cell when it has nothing behind it. Main column: Jobs, Quotes (Nov 22 2026, with New quote), Season Pass, Billing, Messages, Photos, Notes and history. Aside: Contact (with how
 // to reach them), Property, Consent. Every record named is a chip. Every action that reaches the customer or their money confirms in a dialog
 // with the effect and the customer's channel; a result is a toast, never a message in a section. Pure props, nothing wired.
 
@@ -144,7 +145,7 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
   const secondary: [FooterAction] | [FooterAction, FooterAction] = unpaid ? [act("Send a message", open("message")), act("Collect payment", open("collect"))] : [act("Send a message", open("message"))]
   // Selling a pass lives here and in New job, never in a card of its own; a lapsed holder is offered the next season instead.
   const sell: FooterAction = d.area.kind === "pass" ? (d.area.reserveNext ? { label: "Reserve next season", href: `/admin/jobs?new=1&customer=${d.id}&service=season-pass&renew=${d.area.jobId}` } : { label: "" }) : { label: d.area.earlier.length ? "Reserve next season" : "Sell a Season Pass", href: `/admin/jobs?new=1&customer=${d.id}&service=season-pass` }
-  const more = [act("Edit details", open("edit")), ...(sell.label ? [sell] : []), act("Send card link", open("card-link")), act("Merge", open("merge")), ...(archivedAt ? [] : [act("Archive customer", open("archive"))])]
+  const more = [act("Edit details", open("edit")), { label: "New quote", href: `/admin/quotes?new=1&customer=${d.id}` }, ...(sell.label ? [sell] : []), act("Send card link", open("card-link")), act("Merge", open("merge")), ...(archivedAt ? [] : [act("Archive customer", open("archive"))])]
   const pay = row ?? (d.billing.payments[0] ? { amount: d.billing.payments[0].amount, how: d.billing.payments[0].how.split(" ")[0]!.toLowerCase() } : undefined)
   const inv = row?.number ? row : d.openInvoice ? { number: d.openInvoice.number, amount: d.openInvoice.amount, due: d.openInvoice.due, pastDue: false } : undefined
   const sentVia = d.contact.channel === "text" ? "texted" : "emailed"
@@ -200,6 +201,7 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
             <EmptyState title="No jobs yet" line="Start with a repair, a spring turn-on or a Season Pass. The job and its days show here." action={<Button asChild variant="outline" className="min-h-11"><Link href={`/admin/jobs?new=1&customer=${d.id}`}>New job</Link></Button>} />
           )}
         </SectionCard>
+        <CustomerQuotes quotes={d.quotes ?? []} customerId={d.id} />
         <SeasonPassCard d={d} />
         <CustomerBilling billing={d.billing} customerName={d.name} onUpdateCard={open("card-link")} onRefund={(r) => (setRow({ amount: r.amount, how: r.methodLabel.split(" ")[0]!.toLowerCase() }), setDialog("refund"))} onRemind={(r) => (setRow({ number: r.number, amount: r.amount, due: r.due, pastDue: r.status === "overdue" }), setDialog("remind"))} />
         <SectionCard title="Messages" id="messages-h">

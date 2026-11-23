@@ -8,12 +8,15 @@ import { useToast } from "@/components/blocks/Toast"
 import { Button } from "@/components/ui/button"
 import { allRows, nameOfRoute, ownerOf, resetExtras, resolveRoute, searchWorld } from "./data"
 import { NewJobSheet, RouteScreen } from "./WalkScreens"
+import { NewQuoteHost } from "./WalkQuotes"
+import { pickOf, type ServicePick } from "../requests/request-catalogue"
+import type { CustomerChoice } from "../../CustomerPicker"
 import { MessageView, ReceiptToast, newestPayment, paidFrom, useReceiptToast, type Paid } from "./receipts"
 import { navigate, parseHref, routeTitle, type Route } from "./routes"
 import { newCount } from "../requests/request-model"
 import { requestStore, useRequests } from "../requests/request-store"
 import { waitingCount } from "../quotes/quote-list-model"
-import { useQuoteJobs, walkQuotes } from "../quotes/quote-store"
+import { useQuoteWorld, walkQuotes } from "../quotes/quote-store"
 
 // The one clickable admin prototype (docs/plans/2026-11-19-prototype-walkthrough-spec.md, section 2): the real AdminShell around a screen chosen by
 // an in-memory route stack, no Next router and no address changes (Storybook owns the URL). Navigation is by intercepting the links the pages
@@ -22,7 +25,7 @@ import { useQuoteJobs, walkQuotes } from "../quotes/quote-store"
 // its route. The rail gets an Invoices item here only, by patching `NAV` while the prototype is mounted; the live nav is never edited.
 
 const USER = { initials: "HG", name: "Hannah" }
-const SECTION_OF: Record<Route["screen"], AdminSection> = { home: "home", schedule: "schedule", requests: "requests", request: "requests", jobs: "jobs", job: "jobs", quotes: "quotes", customers: "customers", customer: "customers", invoices: "invoices" as AdminSection, invoice: "invoices" as AdminSection, receipt: "jobs", reports: "reports", settings: "settings" }
+const SECTION_OF: Record<Route["screen"], AdminSection> = { home: "home", schedule: "schedule", requests: "requests", request: "requests", jobs: "jobs", job: "jobs", quotes: "quotes", quote: "quotes", customers: "customers", customer: "customers", invoices: "invoices" as AdminSection, invoice: "invoices" as AdminSection, receipt: "jobs", reports: "reports", settings: "settings" }
 const START: Route = { screen: "jobs" }
 
 /** Invoices in the rail while the walkthrough is mounted: the shell's NAV is patched, then restored. */
@@ -98,15 +101,16 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
   const [stack, setStack] = useState<Route[]>(startStack ?? [start])
   const [epoch, setEpoch] = useState(0)
   const [sheet, setSheet] = useState<{ customer?: string; key: number } | null>(startSheet ? { customer: startSheet.customer, key: 1 } : null)
+  const [quoteSheet, setQuoteSheet] = useState<{ customer?: string; choice?: CustomerChoice; pick?: ServicePick; key: number } | null>(null)
   const [made, setMade] = useState(0)
   const [message, setMessage] = useState<{ channel: "text" | "email"; paid: Paid } | null>(null)
   const receiptToast = useReceiptToast()
   // Requests: the fixtures, what Ryan did to them and what the customer walkthrough sent; the rail's badge counts the New ones
   const requests = useRequests()
-  const quoteJobs = useQuoteJobs()
+  const quoteWorld = useQuoteWorld()
   // the grid's rows: the world's, then the jobs made here (and the jobs a request became)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const rows = useMemo(() => allRows(), [made, requests, quoteJobs])
+  const rows = useMemo(() => allRows(), [made, requests, quoteWorld])
   const toastRef = useRef<(m: string) => void>(() => undefined)
   const laterToast = useRef<string | null>(null)
   // New work for an archived customer brings them back; the toast shows on the job's page that opens next
@@ -114,6 +118,14 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
   const top = stack[stack.length - 1]!
 
   const go = useCallback((parsed: Route) => {
+    if (parsed.newQuote) {
+      // New quote opens its sheet over the page it was asked from (a customer's page, the Quotes list); from anywhere else it opens on the Quotes list
+      const who = parsed.id ? resolveRoute({ screen: "customer", id: parsed.id }).id : undefined
+      setSheet(null)
+      setQuoteSheet({ customer: who, key: Date.now() })
+      setStack((s) => (["quotes", "customer"].includes(s[s.length - 1]!.screen) ? s : [{ screen: "quotes" }]))
+      return
+    }
     if (parsed.newJob) {
       const who = parsed.id ? resolveRoute({ screen: "customer", id: parsed.id }).id : undefined
       setSheet({ customer: who, key: Date.now() })
@@ -121,6 +133,7 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
       return
     }
     setSheet(null)
+    setQuoteSheet(null)
     setStack((s) => {
       const cur = s[s.length - 1]!
       const owner = ownerOf(cur)
@@ -131,15 +144,8 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
     })
   }, [])
 
-  // A Cmd+K hit: a customer, a job or a request opens its page; a quote (its number) opens its job at the Quote section
-  const goHit = (kind: string, id: string) => {
-    if (kind === "quote") {
-      const job = Object.values(walkQuotes.getSnapshot()).find((j) => j.quotes.some((q) => q.id === id))
-      if (job) go({ screen: "job", id: job.jobId, anchor: "quote" })
-      return
-    }
-    go({ screen: kind as "customer" | "job" | "request", id })
-  }
+  // A Cmd+K hit: a customer, a job, a request or a quote (its number) opens its own page
+  const goHit = (kind: string, id: string) => go({ screen: kind as "customer" | "job" | "request" | "quote", id })
 
   const outside = (href: string) => toastRef.current(`Outside the prototype: ${href}`)
 
@@ -200,6 +206,7 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
   }
   const startOver = () => {
     setSheet(null)
+    setQuoteSheet(null)
     resetExtras()
     requestStore.reset()
     walkQuotes.reset()
@@ -211,13 +218,14 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
 
   return (
     <div data-slot="walkthrough" data-route={`${top.screen}${top.id ? `:${top.id}` : ""}`} style={{ display: "contents" }} onClickCapture={onClickCapture} onKeyDownCapture={onKeyDownCapture}>
-      <AdminShell key={`${top.screen}:${top.id ?? ""}`} current={SECTION_OF[top.screen]} user={USER} defaultSearchOpen={startSearch} requests={{ count: newCount(requests) }} quotes={{ count: waitingCount(Object.values(quoteJobs)) }} onSearch={async (q) => searchWorld(q)} profileHref="/admin/profile" helpHref="/admin/help">
+      <AdminShell key={`${top.screen}:${top.id ?? ""}`} current={SECTION_OF[top.screen]} user={USER} defaultSearchOpen={startSearch} requests={{ count: newCount(requests) }} quotes={{ count: waitingCount(Object.values(quoteWorld.quotes)) }} onSearch={async (q) => searchWorld(q)} profileHref="/admin/profile" helpHref="/admin/help">
         <ToastBridge toastRef={toastRef} later={laterToast} />
         <Strip stack={stack} onJump={jump} onStartOver={startOver} />
         <div key={`${epoch}-${top.screen}-${top.id ?? ""}`}>
-          <RouteScreen route={top} rows={rows} onBack={() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))} onOpenJob={(id) => go({ screen: "job", id })} onOpenCustomer={(id) => go({ screen: "customer", id })} onOpenRequest={(id) => go({ screen: "request", id })} onNew={() => go({ screen: "jobs", newJob: true })} onJobCreated={(id, message) => ((laterToast.current = message), go({ screen: "job", id }))} />
+          <RouteScreen route={top} rows={rows} onBack={() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))} onOpenJob={(id) => go({ screen: "job", id })} onOpenCustomer={(id) => go({ screen: "customer", id })} onOpenRequest={(id) => go({ screen: "request", id })} onNew={() => go({ screen: "jobs", newJob: true })} onNewQuote={() => go({ screen: "quotes", newQuote: true })} onJobCreated={(id, message, mode) => ((laterToast.current = message), go({ screen: mode === "quote" ? "quote" : "job", id }))} />
         </div>
-        <NewJobSheet sheet={sheet} onClose={() => setSheet(null)} onMade={() => setMade((n) => n + 1)} onCreated={(id) => go({ screen: "job", id })} onActiveAgain={onActiveAgain} />
+        <NewJobSheet sheet={sheet} onClose={() => setSheet(null)} onMade={() => setMade((n) => n + 1)} onCreated={(id) => go({ screen: "job", id })} onActiveAgain={onActiveAgain} onNewQuote={({ customer, serviceName }) => (setSheet(null), setQuoteSheet({ choice: customer, pick: pickOf(serviceName), key: Date.now() }))} />
+        <NewQuoteHost sheet={quoteSheet} onClose={() => setQuoteSheet(null)} onCreated={(id) => (setQuoteSheet(null), go({ screen: "quote", id }))} />
       </AdminShell>
       {receiptToast.toast && <ReceiptToast text={receiptToast.toast.text} onView={() => (openReceipt(receiptToast.toast!.paid), receiptToast.clear())} />}
       {message && <MessageView channel={message.channel} paid={message.paid} onClose={() => setMessage(null)} />}

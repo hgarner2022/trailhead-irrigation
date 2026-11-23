@@ -17,9 +17,9 @@ import { JOB_WORDS, REASON_WORDS, WORK_WORDS, type Job, type JobState, type Mone
 // only reach 4.2 to 4.4 on their tints, which is why they are not used here. Gold: warning-ink #854D0E on bg-warning/14 (gold #A16207 at 14%) is
 // 5.70 over white, 5.49 over cream and 5.24 over stone; navy #2B3544 on bg-navy/10 is 10.4, 9.9 and 9.5.
 
-/** A request's three words and a quote's four (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.5; Hannah, Nov 20 2026: a request has no accepted state, it becomes the job): New and Seen wait on Ryan (gold), Archived and the quote's Declined and Replaced are quiet (grey), a quote that is Sent waits on the customer (gold) and Approved is an outcome (green). */
+/** A request's three words and a quote's six (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.5; Hannah, Nov 20 2026: a request has no accepted state, it becomes the job): New and Seen wait on Ryan (gold), Archived and the quote's Draft, Declined, Replaced and Archived are quiet (grey), a quote that is Sent waits on the customer (gold) and Approved is an outcome (green). */
 export type RequestStatus = "request-new" | "request-seen" | "request-archived"
-export type QuoteStatus = "quote-sent" | "quote-approved" | "quote-declined" | "quote-replaced"
+export type QuoteStatus = "quote-draft" | "quote-sent" | "quote-approved" | "quote-declined" | "quote-replaced" | "quote-archived"
 
 export type PillStatus = PassStatus | JobState | WorkState | MoneyState | "overdue" | "waiting" | "today" | "job-active" | "refunded" | RequestStatus | QuoteStatus
 
@@ -42,10 +42,12 @@ const LABELS: Record<PillStatus, string> = {
   "request-new": "New",
   "request-seen": "Seen",
   "request-archived": "Archived",
+  "quote-draft": "Draft",
   "quote-sent": "Sent",
   "quote-approved": "Approved",
   "quote-declined": "Declined",
   "quote-replaced": "Replaced",
+  "quote-archived": "Archived",
 }
 
 const GOOD = "bg-positive/10 text-positive-deep border-positive/30"
@@ -84,10 +86,12 @@ const TONES: Record<PillStatus, string> = {
   "request-new": GOLD,
   "request-seen": GOLD,
   "request-archived": OVER,
+  "quote-draft": OVER,
   "quote-sent": GOLD,
   "quote-approved": GOOD,
   "quote-declined": OVER,
   "quote-replaced": OVER,
+  "quote-archived": OVER,
 }
 
 /** The word shown for a status: "Past due" for overdue, "Unscheduled" for a job with no day, else the status in sentence case. */

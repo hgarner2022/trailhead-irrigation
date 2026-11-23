@@ -9,25 +9,26 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { quoteLink, quoteReminderText, quoteText, quoteSubject, quoteReminderSubject, quoteLead, quoteReminderLead } from "@/lib/portal/quote-words"
 import { REMINDER_LINE_MAX } from "../confirm-copy"
-import { depositOf, linesTotal, money, type Channel, type DepositHow, type QuoteData, type QuoteJob, type QuoteLine } from "./quote-model"
+import { QUOTE_ARCHIVE_REASONS, type QuoteArchiveReason } from "../requests/request-model"
+import { depositOf, linesTotal, money, type Channel, type DepositHow, type Party, type QuoteLine, type QuoteRecord } from "./quote-model"
 
-// The questions of the quote (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.6; Hannah's answers 3 to 8 of Nov 20 2026). Every action that reaches the
-// customer confirms in a dialog that states its exact effect and the channel from their contact preference, with a "without notifying" caret on a send; a
-// reminder has none, because the reminder is the notification. A deposit is none by default, typed as dollars or a percent, frozen as dollars and never
-// above the total. Pure props: the page keeps the state.
+// The questions of the quote (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.6; Hannah's answers 3 to 8 of Nov 20 2026; the quote is its own record from Nov 22 2026).
+// Every action that reaches the customer confirms in a dialog that states its exact effect and the channel from their contact preference, with a "without notifying" caret on a send;
+// a reminder has none, because the reminder is the notification. A deposit is none by default, typed as dollars or a percent, frozen as dollars and never above the total. Approving
+// makes the job, and the dialog says so. Archiving names its effect on the request. Pure props: the page keeps the state.
 
 const SELECT = "min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
-export const CHANNEL_OPTIONS = (job: QuoteJob) => [
+export const CHANNEL_OPTIONS = (job: Party) => [
   { value: "text", label: "Text", disabled: !job.phone, reason: "No mobile number on file" },
   { value: "email", label: "Email", disabled: !job.email, reason: "No email on file" },
   { value: "both", label: "Both", disabled: !job.phone || !job.email, reason: job.phone ? "No email on file" : "No mobile number on file" },
 ]
-export const channelWords = (job: QuoteJob, c: Channel) => (c === "text" ? `by text at ${job.phone}` : c === "email" ? `by email at ${job.email}` : "by text and email")
+export const channelWords = (job: Party, c: Channel) => (c === "text" ? `by text at ${job.phone}` : c === "email" ? `by email at ${job.email}` : "by text and email")
 
 /** The facts the customer's words are built from. */
-export const factsOf = (job: QuoteJob, number: string, total: number, deposit?: number) => ({ first: job.first, service: job.service, address: job.street, total: money(total), ...(deposit ? { deposit: money(deposit) } : {}), number, link: quoteLink(number) })
+export const factsOf = (job: Party, number: string, total: number, deposit?: number) => ({ first: job.first, service: job.service, address: job.street, total: money(total), ...(deposit ? { deposit: money(deposit) } : {}), number, link: quoteLink(number) })
 
-export function Preview({ job, channel, text, subject, lead }: { job: QuoteJob; channel: Channel; text: string; subject: string; lead: string }) {
+export function Preview({ job, channel, text, subject, lead }: { job: Party; channel: Channel; text: string; subject: string; lead: string }) {
   return (
     <div className="flex flex-col gap-2 text-sm">
       <p className="text-muted-foreground">What {job.first} will {channel === "text" ? "read" : channel === "email" ? "get" : "read and get"}</p>
@@ -46,25 +47,25 @@ export function Preview({ job, channel, text, subject, lead }: { job: QuoteJob; 
   )
 }
 
+const channelOf = (q: Party): Channel => (q.contact === "email" && q.email ? "email" : q.phone ? q.contact : "email")
+
 // ------------------------------------------------------------------------------------------------------------------------------ Send a quote
 
 export interface SendQuoteDialogProps {
-  job: QuoteJob
-  /** the number the quote will have */
-  number: string
+  quote: QuoteRecord
   onClose: () => void
   /** `via: "none"` is "Send without notifying": the quote is Sent and no message goes out. The deposit is the one set in the quote editor. */
   onSend: (o: { via: Channel | "none"; deposit: { amount: number; percent?: number } | null }) => void
 }
 
-export function SendQuoteDialog({ job, number, onClose, onSend }: SendQuoteDialogProps) {
-  const total = linesTotal(job.lines)
-  const [channel, setChannel] = useState<Channel>(job.contact === "email" && job.email ? "email" : job.phone ? job.contact : "email")
-  const result = depositOf(total, job.depositDraft ?? { mode: "none", value: "" })
+export function SendQuoteDialog({ quote, onClose, onSend }: SendQuoteDialogProps) {
+  const total = linesTotal(quote.lines)
+  const [channel, setChannel] = useState<Channel>(channelOf(quote))
+  const result = depositOf(total, quote.depositDraft ?? { mode: "none", value: "" })
   const blocked = result.problem !== ""
-  const facts = factsOf(job, number, total, result.amount ?? undefined)
-  const deposit = result.amount ? `${job.first} pays the ${money(result.amount)} deposit when approving.` : ""
-  const sentence = `Send quote ${number} for ${money(total)} to ${job.first} ${channelWords(job, channel)}. ${deposit} The lines are locked until you revise the quote.`.replace("  ", " ")
+  const facts = factsOf(quote, quote.id, total, result.amount ?? undefined)
+  const deposit = result.amount ? `${quote.first} pays the ${money(result.amount)} deposit when approving.` : ""
+  const sentence = `Send quote ${quote.id} for ${money(total)} to ${quote.first} ${channelWords(quote, channel)}. ${deposit} The lines are locked until you revise the quote.`.replace("  ", " ")
   const go = (via: Channel | "none") => onSend({ via, deposit: result.amount ? { amount: result.amount, ...(result.percent ? { percent: result.percent } : {}) } : null })
   return (
     <ConfirmDialog
@@ -76,14 +77,14 @@ export function SendQuoteDialog({ job, number, onClose, onSend }: SendQuoteDialo
       slot="send-quote-dialog"
       confirmDisabled={blocked}
       onConfirm={async (v) => (go(v === "quiet" ? "none" : channel), { ok: true })}
-      renderConfirm={({ confirm, pending }) => <SplitButton label="Send the quote" onClick={() => confirm("send")} disabled={pending} menuLabel="More ways" menu={[{ label: `Send without telling ${job.first}`, onSelect: () => confirm("quiet") }]} />}
+      renderConfirm={({ confirm, pending }) => <SplitButton label="Send the quote" onClick={() => confirm("send")} disabled={pending} menuLabel="More ways" menu={[{ label: `Send without telling ${quote.first}`, onSelect: () => confirm("quiet") }]} />}
     >
       <div className="flex flex-col gap-4 text-sm">
         <div className="flex flex-col gap-2">
           <p className="font-medium">Send by</p>
-          <SegmentedControl label="Send by" value={channel} onChange={(v) => setChannel(v as Channel)} options={CHANNEL_OPTIONS(job)} />
+          <SegmentedControl label="Send by" value={channel} onChange={(v) => setChannel(v as Channel)} options={CHANNEL_OPTIONS(quote)} />
         </div>
-        <Preview job={job} channel={channel} text={quoteText(facts)} subject={quoteSubject(facts)} lead={quoteLead(facts)} />
+        <Preview job={quote} channel={channel} text={quoteText(facts)} subject={quoteSubject(facts)} lead={quoteLead(facts)} />
       </div>
     </ConfirmDialog>
   )
@@ -92,24 +93,23 @@ export function SendQuoteDialog({ job, number, onClose, onSend }: SendQuoteDialo
 // ------------------------------------------------------------------------------------------------------------------------------ Remind
 
 export interface QuoteReminderDialogProps {
-  job: QuoteJob
-  quote: QuoteData
+  quote: QuoteRecord
   onClose: () => void
   onSend: (o: { via: Channel; line: string }) => void
 }
 
 /** "Send a quote reminder": the payment reminder's pattern. Text, Email or Both preselected from the contact preference, a fixed preview, one optional line, no "without notifying" caret. */
-export function QuoteReminderDialog({ job, quote, onClose, onSend }: QuoteReminderDialogProps) {
-  const [channel, setChannel] = useState<Channel>(job.contact === "email" && job.email ? "email" : job.phone ? job.contact : "email")
+export function QuoteReminderDialog({ quote, onClose, onSend }: QuoteReminderDialogProps) {
+  const [channel, setChannel] = useState<Channel>(channelOf(quote))
   const [line, setLine] = useState("")
-  const facts = factsOf(job, quote.id, quote.total, quote.deposit?.amount)
+  const facts = factsOf(quote, quote.id, quote.total, quote.deposit?.amount)
   const add = line.trim()
   return (
     <ConfirmDialog
       open
       onOpenChange={(o) => !o && onClose()}
       title="Send a quote reminder"
-      message={`Send a reminder for quote ${quote.id} to ${job.first} ${channelWords(job, channel)}. Nothing else changes.`}
+      message={`Send a reminder for quote ${quote.id} to ${quote.first} ${channelWords(quote, channel)}. Nothing else changes.`}
       confirmLabel="Send the reminder"
       size="md"
       slot="quote-reminder-dialog"
@@ -118,9 +118,9 @@ export function QuoteReminderDialog({ job, quote, onClose, onSend }: QuoteRemind
       <div className="flex flex-col gap-3 text-sm">
         <div className="flex flex-col gap-2">
           <p className="font-medium">Send by</p>
-          <SegmentedControl label="Send by" value={channel} onChange={(v) => setChannel(v as Channel)} options={CHANNEL_OPTIONS(job)} />
+          <SegmentedControl label="Send by" value={channel} onChange={(v) => setChannel(v as Channel)} options={CHANNEL_OPTIONS(quote)} />
         </div>
-        <Preview job={job} channel={channel} text={`${quoteReminderText(facts)}${add ? ` ${add}` : ""}`} subject={quoteReminderSubject(facts)} lead={`${quoteReminderLead(facts)}${add ? ` ${add}` : ""}`} />
+        <Preview job={quote} channel={channel} text={`${quoteReminderText(facts)}${add ? ` ${add}` : ""}`} subject={quoteReminderSubject(facts)} lead={`${quoteReminderLead(facts)}${add ? ` ${add}` : ""}`} />
         <FormRow label="Add a line (optional)" hint={`${line.length} of ${REMINDER_LINE_MAX}`}>
           <Textarea value={line} maxLength={REMINDER_LINE_MAX} rows={2} onChange={(e) => setLine(e.target.value)} placeholder="A line after the words, if you want one" />
         </FormRow>
@@ -131,13 +131,13 @@ export function QuoteReminderDialog({ job, quote, onClose, onSend }: QuoteRemind
 
 // ------------------------------------------------------------------------------------------------------------------------------ Revise
 
-export function ReviseDialog({ job, quote, onClose, onRevise }: { job: QuoteJob; quote: QuoteData; onClose: () => void; onRevise: () => void }) {
+export function ReviseDialog({ quote, onClose, onRevise }: { quote: QuoteRecord; onClose: () => void; onRevise: () => void }) {
   return (
     <ConfirmDialog
       open
       onOpenChange={(o) => !o && onClose()}
       title="Revise this quote?"
-      message={`Quote ${quote.id} is marked Replaced and the job goes back to Needs a quote, so its lines can change. Its link will show that it was replaced. Nothing is sent to ${job.first}.`}
+      message={`Quote ${quote.id} is marked Replaced and a new Draft quote is made from it, so its lines can change. Its link will show that it was replaced. Nothing is sent to ${quote.first}.`}
       confirmLabel="Revise the quote"
       slot="revise-quote-dialog"
       onConfirm={async () => (onRevise(), { ok: true })}
@@ -145,11 +145,38 @@ export function ReviseDialog({ job, quote, onClose, onRevise }: { job: QuoteJob;
   )
 }
 
+// ------------------------------------------------------------------------------------------------------------------------------ Archive
+
+/** Archive a quote with a reason. It names the effect on the request the quote came from (Hannah, Nov 22 2026: archiving a quote archives its request) and says nothing is sent. */
+export function ArchiveQuoteDialog({ quote, onClose, onArchive }: { quote: QuoteRecord; onClose: () => void; onArchive: (reason: QuoteArchiveReason) => void }) {
+  const [reason, setReason] = useState<QuoteArchiveReason>(QUOTE_ARCHIVE_REASONS[0])
+  const request = quote.requestId ? ` ${quote.first}'s request is archived too, with the same reason.` : ""
+  return (
+    <ConfirmDialog
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title="Archive this quote?"
+      message={`Archive quote ${quote.id} as ${reason}.${request} Nothing is sent to ${quote.first}.`}
+      confirmLabel="Archive quote"
+      destructive
+      slot="archive-quote-dialog"
+      onConfirm={async () => (onArchive(reason), { ok: true })}
+    >
+      <FormRow label="Reason">
+        <select value={reason} onChange={(e) => setReason(e.target.value as QuoteArchiveReason)} className={SELECT}>
+          {QUOTE_ARCHIVE_REASONS.map((r) => (
+            <option key={r}>{r}</option>
+          ))}
+        </select>
+      </FormRow>
+    </ConfirmDialog>
+  )
+}
+
 // ------------------------------------------------------------------------------------------------------------------------------ Mark approved by hand
 
 export interface ApproveByHandProps {
-  job: QuoteJob
-  quote: QuoteData
+  quote: QuoteRecord
   onClose: () => void
   /** `tell`: the customer is sent the approval message. A deposit recorded always gets a receipt. */
   onApprove: (o: { deposit?: { how: DepositHow; reference?: string }; tell: boolean }) => void
@@ -161,14 +188,14 @@ const HOW: { value: DepositHow; label: string }[] = [
   { value: "venmo", label: "Venmo" },
 ]
 
-/** Ryan marks the quote approved after a call. With a deposit he says how it was paid (check, cash or Venmo) and a receipt goes out; the customer is told only if he chooses. */
-export function ApproveByHandDialog({ job, quote, onClose, onApprove }: ApproveByHandProps) {
+/** Ryan marks the quote approved after a call. With a deposit he says how it was paid (check, cash or Venmo) and a receipt goes out; the customer is told only if he chooses. The job is made at this moment. */
+export function ApproveByHandDialog({ quote, onClose, onApprove }: ApproveByHandProps) {
   const dep = quote.deposit?.amount
   const [how, setHow] = useState<DepositHow | "">("")
   const [ref, setRef] = useState("")
   const needs = Boolean(dep) && !how
   const refLabel = how === "check" ? "Check number" : how === "venmo" ? "Venmo handle" : ""
-  const receipt = dep && how ? ` ${job.first} gets a receipt for the ${money(dep)} by ${job.contact === "email" ? "email" : "text"}.` : ""
+  const receipt = dep && how ? ` ${quote.first} gets a receipt for the ${money(dep)} by ${quote.contact === "email" ? "email" : "text"}.` : ""
   const sentence = dep ? `Mark quote ${quote.id} approved and record the ${money(dep)} deposit${how ? ` paid by ${how}` : ""}.${receipt}` : `Mark quote ${quote.id} approved. No deposit was set.`
   const go = (tell: boolean) => onApprove({ ...(dep && how ? { deposit: { how, ...(ref.trim() ? { reference: ref.trim() } : {}) } } : {}), tell })
   return (
@@ -176,12 +203,12 @@ export function ApproveByHandDialog({ job, quote, onClose, onApprove }: ApproveB
       open
       onOpenChange={(o) => !o && onClose()}
       title="Mark this quote approved"
-      message={`${sentence} The job becomes ready to schedule.`}
+      message={`${sentence} A job is created, ready to schedule.`}
       size="md"
       slot="approve-by-hand-dialog"
       confirmDisabled={needs}
       onConfirm={async (v) => (go(v !== "quiet"), { ok: true })}
-      renderConfirm={({ confirm, pending }) => <SplitButton label={`Mark approved and tell ${job.first}`} onClick={() => confirm("tell")} disabled={pending} menuLabel="More ways" menu={[{ label: `Mark approved without telling ${job.first}`, onSelect: () => confirm("quiet") }]} />}
+      renderConfirm={({ confirm, pending }) => <SplitButton label={`Mark approved and tell ${quote.first}`} onClick={() => confirm("tell")} disabled={pending} menuLabel="More ways" menu={[{ label: `Mark approved without telling ${quote.first}`, onSelect: () => confirm("quiet") }]} />}
     >
       {dep ? (
         <div className="flex flex-col gap-3 text-sm">
@@ -213,11 +240,11 @@ export interface LineDialogProps {
   onClose: () => void
   onSave: (line: { name: string; description: string; amount: number; quantity?: number }) => void
   onRemove?: () => void
-  /** the customer already approved the quote: the lines can still change, a line is canceled rather than removed, and the total moves */
+  /** a line of the job made from an approved quote: it can still change, a line is canceled rather than removed, and the total moves */
   approved?: boolean
 }
 
-/** Add or edit one line of the job: a name, an optional description and a price in whole dollars. After approval the same dialog changes the approved job's lines. */
+/** Add or edit one line: a name, an optional description and a price in whole dollars. On a job made from an approved quote the same dialog changes the job's lines. */
 export function LineDialog({ line, onClose, onSave, onRemove, approved }: LineDialogProps) {
   const [name, setName] = useState(line?.name ?? "")
   const [description, setDescription] = useState(line?.description ?? "")

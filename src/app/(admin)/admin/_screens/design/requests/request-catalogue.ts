@@ -3,8 +3,8 @@ import { SERVICE_LIST } from "@/lib/services"
 
 // What the catalogue says about a service a request asks for (Hannah, Nov 20 2026: "if it's a job that needs to be quoted first, like an install"). ONE flag
 // drives the primary button of the request page and of New job: a service with no price in the catalogue (`price` undefined: the installation, the larger
-// repair, Christmas lights) is quoted first, so its job reads Needs a quote until a line has a price and "Send a quote" is the primary button; a priced
-// service (a repair visit, a Rachio install, the free consultation) can be a job right away and "Create job" stays primary. Read from the catalogue, never a list here.
+// repair, Christmas lights) is quoted first, so "Send a quote" (a Draft quote, never a job: the job is made when the quote is approved) is the primary button; a priced
+// service (a repair visit, a Rachio install, the free consultation) can be a job right away and "Create job" stays primary (Hannah is unsure of this one, Nov 22 2026). Read from the catalogue, never a list here.
 
 export interface CatalogueEntry {
   name: string

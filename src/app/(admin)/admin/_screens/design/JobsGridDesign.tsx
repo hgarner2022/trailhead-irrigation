@@ -17,10 +17,10 @@ import { StatusPill, type PillStatus } from "@/components/blocks/StatusPill"
 export type BillingState = "owed" | "bill-sent" | "overdue" | "paid" | "refunded"
 export const BILLING_WORDS: Record<BillingState, string> = { owed: "Unpaid", "bill-sent": "Invoice sent", overdue: "Past due", paid: "Paid", refunded: "Refunded" }
 
-// Needs a quote and Quote sent are the two stages a job has before it is sold (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.1): the quote is a document on the job, so these are Status filter values and there is no Quotes item in the nav
-export type GridStatus = "needs-a-quote" | "quote-sent" | "today" | "active" | "unscheduled" | "scheduled" | "late" | "done" | "cancelled"
-export const GRID_WORDS: Record<GridStatus, string> = { "needs-a-quote": "Needs a quote", "quote-sent": "Quote sent", today: "Today", active: "Active", unscheduled: "Unscheduled", scheduled: "Scheduled", late: "Late", done: "Done", cancelled: "Canceled" }
-export const GRID_TONE: Record<GridStatus, PillStatus> = { "needs-a-quote": "needs-a-day", "quote-sent": "waiting", today: "today", active: "job-active", unscheduled: "needs-a-day", scheduled: "scheduled", late: "overdue", done: "done", cancelled: "cancelled" }
+// The Jobs list holds only real work (Hannah, Nov 22 2026: a quote is its own record and a job is made when it is approved), so Needs a quote and Quote sent are not job statuses: they are the quote's Draft and Sent, on the Quotes list
+export type GridStatus = "today" | "active" | "unscheduled" | "scheduled" | "late" | "done" | "cancelled"
+export const GRID_WORDS: Record<GridStatus, string> = { today: "Today", active: "Active", unscheduled: "Unscheduled", scheduled: "Scheduled", late: "Late", done: "Done", cancelled: "Canceled" }
+export const GRID_TONE: Record<GridStatus, PillStatus> = { today: "today", active: "job-active", unscheduled: "needs-a-day", scheduled: "scheduled", late: "overdue", done: "done", cancelled: "cancelled" }
 export const WHO_OPTIONS = ["Ryan Garner", "Hannah Garner", "No one yet"].map((w) => ({ value: w, label: w }))
 
 export interface GridJob {

@@ -45,8 +45,8 @@ export const recordHref = {
   day: (isoDay: string) => `/admin/schedule?day=${q(isoDay)}`,
   /** a request opens in the Requests list's own page (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.2) */
   request: (id: string) => `/admin/requests?request=${q(id)}`,
-  /** a quote is a section of its job: the chip opens the job at its Quote card */
-  quote: (jobId: string) => `/admin/jobs?job=${q(jobId)}#quote-h`,
+  /** a quote is its own record with its own page (Hannah, Nov 22 2026): the chip opens it by its number */
+  quote: (number: string) => `/admin/quotes?quote=${q(number)}`,
 }
 
 const cap = (facts: RecordPreviewData["facts"]) => facts.slice(0, 4)

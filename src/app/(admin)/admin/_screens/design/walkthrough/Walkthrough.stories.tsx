@@ -223,11 +223,11 @@ export const NewJobUnarchivesTest: Story = {
   },
 }
 
-/** Starts on Requests: two are New (the rail says 2), one matches Andrea Dalton. Open Rosa Delgado (Christmas lights, no catalogue price, so Send a quote leads), Send a quote: a sheet asks what it is for (already chosen), the request moves into a job that needs a quote and the job page opens on its Quote card; price the line in the Quote card, set a deposit if you want one, Send a quote, and the job reads Quote sent in Jobs. The other way out, Create job, is on Tom Ellis (a priced repair): the request becomes an Unscheduled job. */
+/** Starts on Requests: two are New (the rail says 2), one matches Andrea Dalton. Open Rosa Delgado (Christmas lights, no catalogue price, so Send a quote is the way out), Send a quote: a sheet asks what it is for (already chosen), the request moves into a QUOTE in Draft (no job is made) and the quote's page opens on its Quote card; price the line, set a deposit if you want one, Send a quote, and it reads Sent in Quotes and is not in Jobs. Mark it approved and the job is made then. The other way out, Create job, is on Tom Ellis (a priced repair): the request becomes an Unscheduled job at once. */
 export const FromRequests: Story = { name: "From requests", args: { start: { screen: "requests" } }, globals: laptop }
 export const FromRequestsPhone: Story = { name: "From requests, phone", args: { start: { screen: "requests" } }, globals: phone }
 export const RequestToQuoteTest: Story = {
-  name: "Request to quote (test)",
+  name: "Request to quote to job (test)",
   args: { start: { screen: "requests" } },
   globals: laptop,
   tags: HIDDEN,
@@ -243,12 +243,12 @@ export const RequestToQuoteTest: Story = {
     await userEvent.click(await c.findByRole("button", { name: "Rosa Delgado" }))
     await waitFor(() => expect(route(canvasElement)).toBe("request:rq-rosa"))
     await expect(await c.findByText("Seen", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
-    // Send a quote: the request moves into a job that needs a quote, and its page opens on the line to price
+    // Send a quote: the request moves into a Draft quote (never a job), and the quote's page opens on the line to price
     await userEvent.click(await c.findByRole("button", { name: "Send a quote" }))
     await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Send a quote" }))
-    await waitFor(() => expect(route(canvasElement)).toBe("job:q-rosa"))
-    await expect(await body.findByText("Job created for Rosa Delgado")).toBeInTheDocument()
-    await expect((await c.findAllByText("Needs a quote")).length).toBeGreaterThan(0)
+    await waitFor(() => expect(route(canvasElement)).toBe("quote:Q-2026-0009"))
+    await expect(await body.findByText("Quote created for Rosa Delgado")).toBeInTheDocument()
+    await expect((await c.findAllByText("Draft")).length).toBeGreaterThan(0)
     // the request has left the list: one New request is left
     await expect(canvasElement.querySelector("[data-slot=nav-count]")?.textContent).toContain("1")
     // the page is the Quote editor: price the line in its row, set a $300 deposit in the card, press Send a quote in the card, then confirm
@@ -259,30 +259,95 @@ export const RequestToQuoteTest: Story = {
     await userEvent.type(await card.findByRole("textbox", { name: "Deposit in dollars" }), "300")
     await userEvent.click(card.getByRole("button", { name: "Send a quote" }))
     await userEvent.click(await body.findByRole("button", { name: "Send the quote" }))
-    await expect((await c.findAllByText("Quote sent")).length).toBeGreaterThan(0)
-    // Jobs lists it under Quote sent, and the rail's count has dropped to the one New request left
+    await expect((await c.findAllByText("Sent")).length).toBeGreaterThan(0)
+    // a quote is not a job: Jobs has no row for Rosa, and the rail's request count is the one New request left
     await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/jobs"]')!)
-    await expect((await c.findAllByText("Quote sent")).length).toBeGreaterThan(0)
+    await expect(await c.findByRole("heading", { level: 1, name: "Jobs" })).toBeInTheDocument()
+    await expect(c.queryByText("Rosa Delgado")).toBeNull()
+    await expect(c.queryByText("Needs a quote")).toBeNull()
     await expect(canvasElement.querySelector("[data-slot=nav-count]")?.textContent).toContain("1")
     // Quotes lists it at once as Sent, and the rail's count is now 3
     await expect(quotesCount()).toContain("3")
     await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/quotes"]')!)
     await expect(await c.findByRole("heading", { level: 1, name: "Quotes" })).toBeInTheDocument()
-    // the tab counts and the tiles moved with it: 3 Sent of 6, and the open pipeline is $1,200 + $860 + the new $1,200
+    // the tab counts and the tiles moved with it: 3 Sent of 8, and the open pipeline is $1,200 + $860 + the new $1,200
     await expect(await c.findByRole("tab", { name: /^Sent/ })).toHaveTextContent("Sent3")
-    await expect(await c.findByRole("tab", { name: /^All/ })).toHaveTextContent("All6")
+    await expect(await c.findByRole("tab", { name: /^All/ })).toHaveTextContent("All8")
     await expect(await c.findByText("$3,260")).toBeInTheDocument()
     const row = (await c.findAllByText("Q-2026-0009"))[0]!.closest("tr")!
     await expect(within(row).getByText("Rosa Delgado")).toBeInTheDocument()
     await expect(within(row).getByText("Sent", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
     await expect(within(row).getByText("$300")).toBeInTheDocument()
-    // a click on the row opens the job at its Quote section
-    await userEvent.click(within(row).getByRole("link", { name: /Christmas lights/ }))
-    await waitFor(() => expect(route(canvasElement)).toBe("job:q-rosa"))
+    // a click on the row's quote chip opens the quote's own page; marking it approved is the moment the job is made
+    await userEvent.click(within(row).getByRole("link", { name: "Quote: Q-2026-0009" }))
+    await waitFor(() => expect(route(canvasElement)).toBe("quote:Q-2026-0009"))
+    await userEvent.click(await c.findByRole("button", { name: "Mark approved" }))
+    const dialog = within(await body.findByRole("dialog"))
+    await userEvent.selectOptions(dialog.getByRole("combobox", { name: "How was the $300 deposit paid?" }), "check")
+    await userEvent.click(dialog.getByRole("button", { name: "Mark approved and tell Rosa" }))
+    await expect((await c.findAllByText(/Job created/)).length).toBeGreaterThan(0)
+    // the job exists now: its chip opens it, it says which quote it came from, and Jobs lists it Unscheduled
+    await userEvent.click(await c.findByRole("link", { name: "Open job" }))
+    await waitFor(() => expect(route(canvasElement)).toBe("job:qj-0009"))
+    await expect((await c.findAllByText("From quote")).length).toBeGreaterThan(0)
+    await expect((await c.findAllByText("Unscheduled")).length).toBeGreaterThan(0)
+    await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/jobs"]')!)
+    await expect((await c.findAllByText("Rosa Delgado")).length).toBeGreaterThan(0)
   },
 }
 
-/** The other way out: Tom Ellis asked for a sprinkler repair, which has a catalogue price, so Create job leads. The request becomes an Unscheduled job and leaves the list. */
+/** Archiving a quote archives the request it came from: Send a quote on Rosa's request, archive the Draft with a reason, and Requests lists her again as Archived with the same reason. */
+export const QuoteArchivesItsRequestTest: Story = {
+  name: "Archiving a quote archives its request (test)",
+  args: { start: { screen: "requests" } },
+  globals: laptop,
+  tags: HIDDEN,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await userEvent.click(await c.findByRole("button", { name: "Rosa Delgado" }))
+    await userEvent.click(await c.findByRole("button", { name: "Send a quote" }))
+    await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Send a quote" }))
+    await waitFor(() => expect(route(canvasElement)).toBe("quote:Q-2026-0009"))
+    await userEvent.click(await c.findByRole("button", { name: "More" }))
+    await userEvent.click(await body.findByRole("menuitem", { name: "Archive" }))
+    const dialog = within(await body.findByRole("dialog"))
+    await expect(dialog.getByText(/Rosa's request is archived too, with the same reason/)).toBeInTheDocument()
+    await userEvent.click(dialog.getByRole("button", { name: "Archive quote" }))
+    await expect(await c.findByText(/Archived as No answer\. Rosa's request is archived too\./)).toBeInTheDocument()
+    // the request is back in the list, Archived, and its page says it became a quote that was archived
+    await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/requests"]')!)
+    await userEvent.click(await c.findByRole("button", { name: "Rosa Delgado" }))
+    await expect(await c.findByRole("heading", { level: 1, name: "This request became a quote that was archived" })).toBeInTheDocument()
+    await expect(await c.findByText(/archived as No answer\. This request is archived with it\./)).toBeInTheDocument()
+  },
+}
+
+/** New quote by hand, with no request: from the Quotes list's New quote, choose Andrea Dalton and what it is for; the quote opens as a Draft with the service's catalogue price, and Jobs has no new row. */
+export const NewQuoteByHandTest: Story = {
+  name: "New quote by hand (test)",
+  args: { start: { screen: "quotes" } },
+  globals: laptop,
+  tags: HIDDEN,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await userEvent.click(await c.findByRole("button", { name: "New quote" }))
+    const sheet = within(await body.findByRole("dialog"))
+    await userEvent.type(sheet.getByRole("textbox", { name: "Find a customer" }), "Andrea")
+    await userEvent.click(await sheet.findByRole("button", { name: /Andrea Dalton/ }))
+    await userEvent.selectOptions(sheet.getByRole("combobox", { name: "What is this for?" }), "repair")
+    await userEvent.click(sheet.getByRole("button", { name: "New quote" }))
+    await waitFor(() => expect(route(canvasElement)).toBe("quote:Q-2026-0009"))
+    await expect(await c.findByRole("textbox", { name: "Price for Sprinkler repair" })).toHaveValue("145")
+    await expect((await c.findAllByText("Draft")).length).toBeGreaterThan(0)
+    await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/jobs"]')!)
+    await expect(await c.findByRole("heading", { level: 1, name: "Jobs" })).toBeInTheDocument()
+    await expect(c.queryByText("Needs a quote")).toBeNull()
+  },
+}
+
+/** The other way out: Tom Ellis asked for a sprinkler repair, which has a catalogue price, so Create job leads. The request becomes an Unscheduled job at once and leaves the list. */
 export const RequestToJobTest: Story = {
   name: "Request to job (test)",
   args: { start: { screen: "requests" } },
@@ -298,18 +363,16 @@ export const RequestToJobTest: Story = {
     await expect(footer.querySelector("button")?.textContent).toBe("Create job")
     await userEvent.click(await c.findByRole("button", { name: "Create job" }))
     await userEvent.click(await within(await body.findByRole("dialog")).findByRole("button", { name: "Create job" }))
-    await waitFor(() => expect(route(canvasElement)).toBe("job:q-tom"))
+    await waitFor(() => expect(route(canvasElement)).toBe("job:rj-tom"))
     await expect(await body.findByText("Job created for Tom Ellis")).toBeInTheDocument()
     await expect(await c.findAllByText("Unscheduled")).not.toHaveLength(0)
-    // the customer's words are the first note, and the history says where the job came from
-    await expect(await c.findByText(/Two heads in the side yard are spraying the fence/)).toBeInTheDocument()
-    await expect(await c.findByText(/Created from a request on Nov 18/)).toBeInTheDocument()
-    // Jobs lists it; Requests no longer lists Tom
+    // Jobs lists it; Requests no longer lists Tom; no quote was made
     await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/jobs"]')!)
     await expect((await c.findAllByText("Tom Ellis")).length).toBeGreaterThan(0)
     await userEvent.click(canvasElement.querySelector<HTMLElement>('a[data-sidebar="menu-button"][href="/admin/requests"]')!)
     await expect(await c.findByRole("heading", { level: 1, name: "Requests" })).toBeInTheDocument()
     await expect(c.queryByRole("button", { name: "Tom Ellis" })).toBeNull()
+    await expect(canvasElement.querySelector('a[href="/admin/quotes"] [data-slot=nav-count]')?.textContent).toContain("2")
   },
 }
 

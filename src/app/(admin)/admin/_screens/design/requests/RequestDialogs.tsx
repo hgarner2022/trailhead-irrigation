@@ -12,7 +12,7 @@ import { ARCHIVE_REASONS, fullName, type ArchiveReason, type Match, type Request
 
 const SELECT = "min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
 
-/** The two ways out of a request: a job (ready to schedule when its service is priced, else it reads Needs a quote) or a quote to price and send. */
+/** The two ways out of a request: a job at once (Create job, for a priced service) or a quote in Draft to price and send (the job is made only when the quote is approved). */
 export type CreateMode = "job" | "quote"
 
 /** How Create job and Send a quote are worded: a new customer, or a job under the customer the request matches, and the service Ryan chose once he has. Both state the exact effect and say nothing is sent. */
@@ -21,7 +21,7 @@ export function createWords(r: Pick<RequestData, "first" | "last">, match: Match
   const known = match && !asNew ? match.customer.name : null
   if (mode === "quote") {
     const quote = service ? `a ${service} quote` : "a quote"
-    return known ? `Open ${quote} to price and send for ${known}, who is already a customer. Nothing is sent to ${r.first} yet.` : `Add ${name} as a customer and open ${quote} to price and send. Nothing is sent to ${r.first} yet.`
+    return known ? `Make ${quote} to price and send for ${known}, who is already a customer. No job is made until it is approved. Nothing is sent to ${r.first} yet.` : `Add ${name} as a customer and make ${quote} to price and send. No job is made until it is approved. Nothing is sent to ${r.first} yet.`
   }
   const job = service ? `a ${service} job` : "a job"
   return known ? `Create ${job} for ${known}, who is already a customer. Nothing is sent to ${r.first}.` : `Add ${name} as a customer and create ${job}. Nothing is sent to ${r.first}.`
@@ -50,7 +50,8 @@ export function CreateJobDialog({ request, match, mode, onClose, onCreate, initi
   const [pick, setPick] = useState<ServicePick>(initialPick ?? pickOf(request.service))
   const label = mode === "quote" ? "Send a quote" : "Create job"
   const chosen = pickedService(pick)
-  const missing = pickMissing(pick)
+  // a job is made at once only for a service with a price; one without is quoted first
+  const missing = pickMissing(pick) || (mode === "job" && chosen && chosen.price === undefined ? "Needs a price. Use Send a quote." : "")
   return (
     <ConfirmDialog
       open

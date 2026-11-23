@@ -17,7 +17,7 @@ import { recordHref } from "./record-preview-model"
 export type RequestRow =
   | { kind: "new-requests"; count: number; oldestAt: string }
   | { kind: "quote-waiting"; id: string; jobId: string; customer: string; service: string; amount: string; sentAt: string; remindedAt?: string; remindedToday?: boolean }
-  | { kind: "quote-decided"; id: string; jobId: string; customer: string; outcome: "approved" | "declined"; amount: string; at: string }
+  | { kind: "quote-decided"; id: string; jobId: string; /** where the row opens: the job made when it was approved (the default), or the quote itself when it was declined and no job exists */ href?: string; customer: string; outcome: "approved" | "declined"; amount: string; at: string }
 
 const TONE_WAIT = "bg-warning/10 text-warning"
 const rowKey = (r: RequestRow) => (r.kind === "new-requests" ? "new-requests" : `${r.kind}-${r.id}`)
@@ -90,7 +90,7 @@ export function RequestRows({ rows, now, onRemind, onDismiss, readOnly, classNam
         const approved = row.outcome === "approved"
         return (
           <li key={rowKey(row)} data-kind="quote-decided" className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:gap-3">
-            <Link href={recordHref.job(row.jobId)} className={LINK}>
+            <Link href={row.href ?? recordHref.job(row.jobId)} className={LINK}>
               <Body icon={approved ? CircleCheck : CircleX} tone={approved ? "bg-success/10 text-success" : "bg-stone text-muted-foreground"} name="Quote decided" message={`${row.customer} ${approved ? "approved" : "declined"} a ${row.amount} quote`} sub={relativeTime(row.at, now)} since={row.at} />
             </Link>
             <Button type="button" variant="outline" className="min-h-11 self-start sm:self-center" onClick={() => (setGone((g) => [...g, rowKey(row)]), onDismiss?.(row))}>

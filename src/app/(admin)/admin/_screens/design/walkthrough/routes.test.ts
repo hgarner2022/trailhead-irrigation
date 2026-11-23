@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { recordHref } from "@/components/blocks/record-preview-model"
-import { dayTitle, navigate, parseHref, routeTitle, type Route } from "./routes"
+import { dayTitle, isRoot, navigate, parseHref, routeTitle, type Route } from "./routes"
 
 describe("parseHref", () => {
   it("reads the hrefs recordHref emits", () => {
@@ -51,15 +51,24 @@ describe("Requests routes", () => {
     expect(parseHref("/admin/requests")).toEqual({ screen: "requests" })
     expect(parseHref(recordHref.request("rq-rosa"))).toEqual({ screen: "request", id: "rq-rosa" })
     expect(parseHref("/admin/requests?status=new")).toEqual({ screen: "requests", filter: "new" })
-    // a quote is a section of its job: the link opens the job at its Quote section
-    expect(parseHref(recordHref.quote("q-beth"))).toEqual({ screen: "job", id: "q-beth", anchor: "quote" })
-    expect(parseHref(recordHref.job("q-beth"))).toEqual({ screen: "job", id: "q-beth" })
+    // a quote is its own record: the link opens its page by its number, and a job made from one is a job like any other
+    expect(parseHref(recordHref.quote("Q-2026-0007"))).toEqual({ screen: "quote", id: "Q-2026-0007" })
+    expect(parseHref(recordHref.job("qj-0007"))).toEqual({ screen: "job", id: "qj-0007" })
   })
   it("reads the Quotes list and Home's Quote waiting link, makes Quotes a root and titles it", () => {
     expect(parseHref("/admin/quotes")).toEqual({ screen: "quotes" })
     expect(parseHref("/admin/quotes?status=sent")).toEqual({ screen: "quotes", filter: "sent" })
     expect(navigate([{ screen: "jobs" }], { screen: "quotes" })).toEqual([{ screen: "quotes" }])
     expect(routeTitle({ screen: "quotes" })).toBe("Quotes")
+  })
+  it("reads a quote's page, makes it one deeper than the list, and reads New quote from a customer's page", () => {
+    const list: Route = { screen: "quotes" }
+    const one: Route = { screen: "quote", id: "Q-2026-0007" }
+    expect(navigate([list], one)).toEqual([list, one])
+    expect(routeTitle(one)).toBe("Q-2026-0007")
+    expect(parseHref("/admin/quotes?new=1&customer=andrea")).toEqual({ screen: "quotes", newQuote: true, id: "andrea" })
+    expect(parseHref("/admin/quotes?new=1")).toEqual({ screen: "quotes", newQuote: true })
+    expect(isRoot({ screen: "quotes", newQuote: true })).toBe(false)
   })
   it("makes Requests a root and a request one deeper, and titles them", () => {
     const list: Route = { screen: "requests" }

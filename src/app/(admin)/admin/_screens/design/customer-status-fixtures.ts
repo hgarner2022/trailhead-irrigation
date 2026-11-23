@@ -9,8 +9,8 @@ export const AS_OF = "2026-11-20"
 export function statusFactsOf(d: Pick<CustomerPageData, "jobs" | "area" | "statusFacts">): CustomerStatusFacts {
   return {
     archivedAt: d.statusFacts.archivedAt,
-    jobs: d.jobs.map((j) => ({ stage: j.quote ?? (j.status === "cancelled" ? ("canceled" as const) : j.open ? ("open" as const) : ("done" as const)), on: j.day?.iso ?? j.sortDay })),
-    visitAhead: d.jobs.some((j) => j.open && !j.quote && j.status !== "cancelled"),
+    jobs: d.jobs.map((j) => ({ stage: j.status === "cancelled" ? ("canceled" as const) : j.open ? ("open" as const) : ("done" as const), on: j.day?.iso ?? j.sortDay })),
+    visitAhead: d.jobs.some((j) => j.open && j.status !== "cancelled"),
     passInForce: d.area.kind === "pass" && d.area.pass.status === "active",
   }
 }
