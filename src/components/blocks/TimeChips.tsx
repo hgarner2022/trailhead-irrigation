@@ -22,12 +22,14 @@ export interface TimeChipsProps {
   hint?: string
   /** "sheet": three across, four from `sm`, as in a dialog; "page": up to six across */
   density?: "page" | "sheet"
+  /** what is missing, when Continue was pressed with no time chosen: the chips are marked invalid and the message sits under them */
+  error?: string
   className?: string
 }
 
 const CHIP = "flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2"
 
-export function TimeChips({ options, value, onChange, anyTime = false, legend, hideLegend = false, hint, density = "page", className }: TimeChipsProps) {
+export function TimeChips({ options, value, onChange, anyTime = false, legend, hideLegend = false, hint, density = "page", error, className }: TimeChipsProps) {
   const name = useId()
   return (
     <fieldset data-slot="time-chips" className={cn("min-w-0", className)}>
@@ -36,7 +38,7 @@ export function TimeChips({ options, value, onChange, anyTime = false, legend, h
       <div className={cn("mt-3 grid grid-cols-3 gap-2", density === "sheet" ? "sm:grid-cols-4" : "sm:grid-cols-4 lg:grid-cols-6")}>
         {anyTime && (
           <label className="relative block">
-            <input type="radio" name={name} checked={value === null} onChange={() => onChange(null)} className="peer sr-only" />
+            <input type="radio" name={name} checked={value === null} aria-invalid={Boolean(error) || undefined} onChange={() => onChange(null)} className="peer sr-only" />
             <span data-slot="time-chip" className={cn(CHIP, value === null ? "settle border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
               <span className="text-base font-semibold">Any time</span>
             </span>
@@ -46,7 +48,7 @@ export function TimeChips({ options, value, onChange, anyTime = false, legend, h
           const checked = value === t.start
           return (
             <label key={t.start} className="relative block">
-              <input type="radio" name={name} checked={checked} onChange={() => onChange(t.start)} className="peer sr-only" />
+              <input type="radio" name={name} checked={checked} aria-invalid={Boolean(error) || undefined} onChange={() => onChange(t.start)} className="peer sr-only" />
               <span data-slot="time-chip" className={cn(CHIP, checked ? "settle border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
                 <span className="text-base font-semibold tabular-nums">{clock12(t.start)}</span>
               </span>
@@ -54,6 +56,7 @@ export function TimeChips({ options, value, onChange, anyTime = false, legend, h
           )
         })}
       </div>
+      {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
     </fieldset>
   )
 }

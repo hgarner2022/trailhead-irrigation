@@ -5,7 +5,7 @@
 import type { TimingPreference } from "@/lib/admin/types"
 import { exactVisits, preferenceVisits, type PassPlan } from "@/lib/booking/pass-visits"
 import { emailProblem } from "@/lib/email-check"
-import { SERVICE_ZIPS, serviceability, zipCityMismatch, type PlaceSuggestion } from "@/lib/places"
+import { SERVICE_ZIPS, outOfAreaMessage, serviceability, zipCityMismatch, type PlaceSuggestion } from "@/lib/places"
 import { CITY_PROBLEM, STREET_PROBLEM, typedProblems, type TypedValues } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-address-typed"
 import { pickComplete, type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
 import type { ServiceEntry } from "@/lib/booking/services"
@@ -47,8 +47,9 @@ export const CONFIRM_BOOK = "Confirm and book"
 export const CONFIRM_PASS = "Set up my Season Pass"
 export const ACTIONS: Partial<Record<FormStep, string>> = { address: "Continue", service: "Continue", "quote-service": "Continue", details: "Continue", day: "Continue", preference: "Continue", contact: "Continue", card: "Save card", confirm: CONFIRM_BOOK }
 
-export const DAY_HINT = "Pick a time to continue."
-export const SERVICE_HINT = "Pick a service to continue."
+// Continue is never disabled and no standing hint sits above it (Hannah, Nov 25 2026): pressing it with something missing says what, in these words, at the top of the step and beside the field.
+export const SERVICE_PROBLEM = "Choose a service."
+export const DAY_PROBLEM = "Pick a time."
 
 /** What each contact field needs, written as help: the field and the fix. Null when the field can pass. */
 export function contactProblem(field: "firstName" | "lastName" | "email" | "phone", value: string): string | null {
@@ -151,10 +152,16 @@ export interface Problem {
 /** What stops Continue on the step, in the words beside each field, for the summary at the top and the first field to focus. */
 export function problemList(step: FormStep, a: FormAnswers): Problem[] {
   switch (step) {
+    case "service":
+    case "quote-service":
+      return a.service === null ? [{ message: SERVICE_PROBLEM, field: "[data-slot=service-picker] button, [data-slot=service-picker] input" }] : []
+    case "day":
+      return canContinue(step, a) ? [] : [{ message: DAY_PROBLEM, field: "[data-slot=time-chips] input" }]
     case "address": {
       const area = areaState(a.fields.place)
-      // An address outside the six cities is a dead end with its own line beside the box.
-      if (area === "ok" || area === "outside") return []
+      // An address outside the six cities is a dead end: the line beside the box says so, and a press of Continue says it again at the top.
+      if (area === "ok") return []
+      if (area === "outside") return [{ message: outOfAreaMessage(serviceability(a.fields.place!) as Extract<ReturnType<typeof serviceability>, { ok: false }>), field: "[role=combobox], [name=address]" }]
       if (area === "mismatch") return [{ message: zipCityMismatch(a.fields.place!)!, field: "[name=city]" }]
       // The typed fields name each of their own gaps; a pick with no city asks for the city.
       if (a.addressTyped && a.typed) return typedProblems(a.typed)

@@ -1,7 +1,7 @@
 "use client"
 
 import { DayCalendar } from "@/components/blocks/DayCalendar"
-import { type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
+import { pickComplete, type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
 
 // The day-and-time step for one visit or several: the same DayCalendar per visit, with a heading over each group when a Season Pass has two ("Your spring turn-on", "Your fall blowout").
 // The booking flow's step 4 and the Season Pass checkout's "your days" step both render this, so the two ask the same question the same way. Pure props, client component.
@@ -16,13 +16,13 @@ export interface DayGroup {
 }
 
 /** The booking form's day step: the calendar per visit (the soonest day chosen), with a heading over each when a Season Pass has two. */
-export function CalendarGroups({ groups, picks, onPick, note, onNote }: { groups: readonly DayGroup[]; picks: Record<string, DayTimePick>; onPick: (key: string, pick: DayTimePick) => void; note?: string; onNote?: (text: string) => void }) {
+export function CalendarGroups({ groups, picks, onPick, note, onNote, error }: { error?: string; groups: readonly DayGroup[]; picks: Record<string, DayTimePick>; onPick: (key: string, pick: DayTimePick) => void; note?: string; onNote?: (text: string) => void }) {
   return (
     <div data-slot="day-time-groups" className="space-y-12">
       {groups.map((g, i) => (
         <section key={g.key} aria-label={g.heading ?? "Day and time"} data-kind={g.key}>
           {g.heading && <h2 className="mb-4 font-display text-3xl leading-[1.05] text-navy">{g.heading}</h2>}
-          <DayCalendar headingLevel={g.heading ? 3 : 2} offers={g.offers} value={picks[g.key] ?? { day: null, start: null }} onChange={(next) => onPick(g.key, next)} legend={g.heading ?? "Pick your day"} note={i === groups.length - 1 ? note : undefined} onNote={i === groups.length - 1 ? onNote : undefined} />
+          <DayCalendar headingLevel={g.heading ? 3 : 2} offers={g.offers} value={picks[g.key] ?? { day: null, start: null }} onChange={(next) => onPick(g.key, next)} legend={g.heading ?? "Pick your day"} error={pickComplete(g.offers, picks[g.key] ?? { day: null, start: null }) ? undefined : error} note={i === groups.length - 1 ? note : undefined} onNote={i === groups.length - 1 ? onNote : undefined} />
         </section>
       ))}
     </div>

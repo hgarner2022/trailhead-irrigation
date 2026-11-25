@@ -33,12 +33,12 @@ export function priceFor(entry: ServiceEntry, zones: number, plan: PassPlan | nu
   return entry.amount ?? null
 }
 
-/** "About $145" for a priced service; "Price set at the visit" when the catalogue has no price; nothing for a service that is only requested and for a pass, which prices each visit. */
+/** "$145" for a priced service; "Price set at the visit" when the catalogue has no price; nothing for a service that is only requested and for a pass, which prices each visit. */
 export function priceWords(entry: ServiceEntry, zones: number, plan: PassPlan | null = null): string {
   if (entry.kind === "pass" || entry.kind === "quote") return ""
   const price = priceFor(entry, zones, plan)
   if (price === null) return PRICE_AT_VISIT
-  return `About ${money(price)}`
+  return `${money(price)}`
 }
 
 /** The phone in the way it is read back: "(970) 555-0123". */

@@ -7,15 +7,14 @@ import { CalendarGroups } from "@/app/(booking)/booking/_screens/booking-day"
 
 // The Season Pass checkout's "your days" step revised to a day AND a time for each of its two visits (docs/plans/2026-11-18-scheduling-engine-design.md section 2, story 1). It is the booking flow's
 // day-and-time step, once per visit, so the two ask the same question the same way: the calendar with the soonest open day selected and marked on each, its times under it and none selected, Continue
-// off until a time is tapped on both. The day-before text now confirms the booked time. A fixture harness stands in for the flow.
+// always active (a missing time is named when it is pressed). The day-before text now confirms the booked time. A fixture harness stands in for the flow.
 const turnOn = fixtureDayTimes(60)
 const blowout = fixtureDayTimes(30).map((o, i) => ({ ...o, day: ["2027-10-05", "2027-10-07", "2027-10-12", "2027-10-14", "2027-10-19"][i]! }))
 
 function Step() {
   const [picks, setPicks] = useState<Record<string, DayTimePick>>({ "turn-on": { day: startDay(turnOn), start: null }, blowout: { day: startDay(blowout), start: null } })
-  const ready = Object.values(picks).every((p) => p.start !== null)
   return (
-    <FlowShell question="Pick your days and times" step={4} total={7} wide nextDisabled={!ready} hint="Tap a start time for each visit to continue.">
+    <FlowShell question="Pick your days and times" step={4} total={7} wide>
       <CalendarGroups
         groups={[
           { key: "turn-on", heading: "Your spring turn-on", offers: turnOn, minutes: 60 },
@@ -36,7 +35,7 @@ type Story = StoryObj<typeof meta>
 export const DaysAndTimesLaptop: Story = {
   globals: { viewport: { value: "laptop", isRotated: false } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
     await expect(canvas.getByRole("heading", { level: 2, name: "Your fall blowout" })).toBeInTheDocument()
   },
 }

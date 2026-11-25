@@ -4,6 +4,9 @@ import { CustomerDocs } from "./CustomerDocs"
 import { CustomerPhone } from "./CustomerPhone"
 import { CustomerWalkthrough } from "./CustomerWalkthrough"
 
+// Two photos a person would choose from their camera roll: the form has no sample button in the customer screen, so the tests use the real file input.
+const PHOTOS = [new File(["a"], "zone-3-head.jpg", { type: "image/jpeg" }), new File(["b"], "garden-bed.jpg", { type: "image/jpeg" })]
+
 // The customer walkthrough, the customer side (Hannah, Nov 19 2026): booking, the messages, the account, paying, the Season Pass and Details in one clickable
 // prototype, starting on a phone. Nothing is sent; Start over resets it.
 
@@ -111,10 +114,10 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await next()
     // the card opens in place and picks the service; Details asks access and takes two photos behind one row; then the soonest day is already chosen and only an exact start time (never a window) is tapped, and only then who we reach
     await userEvent.click(await c.findByRole("button", { name: /^Sprinkler repair/ }))
+    await userEvent.click(await c.findByRole("button", { name: "Choose this service" }))
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
-    await userEvent.click(await c.findByRole("button", { name: /Add a note or photos/ }))
-    await userEvent.click(await c.findByRole("button", { name: "Add 2 sample photos" }))
+    await userEvent.upload(await c.findByLabelText("Add photos"), PHOTOS)
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /\d:\d\d [ap]m/ }))[0]!)
     await next()
@@ -197,7 +200,7 @@ export const RequestPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.click(await c.findByRole("radio", { name: /Christmas lights/ }))
     await next()
     await userEvent.type(await c.findByLabelText("What do you need?"), "The roofline and two trees.")
-    await userEvent.click(await c.findByRole("button", { name: "Add 2 sample photos" }))
+    await userEvent.upload(await c.findByLabelText("Add photos"), PHOTOS)
     await next()
     await userEvent.type(await c.findByLabelText("First name"), "Rosa")
     await userEvent.type(await c.findByLabelText("Last name"), "Delgado")
