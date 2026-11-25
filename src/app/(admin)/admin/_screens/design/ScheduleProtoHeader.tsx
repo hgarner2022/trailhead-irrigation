@@ -66,10 +66,12 @@ export function ScheduleProtoHeader({ p }: { p: Proto }) {
           </Button>
         </div>
         <SegmentedControl label="Schedule view" options={VIEWS} value={view} onChange={(v) => p.setView(v as View)} />
-        <div className="flex flex-wrap items-center gap-2 md:ml-auto">
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-2 md:ml-auto md:gap-x-2">
           {p.notNotifiedCount > 0 && (
-            <Button type="button" variant="ghost" className="min-h-11 text-warning-ink hover:bg-warning/14 hover:text-warning-ink" onClick={p.openNotNotified}>
-              {`${p.notNotifiedCount} ${p.notNotifiedCount === 1 ? "customer" : "customers"} not notified`}
+            <Button type="button" variant="ghost" className="min-h-11 px-2 text-warning-ink hover:bg-warning/14 hover:text-warning-ink" onClick={p.openNotNotified} aria-label={`${p.notNotifiedCount} ${p.notNotifiedCount === 1 ? "customer" : "customers"} not notified`}>
+              {/* the full phrase is the name; on a phone it is a compact chip so Unscheduled and Map stay on the row */}
+              <span aria-hidden className="md:hidden">{`${p.notNotifiedCount} not notified`}</span>
+              <span aria-hidden className="hidden md:inline">{`${p.notNotifiedCount} ${p.notNotifiedCount === 1 ? "customer" : "customers"} not notified`}</span>
             </Button>
           )}
           <Button type="button" variant="outline" className={toggle(p.panels.unscheduled)} aria-pressed={p.panels.unscheduled} onClick={() => p.togglePanel("unscheduled")}>

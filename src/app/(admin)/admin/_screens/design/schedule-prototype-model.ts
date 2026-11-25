@@ -96,7 +96,7 @@ export function reduce(s: ProtoState, a: Action): ProtoState {
       if (before && before.minutes === a.minutes) return s
       const next = moveOne(s, a.id, { minutes: a.minutes })
       if (!before || !next) return s
-      const message = before.start === null ? `Changed to ${a.minutes} minutes` : `Changed to ${rangeWords(before.start, a.minutes)}`
+      const message = lengthChange({ start: before.start, minutes: a.minutes })
       return { ...s, ...next, seq: s.seq + 1, toast: stamp(s, message, [a.id]) }
     }
     case "place": {
@@ -143,11 +143,16 @@ export function visitOfJob(j: ProtoJob, to: Target): GridBlock {
 }
 
 /** A move in the app's own words (`visit.moved` in src/lib/events/words.ts, "moved from X to Y"): the day is said once when it did not change, both when it did. */
-export function changeWords(was: Pick<Place, "day" | "start"> | undefined, now: Pick<Place, "day" | "start">): string {
+export function changeWords(was: Pick<Place, "day" | "start"> & { minutes?: number } | undefined, now: Pick<Place, "day" | "start"> & { minutes?: number }): string {
   if (!was) return `Scheduled for ${whenWords(now)}`
+  // only the length changed: said as the toast says it, "Changed to 8:00 to 8:45 am"
+  if (was.day === now.day && was.start === now.start && was.minutes !== undefined && now.minutes !== undefined && was.minutes !== now.minutes) return `${lengthChange({ start: now.start, minutes: now.minutes })}, ${dayShort(now.day)}`
   if (was.day === now.day) return `Moved from ${clockOrAny(was.start)} to ${clockOrAny(now.start)}, ${dayShort(now.day)}`
   return `Moved from ${whenWords(was)} to ${whenWords(now)}`
 }
+
+/** What a resize says, in the toast and in the Not notified row: "Changed to 8:00 to 8:45 am". */
+export const lengthChange = (b: { start: number | null; minutes: number }) => (b.start === null ? `Changed to ${b.minutes} minutes` : `Changed to ${rangeWords(b.start, b.minutes)}`)
 
 /** The visits whose customer has not been told, as the Not told tab lists them. */
 export function notToldList(s: Pick<ProtoState, "visits" | "was" | "meta">): NotToldVisit[] {

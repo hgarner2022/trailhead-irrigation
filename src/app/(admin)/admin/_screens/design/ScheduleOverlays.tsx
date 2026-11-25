@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { firstNameOf } from "@/lib/admin/people"
 import { ScheduleToast } from "@/components/blocks/ScheduleToast"
 import { MessageDialog } from "./MessageDialog"
@@ -12,9 +13,23 @@ import { useWorldState, type WorldStore } from "./schedule-world-store"
 
 const OPENER = "Trailhead: "
 
+/** On a phone a sheet or dialog is open: the toast waits until it closes, so it never covers a row or a button. */
+function useHeldOnPhone(): boolean {
+  const [held, setHeld] = useState(false)
+  useEffect(() => {
+    const check = () => setHeld(window.matchMedia("(max-width: 767px)").matches && Boolean(document.querySelector("[role=dialog]")))
+    check()
+    const o = new MutationObserver(check)
+    o.observe(document.body, { childList: true, subtree: true })
+    return () => o.disconnect()
+  }, [])
+  return held
+}
+
 export function ScheduleOverlays({ store, toastSeconds = 10 }: { store: WorldStore; toastSeconds?: number }) {
   const state = useWorldState(store)
-  const toast = state.toast
+  const held = useHeldOnPhone()
+  const toast = held ? null : state.toast
   const headId = state.notify[0]
   const head = headId ? state.visits.find((b) => b.id === headId) : undefined
   const meta = head ? state.meta[head.id] : undefined
