@@ -1,5 +1,5 @@
 // What the customer chose about marketing in the customer walkthrough, kept in the browser so the admin walkthrough's Consent card can show it
-// ("Opted in today by the customer on the website"). The two walkthroughs run in different frames; this is the only thing they share. Reads and
+// ("Opted in today on the booking form"). The two walkthroughs run in different frames; this is the only thing they share. Reads and
 // writes never throw (storage can be blocked).
 
 const KEY = "trailhead-walkthrough-marketing"
@@ -7,6 +7,8 @@ const KEY = "trailhead-walkthrough-marketing"
 export interface MarketingChoice {
   email?: boolean
   text?: boolean
+  /** where the email choice was made: the booking form (the booking is the opt-in), the account's Details switch, or the unsubscribe link on a marketing email */
+  emailSource?: "booking form" | "account" | "unsubscribe link"
 }
 
 export function readChoice(): MarketingChoice {

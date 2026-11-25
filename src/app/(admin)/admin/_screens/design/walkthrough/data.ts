@@ -38,8 +38,10 @@ const madeHere = (id: string): CustomerPageData["jobs"] =>
 function withChoice(page: CustomerPageData): CustomerPageData {
   if (page.id !== "andrea") return page
   const c = typeof window === "undefined" ? {} : readChoice()
-  const line = (on: boolean | undefined, was: { on: boolean; note?: string }) => (on === undefined ? was : { on, note: `${on ? "Opted in" : "Opted out"} today by the customer on the website` })
-  return { ...page, consent: { ...page.consent, email: line(c.email, page.consent.email), text: line(c.text, page.consent.text) } }
+  // where it happened, in the consent history's words: the booking form gives it, the account's switch or the unsubscribe link withdraws it
+  const where = { "booking form": "on the booking form", account: "in the account", "unsubscribe link": "by the unsubscribe link" }[c.emailSource ?? "booking form"]
+  const line = (on: boolean | undefined, was: { on: boolean; note?: string }) => (on === undefined ? was : { on, note: `${on ? "Opted in" : "Opted out"} today ${where}` })
+  return { ...page, consent: { ...page.consent, email: line(c.email, page.consent.email), text: page.consent.text } }
 }
 
 /** The page of any customer in the world: the seven shaped by hand below, and everyone else built from their jobs, invoices and quotes (`customer-build.ts`). A quote is not a job: it is in the customer's Quotes card and does not change their status. */

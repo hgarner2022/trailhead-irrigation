@@ -434,14 +434,15 @@ export const PrototypeHelpersPhone: Story = {
   },
 }
 
-/** 4. Contact with how we reach you, after the day: four fields, text, email or both (explained once, in a tooltip), the unticked marketing box, and over the button bar one line: By continuing, you agree to the terms. There is no terms checkbox. */
+/** 4. Contact with how we reach you, after the day: four fields, text, email or both (explained once, in a tooltip), no checkbox of any kind, and over the button bar one line: By continuing, you agree to the terms. There is no terms checkbox. */
 const contact = on({ initial: { step: "contact", service: "repair", fields: details, picks: picked } }, "Contact", {
   play: async ({ canvas }) => {
     await expect(canvas.queryByText(/Reply STOP|Message and data rates/)).toBeNull()
     await expect(canvas.getByText(/By continuing, you agree to the/)).toBeInTheDocument()
     await expect(canvas.getByRole("link", { name: /booking terms/ })).toHaveAttribute("href", "/terms#booking")
     await expect(canvas.queryByRole("checkbox", { name: /I accept/ })).toBeNull()
-    await expect(canvas.getByRole("checkbox", { name: "Send me tips and offers from Trailhead by email" })).not.toBeChecked()
+    // no checkbox of any kind on this step: not for the terms and not for marketing
+    await expect(canvas.queryByRole("checkbox")).toBeNull()
     await expect(canvas.queryByText(/Every message both ways|We reach you by/)).toBeNull()
     await expect(canvas.getByRole("button", { name: "About how we reach you" })).toBeInTheDocument()
   },
@@ -659,7 +660,7 @@ export const WholePathPhoneTest: Story = {
     await userEvent.type(await c.findByLabelText("Email"), "andrea@example.org")
     await userEvent.type(await c.findByLabelText("Phone"), "9705550188")
     await userEvent.click(await c.findByRole("radio", { name: "Text and email" }))
-    await expect(c.getByRole("checkbox", { name: "Send me tips and offers from Trailhead by email" })).not.toBeChecked()
+    await expect(c.queryByRole("checkbox")).toBeNull()
     await next()
     await userEvent.click(await c.findByRole("button", { name: "Save card" }))
     await expect(await c.findByText("We'll text and email a confirmation.")).toBeInTheDocument()

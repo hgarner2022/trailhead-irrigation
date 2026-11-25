@@ -137,7 +137,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
   useEffect(() => {
-    if (step === "done" && !quote && !callback && service && pick?.day && pick.start) onBooked?.({ service: service.name, day: pick.day, start: pick.start, street: street || "480 Briggs St", town: town ?? "Erie", firstName: fields.firstName || "Andrea", email: fields.email, phone: fields.phone, channel, photos: photos.length, marketing: fields.marketingEmail, card: cardWords(cardNow, offered), onFile: Boolean(property), emailDiffers: emailDiffers(property, fields.email), terms: { version: TERMS_VERSION, acceptedAt: termsAt ?? new Date().toISOString(), source: "booking" } })
+    if (step === "done" && !quote && !callback && service && pick?.day && pick.start) onBooked?.({ service: service.name, day: pick.day, start: pick.start, street: street || "480 Briggs St", town: town ?? "Erie", firstName: fields.firstName || "Andrea", email: fields.email, phone: fields.phone, channel, photos: photos.length, marketing: true, card: cardWords(cardNow, offered), onFile: Boolean(property), emailDiffers: emailDiffers(property, fields.email), consent: { termsVersion: TERMS_VERSION, at: termsAt ?? new Date().toISOString(), source: "booking", marketingEmail: true, marketingText: false } })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
 

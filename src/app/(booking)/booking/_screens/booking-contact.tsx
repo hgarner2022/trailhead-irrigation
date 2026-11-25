@@ -3,9 +3,7 @@
 import { useId, useState } from "react"
 import { ContactPreference, type ContactChannel } from "@/components/blocks/ContactPreference"
 import { FormRow } from "@/components/blocks/FormRow"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { emailSuggestion } from "@/lib/email-check"
 import { cn } from "@/lib/utils"
 import type { CheckoutFields } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
@@ -89,14 +87,6 @@ export function BookingContact({ fields, set, channel, onChannel, attempted }: B
         })}
       </div>
       <ContactPreference value={channel} onChange={onChannel} name={`${id}-preference`} />
-      <div data-slot="booking-marketing" className="flex items-start gap-3 border-t border-border pt-6">
-        <Checkbox id={`${id}-marketing`} name="marketingEmail" checked={fields.marketingEmail} onCheckedChange={(c) => set("marketingEmail", c === true)} className="mt-1 size-5" />
-        <div>
-          <Label htmlFor={`${id}-marketing`} className="inline text-base font-normal leading-snug text-foreground">
-            Send me tips and offers from Trailhead by email
-          </Label>
-        </div>
-      </div>
     </div>
   )
 }
