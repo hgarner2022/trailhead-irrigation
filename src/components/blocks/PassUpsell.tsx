@@ -1,16 +1,16 @@
 "use client"
 
 import { useId } from "react"
-import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PASS_SCHEDULES } from "@/lib/booking/pass-words"
 import { cn } from "@/lib/utils"
 import { PriceLines } from "@/components/blocks/PriceLines"
+import { Tick } from "@/components/blocks/Tick"
 
 // The Season Pass offer on the Details step of a single spring turn-on or fall blowout (Hannah, Nov 25 2026: customers do not know what it is, "you should sell them a bit"): its own quiet card after the
 // details, not a switch. A heading, three short lines that only say what Hannah has approved (CLAUDE.md's Season Pass description: we schedule every season so you never have to remember; the same price per visit
 // as booking each alone, said once as reassurance; the schedule is kept and repair visits get priority), the two visits with what each costs at their zones, and one outline button, "Add Season Pass". Added, the
-// card is the selected state, its check draws in once, and it reads "Season Pass added." with "Remove"; the booking goes down the pass path. No urgency, no numbers that are not the catalogue's. Controlled; pure
+// card is the selected state, a thin navy tick draws in once beside the words (Tick: no badge), and it reads "Season Pass added." with "Remove"; the booking goes down the pass path. No urgency, no numbers that are not the catalogue's. Controlled; pure
 // props, client component.
 
 export const UPSELL_TITLE = "Make it a Season Pass"
@@ -34,11 +34,7 @@ export function PassUpsell({ on, onChange, prices, className }: PassUpsellProps)
       {on ? (
         <div className="flex items-center justify-between gap-4">
           <p id={`${id}-title`} className="flex items-center gap-3 type-heading text-navy">
-            <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary-dark text-white">
-              <svg viewBox="0 0 16 16" className="draw-check size-4" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3.5 8.5l3 3 6-7" />
-              </svg>
-            </span>
+            <Tick draw className="size-5 text-current" />
             {UPSELL_ADDED}
           </p>
           <Button type="button" variant="ghost" onClick={() => onChange(false)} className="h-auto min-h-11 px-2 text-base font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent">
@@ -53,7 +49,7 @@ export function PassUpsell({ on, onChange, prices, className }: PassUpsellProps)
           <ul className="mt-3 space-y-2">
             {UPSELL_LINES.map((line) => (
               <li key={line} className="flex items-start gap-2.5 type-body leading-snug text-foreground">
-                <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-positive" />
+                <Tick className="mt-1" />
                 {line}
               </li>
             ))}

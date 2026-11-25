@@ -1,5 +1,5 @@
 import Image from "next/image"
-import { Check } from "lucide-react"
+import { Tick } from "@/components/blocks/Tick"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { BUSINESS } from "@/emails/format"
@@ -54,7 +54,7 @@ function Paid({ bill }: { bill: PayBill }) {
       {bill.report && <VisitReport report={bill.report} className="mt-6" />}
       <PriceTotal data-slot="pay-total" value={money(bill.total)} />
       <p data-slot="pay-paid" className="mt-6 flex items-center gap-2 text-base font-medium text-positive-deep">
-        <Check className="size-5 shrink-0 text-positive" aria-hidden />
+        <Tick className="size-5 text-current" />
         {paidWords(bill)}
       </p>
       {/* The receipt right here (UX audit row 13): the card receipt once Stripe has one, else the customer's visits, where every receipt is. */}
