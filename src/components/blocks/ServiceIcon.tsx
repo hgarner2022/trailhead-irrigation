@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
-// One drawn pictogram per service on the booking form's service cards: navy line work with a single orange part, in a 56px tile.
+// One drawn pictogram per service on the booking form's service cards: navy line work with a single orange part, every one on the same 32 grid at the same 1.75 stroke, in a 56px tile.
 // Each draws itself once (strokes marked `data-draw`, `data-pop`, `data-turn` and `data-rise`, animated by the `.svc-icon` rules in
 // app/base.css, where the motion tokens live); nothing loops, and under prefers-reduced-motion the finished drawing is simply shown.
 // The parent replays a drawing by changing the element's `key`. `delay` staggers the cards on first appearance. A service with no
@@ -15,8 +15,6 @@ export const iconFor = (key: string): ServiceIconName => (NAMES.has(key) ? (key 
 
 export interface ServiceIconProps {
   name: ServiceIconName
-  /** on the navy Season Pass card: white line work and the lighter orange */
-  tone?: "light" | "dark"
   /** milliseconds before the drawing starts: the cards' stagger on first load */
   delay?: number
   className?: string
@@ -143,8 +141,7 @@ function parts(name: ServiceIconName, accent: string): ReactNode {
   }
 }
 
-export function ServiceIcon({ name, tone = "light", delay = 0, className }: ServiceIconProps) {
-  const dark = tone === "dark"
+export function ServiceIcon({ name, delay = 0, className }: ServiceIconProps) {
   return (
     <svg
       data-slot="service-icon"
@@ -157,9 +154,9 @@ export function ServiceIcon({ name, tone = "light", delay = 0, className }: Serv
       strokeLinecap="round"
       strokeLinejoin="round"
       style={{ "--svc-delay": `${delay}ms` } as CSSProperties}
-      className={cn("svc-icon size-9", dark ? "text-white" : "text-navy", className)}
+      className={cn("svc-icon size-9 text-navy", className)}
     >
-      {parts(name, dark ? "text-primary-light" : "text-primary")}
+      {parts(name, "text-primary")}
     </svg>
   )
 }
