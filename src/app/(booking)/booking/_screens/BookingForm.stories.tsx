@@ -155,11 +155,12 @@ export const AddressNoCityPickTest: Story = {
   },
 }
 
-/** 2. Service: only the service cards. Each is a drawn icon, its name, the price and the length and a chevron; the whole header opens the card to read it, and "Choose this service" inside chooses it. Nothing is open until one is pressed, nothing about zones or access is on this step, and Continue is always on. */
+/** 2. Service: only the service cards. Each is a drawn icon, its name, the price and the length and a ring where the check lands; the whole card is the choice: one press chooses it and it opens to show what is included, a second press removes the choice. Nothing is open until one is chosen, nothing about zones or access is on this step, and Continue is always on. */
 const services = on({ initial: { step: "service", fields: home } }, "Service", {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-expanded", "false")
-    await expect(canvas.getByRole("button", { name: /^Spring turn-on/ })).toHaveAccessibleDescription("From $145 · 1 hr")
+    await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-pressed", "false")
+    await expect(canvas.getByRole("button", { name: /^Spring turn-on/ })).toHaveTextContent("From $145 · 1 hr")
+    await expect(canvas.queryByRole("button", { name: /Details|Hide|Choose this service/ })).toBeNull()
     await expect(canvas.queryByText("Pick a service to continue.")).toBeNull()
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
     await expect(canvas.queryByText(/Opens|Free consultation|What's included/)).toBeNull()
@@ -171,7 +172,7 @@ export const ServicesLaptop: Story = { ...services.laptop, name: "Service, lapto
 /** The repair card chosen and open: the catalogue's description, the length and the price, with a check on the chosen card. */
 const repairOpen = on({ initial: { step: "service", service: "repair", fields: home } }, "Service, repair open", {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-expanded", "true")
+    await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-pressed", "true")
     const panel = canvas.getByRole("region", { name: "Sprinkler repair" })
     await expect(within(panel).getAllByRole("listitem").length).toBeGreaterThan(0)
     await expect(canvas.queryByText(/Charged after|Zones|Make it a Season Pass/)).toBeNull()
@@ -411,7 +412,6 @@ export const ServiceNothingClearsTest: Story = {
   play: async ({ canvas, userEvent }) => {
     await expect((await canvas.findAllByText("Choose a service.")).length).toBe(2)
     await userEvent.click(canvas.getByRole("button", { name: /^Sprinkler repair/ }))
-    await userEvent.click(await canvas.findByRole("button", { name: "Choose this service" }))
     await waitFor(() => expect(canvas.queryAllByText("Choose a service.")).toHaveLength(0))
   },
 }
@@ -486,7 +486,6 @@ export const AddressOnFileTest: Story = {
     await expect(canvas.queryByText(/Andrea|Dalton|4242|Welcome back/)).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await userEvent.click(await canvas.findByRole("button", { name: /^Spring turn-on/ }))
-    await userEvent.click(await canvas.findByRole("button", { name: "Choose this service" }))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await expect(await canvas.findByRole("button", { name: "10 zones" })).toHaveAttribute("aria-pressed", "true")
     await expect(canvas.queryByText(/Andrea|Dalton|4242/)).toBeNull()
@@ -647,7 +646,6 @@ export const WholePathPhoneTest: Story = {
     await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
     await userEvent.click(await c.findByRole("button", { name: /^Sprinkler repair/ }))
-    await userEvent.click(await c.findByRole("button", { name: "Choose this service" }))
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
     await userEvent.upload(await c.findByLabelText("Add photos"), [new File(["a"], "zone-3-head.jpg", { type: "image/jpeg" }), new File(["b"], "garden-bed.jpg", { type: "image/jpeg" })])
@@ -740,7 +738,6 @@ export const HistoryBehaviour: Story = {
     await userEvent.click((await canvas.findAllByRole("option"))[0]!)
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await userEvent.click(await canvas.findByRole("button", { name: /^Sprinkler repair/ }))
-    await userEvent.click(await canvas.findByRole("button", { name: "Choose this service" }))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await userEvent.click((await canvas.findAllByRole("radio", { name: /^Yes/ }))[0]!)
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
@@ -750,7 +747,7 @@ export const HistoryBehaviour: Story = {
     await expect(await canvas.findByRole("heading", { level: 1, name: "Details" })).toBeInTheDocument()
     window.history.back()
     await expect(await canvas.findByRole("heading", { level: 1, name: "Service" })).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAccessibleName(/, selected$/)
+    await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-pressed", "true")
     window.history.back()
     await expect(await canvas.findByRole("heading", { level: 1, name: "Address" })).toBeInTheDocument()
     await expect(canvas.getByRole("combobox", { name: "Street address" })).toHaveValue("123 Trailhead Way, Erie, CO 80516")
