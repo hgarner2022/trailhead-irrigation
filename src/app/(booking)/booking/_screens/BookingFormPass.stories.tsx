@@ -44,13 +44,13 @@ const at = (month: keyof typeof TODAY, initial: NonNullable<Args["initial"]>): A
 // May 4 is a Tuesday inside the turn-on's window; October 14 is inside the blowout's.
 const picked = { "turn-on": { day: "2027-05-04", start: "10:30" } }
 
-/** 1. The pass card in April, open: only the visits it holds (no zones, no prices; those are on Details), the one line about every season on the card, and no opening day or "Opens". */
+/** 1. The pass card in April, chosen and open: the visits it holds, each with what it costs from (no zones; those are on Details), the one line about every season on the card, and no opening day or "Opens". */
 const servicesApril = on(at("april", { step: "service" }), "April, service", {
   play: async ({ canvas }) => {
     const card = canvas.getByRole("region", { name: /Season Pass 2027/ })
     await expect(within(card).getByText("Spring turn-on")).toBeInTheDocument()
     await expect(within(card).getByText("Fall blowout")).toBeInTheDocument()
-    await expect(within(card).queryByText(/\$/)).toBeNull()
+    await expect(within(card).getByText("From $145")).toBeInTheDocument()
     await expect(canvas.getByText("We schedule your visits every season, so you never have to remember.")).toBeInTheDocument()
     await expect(canvas.queryByText(/Opens|Apr 25|Auto-renews|What happens for you|Zones/)).toBeNull()
     await expect(canvas.queryByRole("switch")).toBeNull()
@@ -85,7 +85,7 @@ export const JulyServicesLaptop = servicesJuly.laptop
 /** November 20, after the last window closed: the pass is next season's and both visits are months away. */
 const servicesNovember = on(at("november", { step: "service" }), "November, service", {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: /Season Pass 2028/ })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /^Season Pass 2028/ })).toBeInTheDocument()
   },
 })
 export const NovemberServicesPhone = servicesNovember.phone
@@ -245,7 +245,7 @@ export const WholePassPathPhoneTest: Story = {
     await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
     await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
-    await userEvent.click(await c.findByRole("button", { name: /^Season Pass 2027/ }))
+    await userEvent.click(await c.findByRole("button", { name: "Choose Season Pass 2027" }))
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
     await next()
