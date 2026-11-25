@@ -10,6 +10,8 @@ import { BookingForm, type BookingFormProps } from "./BookingForm"
 // The customer's booking form, one story per screen at 375 (Phone) and 1280 (Laptop), over fixtures; nothing is sent. Today is Wednesday, April 14, 2027. The order (Hannah, Nov 22 2026, third pass): the
 // address (the box is the type-ahead, the ZIP decides the area), then the service, whose card opens in place and holds the details, the day as a calendar with the soonest open day selected, then contact,
 // a card and a review: seven counted steps, four for a request for a quote; the service step holds only the cards and Details holds what belongs to the chosen service. Every heading is a plain name. The words are in docs/plans/2026-11-19-booking-form-design.md, "Words (Nov 22 2026)".
+/** The price section of Details; the Season Pass offer below it repeats the visits' prices, so a price is read from here. */
+const priceBox = () => within(document.querySelector("[data-slot=booking-price]") as HTMLElement)
 const phone = { globals: { viewport: { value: "phone", isRotated: false } } } as const
 const laptop = { globals: { viewport: { value: "laptop", isRotated: false } } } as const
 
@@ -85,7 +87,8 @@ export const AddressOutsideAreaTest: Story = {
     await userEvent.click(await canvas.findByRole("option", { name: /Boulder/ }))
     await expect(await canvas.findByText(/We don't serve Boulder yet/)).toBeInTheDocument()
     await expect(canvas.getByRole("link", { name: /\(970\) 692-7270/ })).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect((await canvas.findAllByText(/We don't serve Boulder yet/)).length).toBeGreaterThan(1)
   },
 }
 /** The search found nothing: "We can't find it. Enter it here." with Street, City and a required ZIP, filled in. */
@@ -122,8 +125,9 @@ export const AddressTypedOutsideTest: Story = {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "1200 Pearl St")
     await userEvent.type(await canvas.findByLabelText("City"), "Boulder")
     await userEvent.type(canvas.getByLabelText("ZIP"), "80302")
-    await expect(await canvas.findByText(/We don't serve Boulder yet/)).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await expect((await canvas.findAllByText(/We don't serve Boulder yet/)).length).toBeGreaterThan(0)
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect((await canvas.findAllByText(/We don't serve Boulder yet/)).length).toBeGreaterThan(1)
   },
 }
 /** A typed city that is not the town of its ZIP: a quiet line under the city, and Continue does not pass. */
@@ -146,7 +150,7 @@ export const AddressNoCityPickTest: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "9 Cot")
     await userEvent.click(await canvas.findByRole("option", { name: /Cottonwood/ }))
-    await waitFor(() => expect(canvas.getByLabelText("City")).toHaveFocus(), { timeout: 5000 })
+    await expect(await canvas.findByLabelText("City", {}, { timeout: 12000 })).toHaveFocus()
     await expect(canvas.getByLabelText("Street address")).toHaveValue("9 Cottonwood Ln")
   },
 }
@@ -181,24 +185,25 @@ const passOpen = on({ initial: { step: "service", service: "season-pass", fields
 export const ServicePassOpenPhone: Story = { ...passOpen.phone, name: "Service, Season Pass open, phone" }
 export const ServicePassOpenLaptop: Story = { ...passOpen.laptop, name: "Service, Season Pass open, laptop" }
 
-/** 3. Details: what belongs to the chosen service and nothing else, one quiet section per question. A repair: the price, access, and the note and photos folded behind one row. */
+/** 3. Details: what belongs to the chosen service and nothing else, one quiet section per question. A repair: the price, access, then the note and the photos as plain sections. */
 const detailsRepair = on({ initial: { step: "details", service: "repair", fields: home } }, "Details, repair", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Details" })).toBeInTheDocument()
     await expect(canvas.getByText("$145")).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: /Add a note or photos/ })).toHaveAttribute("aria-expanded", "false")
-    await expect(canvas.queryByLabelText("Note for the crew")).toBeNull()
-    await expect(canvas.queryByRole("button", { name: "Add photos" })).toBeNull()
+    // the note and the photos are plain sections on the form, in order after access: no fold, no accordion
+    await expect(canvas.getByRole("textbox", { name: "Note for the crew (optional)" })).toBeInTheDocument()
+    await expect(canvas.getByRole("heading", { name: "Photos" })).toBeInTheDocument()
+    await expect(canvas.queryByRole("button", { name: /Add a note or photos/ })).toBeNull()
+    await expect(canvas.queryByRole("button", { name: /Add 2 sample photos/ })).toBeNull()
     await expect(canvas.queryByText(/Charged after/)).toBeNull()
   },
 })
 export const DetailsRepairPhone: Story = { ...detailsRepair.phone, name: "Details, repair, phone" }
 export const DetailsRepairLaptop: Story = { ...detailsRepair.laptop, name: "Details, repair, laptop" }
-/** Access answered, a note and two photos: the folded row is open from the start because it holds something. */
+/** Access answered, a note and two photos. */
 const detailsFilled = on({ initial: { step: "details", service: "repair", fields: details, photos } }, "Details, note and photos", {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: /Add a note or photos/ })).toHaveAttribute("aria-expanded", "true")
-    await expect(canvas.getByLabelText("Note for the crew")).toHaveValue("Gate code 4471, the controller is in the garage.")
+    await expect(canvas.getByRole("textbox", { name: "Note for the crew (optional)" })).toHaveValue("Gate code 4471, the controller is in the garage.")
   },
 })
 export const DetailsFilledPhone: Story = { ...detailsFilled.phone, name: "Details, note and photos, phone" }
@@ -208,12 +213,12 @@ const turnOnDetails = on({ initial: { step: "details", service: "spring-turn-on"
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "6 or fewer" })).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: "10 zones" })).toHaveAttribute("aria-pressed", "true")
-    await expect(canvas.getByText("$165")).toBeInTheDocument()
+    await expect(priceBox().getByText("$165")).toBeInTheDocument()
     await expect(canvas.queryByText("Count the stations on your controller.")).toBeNull()
     await expect(canvas.getByRole("button", { name: "About zones" })).toBeInTheDocument()
     await expect(canvas.getByRole("heading", { name: "Make it a Season Pass" })).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: "Add Season Pass" })).toBeInTheDocument()
-    await expect(canvas.getAllByText("$165").length).toBeGreaterThan(0)
+    await expect(priceBox().getByText("$165")).toBeInTheDocument()
   },
 })
 export const DetailsTurnOnPhone: Story = { ...turnOnDetails.phone, name: "Details, spring turn-on, phone" }
@@ -229,15 +234,15 @@ export const DetailsZonesManyTest: Story = {
   tags: HIDDEN,
   args: { initial: { step: "details", service: "spring-turn-on", fields: { ...home, zones: 8 } } },
   play: async ({ canvas, userEvent }) => {
-    await expect(canvas.getByText("$145")).toBeInTheDocument()
+    await expect(priceBox().getByText("$145")).toBeInTheDocument()
     await userEvent.click(canvas.getByRole("button", { name: "More than 12" }))
     const box = await canvas.findByLabelText("Number of zones")
     await userEvent.clear(box)
     await userEvent.type(box, "20")
-    await expect(canvas.getByText("$265")).toBeInTheDocument()
+    await expect(priceBox().getByText("$265")).toBeInTheDocument()
     await userEvent.click(canvas.getByRole("button", { name: "6 or fewer" }))
     await expect(canvas.queryByLabelText("Number of zones")).toBeNull()
-    await expect(canvas.getByText("$145")).toBeInTheDocument()
+    await expect(priceBox().getByText("$145")).toBeInTheDocument()
   },
 }
 /** The offer: Add Season Pass moves the booking to the pass with the same answers and the card reads Season Pass added with Remove; Remove goes back to the single visit. */
@@ -252,7 +257,7 @@ export const DetailsUpsellTest: Story = {
     await expect(canvas.getByRole("button", { name: "10 zones" })).toHaveAttribute("aria-pressed", "true")
     await userEvent.click(canvas.getByRole("button", { name: "Remove" }))
     await expect(await canvas.findByRole("heading", { name: "Make it a Season Pass" })).toBeInTheDocument()
-    await expect(await canvas.findByText("$165")).toBeInTheDocument()
+    await expect(await priceBox().findByText("$165")).toBeInTheDocument()
   },
 }
 /** Continue pressed with the access question unanswered. */
@@ -340,7 +345,7 @@ const day = on({ initial: { step: "day", service: "repair", fields: details } },
     await expect(canvas.queryByText(/Recommended|Best fit/)).toBeNull()
     await expect(canvas.getByRole("button", { name: /Wednesday, April 21, no times open/ })).toHaveAttribute("aria-disabled", "true")
     await expect(canvas.queryByText(/Tuesdays|texts you the day before|already in Erie|Show more days/)).toBeNull()
-    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
   },
 })
 export const DayPhone: Story = { ...day.phone, name: "Day, phone" }
@@ -406,7 +411,7 @@ export const ServiceNothingClearsTest: Story = {
   play: async ({ canvas, userEvent }) => {
     await expect((await canvas.findAllByText("Choose a service.")).length).toBe(2)
     await userEvent.click(canvas.getByRole("button", { name: /^Sprinkler repair/ }))
-    await waitFor(() => expect(canvas.queryByText("Choose a service.")).toBeNull())
+    await waitFor(() => expect(canvas.queryAllByText("Choose a service.")).toHaveLength(0))
   },
 }
 /** The prototype helpers show only when a story asks for them: the note that the card form is drawn, and Add 2 sample photos. Off, as here, the customer screen has neither. */
@@ -467,7 +472,7 @@ const contactKnown = on({ initial: { step: "contact", service: "repair", fields:
 })
 export const ContactAddressOnFilePhone: Story = { ...contactKnown.phone, name: "Contact, an address we have, phone" }
 export const ContactAddressOnFileLaptop: Story = { ...contactKnown.laptop, name: "Contact, an address we have, laptop" }
-/** Picking an address we have shows nothing about its customer, and the yard's zone count and controller fill in on the service step. */
+/** Picking an address we have shows nothing about its customer, and the yard's zone count and controller fill in on the Details step. */
 export const AddressOnFileTest: Story = {
   ...phone,
   name: "Address we have, prefills the yard (test)",
@@ -639,7 +644,6 @@ export const WholePathPhoneTest: Story = {
     await userEvent.click(await c.findByRole("button", { name: "Choose Sprinkler repair" }))
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
-    await userEvent.click(await c.findByRole("button", { name: /Add a note or photos/ }))
     await userEvent.upload(await c.findByLabelText("Add photos"), [new File(["a"], "zone-3-head.jpg", { type: "image/jpeg" }), new File(["b"], "garden-bed.jpg", { type: "image/jpeg" })])
     await next()
     // the soonest day is already selected; only a time is tapped

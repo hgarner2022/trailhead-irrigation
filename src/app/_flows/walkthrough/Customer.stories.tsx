@@ -116,7 +116,6 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.click(await c.findByRole("button", { name: "Choose Sprinkler repair" }))
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
-    await userEvent.click(await c.findByRole("button", { name: /Add a note or photos/ }))
     await userEvent.upload(await c.findByLabelText("Add photos"), PHOTOS)
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /\d:\d\d [ap]m/ }))[0]!)

@@ -1,7 +1,6 @@
 "use client"
 
-import { useId, useState } from "react"
-import { ChevronDown } from "lucide-react"
+import { useId } from "react"
 import { AccessChoice, type Access } from "@/components/blocks/AccessChoice"
 import { ChoiceChips } from "@/components/blocks/ChoiceChips"
 import { FormRow } from "@/components/blocks/FormRow"
@@ -18,7 +17,7 @@ import { visitCostWords, visitName } from "./booking-pass-model"
 import { ACCESS_PROBLEM, CONTROLLER_BRANDS, EFFICIENCY_GOALS, INSTALL_WORDS, WIFI_WORDS, priceFor, priceWords, type Extras, type InstallType, type Wifi } from "./booking-form-model"
 
 // The Details step of a booking (docs/plans/2026-11-19-booking-form-design.md, "Third pass"): what belongs to the chosen service, split out of the service card where it was too much for one screen (Hannah, Nov 23
-// 2026: "just a detail section, should be elegant and able to pull out"). One quiet section per question, the optional note and photos folded behind a single row, the price shown here once. A service with
+// 2026: "just a detail section, should be elegant"). One quiet section per question, the note (optional, in its own label) and the photos as plain sections after the access question, the price shown here once. A service with
 // no catalogue price says "Price set at the visit" and nothing more. A request for a quote gets only "Details" and photos on its own step. Pure props, client component.
 
 const SAMPLES: PickedPhoto[] = [
@@ -112,34 +111,23 @@ function Section({ id, label, tip, children }: { id: string; label: string; tip?
   )
 }
 
-/** The optional part, folded behind one row that pulls out when pressed: a note for the crew and photos. Open from the start when either already holds something. */
+/** The note and the photos: plain sections on the form, in the order of the questions, never folded away (Hannah, Nov 25 2026: "that should be just on the form"). The note says it is optional in its own label. */
 function NoteAndPhotos({ id, service, ...shared }: Shared & { id: string; service: ServiceEntry }) {
-  const [open, setOpen] = useState(shared.note.trim() !== "" || shared.photos.length > 0)
-  const panel = `${id}-more`
   return (
-    <div data-slot="details-more">
-      <button type="button" aria-expanded={open} aria-controls={panel} onClick={() => setOpen((o) => !o)} className="flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-background px-4 text-left text-base font-semibold text-navy transition-colors hover:border-navy/50 hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
-        Add a note or photos
-        <ChevronDown aria-hidden className={cn("size-5 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none", open && "rotate-180")} />
-      </button>
-      {open && (
-        <div id={panel} className="mt-6 space-y-8">
-          <FormRow label="Note for the crew">
-            <Textarea value={shared.note} onChange={(e) => shared.onNote(e.target.value)} className="min-h-20 text-base" />
-          </FormRow>
-          <Section id={`${id}-photos`} label="Photos">
-            <PhotoPicker photos={shared.photos} onAdd={shared.onAddPhotos} onRemove={shared.onRemovePhoto} samples={shared.prototype ? SAMPLES : undefined} hint={service.details === "install" ? "Strongly suggested." : undefined} />
-          </Section>
-        </div>
-      )}
-    </div>
+    <>
+      <Section id={`${id}-note`} label="Note for the crew (optional)">
+        <Textarea aria-labelledby={`${id}-note`} value={shared.note} onChange={(e) => shared.onNote(e.target.value)} className="min-h-20 text-base" />
+      </Section>
+      <Section id={`${id}-photos`} label="Photos">
+        <PhotoPicker photos={shared.photos} onAdd={shared.onAddPhotos} onRemove={shared.onRemovePhoto} samples={shared.prototype ? SAMPLES : undefined} hint={service.details === "install" ? "Strongly suggested." : undefined} />
+      </Section>
+    </>
   )
 }
 
 /**
  * The Details step: what belongs to the chosen service and nothing else, one quiet question per section with generous space between them. Zones (when the price depends on them), the price (a pass:
- * each visit's price), the questions that belong to the service, whether we can reach the controller and shut-off without the customer (the one required answer), the optional note and photos folded
- * behind one row, and on a single turn-on or blowout the Season Pass offer card after them.
+ * each visit's price), the questions that belong to the service, whether we can reach the controller and shut-off without the customer (the one required answer), the note (optional, in its own label) and the photos as plain sections, and on a single turn-on or blowout the Season Pass offer card after them.
  */
 export function ServiceDetails({ service, plan = null, zones, onZones, access, onAccess, attempted, extras, onExtras, upsell, ...shared }: ServiceDetailsProps) {
   const id = useId()

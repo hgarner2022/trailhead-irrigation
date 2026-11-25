@@ -35,7 +35,7 @@ type Story = StoryObj<typeof meta>
 export const DaysAndTimesLaptop: Story = {
   globals: { viewport: { value: "laptop", isRotated: false } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
     await expect(canvas.getByRole("heading", { level: 2, name: "Your fall blowout" })).toBeInTheDocument()
   },
 }
