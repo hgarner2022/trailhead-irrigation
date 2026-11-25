@@ -7,6 +7,7 @@ import { dayShort } from "@/components/blocks/find-a-time-model"
 import type { BlockAction } from "@/components/blocks/TimeBlock"
 import type { ExternalDrop, MoveEvent, ResizeEvent } from "@/components/blocks/time-grid-types"
 import type { UnscheduledJob } from "@/components/blocks/scheduler-panels-types"
+import type { MoneyOf } from "./schedule-admin-data"
 import { initialState } from "./schedule-prototype-data"
 import { bestTimesFor, suggestionFor } from "./schedule-best-times"
 import { placementProblems, type Action, type ProtoState, type ProtoWorld, type Target } from "./schedule-prototype-model"
@@ -50,6 +51,8 @@ export interface ProtoInitial {
   onOpenSettings?: () => void
   /** the view, day and panels as they change, so a screen that unmounts (a job page opened from a block) can open again as it was left */
   onState?: (s: { view: View; day: string; panels: { unscheduled: boolean; map: boolean } }) => void
+  /** what a visit is worth and what was paid, for the List; the walkthrough reads its Jobs rows */
+  moneyOf?: MoneyOf
   /** toast seconds: 0 keeps it up (the stories); the prototype closes it after 10 */
   toastSeconds?: number
 }
@@ -65,6 +68,7 @@ export function useScheduleProto(init: ProtoInitial = {}) {
   const [day, setDay] = useState(init.day ?? world.today)
   const [panels, setPanels] = useState({ unscheduled: init.panels?.unscheduled ?? false, map: init.panels?.map ?? false })
   const [tab, setTab] = useState<{ tab: "unscheduled" | "not-notified"; key: number }>({ tab: init.tab ?? "unscheduled", key: 0 })
+  const [mapPick, setMapPick] = useState<string | null>(null)
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | undefined>(init.selectedId)
   const [dialog, setDialog] = useState<Dialog | null>(init.dialog ?? null)
@@ -129,9 +133,9 @@ export function useScheduleProto(init: ProtoInitial = {}) {
   const orderable = useMemo(() => (view === "day" ? people.filter((p) => state.visits.some((b) => b.day === day && b.personId === p.id && b.start === null && !b.done)) : []), [view, people, state.visits, day])
 
   return {
-    orderable,
+    orderable, mapPick, setMapPick,
     state, store, dispatch, people, wide, view, setView, day, setDay, panels, setPanel, togglePanel, tab, openNotNotified, hoverId, setHoverId, selectedId, setSelectedId, dialog, setDialog,
-    keys, openDay, notify, dontNotify, now: world.now, today, toastSeconds: init.toastSeconds ?? 10, jobs, bestFor, schedule,
+    moneyOf: init.moneyOf, keys, openDay, notify, dontNotify, now: world.now, today, toastSeconds: init.toastSeconds ?? 10, jobs, bestFor, schedule,
     commit, move, onMove, onResize, onDropExternal, onAction, onSelect, onNewJob: init.onNewJob, onOpenSettings: init.onOpenSettings,
     notNotifiedCount: useMemo(() => state.visits.filter((b) => b.notTold).length, [state.visits]),
   }

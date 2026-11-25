@@ -51,7 +51,7 @@ export function ScheduleDialog({ verb, first, channel = "text", address, service
       open
       size="md"
       onOpenChange={(o) => !o && onClose()}
-      title={verb === "Schedule" ? "Schedule the job" : "Move the job"}
+      title={verb === "Schedule" ? "Schedule the job" : "Move the visit"}
       slot="flow-schedule"
       onConfirm={async (variant) => (onConfirm({ ...pick, notify: variant !== "quiet" }), { ok: true })}
       renderConfirm={({ confirm, pending }) => (

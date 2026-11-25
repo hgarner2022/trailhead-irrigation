@@ -35,7 +35,7 @@ export function ScheduleToast({ message, notified = false, onNotify, onUndo, onC
   if (typeof document === "undefined") return null
   return createPortal(
     <ToastBar
-      message={<span className="font-semibold">{message}</span>}
+      message={<><span className="font-semibold">{message}</span>{!notified && <span className="font-normal">. No message sent.</span>}</>}
       actions={[
         ...(notified ? [] : [{ label: "Notify the customer", onClick: () => (onNotify(), onClose()) }]),
         { label: "Undo", onClick: async () => (await onUndo(), onClose()) },

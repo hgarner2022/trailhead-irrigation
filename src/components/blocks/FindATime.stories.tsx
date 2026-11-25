@@ -82,6 +82,15 @@ export const ForcedRowPickedPhone: Story = { ...ForcedRowPicked, globals: PHONE 
 /** Drive times are the straight-line estimate until a road lookup answers; this is the answered state, with no grey note. */
 export const RoadTimes: Story = { args: { estimated: false } }
 
+/** The road lookup could not answer: the rows use the straight-line estimate and say "Estimated drive times" once above the list. */
+export const RoadLookupFailed: Story = {
+  args: { estimated: true },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Estimated drive times")).toBeInTheDocument()
+    await expect(canvas.getAllByText(/adds \d+ min driving/).length).toBeGreaterThan(0)
+  },
+}
+
 export const NoOpenings: Story = { args: { state: "none", openings: [], forced: [], noneBefore: "Nov 30" } }
 export const NoOpeningsPhone: Story = { ...NoOpenings, globals: PHONE }
 

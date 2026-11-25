@@ -15,6 +15,13 @@ describe("ScheduleToast", () => {
     expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument()
   })
+  it("says in words that no message was sent until the customer is notified", () => {
+    const { unmount } = render(<ScheduleToast {...props} seconds={0} />)
+    expect(document.querySelector('[data-slot="undo-toast"]')).toHaveTextContent("Moved to Thu, Nov 26, 9:00 am. No message sent.")
+    unmount()
+    render(<ScheduleToast {...props} notified seconds={0} />)
+    expect(document.querySelector('[data-slot="undo-toast"]')).not.toHaveTextContent("No message sent")
+  })
   it("offers Undo alone when the customer was already notified", () => {
     render(<ScheduleToast {...props} notified seconds={0} />)
     expect(screen.queryByRole("button", { name: "Notify the customer" })).toBeNull()

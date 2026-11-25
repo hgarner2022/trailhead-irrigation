@@ -1,11 +1,14 @@
 "use client"
 
 import { useMemo } from "react"
+import { CalendarLegend } from "@/components/blocks/CalendarLegend"
 import { MonthGrid } from "@/components/blocks/MonthGrid"
 import { NotTold } from "@/components/blocks/NotTold"
 import { TimeGrid } from "@/components/blocks/TimeGrid"
 import { monthOf } from "@/components/blocks/month-grid-model"
 import { columnsFor, monthDays } from "./schedule-prototype-view"
+import { VisitsList } from "../VisitsList"
+import { adminDataOf, nowOn } from "./schedule-admin-data"
 import { driveLines } from "./schedule-engine"
 import type { Proto } from "./use-schedule-prototype"
 
@@ -15,7 +18,9 @@ import type { Proto } from "./use-schedule-prototype"
 export function ScheduleProtoCalendar({ p }: { p: Proto }) {
   const { state, view, day } = p
   const drives = useMemo(() => allDriveLines(state.visits, state.meta, p.people), [state.visits, state.meta, p.people])
-  if (view === "list") return <p className="rounded-lg border border-border bg-background px-4 py-6 text-sm text-muted-foreground">The List view stays as it is today.</p>
+  const listData = useMemo(() => adminDataOf(state, p.people, p.moneyOf), [state, p.people, p.moneyOf])
+  // List is the product's own visits grid over this calendar; a row opens the visit as a block does
+  if (view === "list") return <VisitsList data={listData} today={nowOn(p.today)} onOpenVisit={p.onSelect} />
   if (view === "month")
     return (
       <MonthGrid
@@ -30,6 +35,7 @@ export function ScheduleProtoCalendar({ p }: { p: Proto }) {
       />
     )
   return (
+    <>
     <TimeGrid
       key={view}
       className="min-w-0"
@@ -54,6 +60,8 @@ export function ScheduleProtoCalendar({ p }: { p: Proto }) {
       onAction={p.onAction}
       onToday={() => p.setDay(p.today)}
     />
+    <CalendarLegend className="mt-1" />
+    </>
   )
 }
 

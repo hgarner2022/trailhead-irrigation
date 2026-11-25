@@ -134,6 +134,7 @@ function TimeGridDesktop(props: TimeGridProps) {
                       blocks={anytime.filter((b) => b.day === c.day && b.personId === p.id)}
                       personIndex={colourOf(p.id)}
                       initials={p.initials}
+                      who={p.name}
                       selectedId={selectedId}
                       hoverId={hoverId}
                       draggingId={dragId ?? undefined}

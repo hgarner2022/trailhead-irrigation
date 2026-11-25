@@ -117,7 +117,7 @@ export const ScheduleDialogFromBlock: Story = {
   name: "Schedule dialog with best times (Move from a block)",
   args: { dialog: { kind: "schedule", id: "g-sam", job: false } },
   play: async () => {
-    await expect(await body().findByRole("dialog", { name: "Move the job" })).toBeInTheDocument()
+    await expect(await body().findByRole("dialog", { name: "Move the visit" })).toBeInTheDocument()
     await expect(await body().findByRole("radiogroup", { name: "Openings" })).toBeInTheDocument()
   },
 }
@@ -187,5 +187,64 @@ export const ShortcutsHelp: Story = {
   play: async () => {
     await userEvent.keyboard("?")
     await expect(await body().findByRole("dialog", { name: "Keyboard shortcuts" })).toBeInTheDocument()
+  },
+}
+
+/** Thursday has a stop with no set time: Order the day previews where each stop would go and the driving it saves, then one change with Undo and no message to anyone. */
+export const OrderTheDay: Story = {
+  name: "Order the day",
+  args: { view: "day", day: "2026-11-19", toastSeconds: 0 },
+  play: async () => {
+    await userEvent.click(await body().findByRole("button", { name: "Order the day" }))
+    const dialog = within(await body().findByRole("dialog", { name: "Order the day" }))
+    await expect(dialog.getByRole("region", { name: "Now" })).toBeInTheDocument()
+    await expect(dialog.getByRole("region", { name: "Ordered" })).toBeInTheDocument()
+    await userEvent.click(dialog.getByRole("button", { name: "Order the day" }))
+    await expect(await body().findByText(/^Ordered Thu, Nov 19/)).toBeInTheDocument()
+    await expect(body().queryByRole("button", { name: "Notify the customer" })).not.toBeInTheDocument()
+  },
+}
+export const OrderTheDayPhone: Story = phone(OrderTheDay)
+
+/** Schedule all N: where each job with no day would go, from the same rule; each row can be removed and the rest are planned again. */
+export const ScheduleAll: Story = {
+  name: "Schedule all",
+  args: { panels: { unscheduled: true }, toastSeconds: 0 },
+  play: async () => {
+    await userEvent.click(await body().findByRole("button", { name: "Schedule all 4" }))
+    const dialog = within(await body().findByRole("dialog", { name: "Schedule all 4" }))
+    await expect(dialog.getAllByRole("listitem")).toHaveLength(4)
+    await userEvent.click(dialog.getByRole("button", { name: "Remove Andrea Dalton" }))
+    await expect(await body().findByRole("dialog", { name: "Schedule all 3" })).toBeInTheDocument()
+    await userEvent.click(await body().findByRole("button", { name: "Schedule and notify the customer" }))
+    await expect(await body().findByText(/^Scheduled 3 jobs/, undefined, { timeout: 4000 })).toBeInTheDocument()
+  },
+}
+// on a phone the Unscheduled sheet is open, so the toast waits for it: the phone twin stops at the preview
+export const ScheduleAllPhone: Story = {
+  ...phone(ScheduleAll),
+  play: async () => {
+    await userEvent.click(await body().findByRole("button", { name: "Schedule all 4" }))
+    await expect(await body().findByRole("dialog", { name: "Schedule all 4" })).toBeInTheDocument()
+  },
+}
+
+/** List is the product's own visits grid over this calendar: a row opens the visit as a block does. */
+export const ListView: Story = {
+  name: "List",
+  args: { view: "list" },
+  play: async () => {
+    await expect(await body().findByText(/visits this season/)).toBeInTheDocument()
+  },
+}
+export const ListViewPhone: Story = phone(ListView)
+
+/** Inside "Another day": a chosen day's own openings, ranked the way the best times are, with the times that break a rule greyed. */
+export const AnotherDayRanked: Story = {
+  name: "Schedule dialog, another day ranked",
+  args: { dialog: { kind: "schedule", id: "g-sam", job: false } },
+  play: async () => {
+    await expect(await body().findByRole("dialog", { name: "Move the visit" })).toBeInTheDocument()
+    await expect(document.querySelector('[data-slot="day-times"] [role="radiogroup"]')).not.toBeNull()
   },
 }

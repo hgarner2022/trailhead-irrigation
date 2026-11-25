@@ -331,7 +331,7 @@ describe("Schedule dialog crew options", () => {
   it("lets Who take two people and tells the customer about the first", () => {
     dlg()
     fireEvent.click(screen.getByRole("checkbox", { name: "Tech Two" }))
-    expect(screen.getByText(/The customer hears about Ryan, the first one chosen/)).toBeInTheDocument()
+    expect(screen.getByText(/The customer is told Ryan is coming/)).toBeInTheDocument()
     expect(screen.getByRole("checkbox", { name: "Text Tech Two that it's assigned" })).toBeInTheDocument()
   })
 })

@@ -148,9 +148,9 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
             <p data-slot="crew-text" className="pl-8 text-muted-foreground">{crewText({ day: day.label, time: at === "any" ? "Any time" : time(at), address, service, instructions })}</p>
           </div>
         )}
-        <FormRow label="Instructions for the crew (optional)" hint={`${instructions.length} of ${CREW_LINE_MAX}. In the text to the crew and on the trip.`}>
+        {(!best || names.length > 1) && <FormRow label="Instructions for the crew (optional)" hint={`${instructions.length} of ${CREW_LINE_MAX}. In the text to the crew and on the trip.`}>
           <Input value={instructions} maxLength={CREW_LINE_MAX} onChange={(e) => (setInstructions(e.target.value), emit(day, people, at, { instructions: e.target.value }))} className="min-h-11" />
-        </FormRow>
+        </FormRow>}
       </div>
 
       <p data-slot="schedule-sentence" className="text-muted-foreground">{notices({ first: firstName, channel, others: crew ? others : [] })}</p>
@@ -195,7 +195,7 @@ function PersonAndTimes({ names, day, people, setPeople, stops, starts, at, minu
             )
           })}
         </div>
-        {people.length > 1 && <p className="text-muted-foreground">The customer hears about {people[0]!.split(" ")[0]}, the first one chosen.</p>}
+        {people.length > 1 && <p className="text-muted-foreground">The customer is told {people[0]!.split(" ")[0]} is coming.</p>}
       </fieldset>
       <div className="flex flex-col gap-2">
         <p className="font-medium">Start time <span className="font-normal text-muted-foreground">({minutes} minutes)</span></p>

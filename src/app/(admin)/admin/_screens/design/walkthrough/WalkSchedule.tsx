@@ -11,6 +11,7 @@ import { pointNear } from "../schedule-prototype-data"
 import { datesOf } from "./walk-settings"
 import { heldFromRow } from "./visits-data"
 import { rowOf } from "./jobs-data"
+import { walkMoney } from "./walk-home"
 
 const pointOf = (state: { meta: Record<string, { lat: number; lng: number }> }, id: string) => (state.meta[id] ? { lat: state.meta[id]!.lat, lng: state.meta[id]!.lng } : null)
 import { WALK_SCHEDULE_WORLD, rememberView, rememberedView, syncWalkSchedule, walkSchedule } from "./walk-schedule"
@@ -30,6 +31,7 @@ export function WalkSchedule({ day, onOpenJob, onNewJob, onOpenSettings }: { day
       panels={start.panels}
       onState={rememberView}
       onOpenJob={onOpenJob}
+      moneyOf={walkMoney}
       onNewJob={onNewJob}
       onOpenSettings={onOpenSettings}
       withOverlays={false}

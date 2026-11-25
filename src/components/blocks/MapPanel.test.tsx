@@ -22,7 +22,7 @@ afterEach(() => {
 describe("MapPanel", () => {
   it("is a docked aside named Map with a chip per person", () => {
     render(<MapPanel open onOpenChange={() => {}} stops={STOPS} people={PEOPLE} day="Tue, Nov 24" />)
-    expect(screen.getByRole("complementary", { name: "Map" })).toHaveAttribute("data-mode", "docked")
+    expect(screen.getByRole("complementary", { name: "Map, Tue, Nov 24" })).toHaveAttribute("data-mode", "docked")
     expect(screen.getByRole("button", { name: "Ryan Garner" })).toHaveAttribute("aria-pressed", "true")
     expect(screen.getByRole("button", { name: "Tech Two" })).toHaveAttribute("aria-pressed", "true")
     expect(screen.queryByRole("button", { name: "Unscheduled" })).toBeNull()
@@ -51,6 +51,18 @@ describe("MapPanel", () => {
     expect(onHover).toHaveBeenCalledWith("v-3")
     last?.onHover?.(undefined)
     expect(onHover).toHaveBeenLastCalledWith(null)
+  })
+  it("lets a Week choose which day it shows, and says the day in its title", async () => {
+    const onDay = vi.fn()
+    render(<MapPanel open onOpenChange={() => {}} stops={STOPS} people={PEOPLE} day="Wed, Nov 25" days={[{ day: "2026-11-24", label: "Tue 24" }, { day: "2026-11-25", label: "Wed 25" }]} dayValue="2026-11-25" onDayChange={onDay} />)
+    expect(screen.getByRole("complementary", { name: "Map, Wed, Nov 25" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Wed 25" })).toHaveAttribute("aria-pressed", "true")
+    await userEvent.click(screen.getByRole("button", { name: "Tue 24" }))
+    expect(onDay).toHaveBeenCalledWith("2026-11-24")
+  })
+  it("has no person chips for one person", () => {
+    render(<MapPanel open onOpenChange={() => {}} stops={STOPS} people={PEOPLE.slice(0, 1)} />)
+    expect(screen.queryByRole("button", { name: "Ryan Garner" })).toBeNull()
   })
   it("says so when there is nothing to draw", () => {
     render(<MapPanel open onOpenChange={() => {}} stops={[]} people={PEOPLE} />)

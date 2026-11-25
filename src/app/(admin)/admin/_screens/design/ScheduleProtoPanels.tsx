@@ -4,7 +4,8 @@ import { ExternalJobDraggable } from "@/components/blocks/ExternalJobDraggable"
 import { MapPanel } from "@/components/blocks/MapPanel"
 import { UnscheduledPanel } from "@/components/blocks/UnscheduledPanel"
 import { notToldList } from "./schedule-prototype-model"
-import { mapDayOf, mapDayWords, visitsOf } from "./schedule-prototype-view"
+import { dayLabel } from "@/lib/admin/calendar"
+import { mapDayOf, mapDayWords, mondayOf, visitsOf, weekDaysShown } from "./schedule-prototype-view"
 import type { Proto } from "./use-schedule-prototype"
 
 // The right column (docs/plans/2026-11-25-scheduler-design.md, 7.6): Unscheduled and Map, side by side in one column from 1280 and then sharing its height; on a phone each is a
@@ -19,7 +20,8 @@ export function ScheduleProtoPanels({ p }: { p: Proto }) {
   const unscheduledOpen = p.panels.unscheduled
   const mapOpen = p.panels.map
   const hover = p.hoverId
-  const mapDay = mapDayOf(p.view, p.day, p.today)
+  const weekDays = p.view === "week" ? weekDaysShown(mondayOf(p.day), p.people, state.visits) : []
+  const mapDay = p.view === "week" && p.mapPick && weekDays.includes(p.mapPick) ? p.mapPick : mapDayOf(p.view, p.day, p.today)
   const content = (
     <>
       <UnscheduledPanel
@@ -55,6 +57,9 @@ export function ScheduleProtoPanels({ p }: { p: Proto }) {
         people={[...p.people]}
         unscheduled={unscheduledOpen || !wide ? state.unscheduled : undefined}
         day={mapDayWords(mapDay)}
+        days={weekDays.map((d) => ({ day: d, label: dayLabel(d) }))}
+        dayValue={mapDay}
+        onDayChange={p.setMapPick}
         hoverId={hover}
         onHover={p.setHoverId}
         selectedId={p.selectedId}

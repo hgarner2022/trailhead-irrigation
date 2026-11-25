@@ -24,6 +24,8 @@ export interface VisitsListProps {
   forJob?: string
   /** filter chips set on first render: Home's money line links here with the visits its figure counts */
   defaultFilters?: { column: string; values: string[] }[]
+  /** a row opens somewhere other than the panel (the prototype's job page) */
+  onOpenVisit?: (visitId: string) => void
 }
 
 const TOWNS = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
@@ -31,8 +33,9 @@ const TOWNS = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broo
 /** The line over the grid when the list is filtered to one job: which job and how many visits. */
 const jobLine = (rows: VisitRow[]) => (rows.length === 0 ? "No visits on that job." : `${rows[0]!.jobLabel}: ${rows.length} ${rows.length === 1 ? "visit" : "visits"}.`)
 
-export function VisitsList({ data, today, forJob, defaultFilters }: VisitsListProps) {
-  const open = useOpenVisit()
+export function VisitsList({ data, today, forJob, defaultFilters, onOpenVisit }: VisitsListProps) {
+  const host = useOpenVisit()
+  const open = onOpenVisit ?? host
   const all = useMemo(() => visitRows(data, today), [data, today])
   const rows = useMemo(() => (forJob ? all.filter((r) => r.jobId === forJob) : all), [all, forJob])
   const filters = useMemo(

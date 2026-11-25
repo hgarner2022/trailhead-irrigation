@@ -60,11 +60,16 @@ export function TimeGridPhone(props: TimeGridProps) {
           </button>
         ))}
       </div>
+      {(column.caption || column.stats) && (
+        <p data-slot="day-stats" className="mb-2 text-xs text-navy-light">
+          {[column.caption, column.towns, ...chosen.map((p) => { const s = column.stats?.[p.id]; return s ? `${firstNameOf(p.name)}: ${[s.open, s.driving].filter(Boolean).join(", ")}` : null })].filter(Boolean).join(" · ")}
+        </p>
+      )}
       <div className="mb-2 flex items-start gap-2" data-slot="anytime-row">
         <span className="w-14 shrink-0 pt-1 text-xs font-medium text-navy-light">Any time</span>
         <div className="min-w-0 flex-1 space-y-1">
           {chosen.map((p) => (
-            <AnytimeStrip key={p.id} touch labelled={false} label={`Any time, ${names(p.id)}`} blocks={anytime.filter((b) => b.personId === p.id)} personIndex={colourOf(p.id)} initials={p.initials} selectedId={selectedId} hoverId={hoverId} onSelect={props.onSelect} onAction={act} />
+            <AnytimeStrip key={p.id} touch labelled={false} label={`Any time, ${names(p.id)}`} blocks={anytime.filter((b) => b.personId === p.id)} personIndex={colourOf(p.id)} initials={p.initials} who={p.name} selectedId={selectedId} hoverId={hoverId} onSelect={props.onSelect} onAction={act} />
           ))}
         </div>
       </div>

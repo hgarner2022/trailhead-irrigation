@@ -13,6 +13,7 @@ export interface AnytimeStripProps {
   blocks: readonly GridBlock[]
   personIndex?: number
   initials?: string
+  who?: string
   selectedId?: string
   hoverId?: string
   /** names the strip for a screen reader: "Any time, Ryan" */
@@ -30,7 +31,7 @@ export interface AnytimeStripProps {
   className?: string
 }
 
-export function AnytimeStrip({ blocks, personIndex = 0, initials, selectedId, hoverId, label = "Any time", labelled = true, touch, draggingId, wrap, onSelect, onHover, onAction, className }: AnytimeStripProps) {
+export function AnytimeStrip({ blocks, personIndex = 0, initials, who, selectedId, hoverId, label = "Any time", labelled = true, touch, draggingId, wrap, onSelect, onHover, onAction, className }: AnytimeStripProps) {
   const empty = blocks.length === 0
   return (
     <div role="group" aria-label={label} data-slot="anytime-strip" data-empty={empty || undefined} className={cn("flex min-w-0 items-center gap-1.5", empty ? "min-h-5" : "flex-wrap py-1", className)}>
@@ -38,7 +39,7 @@ export function AnytimeStrip({ blocks, personIndex = 0, initials, selectedId, ho
       {empty && labelled && <span aria-hidden className="h-px min-w-6 flex-1 bg-border" />}
       {blocks.map((b, i) => {
         const chip = (
-          <TimeBlock key={b.id} block={b} variant="chip" order={i + 1} personIndex={personIndex} initials={initials} touch={touch} selected={selectedId === b.id} hovered={hoverId === b.id} dragging={draggingId === b.id} onSelect={onSelect} onHover={onHover} onAction={onAction} className="min-w-0 max-w-full flex-1 basis-32" />
+          <TimeBlock key={b.id} block={b} variant="chip" order={i + 1} personIndex={personIndex} initials={initials} who={who} touch={touch} selected={selectedId === b.id} hovered={hoverId === b.id} dragging={draggingId === b.id} onSelect={onSelect} onHover={onHover} onAction={onAction} className="min-w-0 max-w-full flex-1 basis-32" />
         )
         return wrap ? wrap(b, chip) : chip
       })}

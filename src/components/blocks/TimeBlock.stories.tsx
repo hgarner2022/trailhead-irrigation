@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { Bell } from "lucide-react"
+import { expect, within } from "storybook/test"
 import { TimeBlock } from "./TimeBlock"
 import { minutesToPx, type GridBlock } from "./time-grid-model"
 
@@ -59,4 +60,23 @@ export const Chips: Story = {
       <TimeBlock block={{ ...B, start: null, minutes: 120, title: "Dry Creek Rd", service: "Repair" }} variant="chip" personIndex={1} onSelect={() => {}} />
     </div>
   ),
+}
+
+/** A clash is said in words by tapping the block's menu (a phone has no tooltip), and the block names who it is with. */
+export const ConflictInTheMenu: Story = {
+  globals: PHONE,
+  args: { touch: true, who: "Ryan Garner", conflict: "Ryan has Dry Creek Rd at 3:00 pm." },
+  play: async ({ canvas, userEvent }) => {
+    await expect(canvas.getByRole("button", { name: /with Ryan Garner/ })).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole("button", { name: "Actions for Briggs St" }))
+    await expect(await within(document.body).findByText("Ryan has Dry Creek Rd at 3:00 pm.")).toBeInTheDocument()
+    await userEvent.keyboard("{Escape}")
+  },
+}
+/** An Any time chip carries its place in the order the day is driven. */
+export const NumberedChip: Story = {
+  render: () => <TimeBlock block={{ ...B, start: null }} variant="chip" order={2} onSelect={() => {}} />,
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: /^Stop 2, Briggs St/ })).toBeInTheDocument()
+  },
 }

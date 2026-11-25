@@ -108,7 +108,7 @@ export function MonthGrid({ month, days, people, today, selectedDay, notToldMark
       </div>
       <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-navy-light">
         {people.map((p, i) => <span key={p.id} className="inline-flex items-center gap-1.5"><span aria-hidden className={cn("size-2 rounded-full", personStyle(i).dot)} />{p.name}</span>)}
-        <span className="inline-flex items-center gap-1.5"><span aria-hidden className="size-2 rounded-full bg-warning" />A move not notified</span>
+        <span className="inline-flex items-center gap-1.5">{notToldMark ?? <span aria-hidden className="size-2 rounded-full bg-warning" />}Customer not notified</span>
       </p>
     </div>
   )

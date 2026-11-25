@@ -450,7 +450,7 @@ export const ScheduleVisitToJobPageTest: Story = {
     await waitFor(() => expect(route(canvasElement)).toBe("job:g-sam"))
     await userEvent.click(await c.findByRole("button", { name: "More" }))
     await userEvent.click(await body.findByRole("menuitem", { name: "Move" }))
-    const dialog = await body.findByRole("dialog", { name: "Move the job" })
+    const dialog = await body.findByRole("dialog", { name: "Move the visit" })
     const list = await within(dialog).findByRole("radiogroup", { name: "Openings" })
     await userEvent.click((await within(list).findAllByRole("radio"))[0]!)
     await userEvent.click(await within(dialog).findByRole("button", { name: /Move and notify the customer/ }))

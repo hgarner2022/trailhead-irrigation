@@ -172,7 +172,7 @@ export function TimeGridColumn(p: TimeGridColumnProps) {
         // on a phone, blocks that overlap step across the column instead of splitting it: each keeps nearly the full width, so its street and time stay readable, and a later block sits over the lower part of the one before
         const style = p.touch && lanes > 1 ? { top, height: h, left: `${lane * 12 + 2}px`, width: `calc(100% - ${(lanes - 1) * 12 + 4}px)`, zIndex: lane + 1 } : { top, height: h, left: `calc(${(lane * 100) / lanes}% + 2px)`, width: `calc(${100 / lanes}% - 4px)` }
         const common = {
-          block: b, personIndex, initials: person.initials, selected: p.selectedId === b.id, hovered: p.hoverId === b.id, conflict: p.conflicts.get(b.id), touch: p.touch, compact: p.compact || (p.touch && lanes > 1),
+          block: b, personIndex, initials: person.initials, who: person.name, selected: p.selectedId === b.id, hovered: p.hoverId === b.id, conflict: p.conflicts.get(b.id), touch: p.touch, compact: p.compact || (p.touch && lanes > 1),
           notToldMark: b.notTold ? p.notToldMark?.(b) : undefined, style: { ...style, position: "absolute" as const }, onSelect: p.onSelect, onHover: p.onHover, onAction: p.onAction,
           onResizeStart: p.interactive && !b.done && !b.planned ? (e: React.PointerEvent<HTMLElement>) => p.onResizeStart?.(b, e) : undefined,
         }

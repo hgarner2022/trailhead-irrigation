@@ -2,7 +2,7 @@
 
 import type { CSSProperties, ReactNode, Ref } from "react"
 import { Check, Clock3, MoreHorizontal } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { hoursWords } from "@/lib/admin/day-fill"
 import { cn } from "@/lib/utils"
 import { detailFor, rangeWords, clockWords, type GridBlock } from "./time-grid-model"
@@ -23,6 +23,8 @@ export interface TimeBlockProps {
   personIndex?: number
   /** "RG", the avatar */
   initials?: string
+  /** the person's full name: the avatar is initials only, so the name is in the block's own label and visible in the Day view's head */
+  who?: string
   variant?: "block" | "chip"
   selected?: boolean
   hovered?: boolean
@@ -49,12 +51,12 @@ export interface TimeBlockProps {
   onResizeStart?: (e: React.PointerEvent<HTMLElement>) => void
 }
 
-export function blockLabel(b: GridBlock, conflict?: string): string {
+export function blockLabel(b: GridBlock, conflict?: string, who?: string): string {
   const when = b.start === null ? "Any time" : rangeWords(b.start, b.minutes)
-  return [b.title, b.service, b.town, when, b.done && "done", b.waiting && "waiting on customer", b.notTold && "customer not notified", b.planned && "proposed", conflict].filter(Boolean).join(", ")
+  return [b.title, b.service, b.town, when, who && `with ${who}`, b.done && "done", b.waiting && "waiting on customer", b.notTold && "customer not notified", b.planned && "proposed", conflict].filter(Boolean).join(", ")
 }
 
-export function TimeBlock({ block: b, personIndex = 0, initials, variant = "block", selected, hovered, conflict, dragging, notToldMark, style, className, rootRef, handleRef, touch, compact, order, onSelect, onHover, onAction, onResizeStart }: TimeBlockProps) {
+export function TimeBlock({ block: b, personIndex = 0, initials, who, variant = "block", selected, hovered, conflict, dragging, notToldMark, style, className, rootRef, handleRef, touch, compact, order, onSelect, onHover, onAction, onResizeStart }: TimeBlockProps) {
   const s = personStyle(personIndex)
   const chip = variant === "chip"
   const detail = detailFor(b.minutes)
@@ -88,7 +90,7 @@ export function TimeBlock({ block: b, personIndex = 0, initials, variant = "bloc
         ref={handleRef}
         type="button"
         data-slot="time-block-button"
-        aria-label={`${order !== undefined ? `Stop ${order}, ` : ""}${blockLabel(b, conflict)}`}
+        aria-label={`${order !== undefined ? `Stop ${order}, ` : ""}${blockLabel(b, conflict, who)}`}
         aria-pressed={selected || undefined}
         onClick={() => onSelect?.(b.id)}
         className={cn("absolute inset-0 z-0 flex w-full cursor-pointer flex-col text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy", chip || detail === "line" ? "justify-center px-1.5" : "px-1.5 py-1", touch && "text-sm", notToldMark && !touch && "pr-6")}
@@ -134,6 +136,7 @@ export function TimeBlock({ block: b, personIndex = 0, initials, variant = "bloc
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-48">
+            {conflict && <DropdownMenuLabel data-slot="conflict-words" className="max-w-56 whitespace-normal font-normal text-destructive">{conflict}</DropdownMenuLabel>}
             <DropdownMenuItem onSelect={() => onAction(b.id, "move")}>Move</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onAction(b.id, b.start === null ? "set-time" : "any-time")}>{b.start === null ? "Set a time" : "Make it Any time"}</DropdownMenuItem>
             {b.start !== null && (
