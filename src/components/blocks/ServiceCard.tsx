@@ -69,7 +69,7 @@ export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCar
       data-slot="service-entry"
       data-kind={entry.kind}
       data-selected={selected || undefined}
-      className={cn("svc-card scroll-mt-4 scroll-mb-28 overflow-hidden rounded-lg border bg-background sm:scroll-mb-6", optionFocusWithin, selected ? "svc-settle border-navy ring-1 ring-navy" : cn("border-border shadow-sm hover:border-navy/40 hover:shadow-md", pass && "border-t-2 border-t-primary"))}
+      className={cn("svc-card scroll-mt-4 scroll-mb-28 overflow-hidden rounded-lg border bg-background sm:scroll-mb-6", optionFocusWithin, selected ? "border-navy ring-1 ring-navy" : cn("border-border shadow-sm hover:border-navy/40 hover:shadow-md", pass && "border-t-2 border-t-primary"))}
     >
       <button
         type="button"
@@ -83,14 +83,14 @@ export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCar
         data-autofocus={selected || undefined}
         className={cn(optionClass({ selected, settle: false }), "flex min-h-[5.5rem] w-full items-center gap-4 rounded-none border-0 p-4 text-left focus-visible:ring-0 focus-visible:ring-offset-0")}
       >
-        <span data-slot="service-tile" className={cn("flex size-14 shrink-0 items-center justify-center rounded-lg border", pass && !selected ? "border-primary/30 bg-primary/10" : "border-border bg-background")}>
+        <span data-slot="service-tile" className={cn("svc-fade flex size-14 shrink-0 items-center justify-center rounded-lg border", pass && !selected ? "border-primary/30 bg-primary/10" : "border-border bg-background")}>
           <span key={play} className={cn("flex", play > 0 && "svc-spring")}>
             <ServiceIcon name={iconFor(entry.key)} delay={play === 0 ? index * 40 : 0} />
           </span>
         </span>
         <span className="min-w-0 flex-1">
           <span className="block type-option text-balance">{entry.name}</span>
-          {meta && <span className={cn("mt-1 block text-sm leading-5 whitespace-nowrap tabular-nums", optionDetailClass(selected))}>{meta}</span>}
+          {meta && <span className={cn("svc-fade mt-1 block text-sm leading-5 whitespace-nowrap tabular-nums", optionDetailClass(selected))}>{meta}</span>}
         </span>
         {selected ? (
           <span data-slot="service-check" aria-hidden className="svc-check relative flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-dark text-white">
