@@ -59,12 +59,13 @@ export function ConfirmDialog({ title, message, blocked, children, confirmLabel,
   const text = blocked ?? message
   return (
     <Dialog open={open} onOpenChange={(next) => (setProblem(""), onOpenChange(next))}>
-      <DialogContent showCloseButton={false} data-slot={slot ?? "confirm-dialog"} className={size === "md" ? "sm:max-w-md" : "sm:max-w-[400px]"}>
+      <DialogContent showCloseButton={false} data-slot={slot ?? "confirm-dialog"} className={cn("flex max-h-[92svh] flex-col overflow-hidden", size === "md" ? "sm:max-w-md" : "sm:max-w-[400px]")}>
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-semibold text-navy">{title}</DialogTitle>
           {text ? <DialogDescription>{text}</DialogDescription> : <DialogDescription className="sr-only">{title}</DialogDescription>}
         </DialogHeader>
-        {children}
+        {/* a long body (a month calendar) scrolls here, so the title and the buttons stay in view on a phone */}
+        {children && <div data-slot="dialog-body" className="-mx-6 grid min-h-0 gap-4 overflow-y-auto px-6 py-1">{children}</div>}
         <p role="alert" className="text-sm text-destructive empty:hidden">
           {problem}
         </p>

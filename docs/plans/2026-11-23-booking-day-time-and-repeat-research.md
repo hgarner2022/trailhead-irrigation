@@ -20,13 +20,13 @@ Nov 23 2026. Hannah's phone review of Nov 22 asked for two things to be research
 **What no source settled, so it is a choice**
 
 - Whether to choose a time for the customer. Booking tools differ. The form keeps the earlier decision: the day starts chosen (the soonest open day), a time never does, so a booking always needs one deliberate press for the time.
-- A second mark next to "Soonest". Hannah, Nov 23 2026: the soonest open day is the only mark. The scheduling engine's own ranking (same town first) is not shown and does not move the chosen day.
+- A "recommended" mark as a second mark next to "Soonest". Without a reason beside it (the line saying Ryan is already in the town is gone by Hannah's rule) it asks the customer to trust a label. The recommended day is the soonest open day, so there is one mark, not two. The scheduling engine's own ranking (same town first) is not shown and does not move the chosen day. See the open question in the PR.
 
 **What this gives the form**
 
 1. A month grid. Every day with an opening carries a quiet dot; days with none are plain and cannot be pressed. The soonest open day is chosen when the step opens, carries the orange dot and the word "Soonest" under the grid.
 2. The times of the chosen day are under the grid, earliest first, none chosen.
-3. No sentence about where Ryan is on which day, and no label on a time.
+3. No sentence about where Ryan is on which day, and no marked best time.
 4. With no day open: one sentence and Ryan's phone number, as before.
 
 ## 3. Motion

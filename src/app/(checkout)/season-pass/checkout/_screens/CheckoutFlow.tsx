@@ -147,7 +147,8 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
     const target = event.target as HTMLElement
     if (done || event.nativeEvent.isComposing || ownsKeys(target) || event.altKey || event.metaKey || event.ctrlKey) return
     const nav = target.closest("[data-nav]")
-    const typing = target.tagName === "INPUT"
+    // the arrows (and Page Up and Down) of a day calendar move its focus: they never skip a step
+    const typing = target.tagName === "INPUT" || Boolean(target.closest('[data-slot="day-calendar"]'))
     if (event.key === "Enter") {
       // A button answers Enter itself; a pressed pill or timing choice already holds its answer, so Enter moves on.
       if (nav || (target.tagName === "BUTTON" && target.getAttribute("aria-pressed") !== "true")) return

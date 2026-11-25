@@ -47,6 +47,18 @@ h1, h2, h3 {
   text-wrap: balance;
 }
 
+/* MOTION, one set for every customer screen (and nothing else defines a duration or an easing): a press answers in
+   --motion-press, a state settles in --motion-fast, something opens in --motion-base, an icon draws in --motion-draw,
+   all on one easing. Everything plays once, in answer to a press or on first appearance; nothing loops; and under
+   prefers-reduced-motion each rule below is off and the state is simply shown. */
+:root {
+  --motion-press: 100ms;
+  --motion-fast: 160ms;
+  --motion-base: 220ms;
+  --motion-draw: 520ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
 /* The chosen day or time in the booking calendar settles in: one short scale, once, nothing loops.
    Under prefers-reduced-motion it simply is chosen. */
 @keyframes settle {
@@ -54,7 +66,7 @@ h1, h2, h3 {
   to { transform: scale(1); }
 }
 .settle {
-  animation: settle 160ms ease-out both;
+  animation: settle var(--motion-fast) var(--motion-ease) both;
 }
 @media (prefers-reduced-motion: reduce) {
   .settle { animation: none; }
@@ -62,14 +74,14 @@ h1, h2, h3 {
 
 /* Every option the customer can choose (option-styles.ts) and every service card header answers a press the same way:
    it gives a little, at once, and comes back. */
-.opt { transition: transform 100ms cubic-bezier(0.2, 0, 0, 1), color 160ms cubic-bezier(0.2, 0, 0, 1), background-color 160ms cubic-bezier(0.2, 0, 0, 1), border-color 160ms cubic-bezier(0.2, 0, 0, 1); }
+.opt { transition: transform var(--motion-press) var(--motion-ease), color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease); }
 .opt:active { transform: scale(0.97); }
 @media (prefers-reduced-motion: reduce) {
   .opt { transition: none; }
   .opt:active { transform: none; }
 }
 
-/* The check on a chosen service card draws in once (a stroke, 220 ms) and nothing else moves.
+/* The check on the Season Pass offer (PassUpsell) draws in once and nothing else moves.
    Under prefers-reduced-motion it is simply drawn. */
 @keyframes draw-check {
   to { stroke-dashoffset: 0; }
@@ -77,7 +89,7 @@ h1, h2, h3 {
 .draw-check path {
   stroke-dasharray: 24;
   stroke-dashoffset: 24;
-  animation: draw-check 220ms ease-out 60ms forwards;
+  animation: draw-check var(--motion-base) var(--motion-ease) 60ms forwards;
 }
 @media (prefers-reduced-motion: reduce) {
   .draw-check path { animation: none; stroke-dashoffset: 0; }
@@ -87,12 +99,6 @@ h1, h2, h3 {
    two durations and one easing (the icon's own drawing takes a little longer). Everything plays once, in answer
    to a press or on first appearance; nothing loops. Under prefers-reduced-motion every rule below is off and
    each state is simply shown. */
-:root {
-  --svc-fast: 160ms;
-  --svc-base: 220ms;
-  --svc-draw: 520ms;
-  --svc-ease: cubic-bezier(0.2, 0, 0, 1);
-}
 /* The icon: strokes marked data-draw draw in (pathLength is 1), data-pop scales in, data-turn makes a small turn,
    data-rise comes up from the horizon. --d staggers the parts of one icon, --svc-delay the cards on first load. */
 @keyframes svc-draw { to { stroke-dashoffset: 0; } }
@@ -102,50 +108,50 @@ h1, h2, h3 {
 .svc-icon [data-draw] {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  animation: svc-draw var(--svc-draw) var(--svc-ease) calc(var(--svc-delay, 0ms) + var(--d, 0ms)) forwards;
+  animation: svc-draw var(--motion-draw) var(--motion-ease) calc(var(--svc-delay, 0ms) + var(--d, 0ms)) forwards;
 }
 .svc-icon [data-pop] {
   transform-box: fill-box;
   transform-origin: center;
-  animation: svc-pop var(--svc-base) var(--svc-ease) calc(var(--svc-delay, 0ms) + var(--d, 0ms)) both;
+  animation: svc-pop var(--motion-base) var(--motion-ease) calc(var(--svc-delay, 0ms) + var(--d, 0ms)) both;
 }
 .svc-icon [data-turn] {
   transform-box: fill-box;
   transform-origin: 70% 30%;
-  animation: svc-turn var(--svc-draw) var(--svc-ease) var(--svc-delay, 0ms) both;
+  animation: svc-turn var(--motion-draw) var(--motion-ease) var(--svc-delay, 0ms) both;
 }
 .svc-icon [data-rise] {
-  animation: svc-rise var(--svc-draw) var(--svc-ease) var(--svc-delay, 0ms) both;
+  animation: svc-rise var(--motion-draw) var(--motion-ease) var(--svc-delay, 0ms) both;
 }
 /* A press on a card: its icon answers with one short spring. */
 @keyframes svc-spring { 0% { transform: scale(0.94); } 55% { transform: scale(1.04); } 100% { transform: scale(1); } }
-.svc-spring { animation: svc-spring 240ms var(--svc-ease) both; }
+.svc-spring { animation: svc-spring 240ms var(--motion-ease) both; }
 /* The card opens: the panel's row eases from 0fr to 1fr and its lines come in one after another. */
 .svc-panel {
   display: grid;
   grid-template-rows: 0fr;
   visibility: hidden;
-  transition: grid-template-rows var(--svc-base) var(--svc-ease), visibility 0s linear var(--svc-base);
+  transition: grid-template-rows var(--motion-base) var(--motion-ease), visibility 0s linear var(--motion-base);
 }
 .svc-panel[data-open] {
   grid-template-rows: 1fr;
   visibility: visible;
-  transition: grid-template-rows var(--svc-base) var(--svc-ease), visibility 0s;
+  transition: grid-template-rows var(--motion-base) var(--motion-ease), visibility 0s;
 }
 .svc-panel > div { min-height: 0; overflow: hidden; }
 @keyframes svc-line { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .svc-panel[data-open] [data-line] {
-  animation: svc-line var(--svc-base) var(--svc-ease) calc(60ms + var(--i, 0) * 30ms) both;
+  animation: svc-line var(--motion-base) var(--motion-ease) calc(60ms + var(--i, 0) * 30ms) both;
 }
-.svc-chevron { transition: transform var(--svc-base) var(--svc-ease); }
+.svc-chevron { transition: transform var(--motion-base) var(--motion-ease); }
 /* A press anywhere on a card's header answers at once: the row gives a little (and takes a faint tint from its own classes). */
-.svc-head { transition: transform 100ms var(--svc-ease), background-color 100ms var(--svc-ease); }
+.svc-head { transition: transform var(--motion-press) var(--motion-ease), background-color var(--motion-press) var(--motion-ease); }
 .svc-head:active { transform: scale(0.985); }
-.svc-card { transition: border-color var(--svc-fast) var(--svc-ease), background-color var(--svc-fast) var(--svc-ease), box-shadow var(--svc-fast) var(--svc-ease); }
+.svc-card { transition: border-color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease), box-shadow var(--motion-fast) var(--motion-ease); }
 /* Chosen: the card settles once and the check on its icon draws in. */
 @keyframes svc-settle { 0% { transform: scale(1); } 45% { transform: scale(1.02); } 100% { transform: scale(1); } }
-.svc-settle { animation: svc-settle var(--svc-fast) var(--svc-ease) both; }
-.svc-check { animation: svc-pop var(--svc-fast) var(--svc-ease) both; }
+.svc-settle { animation: svc-settle var(--motion-fast) var(--motion-ease) both; }
+.svc-check { animation: svc-pop var(--motion-fast) var(--motion-ease) both; }
 /* One soft ring leaves the check as it lands, once. */
 @keyframes svc-ring { from { transform: scale(1); opacity: 0.7; } to { transform: scale(2.4); opacity: 0; } }
 .svc-check::after {
@@ -155,22 +161,22 @@ h1, h2, h3 {
   border-radius: 9999px;
   border: 2px solid var(--color-primary);
   opacity: 0;
-  animation: svc-ring 400ms var(--svc-ease) 120ms both;
+  animation: svc-ring 400ms var(--motion-ease) 120ms both;
 }
 .svc-check[data-leaving]::after { display: none; }
 /* Unchosen: the check undraws and the badge goes, once. */
 @keyframes svc-undraw { to { stroke-dashoffset: 1; } }
 @keyframes svc-out { to { transform: scale(0); opacity: 0; } }
-.svc-check[data-leaving] { animation: svc-out var(--svc-fast) var(--svc-ease) forwards; }
-.svc-check[data-leaving] path { stroke-dashoffset: 0; animation: svc-undraw var(--svc-fast) var(--svc-ease) forwards; }
+.svc-check[data-leaving] { animation: svc-out var(--motion-fast) var(--motion-ease) forwards; }
+.svc-check[data-leaving] path { stroke-dashoffset: 0; animation: svc-undraw var(--motion-fast) var(--motion-ease) forwards; }
 .svc-check path {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  animation: svc-draw 200ms var(--svc-ease) 80ms forwards;
+  animation: svc-draw 200ms var(--motion-ease) 80ms forwards;
 }
 /* The quote card answers a press: it gives a little and its arrow moves a few pixels, then both come back. */
-.svc-quote { transition: transform var(--svc-fast) var(--svc-ease), border-color var(--svc-fast) var(--svc-ease), background-color var(--svc-fast) var(--svc-ease); }
-.svc-arrow { transition: transform var(--svc-fast) var(--svc-ease); }
+.svc-quote { transition: transform var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease); }
+.svc-arrow { transition: transform var(--motion-fast) var(--motion-ease); }
 .svc-quote:active { transform: scale(0.985); }
 .svc-quote:active .svc-arrow { transform: translateX(4px); }
 @media (prefers-reduced-motion: reduce) {

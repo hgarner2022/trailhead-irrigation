@@ -1,6 +1,6 @@
 # Customer side polish: research, requirements, glossary
 
-Nov 19 2026. Hannah's review of PR #105. Her three answers are applied, not asked again: (1) the exact time only, never an arrival window, anywhere; (2) Reschedule offers three days with "Show more days" up to five, as booking does; (3) the booking confirmation is a second face of the holographic PassCard. Sources were fetched Nov 19; where a source did not say, this doc says so.
+Nov 19 2026. Hannah's review of PR #105. Her three answers are applied, not asked again: (1) the exact time only, never an arrival window, anywhere; (2) Reschedule offers the same day picker as booking (the calendar since Nov 23); (3) the booking confirmation is a second face of the holographic PassCard. Sources were fetched Nov 19; where a source did not say, this doc says so.
 
 ## 1. Research
 
@@ -62,7 +62,7 @@ A customer with no pass sees a card in the same frame and the same place as the 
 4. Season Pass is a place for everyone and a sell card for a customer with none (section d).
 5. The time rule and glossary hold in every string, text and email default; `{window}` placeholder becomes `{time}`; the `arrivalWindow` helper is deleted (section c).
 6. Booking confirmation is the holographic PassCard's second face: the same card artwork, sheen and size, reading the service, the day and time, and the street (Hannah).
-7. Reschedule keeps the day and time picker, three days then "Show more days" to five, on the 8-point scale (Hannah).
+7. Reschedule keeps the day and time picker, the same as booking, on the 8-point scale (Hannah).
 
 ## 3. Still open (defaults applied)
 

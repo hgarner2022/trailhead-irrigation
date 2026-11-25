@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, fn, userEvent, within } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import { AccountNav } from "@/components/blocks/AccountNav"
-import { fixtureDayTimes } from "@/lib/booking/day-time"
+import { fixtureCalendarDays } from "@/lib/booking/day-time"
 import type { Pass } from "@/lib/admin/types"
 import { andrea, canceledRepairJob, invoicedJob, oneOffJob, partPaidJob, passJob, passJobInsideCutoff, passJobWindowTold, pastDueJob, repairJob, TODAY } from "./account-fixtures"
 import { HomeScreen } from "./HomeScreen"
@@ -11,13 +11,14 @@ import { VisitsScreen } from "./VisitsScreen"
 
 // The customer's account with a booked day AND time (docs/plans/2026-11-18-scheduling-engine-design.md section 2: a customer picks a day and an exact start). Home shows the next visit as
 // "Wednesday, April 28 at 10:30 am" with "Ryan arrives between 10:30 and 11:00 am. We'll text you the day before."; the timeline shows each booked visit's time; Reschedule is the booking flow's
-// own day-and-time picker; inside the cut-off it is Text Ryan and Call Ryan; a canceled visit and a paid visit with its receipt read as before. An open invoice sits at the top of Home under
+// own day-and-time calendar, the visit's own day marked Your day; inside the cut-off it is Text Ryan and Call Ryan; a canceled visit and a paid visit with its receipt read as before. An open invoice sits at the top of Home under
 // "Invoice", never a list screen. Fixtures only; the times map stands in for the API's `startTime`.
 const pass = snapshot.passes[0] as Pass
 const phone = { globals: { viewport: { value: "phone", isRotated: false } } } as const
 const laptop = { globals: { viewport: { value: "laptop", isRotated: false } } } as const
 const times = { v1: "10:30", v6: "13:00" }
-const offers = { v1: fixtureDayTimes(60), v6: fixtureDayTimes(60) }
+const open = fixtureCalendarDays(60, "2027-04-15", "2027-05-14")
+const offers = { v1: open, v6: open }
 const actions = { onReschedule: fn(async () => ({ ok: true as const })), onRescheduleTime: fn(async () => ({ ok: true as const })), onCancel: fn(async () => ({ ok: true as const })) }
 const calendar = { googleHref: "https://calendar.google.com/calendar/render?action=TEMPLATE", icsHref: "/api/visits/v1/calendar.ics?token=t" }
 
@@ -65,7 +66,7 @@ const openSheet = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
   await userEvent.click(within(canvasElement).getByRole("button", { name: "Reschedule" }))
   await expect(await within(document.body).findByRole("dialog")).toBeInTheDocument()
 }
-/** Reschedule: the booking flow's day and time picker, her own time offered again, a button that names the day and time. */
+/** Reschedule: the booking flow's calendar, the soonest day chosen, her own day marked Your day, a button that names the day and time. */
 export const VisitRescheduleOpenPhone: Story = { ...phone, ...visit(passJob, "v1"), play: openSheet }
 export const VisitRescheduleOpenLaptop: Story = { ...laptop, ...visit(passJob, "v1"), play: openSheet }
 /** Inside the cut-off: Text Ryan and Call Ryan, and the reason. */

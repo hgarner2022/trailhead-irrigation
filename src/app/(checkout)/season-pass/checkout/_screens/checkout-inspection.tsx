@@ -1,6 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { optionClass } from "@/components/blocks/option-styles"
 import { formatMoney } from "@/lib/admin/metrics"
 import { SEASON_PASS_ADD_ON, visitPrice } from "@/lib/season-pass"
 import { Helper, type StepProps } from "./checkout-steps"
@@ -30,10 +31,7 @@ export function InspectionStep({ state, set }: StepProps) {
               data-slot="inspection-choice"
               data-autofocus={pressed || undefined}
               onClick={() => set("inspection", choice.value)}
-              className={cn(
-                "flex min-h-24 cursor-pointer flex-col items-start justify-center rounded-lg border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
-                pressed ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40",
-              )}
+              className={cn(optionClass({ selected: pressed }), "flex min-h-24 flex-col items-start justify-center px-4 py-3 text-left")}
             >
               <span className="font-display text-2xl leading-none">{choice.name}</span>
               <span className={cn("mt-1.5 text-sm", pressed ? "text-white/80" : "text-muted-foreground")}>

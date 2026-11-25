@@ -14,14 +14,14 @@ describe("day and time words", () => {
 })
 
 describe("the fixture offer", () => {
-  it("starts on the best day, marks one best time and sizes the times to the service", () => {
+  it("starts on the soonest open day, marks nothing and sizes the times to the service", () => {
     const offers = fixtureDayTimes(120)
-    expect(startDay(offers)).toBe("2027-04-20")
-    expect(offers.flatMap((o) => o.times).filter((t) => t.best)).toHaveLength(1)
-    // the days are soonest-first working days, not fixed weekdays, and the labels are the offer rule's
+    expect(startDay(offers)).toBe("2027-04-15")
+    expect(startDay([{ day: "2027-04-14", times: [] }, ...offers])).toBe("2027-04-15")
+    expect(startDay([])).toBeNull()
+    // the days are soonest-first working days, not fixed weekdays, and no day or time carries a label of the engine's
     expect(offers.map((o) => o.day)).toEqual(["2027-04-15", "2027-04-16", "2027-04-20", "2027-04-21", "2027-04-23"])
-    expect(offers[0]!.note).toBe("Soonest open day.")
-    expect(offers[2]!.note).toBe("We're already in Erie that day.")
+    expect(offers.some((o) => o.note || o.best || o.times.some((t) => t.best))).toBe(false)
     const last = (m: number) => fixtureDayTimes(m)[4]!.times.at(-1)!.start
     expect(last(120)).toBe("15:00")
     expect(last(60)).toBe("16:00")

@@ -188,20 +188,22 @@ describe("CheckoutFlow", () => {
     expect(screen.getByText("Turn-on $185 · Blowout $155")).toBeInTheDocument()
   })
 
-  it("offers three days for each visit with the first selected, and the line about changing it later", async () => {
+  it("offers a calendar for each visit with the soonest open day selected, and the line about changing it later", async () => {
     render(<CheckoutFlow season={2027} initialStep={4} prefill={{ address: "9 Elm St", town: "Erie", inspection: true }} />)
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Pick your days")
-    const radios = await screen.findAllByRole("radio")
-    expect(radios).toHaveLength(9)
-    const turnOn = screen.getByRole("group", { name: "Your spring turn-on" })
-    expect(within(turnOn).getAllByRole("radio")).toHaveLength(3)
-    expect(within(turnOn).getAllByRole("radio")[0]).toBeChecked()
-    expect(within(turnOn).getAllByRole("radio")[0]).toHaveFocus()
-    expect(turnOn).toHaveTextContent("Tuesday, May 4")
-    // a window is a message told the day before: the cards state the day only
+    expect(await screen.findAllByRole("grid")).toHaveLength(3)
+    const turnOn = screen.getByRole("region", { name: "Your spring turn-on" })
+    // the three offered days are the open ones, the soonest chosen and in focus
+    expect(within(turnOn).getAllByRole("button", { name: /^\w+day, May \d+(, soonest)?$/ })).toHaveLength(3)
+    expect(within(turnOn).getByRole("button", { name: "Tuesday, May 4, soonest" })).toHaveAttribute("aria-pressed", "true")
+    expect(within(turnOn).getByRole("button", { name: "Tuesday, May 4, soonest" })).toHaveFocus()
+    expect(within(turnOn).getByRole("button", { name: "Thursday, May 20" })).not.toHaveAttribute("aria-disabled")
+    expect(within(turnOn).getByRole("button", { name: "Wednesday, May 5, not open" })).toHaveAttribute("aria-disabled", "true")
+    // a window is a message told the day before: the calendar states the day only, with no start times
+    expect(within(turnOn).queryByRole("radio")).toBeNull()
     expect(turnOn).not.toHaveTextContent("8:00 am")
     expect(screen.getByText("We'll text you the time the day before.")).toBeInTheDocument()
-    expect(screen.getByRole("group", { name: "Your July inspection" })).toBeInTheDocument()
+    expect(screen.getByRole("region", { name: "Your July inspection" })).toBeInTheDocument()
     expect(screen.getByText("Change it later from your pass page.")).toBeInTheDocument()
     expect(continueButton()).toBeEnabled()
     expect(document.body.textContent).not.toMatch(/early|mid |late |recommended|capacity/i)
@@ -210,11 +212,13 @@ describe("CheckoutFlow", () => {
   it("holds the day picked and carries each held day to the pass", async () => {
     const onComplete = vi.fn()
     render(<CheckoutFlow season={2027} initialStep={4} prefill={answers} onComplete={onComplete} />)
-    const radios = await screen.findAllByRole("radio")
-    fireEvent.click(radios[2]!)
-    expect(radios[2]).toBeChecked()
-    expect(radios[0]).not.toBeChecked()
-    fireEvent.keyDown(radios[2]!, { key: "Enter" })
+    await screen.findAllByRole("grid")
+    const first = screen.getByRole("button", { name: "Tuesday, May 4, soonest" })
+    const third = screen.getByRole("button", { name: "Tuesday, May 25" })
+    fireEvent.click(third)
+    expect(third).toHaveAttribute("aria-pressed", "true")
+    expect(first).toHaveAttribute("aria-pressed", "false")
+    fireEvent.keyDown(third, { key: "Enter" })
     expect(progress()).toHaveAttribute("aria-valuenow", "5")
     fireEvent.keyDown(screen.getByLabelText("First name"), { key: "Enter" })
     fireEvent.click(screen.getByRole("button", { name: "Save card and reserve" }))
@@ -226,7 +230,7 @@ describe("CheckoutFlow", () => {
     render(<CheckoutFlow season={2027} initialStep={4} prefill={answers} onOffer={onOffer} />)
     expect(await screen.findByText(/Ryan sets this one and we text it to you/)).toBeInTheDocument()
     expect(onOffer).toHaveBeenCalledWith({ town: "Erie", zones: 8, inspection: false, season: 2027, today: "2026-11-12" })
-    expect(screen.getAllByRole("radio")).toHaveLength(1)
+    expect(screen.getAllByRole("grid")).toHaveLength(1)
     expect(continueButton()).toBeEnabled()
   })
 
@@ -436,7 +440,7 @@ describe("a renewal on the card on file", () => {
   it("goes from the days straight to Done: the card on file with a way to change it, the terms, and Reserve 2028", async () => {
     const onRenew = vi.fn().mockResolvedValue({ ok: true, pass: reservedPass })
     render(<CheckoutFlow season={2028} today="2027-11-02" renewal={renewal} onRenew={onRenew} initialStep={4} />)
-    await screen.findAllByRole("radio")
+    await screen.findAllByRole("grid")
     expect(screen.getByText(/Card ending 4242 on file,/)).toHaveTextContent("Card ending 4242 on file, change it")
     expect(screen.getByRole("link", { name: /change it/ })).toHaveAttribute("href", "/account/pass")
     const reserve = screen.getByRole("button", { name: "Reserve 2028" })
@@ -459,7 +463,7 @@ describe("a renewal on the card on file", () => {
   it("says what went wrong and stays on the days when the server will not reserve", async () => {
     const onRenew = vi.fn().mockResolvedValue({ ok: false, problem: "invalid", message: "Your 2028 season is already reserved." })
     render(<CheckoutFlow season={2028} today="2027-11-02" renewal={renewal} onRenew={onRenew} initialStep={4} prefill={{ termsAccepted: true }} />)
-    await screen.findAllByRole("radio")
+    await screen.findAllByRole("grid")
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Reserve 2028" }))
     })
@@ -507,7 +511,7 @@ describe("the typed address", () => {
     expect(heading()).toHaveTextContent("How many zones does your system have?")
     await user.click(continueButton())
     await user.click(continueButton())
-    await screen.findAllByRole("radio")
+    await screen.findAllByRole("grid")
     await user.click(continueButton())
     expect(heading()).toHaveTextContent("Who should we reach?")
     await act(async () => {

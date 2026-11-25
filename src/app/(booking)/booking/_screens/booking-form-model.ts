@@ -7,9 +7,8 @@ import { exactVisits, preferenceVisits, type PassPlan } from "@/lib/booking/pass
 import { emailProblem } from "@/lib/email-check"
 import { SERVICE_ZIPS, outOfAreaMessage, serviceability, zipCityMismatch, type PlaceSuggestion } from "@/lib/places"
 import { CITY_PROBLEM, STREET_PROBLEM, typedProblems, type TypedValues } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-address-typed"
-import type { DayTimeOffer, DayTimePick } from "@/lib/booking/day-time"
+import { pickComplete, type DayTimeOffer, type DayTimePick } from "@/lib/booking/day-time"
 import type { ServiceEntry } from "@/lib/booking/services"
-import { pickComplete } from "@/components/blocks/DayTimePicker"
 import type { CheckoutFields } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
 
 export type FormStep = "address" | "service" | "quote-service" | "details" | "day" | "preference" | "contact" | "card" | "confirm" | "done"

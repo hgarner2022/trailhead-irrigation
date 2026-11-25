@@ -1,5 +1,5 @@
 import Image from "next/image"
-import { CheckCircle2 } from "lucide-react"
+import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { BUSINESS } from "@/emails/format"
@@ -78,14 +78,14 @@ function Paid({ bill }: { bill: PayBill }) {
       {bill.report && <VisitReport report={bill.report} className="mt-6" />}
       <Total bill={bill} />
       <p data-slot="pay-paid" className="mt-6 flex items-center gap-2 text-base font-medium text-positive-deep">
-        <CheckCircle2 className="size-5 shrink-0 text-positive" aria-hidden />
+        <Check className="size-5 shrink-0 text-positive" aria-hidden />
         {paidWords(bill)}
       </p>
       {/* The receipt right here (UX audit row 13): the card receipt once Stripe has one, else the customer's visits, where every receipt is. */}
       <Button asChild variant="outline" size="lg" className="mt-4 w-full">
         <a href={bill.receiptUrl ?? "/account/visits"}>View the receipt</a>
       </Button>
-      <Button asChild variant="ghost" size="lg" className="mt-2 w-full">
+      <Button asChild variant="link" size="lg" className="mt-2 w-full font-semibold text-primary-deep underline underline-offset-2">
         <a href="/account">Open your Trailhead account</a>
       </Button>
     </>

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { FormRow } from "@/components/blocks/FormRow"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { optionClass } from "./option-styles"
 
 // How many zones the system has (the booking form's service card): "6 or fewer", then 7 to 12 as quick picks, and "More than 12" which opens a number box for the exact count (Hannah, Nov 22 2026:
 // "They could have a lot. After the 12th it's probably the same pricing", so above 12 the price is the catalogue's per-zone rule and there is no new band). The count decides the price and the visit's
@@ -19,9 +20,9 @@ export interface ZonePickerProps {
   className?: string
 }
 
-const CHIP = "flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-lg border px-3 font-display text-xl tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
-const on = "border-navy bg-navy text-white"
-const off = "border-border bg-background text-navy hover:border-navy/40"
+const CHIP = "flex min-h-11 min-w-11 items-center justify-center px-3 font-display text-xl tabular-nums"
+/** the one option style (option-styles.ts), at this block's size */
+const chip = (selected: boolean) => cn(optionClass({ selected }), CHIP)
 
 export function ZonePicker({ value, onChange, className }: ZonePickerProps) {
   const [many, setMany] = useState(value >= MANY_FROM)
@@ -40,11 +41,11 @@ export function ZonePicker({ value, onChange, className }: ZonePickerProps) {
   return (
     <div data-slot="zone-picker" className={cn("space-y-3", className)}>
       <div role="group" aria-label="Zones" className="flex flex-wrap gap-2">
-        <button type="button" aria-pressed={!many && value <= FEW} onClick={() => pick(FEW)} className={cn(CHIP, !many && value <= FEW ? on : off)}>
+        <button type="button" aria-pressed={!many && value <= FEW} onClick={() => pick(FEW)} className={chip(!many && value <= FEW)}>
           6 or fewer
         </button>
         {quick.map((zones) => (
-          <button key={zones} type="button" aria-pressed={!many && value === zones} aria-label={`${zones} zones`} onClick={() => pick(zones)} className={cn(CHIP, !many && value === zones ? on : off)}>
+          <button key={zones} type="button" aria-pressed={!many && value === zones} aria-label={`${zones} zones`} onClick={() => pick(zones)} className={chip(!many && value === zones)}>
             {zones}
           </button>
         ))}
@@ -56,7 +57,7 @@ export function ZonePicker({ value, onChange, className }: ZonePickerProps) {
             setText(String(Math.max(value, MANY_FROM)))
             onChange(Math.max(value, MANY_FROM))
           }}
-          className={cn(CHIP, many ? on : off)}
+          className={chip(many)}
         >
           More than 12
         </button>

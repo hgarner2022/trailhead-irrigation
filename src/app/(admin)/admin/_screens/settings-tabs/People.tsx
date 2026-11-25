@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { FormRow } from "@/components/blocks/FormRow"
 import { SettingsList } from "@/components/blocks/SettingsList"
+import { TimeField } from "@/components/blocks/TimeField"
 import { WEEKDAYS } from "@/lib/admin/calendar"
 import { ROLES, ROLE_WORDS, hoursOf } from "@/lib/admin/people"
 import type { CapacityKind, Person, PersonRole, Weekday } from "@/lib/admin/types"
@@ -63,9 +64,9 @@ function PersonFacts({ person, apply }: { person: Person; apply: Apply }) {
       </FormRow>
       <FormRow label="Hours" inline htmlFor={`${person.id}-hours-start`} hint="The weekly rule. A day off or a dentist visit is Block time on the Schedule.">
         <div className="flex items-center gap-2">
-          <CommitInput id={`${person.id}-hours-start`} type="time" label={`${name} day starts`} value={hours.start} className="w-32" onCommit={(v) => apply((s, a) => setHours(s, person.id, "hoursStart", v, a))} />
+          <TimeField id={`${person.id}-hours-start`} label={`${name} day starts`} value={hours.start} onChange={(v) => apply((s, a) => setHours(s, person.id, "hoursStart", v, a))} />
           <span className="text-sm text-muted-foreground">to</span>
-          <CommitInput type="time" label={`${name} day ends`} value={hours.end} className="w-32" onCommit={(v) => apply((s, a) => setHours(s, person.id, "hoursEnd", v, a))} />
+          <TimeField label={`${name} day ends`} value={hours.end} onChange={(v) => apply((s, a) => setHours(s, person.id, "hoursEnd", v, a))} />
         </div>
       </FormRow>
       <FormRow label="Most per day, by kind" inline htmlFor={`${person.id}-most-turn-on`} hint="The most of each kind in one day. 0 means this person takes none of that kind.">

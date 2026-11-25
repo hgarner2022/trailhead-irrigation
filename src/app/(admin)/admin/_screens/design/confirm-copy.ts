@@ -15,7 +15,8 @@ export interface ConfirmCopy {
   /** the quiet twin under the caret: every customer-facing action can go ahead without notifying */
   quiet?: string
   /** Mark done on a late job asks which day it was done; the days offered, the first the default */
-  doneOn?: string[]
+  /** asks which day it was done on, on the calendar; `today` is the latest day that may be chosen (the prototype's today) */
+  doneOn?: { today: string }
   reportOption?: { label: string; with: string; without: string }
 }
 
@@ -146,7 +147,7 @@ export function footerConfirms(f: ConfirmFacts): Record<string, ConfirmCopy> {
     Move: { title: "Move the visit", message: `Move the ${f.service} to Wed, Nov 25 at 9:00 am and text ${f.first} the new day.`, confirmLabel: "Move the visit" },
     "On my way": { title: "On my way", message: `Notify ${f.first} that Ryan is on the way to ${f.address}, by text, and mark the job Active.`, confirmLabel: "Send and start", quiet: "Start without notifying" },
     "Mark done": f.late
-      ? { title: "Mark done", message: `When was the ${f.service} at ${f.address} done? Nothing is charged and no one is notified; next you choose how it is paid.`, confirmLabel: "Mark done", doneOn: ["Mon, Nov 16", "Tue, Nov 17", "Today, Wed Nov 18"] }
+      ? { title: "Mark done", message: `When was the ${f.service} at ${f.address} done? Nothing is charged and no one is notified; next you choose how it is paid.`, confirmLabel: "Mark done", doneOn: { today: "2026-11-18" } }
       : { title: "Mark done", message: `Mark the ${f.service} done at ${f.address}? Done now, 10:05 am. Nothing is charged and no one is notified; next you choose how it is paid.`, confirmLabel: "Mark done" },
     "Send a payment reminder": {
       title: "Send a payment reminder",
