@@ -10,7 +10,8 @@ import { fixtureCalendarDays, type DayTimeOffer, type DayTimePick } from "@/lib/
 import { bookingEntries } from "@/lib/booking/pass-entry"
 import { passPlanFor, preferenceVisits } from "@/lib/booking/pass-visits"
 import { TERMS_VERSION } from "@/lib/season-pass"
-import { emailDiffers, fixtureKnown } from "@/lib/booking/known-address"
+import { OnFileMark } from "@/components/blocks/OnFileMark"
+import { accessOf, emailDiffers, fixtureKnown } from "@/lib/booking/known-address"
 import { CATALOGUE, bookableOf, quotableOf } from "@/lib/booking/services"
 import type { TimingPreference } from "@/lib/admin/types"
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
@@ -76,7 +77,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
   const town = townOf(fields)
   // A repeat customer is recognised by the address alone (Hannah, Nov 23 2026): nothing personal is shown, the yard's zone count and controller prefill, and the card on file is offered on the card step to the email on file only.
-  const { property, offered, otherCard, setOtherCard, prefillOnce } = useKnownProperty({ place: fields.place, email: fields.email, known, other: initial.other })
+  const { property, offered, otherCard, setOtherCard, filled, prefillOnce } = useKnownProperty({ place: fields.place, email: fields.email, known, other: initial.other, contactStep: step === "contact" && !quote, fields, setField: (f, v) => set(f, v) })
   const cardNow: CardChoice = card === "file" && !offered ? null : card
   const first = useRef(true)
 
@@ -149,8 +150,9 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
     if (step === "contact" && !quote) setTermsAt(new Date().toISOString())
     // The yard's non-sensitive facts of a property on file prefill once: the zone count and the controller.
     if (step === "address")
-      prefillOnce((p) => {
+      prefillOnce((p, access) => {
         set("zones", p.zones)
+        if (fields.access === null) set("access", access)
         if (p.controller) setExtras((x) => ({ ...x, brand: x.brand || p.controller! }))
       })
     // An email that is no longer the one on file takes the card on file away: the card step asks again, as for a new customer.
@@ -234,6 +236,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       body = (
         <>
           <AddressStep state={fields} attempted={attempted} places={places} showAccess={false} onTypedChange={setAddressTyped} onTypedValues={setTyped} onType={(text) => dispatch({ type: "typeAddress", text })} onPick={(place) => dispatch({ type: "pickPlace", place })} set={set} />
+          {property && <OnFileMark className="mt-4" />}
           {deadEnd && (
             <p data-slot="address-help" className="mt-4 text-base text-muted-foreground">
               {"Not sure? Call Ryan at "}
@@ -247,7 +250,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       )
       break
     case "details":
-      body = quote || !service ? <QuoteDetails {...details} /> : <ServiceDetails service={service} plan={service.kind === "pass" ? passPlanFor(today) : null} zones={fields.zones} onZones={(n) => set("zones", n)} access={fields.access} onAccess={(a) => set("access", a)} attempted={attempted} extras={extras} onExtras={setExtras} upsell={upsell(service.key)} {...details} />
+      body = quote || !service ? <QuoteDetails {...details} /> : <ServiceDetails service={service} plan={service.kind === "pass" ? passPlanFor(today) : null} zones={fields.zones} onZones={(n) => set("zones", n)} access={fields.access} onAccess={(a) => set("access", a)} attempted={attempted} extras={extras} onExtras={setExtras} onFile={property ? { zones: fields.zones === property.zones, access: fields.access === accessOf(property) } : undefined} upsell={upsell(service.key)} {...details} />
       break
     case "day":
       body = <CalendarGroups error={stepError} groups={groups} picks={heldPicks} onPick={(k, p) => setPicks((prev) => ({ ...prev, [k]: p }))} note={when} onNote={setWhen} />
@@ -267,6 +270,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
             channel={channel}
             onChannel={setChannel}
             attempted={attempted}
+            filled={filled}
           />
           {quote && <p data-slot="quote-happens" className="mt-8 text-base text-foreground">{happensWords({ channel, phone: fields.phone, email: fields.email, quote: true, callback: false })}</p>}
         </>
