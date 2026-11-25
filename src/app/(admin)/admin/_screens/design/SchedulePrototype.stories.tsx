@@ -38,7 +38,7 @@ async function keyboardMove(root: HTMLElement, name: RegExp, rows: number) {
 }
 /** The phone has no drag: the block's menu is the way. */
 async function menuAction(label: string, item: string) {
-  await userEvent.click(await body().findByRole("button", { name: label }))
+  await userEvent.click((await body().findAllByRole("button", { name: label }))[0]!)
   await userEvent.click(await body().findByRole("menuitem", { name: item }))
 }
 const held: ProtoInitial = { toastSeconds: 0 }
@@ -57,21 +57,21 @@ export const DayTwoPeoplePhone: Story = phone(DayTwoPeople)
 export const Month: Story = { name: "Month", args: { view: "month" } }
 export const MonthPhone: Story = phone(Month)
 
-/** Aspen Dr is lifted with Space, moved down one row (15 minutes) and dropped with Enter: "Moved to Wed, Nov 18, 9:15 am" with Notify the customer and Undo, and the visit is marked not notified. */
+/** Willow Dr is lifted with Space, moved down one row (15 minutes) and dropped with Enter: "Moved to Wed, Nov 18, 8:15 am" with Notify the customer and Undo, and the visit is marked not notified. */
 export const JustMoved: Story = {
   name: "Just moved (toast showing)",
   args: held,
   play: async ({ canvasElement }) => {
-    await keyboardMove(canvasElement, /^Aspen Dr, Repair/, 1)
-    await expect(await body().findByText("Moved to Wed, Nov 18, 9:15 am")).toBeInTheDocument()
+    await keyboardMove(canvasElement, /^Willow Dr, Fall blowout/, 1)
+    await expect(await body().findByText("Moved to Wed, Nov 18, 8:15 am")).toBeInTheDocument()
     await expect(await body().findByRole("button", { name: "Notify the customer" })).toBeInTheDocument()
   },
 }
 export const JustMovedPhone: Story = {
   ...phone(JustMoved),
   play: async () => {
-    await menuAction("Actions for Aspen Dr", "15 minutes longer")
-    await expect(await body().findByText(/^Changed to 9:00 to 10:15 am/)).toBeInTheDocument()
+    await menuAction("Actions for Willow Dr", "15 minutes longer")
+    await expect(await body().findByText(/^Changed to 8:00 to 8:45 am/)).toBeInTheDocument()
   },
 }
 
@@ -80,7 +80,7 @@ export const MessageOpen: Story = {
   name: "Send a message open (Notify the customer)",
   args: held,
   play: async ({ canvasElement }) => {
-    await keyboardMove(canvasElement, /^Aspen Dr, Repair/, 1)
+    await keyboardMove(canvasElement, /^Willow Dr, Fall blowout/, 1)
     await userEvent.click(await body().findByRole("button", { name: "Notify the customer" }))
     await expect(await body().findByRole("dialog", { name: "Send a message" })).toBeInTheDocument()
   },
@@ -88,7 +88,7 @@ export const MessageOpen: Story = {
 export const MessageOpenPhone: Story = {
   ...phone(MessageOpen),
   play: async () => {
-    await menuAction("Actions for Aspen Dr", "15 minutes longer")
+    await menuAction("Actions for Willow Dr", "15 minutes longer")
     await userEvent.click(await body().findByRole("button", { name: "Notify the customer" }))
     await expect(await body().findByRole("dialog", { name: "Send a message" })).toBeInTheDocument()
   },
@@ -98,8 +98,7 @@ export const MessageOpenPhone: Story = {
 export const NotNotifiedList: Story = {
   name: "Not notified list",
   play: async ({ canvasElement }) => {
-    await keyboardMove(canvasElement, /^Aspen Dr, Repair/, 1)
-    await keyboardMove(canvasElement, /^Aspen Dr, Repair/, 1)
+    await keyboardMove(canvasElement, /^Willow Dr, Fall blowout/, 1)
     await userEvent.click(await body().findByRole("button", { name: /^\d+ customers? not notified$/ }))
     await expect(await body().findByRole("button", { name: "Notify all" })).toBeInTheDocument()
   },
@@ -107,7 +106,7 @@ export const NotNotifiedList: Story = {
 export const NotNotifiedListPhone: Story = {
   ...phone(NotNotifiedList),
   play: async () => {
-    await menuAction("Actions for Aspen Dr", "15 minutes longer")
+    await menuAction("Actions for Willow Dr", "15 minutes longer")
     await userEvent.click(await body().findByRole("button", { name: /^\d+ customers? not notified$/ }))
     await expect(await body().findByRole("button", { name: "Notify all" })).toBeInTheDocument()
   },

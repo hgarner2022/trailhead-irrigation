@@ -2,9 +2,10 @@ import { TOWN_CENTRES } from "@/components/blocks/day-map-helpers"
 import { clockToMinutes, type GridBlock, type TimeOff } from "@/components/blocks/time-grid-model"
 import type { Person, Town, VisitKind } from "@/lib/admin/types"
 import { pointNear } from "../schedule-prototype-data"
-import type { Meta, ProtoJob, ProtoWorld } from "../schedule-prototype-model"
+import type { Meta, Place, ProtoJob, ProtoWorld } from "../schedule-prototype-model"
 import type { GridJob } from "../JobsGridDesign"
-import { allRows, contactOf, jobView } from "./jobs-data"
+import { allRows, contactOf, jobView, rowOf } from "./jobs-data"
+import { WEEK_VISITS, weekVisitOf } from "./week-visits"
 
 // The walkthrough's calendar: every dated visit is read from the job's own page, so the Schedule and the job pages cannot disagree (the Day, Time and Who the page
 // shows are parsed back into a place on the clock). "Today" is Wednesday, Nov 18 2026, the day the job pages are written for. A visit the page calls "Done at 9:40 am" is
@@ -59,30 +60,35 @@ function metaOf(row: GridJob): Meta {
   return { customer: row.name, phone: c.text, email: c.email, ...pointNear(townOf(row), row.id) }
 }
 
+/** The week's visits (week-visits.ts, the one source) as blocks, with where each moved one was. */
+function weekBlocks(): { visits: GridBlock[]; was: Record<string, Place>; meta: Record<string, Meta> } {
+  const visits: GridBlock[] = []
+  const was: Record<string, Place> = {}
+  const meta: Record<string, Meta> = {}
+  for (const w of WEEK_VISITS) {
+    const row = rowOf(w.id)
+    if (!row) continue
+    const personId = personIdOf(w.who)!
+    const kind = w.service === "Fall blowout" ? "blowout" : "repair"
+    visits.push({ id: w.id, day: w.day, personId, start: w.start, minutes: w.minutes, title: streetOf(row), name: firstOf(row), kind, town: townOf(row), service: w.service === "Fall blowout" ? "Fall blowout" : "Repair", done: w.done || undefined, waiting: w.waiting || undefined, notTold: w.was ? true : undefined })
+    if (w.was) was[w.id] = { day: w.was.day, personId, start: w.was.start, minutes: w.minutes }
+    meta[w.id] = metaOf(row)
+  }
+  return { visits, was, meta }
+}
+
 /** The calendar the walkthrough's Schedule opens over. */
 export function buildWalkWorld(): ProtoWorld {
-  const visits: GridBlock[] = []
+  const week = weekBlocks()
+  const visits: GridBlock[] = [...week.visits]
   const unscheduled: ProtoJob[] = []
-  const meta: Record<string, Meta> = {}
+  const meta: Record<string, Meta> = { ...week.meta }
   for (const row of allRows()) {
-    if (row.stage === "cancelled") continue
-    // a job the Jobs grid dates to an earlier year is not on this year's calendar, whatever the catalogue page says (its page reads "Today, Wed Nov 18" for every done and paid job)
-    const old = Number(row.season) > 0 && Number(row.season) < Number(WALK_SCHEDULE_TODAY.slice(0, 4))
+    if (row.stage === "cancelled" || weekVisitOf(row.id)) continue
     const view = jobView(row.id)
     meta[row.id] = metaOf(row)
+    const old = Number(row.season) > 0 && Number(row.season) < Number(WALK_SCHEDULE_TODAY.slice(0, 4))
     if (old) continue
-    if (view.kind === "page" && view.data.when.length) {
-      const get = (k: string) => view.data.when.find((f) => f[0] === k)?.[1]
-      const dayText = String(get("Day") ?? "")
-      const timeText = String(get("Time") ?? "")
-      const day = isoFromWords(dayText, "2026")
-      const personId = personIdOf(String(get("Who") ?? ""))
-      if (day && personId) {
-        const done = /^done/i.test(timeText)
-        visits.push(blockOf(row, { day, personId, start: startFromWords(timeText), done }))
-        continue
-      }
-    }
     if (view.kind === "trips" && row.stage === "scheduled") {
       const day = isoFromWords(row.next, row.season || "2027")
       const personId = personIdOf(row.who)
@@ -101,5 +107,5 @@ export function buildWalkWorld(): ProtoWorld {
     { id: "off-hannah-1", personId: HANNAH_ID, day: "2026-11-20", start: 12 * 60, end: 14 * 60 },
     { id: "off-ryan-1", personId: RYAN_ID, day: "2026-11-30", start: null, end: null },
   ]
-  return { today: WALK_SCHEDULE_TODAY, now: { day: WALK_SCHEDULE_TODAY, minutes: 10 * 60 + 20 }, people: WALK_PEOPLE, visits, meta, unscheduled, timeOff }
+  return { today: WALK_SCHEDULE_TODAY, now: { day: WALK_SCHEDULE_TODAY, minutes: 10 * 60 + 20 }, people: WALK_PEOPLE, visits, meta, unscheduled, timeOff, was: week.was }
 }

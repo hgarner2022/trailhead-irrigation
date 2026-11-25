@@ -6,6 +6,7 @@ import type { PageCustomer } from "../JobPageTrips"
 import { jobGridRow } from "../quotes/quote-grid"
 import { walkQuotes } from "../quotes/quote-store"
 import { clearWorldCustomers, worldCustomer } from "./world-customers"
+import { WEEK_TODAY, WEEK_VISITS, weekDayShort, weekFacts, weekNext, weekVisitOf } from "./week-visits"
 
 // The walkthrough's jobs (see data.ts for the world): the Jobs grid's rows and the page each one opens.
 
@@ -25,7 +26,7 @@ const HANNAH = "Hannah Garner"
 const NOONE = "No one yet"
 const g = (id: string, name: string, service: string, title: string, property: string, stage: GridStatus, visits: string, total: number, billingState: BillingState | null, billing: string, next: string, who: string, season = ""): GridJob => ({ id, name, service, title, property, stage, visits, total, billingState, billing, next, who, season })
 
-export const GRID_ROWS: GridJob[] = [
+const BASE_ROWS: GridJob[] = [
   g("andrea-repair", "Andrea Dalton", "Sprinkler repair", "Sprinkler repair", "480 Briggs St, Erie", "unscheduled", "0 of 1 done", 145, null, "", "Unscheduled", NOONE),
   g("pass-2027", "Andrea Dalton", "Season Pass", "Season Pass TH-2027-0008", "480 Briggs St, Erie", "scheduled", "0 of 2 done", 260, null, "", "Mon, May 3", RYAN, "2027"),
   g("pass-2026", "Andrea Dalton", "Season Pass", "Season Pass TH-2026-0021", "480 Briggs St, Erie", "done", "2 of 2 done", 260, "paid", "Paid, card", "None", RYAN, "2026"),
@@ -49,6 +50,11 @@ export const GRID_ROWS: GridJob[] = [
   g("qj-0005", "Nora Quinn", "Christmas lights", "Christmas lights", "12 Elk Ct, Louisville", "unscheduled", "0 of 1 done", 750, null, "", "Unscheduled", NOONE),
   g("g-ana", "Ana Ruiz", "Sprinkler repair", "Sprinkler repair", "9 Laurel St, Louisville", "late", "0 of 1 done", 145, null, "", "Mon, Nov 16", RYAN),
 ]
+
+// The week's visits (week-visits.ts) are the one source: an existing row takes its who and next from its record, and each new record is a new scheduled job for a customer who already exists.
+const weekRow = (r: GridJob): GridJob => { const w = weekVisitOf(r.id); return w ? { ...r, who: w.who, next: weekNext(w) } : r }
+const newWeekRows: GridJob[] = WEEK_VISITS.filter((w) => w.isNew).map((w) => g(w.id, w.name, w.service, w.service, w.property, w.day === WEEK_TODAY ? "today" : "scheduled", "0 of 1 done", w.service === "Fall blowout" ? 115 : 145, null, "", weekNext(w), w.who))
+export const GRID_ROWS: GridJob[] = [...BASE_ROWS.map(weekRow), ...newWeekRows]
 
 /** The invoice a job's page names: the fixtures all say INV-2026-0001 at /admin/invoices?invoice=inv-1, so each page is rewritten to its own invoice. */
 export const INVOICE_OF_JOB: Record<string, { id: string; number: string }> = {
@@ -131,6 +137,21 @@ function dalePass(next: boolean): MultiTripData {
   }
 }
 
+/** A job in the week reads its Day, Time and Who (and Waiting on customer) from its visit record, and the day and time the fixture words repeat in its messages and history. */
+function withWeek(id: string, data: JobPageData): JobPageData {
+  const w = weekVisitOf(id)
+  if (!w) return data
+  const f = weekFacts(w)
+  const swap = (t: string) => t.replace("Tue, Nov 24", weekDayShort(w.day)).replace("Wed, Nov 18 at 9:00 am", w.start === null ? weekDayShort(w.day) : `${weekDayShort(w.day)} at ${f.time.replace("Done at ", "")}`)
+  return {
+    ...data,
+    when: [["Day", f.day], ["Time", f.time], ["Who", f.who]],
+    pills: w.waiting ? [{ status: "scheduled" }, { status: "waiting" }] : data.pills,
+    messages: data.messages.map((m) => ({ ...m, body: swap(m.body) })),
+    notes: data.notes.map((n) => ({ ...n, what: swap(n.what) })),
+  }
+}
+
 /** The page of one job: the flow for Andrea's repair, the trips page for her passes, the fixture state for the rest, re-skinned to the row. */
 export function jobView(id: string): JobView {
   const row = rowOf(id)
@@ -144,7 +165,7 @@ export function jobView(id: string): JobView {
   }
   if (id.startsWith("dale-pass")) return { kind: "trips", data: dalePass(id === "dale-pass-2027"), customer: { name: "Dale Whitaker", phone: { text: "(970) 555-0140", href: "tel:+19705550140" } } }
   const c = contactOf(row.name)
-  const data = jobPageOf(STATE_OF(row))
+  const data = withWeek(id, jobPageOf(STATE_OF(row)))
   const [street, town] = row.property.split(", ")
   const where: JobPageData["where"] = data.where.map((f) => (f[0] === "Address" ? ["Address", `${street}, ${town}`] : f))
   const isAndrea = row.name === "Andrea Dalton"

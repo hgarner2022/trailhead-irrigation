@@ -54,7 +54,7 @@ export const personIdOf = (people: ProtoWorld["people"], name: string) => people
 
 export function useScheduleProto(init: ProtoInitial = {}) {
   const [world] = useState<ProtoWorld>(() => init.world ?? buildWalkWorld())
-  const [store] = useState<WorldStore>(() => init.store ?? createWorldStore(() => initialState({ visits: world.visits, unscheduled: world.unscheduled, meta: world.meta, timeOff: world.timeOff, ...init.state })))
+  const [store] = useState<WorldStore>(() => init.store ?? createWorldStore(() => initialState({ visits: world.visits, unscheduled: world.unscheduled, meta: world.meta, timeOff: world.timeOff, was: world.was, ...init.state })))
   const state = useWorldState(store)
   const dispatch = store.dispatch
   const [view, setView] = useState<View>(init.view ?? "week")
@@ -102,7 +102,7 @@ export function useScheduleProto(init: ProtoInitial = {}) {
   const dontNotify = (ids: string[]) => dispatch({ type: "told", ids })
 
   /** the best times for a job with no day or a visit being moved, over the calendar as it stands */
-  const bestFor = useCallback((town: Parameters<typeof bestTimesFor>[0]["town"], minutes: number, excludeId?: string, initialPickId?: string) => bestTimesFor({ state, people, today, town, minutes, excludeId, initialPickId }), [state, people, today])
+  const bestFor = useCallback((town: Parameters<typeof bestTimesFor>[0]["town"], minutes: number, excludeId?: string, initialPickId?: string, currentDay?: string) => bestTimesFor({ state, people, today, town, minutes, excludeId, initialPickId, currentDay }), [state, people, today])
 
   /** the Unscheduled rows with their one suggested line */
   const jobs: (UnscheduledJob & { pickId?: string })[] = useMemo(

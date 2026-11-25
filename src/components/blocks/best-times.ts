@@ -17,4 +17,6 @@ export interface BestTimes {
   problems?: (place: { day: string; person: string; start: number | null }) => string[]
   /** a row already picked: the dialog opens on it (a row's suggestion, or the recommended time behind Schedule) */
   initialPickId?: string
+  /** the day the visit being moved has now: the dialog opens "Another day" when it is not one of the rows */
+  currentDay?: string
 }

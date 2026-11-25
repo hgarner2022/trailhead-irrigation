@@ -13,7 +13,7 @@ let remembered: { view: View; day: string; panels: { unscheduled: boolean; map: 
 
 const make = () => {
   const w = buildWalkWorld()
-  return initialState({ visits: w.visits, unscheduled: w.unscheduled, meta: w.meta, timeOff: w.timeOff })
+  return initialState({ visits: w.visits, unscheduled: w.unscheduled, meta: w.meta, timeOff: w.timeOff, was: w.was })
 }
 
 /** The one store. */

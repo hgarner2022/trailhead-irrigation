@@ -457,7 +457,7 @@ export const ScheduleVisitToJobPageTest: Story = {
     await expect(await body.findByText(/^Moved to /)).toBeInTheDocument()
     await userEvent.click(await c.findByRole("link", { name: "Schedule" }))
     await waitFor(() => expect(route(canvasElement)).toBe("schedule"))
-    await expect((await c.findAllByRole("button", { name: /^Aspen Dr, Repair/ })).length).toBe(1)
+    await expect((await c.findAllByRole("button", { name: /^Aspen Dr, Repair/ })).length).toBe(2)
   },
 }
 

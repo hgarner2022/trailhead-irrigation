@@ -31,6 +31,8 @@ export interface ProtoWorld {
   meta: Record<string, Meta>
   unscheduled: ProtoJob[]
   timeOff: TimeOff[]
+  /** moved visits whose customer has not been notified: where each was */
+  was?: Record<string, Place>
 }
 export type Action =
   | { type: "move"; id: string; to: Target; notified?: boolean }
@@ -140,12 +142,19 @@ export function visitOfJob(j: ProtoJob, to: Target): GridBlock {
   return { id: j.id, day: to.day, personId: to.personId, start: to.start, minutes: j.minutes, title: j.street, name: j.customer.split(" ")[0] ?? j.customer, kind: j.kind, town: j.town, service: j.service, notTold: true }
 }
 
+/** A move in the app's own words (`visit.moved` in src/lib/events/words.ts, "moved from X to Y"): the day is said once when it did not change, both when it did. */
+export function changeWords(was: Pick<Place, "day" | "start"> | undefined, now: Pick<Place, "day" | "start">): string {
+  if (!was) return `Scheduled for ${whenWords(now)}`
+  if (was.day === now.day) return `Moved from ${clockOrAny(was.start)} to ${clockOrAny(now.start)}, ${dayShort(now.day)}`
+  return `Moved from ${whenWords(was)} to ${whenWords(now)}`
+}
+
 /** The visits whose customer has not been told, as the Not told tab lists them. */
 export function notToldList(s: Pick<ProtoState, "visits" | "was" | "meta">): NotToldVisit[] {
   return s.visits.filter((b) => b.notTold).map((b) => {
     const m = s.meta[b.id]
     const was = s.was[b.id]
-    return { id: b.id, customer: m?.customer ?? b.name, town: b.town, service: b.service, was: was ? whenWords(was) : "Not scheduled", now: whenWords(b), phone: m?.phone, email: m?.email }
+    return { id: b.id, customer: m?.customer ?? b.name, town: b.town, service: b.service, was: was ? whenWords(was) : "Not scheduled", now: whenWords(b), change: changeWords(was, b), phone: m?.phone, email: m?.email }
   })
 }
 

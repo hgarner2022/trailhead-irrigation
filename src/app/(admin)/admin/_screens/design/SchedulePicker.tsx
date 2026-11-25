@@ -7,7 +7,7 @@ import { FormRow } from "@/components/blocks/FormRow"
 import { TimeChips } from "@/components/blocks/TimeChips"
 import { Input } from "@/components/ui/input"
 import { FindATime } from "@/components/blocks/FindATime"
-import { type OpeningSort } from "@/components/blocks/find-a-time-model"
+import { recommendedId, type OpeningSort } from "@/components/blocks/find-a-time-model"
 import type { Opening } from "@/components/blocks/scheduler-panels-types"
 import type { BestTimes } from "@/components/blocks/best-times"
 import { CREW_LINE_MAX, crewText, notices } from "./crew-copy"
@@ -86,15 +86,15 @@ export interface SchedulePickerProps {
 }
 
 export function SchedulePicker({ minutes = 60, firstName, channel = "text", onChange, signedIn = "Ryan Garner", address = "480 Briggs St", service = "Sprinkler repair", initialPeople = [PEOPLE[0]], initialCrewText = false, best }: SchedulePickerProps) {
-  const first = best ? [...best.rows, ...(best.forced ?? [])].find((r) => r.id === best.initialPickId) ?? [...best.rows].sort((a, b) => a.score - b.score)[0] : undefined
+  const first = best ? [...best.rows, ...(best.forced ?? [])].find((r) => r.id === (best.initialPickId ?? recommendedId(best.rows))) : undefined
   const [dayIso, setDayIso] = useState(first?.day ?? "2026-11-24")
   const [sort, setSort] = useState<OpeningSort>("recommended")
-  const [pickedId, setPickedId] = useState<string | null>(best?.initialPickId ?? null)
+  const [pickedId, setPickedId] = useState<string | null>(first?.id ?? null)
   const [people, setPeople] = useState<string[]>(best && first ? [first.personName] : initialPeople)
   const [crew, setCrew] = useState(initialCrewText)
   const [instructions, setInstructions] = useState("")
   const person = people[0]!
-  const [at, setAt] = useState<number | "any">(best?.initialPickId && first ? toMinutes(first.start) : "any")
+  const [at, setAt] = useState<number | "any">(first ? toMinutes(first.start) : "any")
   const day = best ? { ...dayOf(dayIso), stops: best.stopsOf(dayIso).map((x) => ({ ...x, person: x.person as Stop["person"] })) } : dayOf(dayIso)
   const names = best ? best.people : [...PEOPLE]
   const { starts, stops } = slotsOf(day, person, minutes)
@@ -122,9 +122,11 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
         <FindATime bare state={best.rows.length ? "results" : "none"} openings={best.rows} forced={best.forced} sort={sort} onSort={setSort} selectedId={pickedId} onPick={pickRow} estimated />
       )}
 
+      <AnotherDay best={best} open={Boolean(best && (best.rows.length === 0 || (best.currentDay && !best.rows.some((r) => r.day === best.currentDay))))}>
       <DayCalendar offers={(best ? [...new Set(best.rows.map((r) => r.day))] : DAYS.map((d) => d.iso)).map((iso) => ({ day: iso, times: [] }))} timed={false} free={{ from: best?.today ?? TODAY_ISO }} density="sheet" headingLevel={3} legend="Day" value={{ day: dayIso, start: null }} onChange={(next) => next.day && pickDay(next.day)} />
 
       <PersonAndTimes names={names} day={day} people={people} setPeople={(ps) => (setPeople(ps), setPickedId(null), setAt("any"), emit(day, ps, "any"))} stops={stops} starts={starts} at={at} minutes={minutes} pick={(t) => (setPickedId(null), setAt(t), emit(day, people, t))} />
+      </AnotherDay>
       {best?.problems && (() => {
         const problems = best.problems({ day: dayIso, person: people[0]!, start: at === "any" ? null : at })
         return problems.length ? <ul data-slot="place-problems" className="list-disc space-y-1 pl-5 text-foreground">{problems.map((x) => <li key={x}>{x}</li>)}</ul> : null
@@ -147,6 +149,17 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
 
       <p data-slot="schedule-sentence" className="text-muted-foreground">{notices({ first: firstName, channel, others: crew ? others : [] })}</p>
     </div>
+  )
+}
+
+/** With best times shown, the dialog's own calendar, Who and start time sit behind one quiet "Another day"; without them they are drawn as reviewed. */
+function AnotherDay({ best, open, children }: { best?: BestTimes; open: boolean; children: React.ReactNode }) {
+  if (!best) return <>{children}</>
+  return (
+    <details data-slot="another-day" open={open} className="group rounded-lg border border-border">
+      <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm font-medium text-foreground">Another day</summary>
+      <div className="flex flex-col gap-4 px-3 pb-3">{children}</div>
+    </details>
   )
 }
 

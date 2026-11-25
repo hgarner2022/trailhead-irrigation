@@ -50,12 +50,12 @@ export const JOBS: ProtoJob[] = [
 ]
 
 /** The state a story starts from: the whole week, three visits not told, four jobs with no day. */
-export function initialState(over: Partial<Pick<ProtoState, "timeOff" | "visits" | "unscheduled" | "meta">> = {}): ProtoState {
+export function initialState(over: Partial<Pick<ProtoState, "timeOff" | "visits" | "unscheduled" | "meta" | "was">> = {}): ProtoState {
   const all: GridBlock[] = [...WEEK_BLOCKS, SATURDAY, ...WEEK_ANYTIME].map((b) => (SEED_NOT_TOLD[b.id] ? { ...b, notTold: true } : b))
   const visits = over.visits ?? all
   const meta: Record<string, Meta> = over.meta ?? {}
   if (!over.meta) visits.forEach((b, i) => (meta[b.id] = metaOf(b, i)))
-  const was = over.meta ? {} : Object.fromEntries(Object.entries(SEED_NOT_TOLD).filter(([id]) => visits.some((b) => b.id === id)))
+  const was = over.was ?? (over.meta ? {} : Object.fromEntries(Object.entries(SEED_NOT_TOLD).filter(([id]) => visits.some((b) => b.id === id))))
   return { visits, was, unscheduled: over.unscheduled ?? JOBS, meta, timeOff: over.timeOff ?? WEEK_OFF, toast: null, seq: 0, notify: [] }
 }
 

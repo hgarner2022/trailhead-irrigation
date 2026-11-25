@@ -30,6 +30,8 @@ export interface NotToldVisit {
   was: string
   /** "Thu, Nov 26, 9:00 am" */
   now: string
+  /** the move in the app's words, "Moved from 9:00 am to 9:30 am, Wed, Nov 18"; read before `was` and `now` when given */
+  change?: string
   phone?: string
   email?: string
 }

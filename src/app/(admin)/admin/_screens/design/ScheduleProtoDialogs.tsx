@@ -24,7 +24,7 @@ export function ScheduleProtoDialogs({ p }: { p: Proto }) {
         const town = visit ? visit.town : job!.town
         const minutes = visit ? visit.minutes : job!.minutes
         const service = visit ? visit.service : job!.service
-        const best = p.bestFor(town, minutes, visit?.id, d.pickId)
+        const best = p.bestFor(town, minutes, visit?.id, d.pickId, visit?.day)
         return (
           <ScheduleDialog
             key={d.id}

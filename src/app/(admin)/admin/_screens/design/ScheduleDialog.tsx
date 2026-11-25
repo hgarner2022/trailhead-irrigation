@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { recommendedId } from "@/components/blocks/find-a-time-model"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { SplitButton } from "@/components/blocks/SplitButton"
 import type { ConfirmFacts } from "./confirm-copy"
@@ -42,9 +43,9 @@ export function ScheduleDialog({ verb, first, channel = "text", address, service
   const ctx = useBestTimesContext()
   const best = bestProp ?? ctx?.best
   const onConfirm = (r: ScheduleResult) => (ctx && !bestProp ? ctx.record(r, verb) : undefined, confirmed(r))
-  const start = best ? [...best.rows, ...(best.forced ?? [])].find((r) => r.id === best.initialPickId) ?? [...best.rows].sort((a, b) => a.score - b.score)[0] : undefined
+  const start = best ? [...best.rows, ...(best.forced ?? [])].find((r) => r.id === (best.initialPickId ?? recommendedId(best.rows))) : undefined
   const people0 = best && start ? [start.personName] : initialPeople
-  const [pick, setPick] = useState<Pick>({ dayIso: start?.day, day: start ? dayLabel(start.day) : "Tue, Nov 24", time: best?.initialPickId && start ? clockLabel(start.start) : "Any time", person: people0[0]!, people: people0, crewText: initialCrewText && people0.some((p) => p !== signedIn), instructions: "" })
+  const [pick, setPick] = useState<Pick>({ dayIso: start?.day, day: start ? dayLabel(start.day) : "Tue, Nov 24", time: start ? clockLabel(start.start) : "Any time", person: people0[0]!, people: people0, crewText: initialCrewText && people0.some((p) => p !== signedIn), instructions: "" })
   return (
     <ConfirmDialog
       open

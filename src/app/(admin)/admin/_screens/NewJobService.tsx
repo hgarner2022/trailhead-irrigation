@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DayField } from "@/components/blocks/DayField"
 import { FindATime } from "@/components/blocks/FindATime"
-import type { OpeningSort } from "@/components/blocks/find-a-time-model"
+import { recommendedId, type OpeningSort } from "@/components/blocks/find-a-time-model"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { AdminData, ServiceItem, Town } from "@/lib/admin/types"
@@ -77,7 +77,13 @@ export function NewJobService({ data, today, choice, group, service, zones, onZo
   const [sort, setSort] = useState<OpeningSort>("recommended")
   const [pickedId, setPickedId] = useState<string | null>(null)
   const town = ready && !choice.isNew ? data.clients.find((c) => c.id === choice.chosen)?.town : undefined
-  const best = bestTimes && town && !quoteFirst ? bestTimes(town, Number(shownMinutes) || service.slotMinutes) : null
+  const best = useMemo(() => (bestTimes && town && !quoteFirst ? bestTimes(town, Number(shownMinutes) || service.slotMinutes) : null), [bestTimes, town, quoteFirst, shownMinutes, service.slotMinutes])
+  // the recommended row is the one preselected, the same opening the Unscheduled row suggests and the Schedule dialog marks
+  const preselected = useRef<unknown>(null)
+  useEffect(() => {
+    const top = best?.rows.find((r) => r.id === recommendedId(best.rows))
+    if (top && preselected.current !== best && !day && !pickedId) (preselected.current = best, setPickedId(top.id), setDay(top.day), setTime(top.start), setPersonId(top.personId))
+  }, [best, day, pickedId])
 
   const submit = () => {
     const accessLine = choice.isNew && choice.person.access.trim() ? `Access: ${choice.person.access.trim()}` : ""

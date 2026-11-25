@@ -42,7 +42,7 @@ export function WalkBestTimes({ jobId, children }: { jobId: string; children: Re
     if (!hold) return null
     const { people, today } = WALK_SCHEDULE_WORLD
     return {
-      best: bestTimesFor({ state, people, today, town: hold.town, minutes: hold.minutes, excludeId: visit?.id }),
+      best: bestTimesFor({ state, people, today, town: hold.town, minutes: hold.minutes, excludeId: visit?.id, currentDay: visit?.day }),
       record: (r) => {
         const personId = personIdOf(people, r.person)
         if (!personId || !r.dayIso) return

@@ -61,8 +61,8 @@ export function UnscheduledPanel({ open, onOpenChange, jobs, notTold = [], defau
   const [sort, setSort] = useState<UnscheduledSort>(defaultSort)
   const rows = sortJobs(jobs, sort)
   const hover = (id: string | null) => ({ onMouseEnter: () => onHover?.(id), onMouseLeave: () => onHover?.(null), onFocus: () => onHover?.(id), onBlur: () => onHover?.(null) })
-  const footer = tab === "not-notified" && notTold.length > 0 && onNotifyAll ? (
-    <Button type="button" className="min-h-11" onClick={onNotifyAll}>
+  const footer = tab === "not-notified" && notTold.length > 1 && onNotifyAll ? (
+    <Button type="button" variant="outline" className="min-h-11" onClick={onNotifyAll}>
       Notify all
     </Button>
   ) : undefined
@@ -122,7 +122,7 @@ export function UnscheduledPanel({ open, onOpenChange, jobs, notTold = [], defau
                   <span className="text-sm">
                     <span className="block truncate font-medium text-foreground">{`${v.customer} · ${v.town}`}</span>
                     <span className="block text-muted-foreground">{v.service}</span>
-                    <span className="block text-muted-foreground">{`${v.was} to ${v.now}`}</span>
+                    <span className="block text-muted-foreground">{v.change ?? `${v.was} to ${v.now}`}</span>
                   </span>
                   <span className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant="outline" className="min-h-11" aria-label={`Notify the customer ${v.customer}`} onClick={() => onNotify?.(v)}>
