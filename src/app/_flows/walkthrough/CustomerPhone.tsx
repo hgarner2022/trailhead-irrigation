@@ -22,7 +22,7 @@ import { accountReducer, initialAccount } from "../account-flow"
 import { ContactPreference, type ContactChannel } from "./ContactPreference"
 import { classifyHref, STEPS, stepOf, type StepKey, type Target, type Where } from "./routes"
 
-import { allMessages, DEFAULT_FACTS, type TextFacts } from "./walk-texts"
+import { allMessages, DEFAULT_FACTS, invoiceMessages, type TextFacts } from "./walk-texts"
 import { PhoneInbox } from "./PhoneInbox"
 import { MarketingSwitches } from "./MarketingSwitches"
 import { MARKETING_MAIL, readChoice, writeChoice } from "./marketing-choice"
@@ -102,9 +102,8 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   const [liveRun, setLiveRun] = useState(0)
   const [notice, setNotice] = useState<string | null>(null)
   const [way, setWay] = useState<Way>("card")
-  // the pay step: no card on file shows Stripe's card page; a card on file shows the one tap (the account has one, so both are walkable)
+  // Prototype only: whether Andrea has a card on file when she opens the pay page (none: Stripe's card page; saved: the one tap). The control lives outside the phone, in the presentation, and tells the phone by message.
   const [payCard, setPayCard] = useState<"none" | "saved">("none")
-  const [passDay, setPassDay] = useState<"april" | "november">("april")
   const facts: TextFacts = booked ? { service: booked.service.toLowerCase(), day: booked.day, start: booked.start, street: booked.street, town: booked.town, firstName: booked.firstName } : DEFAULT_FACTS
   const pref = booked?.channel ?? channel
   const accountPage = s.route.page
@@ -177,16 +176,7 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
       case "visit":
         return shown ? withNav(<VisitScreen customer={andrea} job={shown} visitId={route.id} today={TODAY} times={s.times} offers={offers.v1} days={[]} {...actions} />, "/account/visits") : null
       case "pay":
-        return (
-          <>
-            <div role="group" aria-label="Your card in the prototype" className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-3">
-              <span className="text-sm text-muted-foreground">Your card</span>
-              <Button type="button" size="sm" variant={payCard === "none" ? "default" : "outline"} aria-pressed={payCard === "none"} onClick={() => setPayCard("none")}>No card on file</Button>
-              <Button type="button" size="sm" variant={payCard === "saved" ? "default" : "outline"} aria-pressed={payCard === "saved"} onClick={() => setPayCard("saved")}>Visa ending 4242</Button>
-            </div>
-            <PayFlow key={payCard} bill={bill} email="andrea.dalton@example.com" onPaid={() => dispatch({ type: "pay" })} />
-          </>
-        )
+        return <PayFlow key={payCard} bill={bill} email="andrea.dalton@example.com" onPaid={() => dispatch({ type: "pay" })} />
       case "paid":
         return <PaidPage />
       case "receipt":
@@ -203,6 +193,10 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
       break
     case "quote":
       body = <QuoteWalk onOpenLink={open} />
+      break
+    case "invoice":
+      // the Pay an invoice step opens on the message that carries the pay link: a text, an email, or both, never the account
+      body = <PhoneInbox key={pref} texts={invoiceMessages(facts, pref)} onLink={open} />
       break
     case "texts":
       body = <PhoneInbox texts={[...allMessages(facts, pref), ...(marketing.email ? [MARKETING_MAIL] : [])]} onLink={open} onUnsubscribe={() => choose("email", false, "unsubscribe link")} />
@@ -228,14 +222,9 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
         <div className="bg-stone">
           {withNav(
             <>
-              <div className="mx-auto flex max-w-3xl gap-2 pt-6 container-padding-x" role="group" aria-label="Today in the prototype">
-                <Button type="button" size="sm" variant={passDay === "april" ? "default" : "outline"} onClick={() => setPassDay("april")}>See it in April</Button>
-                <Button type="button" size="sm" variant={passDay === "november" ? "default" : "outline"} onClick={() => setPassDay("november")}>See it from November 1</Button>
-              </div>
               <PassPageScreen
-                key={passDay}
                 pass={pass}
-                today={passDay === "april" ? "2027-04-14" : "2027-11-02"}
+                today="2027-04-14"
                 onAddInspection={() => setNotice("The July inspection is added to your pass. It is charged after the visit.")}
                 onSkip={() => setNotice("That visit is skipped. Your pass stays active.")}
                 onCancel={async () => ({ ok: true as const })}
@@ -274,10 +263,7 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
     if (key === "receipts") return go({ where: "receipts" }, "")
     if (key === "quote") return go({ where: "quote" }, "")
     if (key === "pass") return go({ where: "pass" }, "/account/pass")
-    if (key === "pay") {
-      const id = s.jobs.flatMap((j) => j.invoices)[0]?.id ?? "inv_1"
-      return open(`/pay/${id}`)
-    }
+    if (key === "pay") return go({ where: "invoice" }, "")
     open(START_HREF[key]!)
   }
 
@@ -288,9 +274,10 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   }, [stepKey])
   useEffect(() => {
     const onMessage = (e: globalThis.MessageEvent) => {
-      const m = e.data as { walk?: string; cmd?: string; step?: StepKey } | null
+      const m = e.data as { walk?: string; cmd?: string; step?: StepKey; card?: "none" | "saved" } | null
       if (m?.walk !== "cmd") return
       if (m.cmd === "reset") onStartOver()
+      else if (m.cmd === "payCard" && m.card) setPayCard(m.card)
       else if (m.cmd === "go" && m.step) jump(m.step)
       else if (m.cmd === "next" && STEPS[at + 1]) jump(STEPS[at + 1]!.key)
       else if (m.cmd === "back" && at > 0) jump(STEPS[at - 1]!.key)

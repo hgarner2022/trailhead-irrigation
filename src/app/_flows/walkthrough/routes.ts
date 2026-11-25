@@ -2,8 +2,8 @@
 // screens draw (`/account`, `/account/visits/<id>`, `/pay/<id>`, `/booking`, `/season-pass/checkout`, and the absolute ones the texts carry) into where
 // the prototype goes: one of its screens, an account page the account reducer opens, a labelled placeholder, or nowhere (tel:, mailto:, other sites).
 
-export type Where = "book" | "texts" | "account" | "receipts" | "pass" | "renew" | "quote" | "sign-in" | "card-updated" | "season-pass-page" | "placeholder"
-export type Target = { where: "sign-in" } | { where: "card-updated" } | { where: "season-pass-page" } | { where: "book" } | { where: "texts" } | { where: "quote" } | { where: "receipts" } | { where: "account"; href: string } | { where: "pass" } | { where: "renew" } | { where: "placeholder"; title: string; path: string } | { where: "outside" }
+export type Where = "book" | "texts" | "invoice" | "account" | "receipts" | "pass" | "renew" | "quote" | "sign-in" | "card-updated" | "season-pass-page" | "placeholder"
+export type Target = { where: "invoice" } | { where: "sign-in" } | { where: "card-updated" } | { where: "season-pass-page" } | { where: "book" } | { where: "texts" } | { where: "quote" } | { where: "receipts" } | { where: "account"; href: string } | { where: "pass" } | { where: "renew" } | { where: "placeholder"; title: string; path: string } | { where: "outside" }
 
 const HOSTS = ["www.trailheadirrigation.com", "trailheadirrigation.com"]
 
@@ -57,6 +57,7 @@ export type StepKey = (typeof STEPS)[number]["key"]
 export function stepOf(where: Where, accountPage?: string): StepKey | null {
   if (where === "book") return "book"
   if (where === "texts") return "texts"
+  if (where === "invoice") return "pay"
   if (where === "quote") return "quote"
   if (where === "receipts") return "receipts"
   if (where === "pass" || where === "renew") return "pass"
