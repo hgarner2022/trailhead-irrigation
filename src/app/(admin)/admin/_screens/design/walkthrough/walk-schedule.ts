@@ -3,13 +3,13 @@ import { createWorldStore, type WorldStore } from "../schedule-world-store"
 import type { ProtoWorld } from "../schedule-prototype-model"
 import type { View } from "../schedule-prototype-view"
 import { allRows, bindLive } from "./jobs-data"
-import { WALK_PEOPLE, WALK_SCHEDULE_TODAY, buildWalkWorld } from "./visits-data"
+import { WALK_PEOPLE, WALK_SCHEDULE_TODAY, buildWalkWorld, walkRoutePeople } from "./visits-data"
 
 // The walkthrough's Schedule held for the whole session: one store (the calendar, the jobs with no day, the time off), so a click on a visit and the way back find it as it was,
 // and a job page's Schedule or Move land on the same calendar. Start over rebuilds it from the world. The view the person left the Schedule in is remembered with it.
 
 let store: WorldStore | null = null
-let remembered: { view: View; day: string; panels: { unscheduled: boolean; map: boolean } } = { view: "week", day: WALK_SCHEDULE_TODAY, panels: { unscheduled: false, map: false } }
+let remembered: { view: View; day: string; panels: { unscheduled: boolean; map: boolean }; hidden?: string[] } = { view: "week", day: WALK_SCHEDULE_TODAY, panels: { unscheduled: false, map: false } }
 
 let building = false
 const make = () => {
@@ -35,7 +35,7 @@ bindLive((id) => {
 export const walkSchedule = (): WorldStore => (store ??= createWorldStore(make))
 
 /** The world a screen reads for today and the people; the data itself is the store's. */
-export const WALK_SCHEDULE_WORLD: ProtoWorld = { today: WALK_SCHEDULE_TODAY, now: { day: WALK_SCHEDULE_TODAY, minutes: 10 * 60 + 20 }, people: WALK_PEOPLE, visits: [], meta: {}, unscheduled: [], timeOff: [] }
+export const WALK_SCHEDULE_WORLD: ProtoWorld = { today: WALK_SCHEDULE_TODAY, now: { day: WALK_SCHEDULE_TODAY, minutes: 10 * 60 + 20 }, get people() { return walkRoutePeople() }, visits: [], meta: {}, unscheduled: [], timeOff: [] }
 
 export const rememberedView = () => remembered
 export const rememberView = (v: typeof remembered) => void (remembered = v)

@@ -77,6 +77,10 @@ export interface GridBlock {
   /** the customer has not been told about a move (a dashed left edge) */
   notTold?: boolean
   waiting?: boolean
+  /** an Any time stop's place in the day's order: it follows this timed stop (null: it comes first). Absent: it is driven last. Order the day sets it; a time is never given */
+  afterId?: string | null
+  /** the order among the Any time stops that follow the same stop */
+  order?: number
   /** a reason the place is a problem, said in words; also found by `conflictsIn` */
   conflict?: string
   /** a proposal: dotted edge, with the old place it comes from */

@@ -33,12 +33,14 @@ export interface MapPanelProps {
   onHover?: (id: string | null) => void
   selectedId?: string
   onSelect?: (id: string | undefined) => void
+  /** the person chips: the Schedule draws its one person control in the toolbar instead, so it passes false */
+  personChips?: boolean
   className?: string
 }
 
 const CHIP = "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
 
-export function MapPanel({ open, onOpenChange, stops, people, unscheduled, ghost, day, days, dayValue, onDayChange, hoverId, onHover, selectedId, onSelect, className }: MapPanelProps) {
+export function MapPanel({ open, onOpenChange, stops, people, unscheduled, ghost, day, days, dayValue, onDayChange, hoverId, onHover, selectedId, onSelect, personChips = true, className }: MapPanelProps) {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set())
   const [showUnscheduled, setShowUnscheduled] = useState(true)
   const toggle = (id: string) => setHidden((h) => (h.has(id) ? new Set([...h].filter((x) => x !== id)) : new Set([...h, id])))
@@ -59,7 +61,7 @@ export function MapPanel({ open, onOpenChange, stops, people, unscheduled, ghost
           </div>
         )}
         <div role="group" aria-label="Show on the map" data-slot="map-chips" className="flex flex-wrap gap-2">
-          {people.length > 1 && people.map((p, i) => {
+          {personChips && people.length > 1 && people.map((p, i) => {
             const on = !hidden.has(p.id)
             return (
               <button key={p.id} type="button" aria-pressed={on} onClick={() => toggle(p.id)} className={cn(CHIP, on ? "border-navy bg-navy/5 text-navy" : "border-border bg-background text-muted-foreground")}>

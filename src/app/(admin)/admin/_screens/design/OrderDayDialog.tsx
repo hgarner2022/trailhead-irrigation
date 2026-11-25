@@ -32,7 +32,6 @@ function Route({ title, route, meta, moved }: { title: string; route: readonly G
 export function OrderDayDialog({ plan, meta, who, onClose, onConfirm }: { plan: OrderPlan; meta: Calendar["meta"]; who: string; onClose: () => void; onConfirm: () => void }) {
   const n = plan.moves.length
   const moved = new Set(plan.moves.map((m) => m.id))
-  const after = plan.after.route.map((b) => (moved.has(b.id) ? { ...b, start: plan.moves.find((m) => m.id === b.id)!.start } : b))
   return (
     <ConfirmDialog
       open
@@ -40,7 +39,7 @@ export function OrderDayDialog({ plan, meta, who, onClose, onConfirm }: { plan: 
       slot="order-day-dialog"
       onOpenChange={(o) => !o && onClose()}
       title="Order the day"
-      message={n ? `${who}: moves ${n} ${n === 1 ? "stop" : "stops"} with no set time into the gaps.${plan.saved > 0 ? ` Saves ${hoursWords(plan.saved)} of driving.` : ""} Stops with a time stay.` : `${who} has no stop with no set time that fits.`}
+      message={n ? `${who}: moves ${n} ${n === 1 ? "stop" : "stops"} with no set time into the gaps.${plan.saved > 0 ? ` Saves ${hoursWords(plan.saved)} of driving.` : ""} Stops with a time stay.` : `${who}'s day is already in order.`}
       confirmLabel="Order the day"
       confirmDisabled={n === 0}
       onConfirm={async () => (onConfirm(), { ok: true })}
@@ -48,7 +47,7 @@ export function OrderDayDialog({ plan, meta, who, onClose, onConfirm }: { plan: 
       <div className="flex flex-col gap-4">
         <div className="grid gap-3">
           <Route title="Now" route={plan.before.route} meta={meta} />
-          <Route title="Ordered" route={after} meta={meta} moved={moved} />
+          <Route title="Ordered" route={plan.after.route} meta={meta} moved={moved} />
         </div>
         {plan.doesNotFit.length > 0 && (
           <section aria-label="Doesn't fit today" data-slot="does-not-fit">

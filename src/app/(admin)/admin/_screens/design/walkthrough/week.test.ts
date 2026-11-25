@@ -42,7 +42,7 @@ describe("the best times", () => {
   const state = initialState({ visits: world.visits, meta: world.meta, unscheduled: world.unscheduled, timeOff: world.timeOff })
   const i = { state, people: world.people, today: world.today }
   it("take their minutes from the neighbours, so they are not all the same", () => {
-    const best = bestTimesFor({ ...i, town: "Erie", minutes: 60, point: { lat: 40.05, lng: -105.05 } })
+    const best = bestTimesFor({ ...i, town: "Longmont", minutes: 60, point: { lat: 40.167, lng: -105.101 } })
     expect(new Set(best.rows.map((r) => r.addedMinutes)).size).toBeGreaterThan(1)
   })
   it("sort correctly under each of the three sorts", () => {
@@ -56,7 +56,7 @@ describe("the best times", () => {
   })
   it("the suggestion, the row marked Recommended and the preselected row are one opening", () => {
     const job = world.unscheduled[0]!
-    const best = bestTimesFor({ ...i, town: job.town, minutes: job.minutes })
+    const best = bestTimesFor({ ...i, town: job.town, minutes: job.minutes, kind: job.kind, point: { lat: job.lat!, lng: job.lng! } })
     const s = suggestionFor(job, i)!
     expect(s.rowId).toBe(recommendedId(best.rows))
   })

@@ -24,6 +24,26 @@ export const WALK_PEOPLE: Person[] = [
   { id: RYAN_ID, name: "Ryan Garner", initials: "RG", role: "owner", truck: "Ryan Garner", workingDays: [...WEEK], capacityByKind: CAPACITY, hoursStart: "08:00", hoursEnd: "17:00" },
   { id: HANNAH_ID, name: "Hannah Garner", initials: "HG", role: "admin", truck: "Hannah Garner", workingDays: [...WEEK], capacityByKind: CAPACITY, hoursStart: "08:00", hoursEnd: "17:00" },
 ]
+/**
+ * What the Schedule reads from Settings, People, in the walkthrough: the people who take visits (the schedule label), their working days, hours and Most per day by kind. Saving Settings writes the
+ * edit into these same people, so the Schedule, the best times and the checks on a drop read it in the same session (`applyWalkPeople`). Time off already lives in the Schedule's own store.
+ */
+export function applyWalkPeople(edited: readonly Person[]) {
+  for (const e of edited) {
+    const mine = WALK_PEOPLE.find((p) => p.id === e.id)
+    if (mine) Object.assign(mine, { truck: e.truck, workingDays: [...e.workingDays], hoursStart: e.hoursStart ?? null, hoursEnd: e.hoursEnd ?? null, capacityByKind: { ...e.capacityByKind } })
+  }
+}
+
+let routeCache: { key: string; people: Person[] } | null = null
+/** The people who take visits, as the Schedule's columns: the same array until one of them changes. */
+export function walkRoutePeople(): Person[] {
+  const mine = WALK_PEOPLE.filter((p) => Boolean(p.truck))
+  const key = JSON.stringify(mine)
+  if (routeCache?.key !== key) routeCache = { key, people: mine.map((p) => ({ ...p })) }
+  return routeCache.people
+}
+
 const personIdOf = (who: string) => WALK_PEOPLE.find((p) => p.name === who)?.id
 
 const MONTHS: Record<string, string> = { Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06", Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12" }

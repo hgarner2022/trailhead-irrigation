@@ -14,29 +14,36 @@ import type { GridColumn } from "./time-grid-types"
 export const GUTTER = "w-14 shrink-0"
 
 export function DayHead({ column, people, colourOf, action }: { column: GridColumn; people: readonly Person[]; colourOf: (id: string) => number; /** no longer chooses between a name and initials: the first name is always shown */ names?: boolean; action?: ReactNode }) {
+  // Three lines at most, whatever the width: the day and its stop count ("Full" in the count's place), the towns, and one line per person (name, then "7 h 30 open · 24 min drive"). The head asks
+  // its own width (a container query): narrower, the towns go first, then the line shortens to the driving figure alone ("24 min drive", then "24 min"). The Day view's head is wide enough for it all.
   return (
-    <div data-slot="day-head" className="flex min-w-0 flex-col items-stretch gap-1 px-1 py-1.5">
+    <div data-slot="day-head" className="@container flex min-w-0 flex-col items-stretch gap-0.5 px-1 py-1.5">
       <div className="flex min-w-0 items-center justify-center gap-1.5">
-        <span className={cn("rounded-full px-2 py-0.5 text-sm font-semibold", column.today ? "bg-navy text-white" : "text-navy")}>
+        <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-sm font-semibold", column.today ? "bg-navy text-white" : "text-navy")}>
           {column.label}
           {column.today && <span className="sr-only">, today</span>}
         </span>
-        {column.count && <span className="rounded-full bg-stone px-1.5 py-0.5 text-xs text-navy-light">{column.count}</span>}
+        {column.caption && <span className={cn("truncate text-xs", column.caption === "Full" ? "font-medium text-warning-ink" : "text-navy-light")}>{`· ${column.caption}`}</span>}
         {action}
       </div>
-      {column.caption && <span className="truncate text-center text-xs text-navy-light">{column.caption}</span>}
-      {column.towns && <span className="truncate text-center text-xs text-navy-light">{column.towns}</span>}
+      {column.towns && <span className="hidden truncate text-center text-xs text-navy-light @[170px]:block">{column.towns}</span>}
       <div className="flex">
         {people.map((p) => {
           const stat = column.stats?.[p.id]
+          const full = stat?.open === "Full"
           return (
-            <span key={p.id} className="flex min-w-0 flex-1 flex-col items-center gap-0.5 px-0.5 text-xs">
-              <span className="flex min-w-0 max-w-full items-center gap-1 font-medium text-navy">
-                <span aria-hidden className={cn("size-2 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
-                <span className="truncate">{firstNameOf(p.name)}</span>
+            <span key={p.id} className="flex min-w-0 flex-1 items-center justify-center gap-1 whitespace-nowrap px-0.5 text-[11px] leading-tight text-navy-light">
+              <span aria-hidden className={cn("size-2 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
+              <span className="truncate">
+                <span className="font-medium text-navy">{firstNameOf(p.name)}</span>
+                {stat && (
+                  <>
+                    <span className="hidden @[320px]:inline">{` ${[stat.open, stat.driving && `${stat.driving} drive`].filter(Boolean).join(" · ")}`}</span>
+                    <span className="hidden @[230px]:inline @[320px]:hidden">{` ${[full && "Full", stat.driving && `${stat.driving} drive`].filter(Boolean).join(" · ")}`}</span>
+                    <span className="@[230px]:hidden">{` ${[full && "Full", stat.driving].filter(Boolean).join(" · ")}`}</span>
+                  </>
+                )}
               </span>
-              {stat?.open && <span className={cn("max-w-full text-center leading-tight", stat.open === "Full" ? "font-medium text-warning-ink" : "text-navy-light")}>{stat.open}</span>}
-              {stat?.driving && <span className="max-w-full text-center leading-tight text-navy-light">{stat.driving}</span>}
             </span>
           )
         })}

@@ -20,19 +20,19 @@ describe("driving", () => {
     expect(driveBetween(c.visits[0]!, c.visits[1]!, c.meta)).toBe(0)
     expect(driveBetween(c.visits[1]!, c.visits[2]!, c.meta)).toBeGreaterThan(10)
   })
-  it("totals the legs of a person's day in the order it is driven, Any time stops last", () => {
+  it("totals the legs of a person's day, the shop out and back included, in the order it is driven, Any time stops last", () => {
     const c = three()
     const loose = at("Lafayette", "d", { start: null })
     const route = routeOf([...c.visits, loose], RYAN, "2026-12-01")
     expect(route.map((b) => b.id)).toEqual(["a", "b", "c", "d"])
     const { legs, total } = drivingOf(route, { ...c.meta, d: pt("Lafayette") })
     expect(legs).toHaveLength(3)
-    expect(total).toBe(legs.reduce((n, l) => n + l.minutes, 0))
+    expect(total).toBeGreaterThan(legs.reduce((n, l) => n + l.minutes, 0))
   })
-  it("draws a line only between two stops that both have a time", () => {
+  it("draws a line only between two timed stops with some driving between them", () => {
     const c = three()
     const lines = driveLines([...c.visits, at("Lafayette", "d", { start: null })], c.meta, RYAN, "2026-12-01")
-    expect([...lines.keys()]).toEqual(["b", "c"])
+    expect([...lines.keys()]).toEqual(["c"])
   })
   it("a move that adds a leg adds its minutes, and one that leaves a day saves them", () => {
     const c = three()

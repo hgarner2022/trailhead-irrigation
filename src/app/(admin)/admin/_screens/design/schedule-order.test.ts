@@ -3,7 +3,7 @@ import { TOWN_CENTRES } from "@/components/blocks/day-map-helpers"
 import type { GridBlock } from "@/components/blocks/time-grid-model"
 import { PEOPLE, RYAN, initialState } from "./schedule-prototype-data"
 import { reduce, type ProtoJob } from "./schedule-prototype-model"
-import { drivingOf, routeOf, placeProblems, type Calendar } from "./schedule-engine"
+import { driveLines, drivingOf, routeOf, type Calendar } from "./schedule-engine"
 import { orderDay } from "./schedule-order"
 import { scheduleAllPlan } from "./schedule-all"
 
@@ -17,23 +17,28 @@ describe("Order the day", () => {
   const visits = [at("Erie", "e-fixed", { start: 9 * 60 }), at("Longmont", "l-fixed", { start: 15 * 60 }), at("Longmont", "a-loose"), at("Erie", "b-loose")]
   const plan = orderDay(world(visits), ryan, DAY)
 
-  it("never moves a stop that has a time, and gives every Any time stop one that fits", () => {
+  it("never moves a stop that has a time and gives no stop a time: only a place in the order", () => {
     expect(plan.moves.map((m) => m.id).sort()).toEqual(["a-loose", "b-loose"])
     expect(plan.after.route.filter((b) => b.id.endsWith("fixed")).map((b) => [b.id, b.start])).toEqual([["e-fixed", 540], ["l-fixed", 900]])
-    for (const m of plan.moves) {
-      const placed = { ...visits.find((v) => v.id === m.id)!, start: m.start }
-      expect(placeProblems(world(visits.filter((v) => v.id !== m.id)), { id: m.id, day: DAY, personId: RYAN, start: m.start, minutes: placed.minutes, town: placed.town, kind: "repair", driving: false })).toEqual([])
-    }
+    expect(plan.after.route.filter((b) => b.id.endsWith("loose")).every((b) => b.start === null)).toBe(true)
   })
-  it("puts each Any time stop beside the stop in its own town and saves the driving", () => {
-    const after = plan.after.route.map((b) => b.id)
-    expect(after.indexOf("b-loose")).toBe(after.indexOf("e-fixed") + 1)
-    expect(after.indexOf("a-loose")).toBe(after.indexOf("l-fixed") - 1)
-    expect(plan.saved).toBeGreaterThan(0)
-    expect(plan.before.driving - plan.after.driving).toBe(plan.saved)
+  it("slots each Any time stop into the gap beside the stop in its own town", () => {
+    expect(plan.after.route.map((b) => b.id)).toEqual(["e-fixed", "b-loose", "a-loose", "l-fixed"])
     expect(plan.after.driving).toBe(drivingOf(plan.after.route, world(visits).meta).total)
   })
-  it("lists a stop that fits nowhere as not fitting today and leaves it Any time", () => {
+  it("saves the driving when the stops were in a poor order", () => {
+    const poor = [at("Erie", "e1", { start: 9 * 60 }), at("Erie", "e2", { start: 15 * 60 }), at("Longmont", "a-long"), at("Broomfield", "b-bro"), at("Firestone", "c-fire")]
+    const p = orderDay(world(poor), ryan, DAY)
+    expect(p.saved).toBeGreaterThan(0)
+    expect(p.before.driving - p.after.driving).toBe(p.saved)
+    expect([p.after.route[0]!.id, p.after.route.at(-1)!.id]).toEqual(["e1", "e2"])
+  })
+  it("counts the day's driving from the shop and back", () => {
+    const meta = world(visits).meta
+    const { legs, total } = drivingOf(plan.after.route, meta)
+    expect(total).toBeGreaterThan(legs.reduce((n, l) => n + l.minutes, 0))
+  })
+  it("lists a stop that fits no gap as not fitting today and leaves it where it was", () => {
     const crowded = [at("Erie", "x", { start: 8 * 60, minutes: 8 * 60 + 60 }), at("Erie", "late-loose")]
     const p = orderDay(world(crowded), ryan, DAY)
     expect(p.moves).toEqual([])
@@ -42,14 +47,22 @@ describe("Order the day", () => {
   })
   it("keeps clear of time off and does nothing when no stop is Any time", () => {
     const lunch = orderDay(world([at("Erie", "e", { start: 9 * 60 }), at("Erie", "z-loose", { minutes: 30 })], [{ id: "o", personId: RYAN, day: DAY, start: 10 * 60, end: 16 * 60 }]), ryan, DAY)
-    for (const m of lunch.moves) expect(m.start < 600 || m.start >= 960).toBe(true)
+    expect(lunch.moves).toEqual([{ id: "z-loose", afterId: null, order: 0 }])
     expect(orderDay(world([at("Erie", "t", { start: 9 * 60 })]), ryan, DAY)).toMatchObject({ moves: [], doesNotFit: [], saved: 0 })
   })
-  it("applies as one change that tells no one, and Undo puts the day back", () => {
+  it("does nothing when the day is already in that order", () => {
     const s0 = initialState({ visits: visits.map((v) => ({ ...v })), meta: world(visits).meta, unscheduled: [], timeOff: [] })
     const s1 = reduce(s0, { type: "order-day", moves: plan.moves, message: "Day ordered" })
-    expect(routeOf(s1.visits, RYAN, DAY).every((b) => b.start !== null)).toBe(true)
+    expect(orderDay({ ...world(visits), visits: s1.visits }, ryan, DAY).moves).toEqual([])
+  })
+  it("applies as one change that tells no one and gives no time, drive lines follow the new order, and Undo puts the day back", () => {
+    const s0 = initialState({ visits: visits.map((v) => ({ ...v })), meta: world(visits).meta, unscheduled: [], timeOff: [] })
+    const s1 = reduce(s0, { type: "order-day", moves: plan.moves, message: "Day ordered" })
+    expect(routeOf(s1.visits, RYAN, DAY).map((b) => b.id)).toEqual(["e-fixed", "b-loose", "a-loose", "l-fixed"])
+    expect(s1.visits.filter((b) => b.id.endsWith("loose")).every((b) => b.start === null)).toBe(true)
     expect(s1.visits.every((b) => !b.notTold)).toBe(true)
+    // the line into the 3 pm stop runs along the route through both Any time stops
+    expect(driveLines(s1.visits, world(visits).meta, RYAN, DAY).get("l-fixed")).toBeGreaterThan(0)
     expect(s1.toast).toMatchObject({ message: "Day ordered", notified: true })
     expect(reduce(s1, { type: "undo" }).visits).toEqual(s0.visits)
   })

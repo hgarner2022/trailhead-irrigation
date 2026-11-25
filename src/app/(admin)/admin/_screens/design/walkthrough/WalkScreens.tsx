@@ -37,7 +37,7 @@ import { ReceiptRoute } from "./receipts"
 import { type Route } from "./routes"
 import { WalkBestTimes, WalkSchedule } from "./WalkSchedule"
 import { bestTimesFor } from "../schedule-best-times"
-import { WALK_PEOPLE } from "./visits-data"
+import { walkRoutePeople } from "./visits-data"
 import { HOME_NOW, homeData } from "./walk-home"
 import { WALK_SCHEDULE_WORLD, walkSchedule } from "./walk-schedule"
 import { useWorldState } from "../schedule-world-store"
@@ -85,7 +85,7 @@ export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen:
 }
 
 /** The best times the New job sheet lists under its Day: over the Schedule's calendar as it stands, for the customer's town and the service's minutes. */
-const bestTimes = (town: Parameters<typeof bestTimesFor>[0]["town"], minutes: number) => bestTimesFor({ state: walkSchedule().getSnapshot(), people: WALK_PEOPLE, today: WALK_SCHEDULE_WORLD.today, town, minutes })
+const bestTimes = (town: Parameters<typeof bestTimesFor>[0]["town"], minutes: number, kind?: string) => bestTimesFor({ state: walkSchedule().getSnapshot(), people: walkRoutePeople(), today: WALK_SCHEDULE_WORLD.today, town, minutes, kind })
 
 /** The real New job sheet (`_screens/NewJob.tsx`) over the walkthrough's customers and catalogue; Add job makes a row and opens its page. */
 export function NewJobSheet({ sheet, onClose, onCreated, onMade, onActiveAgain, onNewQuote }: { sheet: { customer?: string; day?: string; key: number } | null; onClose: () => void; onCreated: (jobId: string) => void; onMade: () => void; onActiveAgain?: (name: string) => void; onNewQuote: (o: { customer: CustomerChoice; serviceName: string }) => void }) {

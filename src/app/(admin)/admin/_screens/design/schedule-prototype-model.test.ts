@@ -179,7 +179,7 @@ describe("the view", () => {
     const crowded = s.visits.filter((b) => b.day === "2026-11-24").map((b) => ({ ...b, minutes: 9 * 60 }))
     const full = columnsFor("day", "2026-11-24", PEOPLE, crowded, s.meta, "2026-11-25", [])[0]!
     expect(full.stats?.[RYAN]?.open).toBe("Full")
-    expect(full.caption).toMatch(/, full$/)
+    expect(full.caption).toBe("Full")
   })
   it("the Month reads the moved visit's new day", () => {
     const s = reduce(start(), { type: "move", id: "v4", to: { day: "2026-11-27", personId: RYAN, start: 8 * 60 } })

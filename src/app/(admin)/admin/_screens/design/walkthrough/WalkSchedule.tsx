@@ -29,6 +29,7 @@ export function WalkSchedule({ day, onOpenJob, onNewJob, onOpenSettings }: { day
       view={day ? "day" : start.view}
       day={day ?? start.day}
       panels={start.panels}
+      hidden={start.hidden}
       onState={rememberView}
       onOpenJob={onOpenJob}
       moneyOf={walkMoney}

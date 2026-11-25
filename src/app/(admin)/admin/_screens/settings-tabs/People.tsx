@@ -95,7 +95,7 @@ function PersonFacts({ person, apply, timeOff }: { person: Person; apply: Apply;
           ))}
         </select>
       </FormRow>
-      <FormRow label="Takes visits" inline hint="On the Schedule, with a row of their own">
+      <FormRow label="Takes visits" inline hint="On the Schedule">
         <Checkbox className={`mt-2.5 ${TAP_TARGET}`} aria-label={`${name} takes visits`} checked={Boolean(person.truck)} onCheckedChange={(v) => apply((s, a) => setTakesVisits(s, person.id, v === true, a))} />
       </FormRow>
       <FormRow label="Working days" inline htmlFor={`${person.id}-mon`}>
@@ -110,7 +110,7 @@ function PersonFacts({ person, apply, timeOff }: { person: Person; apply: Apply;
           ))}
         </div>
       </FormRow>
-      <FormRow label="Hours" inline htmlFor={`${person.id}-hours-start`} hint={timeOff ? "The weekly rule. A day off or a dentist visit goes under Time off." : "The weekly rule. A day off or a dentist visit is Block time on the Schedule."}>
+      <FormRow label="Hours" inline htmlFor={`${person.id}-hours-start`} hint={timeOff ? "The weekly rule. A day off or a dentist visit goes under Time off." : "The weekly rule."}>
         <div className="flex items-center gap-2">
           <TimeField id={`${person.id}-hours-start`} label={`${name} day starts`} value={hours.start} onChange={(v) => apply((s, a) => setHours(s, person.id, "hoursStart", v, a))} />
           <span className="text-sm text-muted-foreground">to</span>
@@ -175,7 +175,7 @@ export function People({ state, apply, timeOff }: { state: SettingsState; apply:
           <ConfirmButton
             label={`Remove ${person.name}`}
             title={`Remove ${person.name}?`}
-            description="They can no longer sign in and the next schedule run stops giving them visits. Visits already theirs keep their day until you move them."
+            description="They can no longer sign in and new visits are no longer offered to them. Visits already theirs keep their day until you move them."
             confirm="Remove person"
             onConfirm={() => apply((s, a) => removePerson(s, person.id, a))}
           />

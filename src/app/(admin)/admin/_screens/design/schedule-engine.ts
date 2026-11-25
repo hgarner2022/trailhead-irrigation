@@ -2,7 +2,8 @@ import { addDays, worksOn } from "@/lib/admin/calendar"
 import { hoursMinutes, hoursOf } from "@/lib/admin/people"
 import type { Person, Town } from "@/lib/admin/types"
 import { clockToMinutes, clockWords, hoursSpan, type GridBlock, type TimeOff } from "@/components/blocks/time-grid-model"
-import { driveMinutes, gap, offerFor, openDaysFor, type BlockedSpan, type BookedVisit, type Offer, type OfferInputs, type OfferLocus, type OfferPerson } from "@/lib/scheduling/offer"
+import { TOWN_CENTRES } from "@/components/blocks/day-map-helpers"
+import { driveMinutes, gap, offerFor, openDaysFor, type OfferSlot, type BlockedSpan, type BookedVisit, type Offer, type OfferInputs, type OfferLocus, type OfferPerson } from "@/lib/scheduling/offer"
 import type { Meta } from "./schedule-prototype-model"
 
 // The Schedule prototype's one rule (docs/plans/2026-11-25-scheduler-holistic-audit.md, row 26): the product's own pure engine, `offerFor` / `openDaysFor` and `driveMinutes`
@@ -68,24 +69,55 @@ export function inputsFor(cal: Calendar, a: Ask): OfferInputs {
   }
 }
 
-/** The offered days, with `best` on the one the rule recommends. */
-export const offersFor = (cal: Calendar, a: Ask): Offer[] => offerFor(inputsFor(cal, { count: 5, ...a }))
+const placeAs = (cal: Calendar, a: Ask) => ({ id: "__new", town: a.town, point: a.point ?? null })
 
-/** Every open start of one day, least added driving first (the engine's own slots); empty when no one has room. */
+/** A slot's added driving counted from the shop: the day with the new stop at that start less the day without it, first and last legs included, so an empty day costs its round trip. */
+function withShop(cal: Calendar, a: Ask, day: string, slots: OfferSlot[]): OfferSlot[] {
+  const here = placeAs(cal, a)
+  const meta = { ...cal.meta, __new: { customer: "", lat: a.point?.lat ?? NaN, lng: a.point?.lng ?? NaN } }
+  const visits = cal.visits.filter((b) => b.id !== a.excludeId)
+  return slots
+    .map((s) => {
+      const [h, m] = s.start.split(":").map(Number) as [number, number]
+      const mine: GridBlock = { id: "__new", day, personId: s.personId, start: h * 60 + m, minutes: a.minutes, title: "", name: "", kind: "other", town: here.town, service: "" }
+      const total = (v: readonly GridBlock[]) => drivingOf(routeOf(v, s.personId, day), meta).total
+      return { ...s, added: round1(Math.max(0, total([...visits, mine]) - total(visits))) }
+    })
+    .sort((x, y) => x.added - y.added || x.start.localeCompare(y.start))
+}
+const round1 = (n: number) => Math.round(n * 10) / 10
+
+/** The offered days, with `best` on the one the rule recommends; each day's slots count their driving from the shop. */
+export const offersFor = (cal: Calendar, a: Ask): Offer[] => offerFor(inputsFor(cal, { count: 5, ...a })).map((o) => ({ ...o, slots: withShop(cal, a, o.day, o.slots) }))
+
+/** Every open start of one day, least added driving first (the engine's own slots, counted from the shop); empty when no one has room. */
 export function slotsOn(cal: Calendar, a: Ask, day: string) {
-  return openDaysFor({ ...inputsFor(cal, a), today: addDays(day, -1) }, 1).find((o) => o.day === day)?.slots ?? []
+  return withShop(cal, a, day, openDaysFor({ ...inputsFor(cal, a), today: addDays(day, -1) }, 1).find((o) => o.day === day)?.slots ?? [])
 }
 
 // ------------------------------------------------------------------------------------------------------------ driving
 
-/** One person's day in the order it is driven: the visits with a time by start, then the Any time ones in stop order (the id, as the map numbers them). */
+/** Where every person's day starts and ends: the shop, in Erie (the Erie town centre, the one place the map already knows). */
+export const SHOP: OfferLocus = { town: "Erie", point: { lat: TOWN_CENTRES.Erie[1], lng: TOWN_CENTRES.Erie[0] } }
+
+/**
+ * One person's day in the order it is driven: the visits with a time by start, each Any time stop where Order the day put it (after the timed stop it follows, `afterId`, in `order`), and
+ * the Any time stops nobody has placed last, by id (as the map numbers them).
+ */
 export function routeOf(visits: readonly GridBlock[], personId: string, day: string): GridBlock[] {
-  return visits.filter((b) => b.personId === personId && b.day === day).sort((x, y) => (x.start ?? 1e9) - (y.start ?? 1e9) || x.id.localeCompare(y.id))
+  const mine = visits.filter((b) => b.personId === personId && b.day === day)
+  const timed = mine.filter((b) => b.start !== null).sort((x, y) => x.start! - y.start! || x.id.localeCompare(y.id))
+  const loose = mine.filter((b) => b.start === null)
+  const known = new Set<string | null>([null, ...timed.map((b) => b.id)])
+  const placed = loose.filter((b) => b.afterId !== undefined && known.has(b.afterId))
+  const tail = loose.filter((b) => !placed.includes(b)).sort((x, y) => x.id.localeCompare(y.id))
+  const after = (id: string | null) => placed.filter((b) => b.afterId === id).sort((x, y) => (x.order ?? 0) - (y.order ?? 0) || x.id.localeCompare(y.id))
+  return [...after(null), ...timed.flatMap((t) => [t, ...after(t.id)]), ...tail]
 }
 
 export interface Leg { fromId: string; toId: string; minutes: number }
 
-/** The drive between each pair of consecutive stops, and the day's total. */
+/** The drive between each pair of consecutive stops, and the day's total: those legs plus the first leg out of the shop and the last one back. */
 export function drivingOf(route: readonly GridBlock[], meta: Calendar["meta"]): { legs: Leg[]; total: number } {
   const legs: Leg[] = []
   let total = 0
@@ -94,14 +126,23 @@ export function drivingOf(route: readonly GridBlock[], meta: Calendar["meta"]): 
     legs.push({ fromId: route[i - 1]!.id, toId: route[i]!.id, minutes })
     total += minutes
   }
+  if (route.length) total += round(driveMinutes(SHOP, locOf(route[0]!, meta))) + round(driveMinutes(locOf(route.at(-1)!, meta), SHOP))
   return { legs, total }
 }
 
-/** What each timed block's drive from the stop before it reads, by id: only between two blocks that both have a time. */
+/** What each timed block's drive from the timed stop before it reads, by id, along the whole route: an Any time stop slotted in between adds its legs to the line. */
 export function driveLines(visits: readonly GridBlock[], meta: Calendar["meta"], personId: string, day: string): Map<string, number> {
-  const timed = routeOf(visits, personId, day).filter((b) => b.start !== null)
+  const route = routeOf(visits, personId, day)
   const out = new Map<string, number>()
-  drivingOf(timed, meta).legs.forEach((l) => out.set(l.toId, l.minutes))
+  let acc = 0
+  let seen = false
+  route.forEach((b, i) => {
+    if (i > 0) acc += driveBetween(route[i - 1]!, b, meta)
+    if (b.start === null) return
+    if (seen && acc > 0) out.set(b.id, acc)
+    seen = true
+    acc = 0
+  })
   return out
 }
 

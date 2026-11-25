@@ -9,7 +9,7 @@ import type { GridBlock, TimeOff } from "@/components/blocks/time-grid-model"
 import type { ColumnStat, GridColumn } from "@/components/blocks/time-grid-types"
 import { shortDay } from "@/emails/format"
 import type { Meta } from "./schedule-prototype-model"
-import { drivingWords, personDay, type Calendar } from "./schedule-engine"
+import { personDay, routeOf, type Calendar } from "./schedule-engine"
 
 // What the Schedule prototype draws, derived from its state: the days of a week, the columns, the words over them, the map's stops, the month's cells.
 // Pure; the screen holds the view and the day, this reads them.
@@ -44,7 +44,7 @@ export function shift(view: View, day: string, n: number): string {
 export function visitsOf(blocks: readonly GridBlock[], meta: Record<string, Meta>, day?: string): Visit[] {
   const mine = blocks.filter((b) => !day || b.day === day)
   return mine.map((b) => {
-    const order = blocks.filter((o) => o.day === b.day && o.personId === b.personId).sort((x, y) => (x.start ?? 1e9) - (y.start ?? 1e9) || x.id.localeCompare(y.id)).findIndex((o) => o.id === b.id)
+    const order = routeOf(blocks, b.personId, b.day).findIndex((o) => o.id === b.id)
     const at = b.start ?? 12 * 60
     const m = meta[b.id]
     return {
@@ -55,6 +55,9 @@ export function visitsOf(blocks: readonly GridBlock[], meta: Record<string, Meta
   })
 }
 
+/** "7 h 30", "45": the open time without its unit word, the head adds "open". */
+const compactHours = (minutes: number): string => (minutes >= 60 ? `${Math.floor(minutes / 60)} h${minutes % 60 ? ` ${minutes % 60}` : ""}` : `${minutes} min`)
+
 /** The columns over the clock: a Week's days or a Day's one, each with its stops, the towns in it, and every person's own open time and driving ("3 h open", "Full", "38 min driving"). */
 export function columnsFor(view: View, day: string, people: readonly Person[], blocks: readonly GridBlock[], meta: Record<string, Meta>, today: string, timeOff: readonly TimeOff[] = []): GridColumn[] {
   const cal: Calendar = { people, visits: blocks, meta, timeOff }
@@ -62,10 +65,9 @@ export function columnsFor(view: View, day: string, people: readonly Person[], b
     const fill = dayFill(visitsOf(blocks, meta, d), d, [...people], TIME_ZONE)
     const days = people.filter((p) => worksOn(p, d)).map((p) => personDay(cal, p, d))
     const stats: Record<string, ColumnStat> = {}
-    for (const pd of days) stats[pd.personId] = { open: pd.full ? "Full" : `${hoursWords(pd.openMinutes)} open`, driving: pd.driving > 0 ? drivingWords(pd.driving, hoursWords) : undefined }
-    // "5 stops" over everyone; "full" only when every person who works the day is
-    const stops = `${fill.stops} ${fill.stops === 1 ? "stop" : "stops"}`
-    const caption = fill.stops === 0 ? fillWords(fill) : days.length && days.every((x) => x.full) ? `${stops}, full` : stops
+    for (const pd of days) stats[pd.personId] = { open: pd.full ? "Full" : `${compactHours(pd.openMinutes)} open`, driving: pd.driving > 0 ? hoursWords(pd.driving) : undefined }
+    // "3 stops" over everyone; "Full" takes the count's place only when every person who works the day is full
+    const caption = fill.stops === 0 ? fillWords(fill) : days.length && days.every((x) => x.full) ? "Full" : `${fill.stops} ${fill.stops === 1 ? "stop" : "stops"}`
     return { caption, towns: townsWords(fill) || undefined, stats }
   }
   if (view === "day") return dayColumns([day]).map((c) => ({ ...c, today: day === today, count: undefined, ...head(day) }))

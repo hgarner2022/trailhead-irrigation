@@ -20,7 +20,7 @@ export interface GridColumn {
   stats?: Record<string, ColumnStat>
 }
 
-/** One person's day in the head: "3 h open" or "Full", and "38 min driving". */
+/** One person's day in the head: "7 h 30 open" or "Full", and the driving as "24 min" (the head adds "drive"). */
 export interface ColumnStat { open?: string; driving?: string }
 
 export interface MoveEvent extends Target {
@@ -69,5 +69,7 @@ export interface TimeGridProps {
   onToday?: () => void
   /** the block menu's "Move" and "Set a time" (the host opens its dialog or picker); the others are handled here */
   onAction?: (id: string, action: BlockAction) => void
+  /** the phone's own All / person chips; the Schedule draws one person control in its toolbar and turns this off */
+  personRow?: boolean
   className?: string
 }

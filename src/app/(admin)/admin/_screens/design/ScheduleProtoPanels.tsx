@@ -20,7 +20,7 @@ export function ScheduleProtoPanels({ p }: { p: Proto }) {
   const unscheduledOpen = p.panels.unscheduled
   const mapOpen = p.panels.map
   const hover = p.hoverId
-  const weekDays = p.view === "week" ? weekDaysShown(mondayOf(p.day), p.people, state.visits) : []
+  const weekDays = p.view === "week" ? weekDaysShown(mondayOf(p.day), p.shown, state.visits) : []
   const mapDay = p.view === "week" && p.mapPick && weekDays.includes(p.mapPick) ? p.mapPick : mapDayOf(p.view, p.day, p.today)
   const content = (
     <>
@@ -53,7 +53,8 @@ export function ScheduleProtoPanels({ p }: { p: Proto }) {
         className={ASIDE}
         open={mapOpen}
         onOpenChange={(o) => p.setPanel("map", o)}
-        stops={visitsOf(state.visits, state.meta, mapDay)}
+        stops={visitsOf(state.visits, state.meta, mapDay).filter((v) => p.shown.some((x) => x.id === v.personId))}
+        personChips={false}
         people={[...p.people]}
         unscheduled={unscheduledOpen || !wide ? state.unscheduled : undefined}
         day={mapDayWords(mapDay)}

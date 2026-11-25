@@ -53,16 +53,16 @@ export function TimeGridPhone(props: TimeGridProps) {
           Today
         </button>
       </div>
-      <div role="group" aria-label="Person" className="flex gap-1.5 overflow-x-auto pb-2">
+      {props.personRow !== false && <div role="group" aria-label="Person" className="flex gap-1.5 overflow-x-auto pb-2">
         {[{ id: "all", name: "All" }, ...people].map((p) => (
           <button key={p.id} type="button" aria-pressed={who === p.id} onClick={() => setWho(p.id)} className={cn(CHIP, "flex-row gap-2", who === p.id ? "border-navy bg-navy text-white" : "border-border bg-background text-navy")}>
             {firstNameOf(p.name)}
           </button>
         ))}
-      </div>
+      </div>}
       {(column.caption || column.stats) && (
         <p data-slot="day-stats" className="mb-2 text-xs text-navy-light">
-          {[column.caption, column.towns, ...chosen.map((p) => { const s = column.stats?.[p.id]; return s ? `${firstNameOf(p.name)}: ${[s.open, s.driving].filter(Boolean).join(", ")}` : null })].filter(Boolean).join(" · ")}
+          {[column.caption, column.towns, ...chosen.map((p) => { const s = column.stats?.[p.id]; return s ? `${firstNameOf(p.name)}: ${[s.open, s.driving && `${s.driving} drive`].filter(Boolean).join(", ")}` : null })].filter(Boolean).join(" · ")}
         </p>
       )}
       <div className="mb-2 flex items-start gap-2" data-slot="anytime-row">

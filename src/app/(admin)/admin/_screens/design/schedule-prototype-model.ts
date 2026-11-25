@@ -40,8 +40,8 @@ export type Action =
   | { type: "place"; jobId: string; to: Target; notified?: boolean }
   | { type: "add"; visit: GridBlock; meta: Meta }
   | { type: "add-unscheduled"; job: ProtoJob }
-  /** Order the day: the Any time stops of one person's day take the times the order gave them; nothing was promised to them, so nothing is told */
-  | { type: "order-day"; moves: { id: string; start: number }[]; message: string }
+  /** Order the day: the Any time stops of one person's day take their place in the order (no time is given); nothing was promised to them, so nothing is told */
+  | { type: "order-day"; moves: { id: string; afterId: string | null; order: number }[]; message: string }
   /** Schedule all: every job placed at once, one toast, one Undo */
   | { type: "place-all"; places: { jobId: string; to: Target }[]; notified: boolean }
   /** a visit that came from outside the calendar (New job with a day): it joins as it is, no toast */
@@ -75,11 +75,14 @@ function untold(was: Record<string, Place>, before: GridBlock): Record<string, P
   return before.notTold ? was : { ...was, [before.id]: placeOf(before) }
 }
 
+/** A visit that moves leaves the place Order the day gave it. */
+const stale = (patch: Partial<GridBlock>) => ("day" in patch || "start" in patch || "personId" in patch ? { afterId: undefined, order: undefined } : {})
+
 function moveOne(s: ProtoState, id: string, patch: Partial<GridBlock>, notified = false): Pick<ProtoState, "visits" | "was"> | null {
   const before = s.visits.find((b) => b.id === id)
   if (!before) return null
-  if (notified) return { visits: s.visits.map((b) => (b.id === id ? { ...b, ...patch, notTold: false } : b)), was: Object.fromEntries(Object.entries(s.was).filter(([k]) => k !== id)) }
-  return { visits: s.visits.map((b) => (b.id === id ? { ...b, ...patch, notTold: true } : b)), was: untold(s.was, before) }
+  if (notified) return { visits: s.visits.map((b) => (b.id === id ? { ...b, ...patch, ...stale(patch), notTold: false } : b)), was: Object.fromEntries(Object.entries(s.was).filter(([k]) => k !== id)) }
+  return { visits: s.visits.map((b) => (b.id === id ? { ...b, ...patch, ...stale(patch), notTold: true } : b)), was: untold(s.was, before) }
 }
 
 export function reduce(s: ProtoState, a: Action): ProtoState {
@@ -111,8 +114,8 @@ export function reduce(s: ProtoState, a: Action): ProtoState {
     }
     case "order-day": {
       if (!a.moves.length) return s
-      const at = new Map(a.moves.map((m) => [m.id, m.start]))
-      return { ...s, visits: s.visits.map((b) => (at.has(b.id) ? { ...b, start: at.get(b.id)! } : b)), seq: s.seq + 1, toast: stamp(s, a.message, a.moves.map((m) => m.id), true) }
+      const at = new Map(a.moves.map((m) => [m.id, m]))
+      return { ...s, visits: s.visits.map((b) => (at.has(b.id) ? { ...b, afterId: at.get(b.id)!.afterId, order: at.get(b.id)!.order } : b)), seq: s.seq + 1, toast: stamp(s, a.message, a.moves.map((m) => m.id), true) }
     }
     case "place-all": {
       const jobs = a.places.flatMap((p) => { const job = s.unscheduled.find((j) => j.id === p.jobId); return job ? [{ job, to: p.to }] : [] })

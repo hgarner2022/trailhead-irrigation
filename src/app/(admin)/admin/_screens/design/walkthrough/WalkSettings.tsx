@@ -2,11 +2,11 @@
 
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
-import { SettingsScreen } from "../../SettingsScreen"
+import { SettingsScreen, type SettingsActions } from "../../SettingsScreen"
 import type { PeopleTimeOff } from "../../settings-tabs/People"
 import { timeOffRows, timeOffWords } from "../schedule-prototype-model"
 import { useWorldState } from "../schedule-world-store"
-import { WALK_PEOPLE } from "./visits-data"
+import { WALK_PEOPLE, applyWalkPeople } from "./visits-data"
 import { WALK_SCHEDULE_WORLD, walkSchedule } from "./walk-schedule"
 
 // The walkthrough's Settings: the live screen over the repo's settings with the walkthrough's two people, and People carries each person's Time off (the Schedule only draws the band).
@@ -28,5 +28,11 @@ export function WalkSettings() {
     },
     onRemove: (id) => store.dispatch({ type: "time-off-remove", id }),
   }
-  return <SettingsScreen data={DATA} today={LIVE_TODAY} defaultTab="people" timeOff={timeOff} />
+  // Save writes People into the people the Schedule reads (working days, hours, Most per day, Takes visits), so the next opening offered follows it in the same session
+  const actions: SettingsActions = {
+    save: async (settings) => (applyWalkPeople(settings.people), { ok: true, data: undefined }),
+    createKey: async () => ({ ok: false, message: "Keys are not part of the prototype." }),
+    revokeKey: async () => ({ ok: false, message: "Keys are not part of the prototype." }),
+  }
+  return <SettingsScreen data={DATA} today={LIVE_TODAY} defaultTab="people" timeOff={timeOff} actions={actions} />
 }

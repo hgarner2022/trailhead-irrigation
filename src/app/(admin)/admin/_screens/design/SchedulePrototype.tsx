@@ -19,7 +19,7 @@ export function SchedulePrototype({ withOverlays = true, ...props }: ProtoInitia
   return (
     <TooltipProvider>
       <TimeGridDndProvider>
-        <div data-slot="schedule-prototype" className="space-y-4">
+        <div data-slot="schedule-prototype" className={p.state.toast ? "space-y-4 pb-28 md:pb-20" : "space-y-4"}>
           <ScheduleProtoHeader p={p} />
           <div className="flex items-start gap-4">
             <div className="min-w-0 flex-1">

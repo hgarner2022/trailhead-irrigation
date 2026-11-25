@@ -19,10 +19,13 @@ export const LOOK: GuideLink[] = [
   { id: `${P}schedule-all`, label: "Schedule all", look: "Press Schedule all 4 in Unscheduled. Each job goes on the next open day with the first person who has room, each row has Remove, and one button schedules them with the same notify choice as the dialog." },
   { id: `${P}list-view`, label: "List", look: "The product's own visits grid over this calendar, with its filters. A row opens the visit's job page as a block does." },
   { id: `${P}another-day-ranked`, label: "Another day, ranked", look: "Open Another day in the Schedule dialog and pick a day. That day's openings are ranked by driving added, and a time that breaks a rule is greyed with its sentence." },
+  { id: `${P}one-person-hidden`, label: "One person hidden", look: "Press a person's chip in the toolbar, as in Google Calendar, to show or hide them. Their column leaves Week and Day, and Month, the Map and the List follow. The last chip cannot be turned off." },
   { id: `${P}week-phone`, label: "Week on a phone", look: "A day strip and one day's column, no dragging, every action in the block's menu." },
 ]
 
 export const TRY: string[] = [
+  "Open Settings, then People, change Hours or Most per day for Ryan, press Save, and open the Schedule: the openings follow.",
+  "Press Hannah's chip in the toolbar to hide her schedule, and press it again to bring her back.",
   "Drag a visit to a far town and see Adds 25 min of driving in the Move the visit dialog.",
   "Open Day on Thursday and press Order the day, then Undo.",
   "Open Unscheduled and press Schedule all, remove one row, and confirm.",
@@ -38,6 +41,7 @@ export const TRY: string[] = [
 ]
 
 export const CHANGED: string[] = [
+  "Settings, People now feeds the Schedule: Takes visits, Working days, Hours and Most per day change the next opening offered. The page says so: A change applies to the next opening offered.",
   "Best times, suggestions, drop checks, driving, Order the day and Schedule all now come from the product's own offer rule and its drive times, from Settings: Minutes, Most per day and each person's hours.",
   "Home, Jobs, the customer page and the job page read the same calendar as the Schedule.",
   "One word for a move the customer has not heard about: Notify the customer, Don't notify, Customer not notified.",

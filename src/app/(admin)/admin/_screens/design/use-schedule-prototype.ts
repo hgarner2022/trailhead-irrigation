@@ -11,6 +11,7 @@ import { initialState } from "./schedule-prototype-data"
 import { bestTimesFor, suggestionFor } from "./schedule-best-times"
 import { placementProblems, type Action, type ProtoState, type ProtoWorld, type Target } from "./schedule-prototype-model"
 import { shift, type View } from "./schedule-prototype-view"
+import { orderDay } from "./schedule-order"
 import { createWorldStore, useWorldState, type WorldStore } from "./schedule-world-store"
 import type { ScheduleResult } from "./ScheduleDialog"
 import { startFromWords, buildWalkWorld } from "./walkthrough/visits-data"
@@ -49,11 +50,24 @@ export interface ProtoInitial {
   /** a time off band was pressed: Settings, People */
   onOpenSettings?: () => void
   /** the view, day and panels as they change, so a screen that unmounts (a job page opened from a block) can open again as it was left */
-  onState?: (s: { view: View; day: string; panels: { unscheduled: boolean; map: boolean } }) => void
+  onState?: (s: { view: View; day: string; panels: { unscheduled: boolean; map: boolean }; hidden: string[] }) => void
+  /** the people hidden from the view when it opens (the walkthrough remembers them; else this browser's last choice) */
+  hidden?: string[]
   /** what a visit is worth and what was paid, for the List; the walkthrough reads its Jobs rows */
   moneyOf?: MoneyOf
   /** toast seconds: 0 keeps it up (the stories); the prototype closes it after 10 */
   toastSeconds?: number
+}
+
+const HIDDEN_KEY = "trailhead.schedule.hidden"
+/** This browser's last choice, kept to the people that exist; storage can throw (a private window), so it is wrapped. */
+function storedHidden(people: ProtoWorld["people"]): string[] {
+  try {
+    const v: unknown = JSON.parse(window.localStorage.getItem(HIDDEN_KEY) ?? "[]")
+    return Array.isArray(v) ? v.filter((id): id is string => typeof id === "string" && people.some((p) => p.id === id)) : []
+  } catch {
+    return []
+  }
 }
 
 export const personIdOf = (people: ProtoWorld["people"], name: string) => people.find((p) => p.name === name)?.id
@@ -72,10 +86,19 @@ export function useScheduleProto(init: ProtoInitial = {}) {
   const [selectedId, setSelectedId] = useState<string | undefined>(init.selectedId)
   const [dialog, setDialog] = useState<Dialog | null>(init.dialog ?? null)
   const wide = useMedia("(min-width: 1280px)")
+  const [hidden, setHidden] = useState<string[]>(() => { const h = init.hidden ?? storedHidden(world.people); return h.length >= world.people.length ? [] : h })
 
   const { onState } = init
-  useEffect(() => onState?.({ view, day, panels }), [onState, view, day, panels])
+  useEffect(() => onState?.({ view, day, panels, hidden }), [onState, view, day, panels, hidden])
   const { people, today } = world
+  // who is shown: hiding is a view, not a rule, so the best times and suggestions below still read `people`; at least one person always stays on
+  const shown = useMemo(() => (people.filter((p) => !hidden.includes(p.id)).length ? people.filter((p) => !hidden.includes(p.id)) : people), [people, hidden])
+  const togglePerson = (id: string) =>
+    setHidden((h) => {
+      const next = h.includes(id) ? h.filter((x) => x !== id) : people.length - h.length > 1 ? [...h, id] : h
+      try { window.localStorage.setItem(HIDDEN_KEY, JSON.stringify(next)) } catch { /* a private window keeps it for the session only */ }
+      return next
+    })
   const keys = useCalendarKeys({ onView: setView, onToday: () => setDay(today), onNext: () => setDay((d) => shift(view, d, 1)), onPrev: () => setDay((d) => shift(view, d, -1)) })
 
   // a place that breaks a rule asks first; one that breaks none goes through
@@ -129,10 +152,10 @@ export function useScheduleProto(init: ProtoInitial = {}) {
   }
 
   /** the people whose day in view has an Any time stop to order (Day view only) */
-  const orderable = useMemo(() => (view === "day" ? people.filter((p) => state.visits.some((b) => b.day === day && b.personId === p.id && b.start === null && !b.done)) : []), [view, people, state.visits, day])
+  const orderable = useMemo(() => (view === "day" ? shown.filter((p) => state.visits.some((b) => b.day === day && b.personId === p.id && b.start === null && !b.done) && orderDay({ people, visits: state.visits, meta: state.meta, timeOff: state.timeOff }, p, day).moves.length > 0) : []), [view, shown, state.visits, day])
 
   return {
-    orderable, mapPick, setMapPick,
+    shown, hidden, togglePerson, orderable, mapPick, setMapPick,
     state, store, dispatch, people, wide, view, setView, day, setDay, panels, setPanel, togglePanel, tab, openNotNotified, hoverId, setHoverId, selectedId, setSelectedId, dialog, setDialog,
     moneyOf: init.moneyOf, keys, openDay, notify, dontNotify, now: world.now, today, toastSeconds: init.toastSeconds ?? 10, jobs, bestFor, schedule,
     commit, move, onMove, onResize, onDropExternal, onAction, onSelect, onNewJob: init.onNewJob, onOpenSettings: init.onOpenSettings,

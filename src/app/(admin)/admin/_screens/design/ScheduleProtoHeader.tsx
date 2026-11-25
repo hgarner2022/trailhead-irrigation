@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { PersonToggles } from "@/components/blocks/PersonToggles"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { SegmentedControl } from "@/components/blocks/SegmentedControl"
 import { firstNameOf } from "@/lib/admin/people"
@@ -58,7 +59,7 @@ export function ScheduleProtoHeader({ p }: { p: Proto }) {
           <Button type="button" variant="outline" size="icon" className={cn("size-11", view !== "day" && "hidden md:inline-flex")} aria-label={`Previous ${UNIT[view]}`} onClick={() => p.setDay(shift(view, day, -1))}>
             <ChevronLeft className="size-4" aria-hidden />
           </Button>
-          <Button type="button" variant="outline" className="min-h-11" onClick={() => p.setDay(p.today)}>
+          <Button type="button" variant="outline" className={cn("min-h-11", (view === "week" || view === "day") && "hidden md:inline-flex")} onClick={() => p.setDay(p.today)}>
             Today
           </Button>
           <Button type="button" variant="outline" size="icon" className={cn("size-11", view !== "day" && "hidden md:inline-flex")} aria-label={`Next ${UNIT[view]}`} onClick={() => p.setDay(shift(view, day, 1))}>
@@ -74,6 +75,7 @@ export function ScheduleProtoHeader({ p }: { p: Proto }) {
               <span aria-hidden className="hidden md:inline">{`${p.notNotifiedCount} ${p.notNotifiedCount === 1 ? "customer" : "customers"} not notified`}</span>
             </Button>
           )}
+          <PersonToggles people={p.people} hidden={p.hidden} onToggle={p.togglePerson} />
           {p.orderable.length === 1 && (
             <Button type="button" variant="outline" className="min-h-11" onClick={() => p.setDialog({ kind: "order", personId: p.orderable[0]!.id })}>
               Order the day

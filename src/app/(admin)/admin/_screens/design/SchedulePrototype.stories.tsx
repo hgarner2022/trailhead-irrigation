@@ -3,6 +3,7 @@ import { expect, fn, userEvent, within } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { SchedulePrototype } from "./SchedulePrototype"
 import type { ProtoInitial } from "./use-schedule-prototype"
+import { buildWalkWorld } from "./walkthrough/visits-data"
 
 // The Schedule prototype (docs/plans/2026-11-25-scheduler-design.md, sections 7 and 9) over the walkthrough's calendar: Ryan Garner and Hannah Garner, today Wednesday, Nov 18 2026, every
 // visit read from its job page. The walkthrough's own Schedule is the way in (Admin walkthrough, clickable); these stories keep the states it cannot open directly: Week with both panels,
@@ -193,7 +194,8 @@ export const ShortcutsHelp: Story = {
 /** Thursday has a stop with no set time: Order the day previews where each stop would go and the driving it saves, then one change with Undo and no message to anyone. */
 export const OrderTheDay: Story = {
   name: "Order the day",
-  args: { view: "day", day: "2026-11-19", toastSeconds: 0 },
+  // Ana Ruiz (Louisville, no set time) is Ryan's on Thursday, between his Lafayette and Erie stops: ordering slots her in between
+  args: { view: "day", day: "2026-11-19", toastSeconds: 0, state: { visits: buildWalkWorld().visits.map((v) => (v.id === "w-ana" ? { ...v, personId: "person_ryan" } : v)), meta: buildWalkWorld().meta } },
   play: async () => {
     await userEvent.click(await body().findByRole("button", { name: "Order the day" }))
     const dialog = within(await body().findByRole("dialog", { name: "Order the day" }))
@@ -248,3 +250,28 @@ export const AnotherDayRanked: Story = {
     await expect(document.querySelector('[data-slot="day-times"] [role="radiogroup"]')).not.toBeNull()
   },
 }
+
+/** One person hidden with the control in the toolbar: Week and Day lose their column, Month's counts, the Map and the List follow, and the other chip cannot be turned off. */
+export const OnePersonHidden: Story = {
+  name: "One person hidden",
+  args: { hidden: ["person_hannah"], panels: { map: true } },
+  play: async () => {
+    const hannah = await body().findByRole("button", { name: "Show Hannah Garner's visits" })
+    await expect(hannah).toHaveAttribute("aria-pressed", "false")
+    await expect(await body().findByRole("button", { name: "Show Ryan Garner's visits" })).toHaveAttribute("aria-disabled", "true")
+    await expect(document.querySelectorAll('[data-slot="day-head"]').length).toBeGreaterThan(0)
+    await expect(document.querySelector('[data-slot="day-head"]')).not.toHaveTextContent("Hannah")
+  },
+}
+export const OnePersonHiddenPhone: Story = { ...phone(OnePersonHidden), args: { hidden: ["person_hannah"] }, play: async () => {
+  await expect(await body().findByRole("button", { name: "Show Hannah Garner's visits" })).toHaveAttribute("aria-pressed", "false")
+} }
+export const TwoPeopleShown: Story = {
+  name: "Two people shown",
+  play: async () => {
+    await userEvent.click(await body().findByRole("button", { name: "Show Hannah Garner's visits" }))
+    await expect(await body().findByRole("button", { name: "Show Hannah Garner's visits" })).toHaveAttribute("aria-pressed", "false")
+    await userEvent.click(await body().findByRole("button", { name: "Show Hannah Garner's visits" }))
+  },
+}
+export const TwoPeopleShownPhone: Story = phone(TwoPeopleShown)
