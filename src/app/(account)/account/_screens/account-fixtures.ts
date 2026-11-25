@@ -8,7 +8,7 @@ const NO_MONEY = { tone: "none" as const, label: "", paymentIds: [] }
 
 /** A visit as the API sends it: nothing told yet, nothing priced, nothing the customer may do, until the case says so. */
 export const visit = (over: Partial<PortalVisitType> & Pick<PortalVisitType, "id" | "kind" | "name" | "status">): PortalVisitType => ({
-  jobId: "job_pass", scheduledOn: null, completedOn: null, canceledOn: null, windowTold: false, window: null, month: null, personFirstName: null, price: 0, money: NO_MONEY, mustBeHome: false, notDoneReason: null, reschedule: "no", cancel: "no", cancelsBy: null, ...over,
+  jobId: "job_pass", scheduledOn: null, completedOn: null, canceledOn: null, windowTold: false, window: null, month: null, personFirstName: null, price: 0, money: NO_MONEY, mustBeHome: false, notDoneReason: null, preference: null, reschedule: "no", cancel: "no", cancelsBy: null, ...over,
 })
 
 const line = (id: string, name: string, unitPrice: number, visitId: string | null = null, cancelledAt: string | null = null, description: string | null = null) => ({ id, name, description, quantity: 1, unitPrice, taxable: false, cancelledAt, visitId })
@@ -19,7 +19,7 @@ export const passJob: PortalJobType = {
   total: 240, money: { paid: 0, owed: 240, words: "$240 unpaid" },
   visits: [
     visit({ id: "v1", kind: "turn-on", name: "Spring turn-on", status: "scheduled", scheduledOn: "2027-04-28", month: "May", mustBeHome: true, price: 120, reschedule: "yes", cancel: "yes", cancelsBy: "Monday, April 26, 11:59 pm" }),
-    visit({ id: "v2", kind: "blowout", name: "Fall blowout", status: "unscheduled", month: "October", price: 120, reschedule: "yes", cancel: "yes" }),
+    visit({ id: "v2", kind: "blowout", name: "Fall blowout", status: "unscheduled", month: "October", price: 120, preference: "recommended", reschedule: "no", cancel: "yes" }),
   ],
   payments: [], invoices: [],
 }

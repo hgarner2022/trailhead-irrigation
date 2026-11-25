@@ -126,6 +126,7 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
         money: visitMoney.get(v.id)!,
         mustBeHome: properties.find((p) => p.id === v.propertyId)?.mustBeHome ?? false,
         notDoneReason: v.status === "unscheduled" ? v.notDoneReason : null,
+        preference: v.status === "unscheduled" && j.season !== null && (v.kind === "turn-on" || v.kind === "blowout") ? (v.preference ?? "recommended") : null,
         ...changeFor({ status: v.status, scheduledOn: v.scheduledOn, hasWindow: hasSelfServeDays(v.kind, orgRow?.settings.windows ?? []), jobOpen }, now),
         cancelsBy: v.status === "scheduled" && v.scheduledOn ? cutoffWords({ scheduledOn: v.scheduledOn }) : null,
       })),

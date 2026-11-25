@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { defaultWindows } from "@/lib/settings/defaults"
 import { preferredRange, scheduleVisits, type ScheduleInput } from "./schedule"
 import type { SchedArea, SchedPerson, SchedVisit, Town } from "./types"
 
@@ -80,6 +81,14 @@ describe("scheduleVisits", () => {
     expect(late).toEqual({ from: "2027-05-11", to: "2027-05-14" })
     const r = run([v("a", "Erie", { preference: "later" })])
     expect(where(r, "a")!.day >= late.from).toBe(true)
+  })
+
+  it("reads the turn-on's real window as early (Apr 15 to 30), recommended (May 1 to 15) and late (May 16 to 31)", () => {
+    const window = defaultWindows(2027)[0]!
+    expect(preferredRange(window, "earlier")).toEqual({ from: "2027-04-15", to: "2027-04-30" })
+    expect(preferredRange(window, "recommended")).toEqual({ from: "2027-05-01", to: "2027-05-15" })
+    expect(preferredRange(window, "later")).toEqual({ from: "2027-05-16", to: "2027-05-31" })
+    expect(preferredRange(window)).toEqual({ from: "2027-05-01", to: "2027-05-15" })
   })
 
   it("falls back to the whole window when the preferred third is full", () => {

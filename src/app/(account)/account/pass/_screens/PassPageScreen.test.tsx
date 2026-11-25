@@ -122,7 +122,7 @@ describe("PassPageScreen", () => {
 
   it("says no headline for a booked visit: the plan line is its day, and changing the day is the visit's own Reschedule", () => {
     const booked: Pass = { ...pass, visits: pass.visits.filter((v) => v.kind !== "inspection").map((v) => (v.kind === "blowout" ? { ...v, scheduledOn: "2027-10-12", scheduledAt: "2027-10-12T14:00:00Z" } : v)) }
-    render(<PassPageScreen pass={booked} today="2027-10-01" pickDays={{ blowout: ["2027-10-19"] }} />)
+    render(<PassPageScreen pass={booked} today="2027-10-01" />)
     expect(document.querySelector('[data-slot="pass-headline"]')).toBeNull()
     expect(screen.queryByRole("button", { name: "Change your day" })).not.toBeInTheDocument()
     expect(rows()[1]!.textContent).toContain("Tuesday, October 12")

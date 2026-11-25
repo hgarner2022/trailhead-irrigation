@@ -7,7 +7,7 @@ describe("portalTimeline", () => {
     const t = portalTimeline(andrea, [passJob, repairJob, invoicedJob], TODAY)
     expect(t.upcoming.map((r) => [r.id, r.dayWords])).toEqual([
       ["v1", "Wed, Apr 28"],
-      ["v2", "Day coming soon"],
+      ["v2", "Our recommended, mid October"],
     ])
     expect(t.past.map((r) => [r.id, r.dayWords])).toEqual([
       ["v4", "Sat, Mar 20"],
@@ -62,10 +62,14 @@ describe("portalTimeline", () => {
     expect(t.past.map((r) => [r.id, r.pill.label])).toEqual([["v1", "Booked"]])
   })
 
-  it("reads the pill as Pick a day when the customer may pick one, else Day coming soon", () => {
-    expect(portalTimeline(andrea, [passJob], TODAY).upcoming[1]!.pill.label).toBe("Pick a day")
-    const quiet = { ...passJob, visits: passJob.visits.map((v) => (v.id === "v2" ? { ...v, reschedule: "text" as const } : v)) }
-    expect(portalTimeline(andrea, [quiet], TODAY).upcoming[1]!.pill.label).toBe("Day coming soon")
+  it("never asks a customer to pick a day for a visit with none: a pass visit reads its preference and that we schedule it, any other says it is not scheduled yet", () => {
+    const waiting = portalTimeline(andrea, [passJob], TODAY).upcoming[1]!
+    expect(waiting).toMatchObject({ dayWords: "Our recommended, mid October", note: "We'll schedule it about two weeks before and tell you the day.", pill: { label: "Not scheduled yet" } })
+    const early = { ...passJob, visits: passJob.visits.map((v) => (v.id === "v2" ? { ...v, preference: "earlier" as const } : v)) }
+    expect(portalTimeline(andrea, [early], TODAY).upcoming[1]!.dayWords).toBe("Early season, early October")
+    const oneOff = { ...passJob, season: null, visits: passJob.visits.map((v) => (v.id === "v2" ? { ...v, preference: null } : v)) }
+    expect(portalTimeline(andrea, [oneOff], TODAY).upcoming[1]).toMatchObject({ dayWords: "Not scheduled yet", note: "We'll text you when Ryan has one." })
+    for (const r of portalTimeline(andrea, [passJob, oneOff], TODAY).upcoming) expect(`${r.dayWords} ${r.note} ${r.pill.label}`).not.toMatch(/pick a day|coming soon/i)
   })
 
   it("links each row to its visit page and picks the next visit", () => {

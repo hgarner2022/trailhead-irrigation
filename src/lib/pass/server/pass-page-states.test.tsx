@@ -26,7 +26,7 @@ beforeEach(async () => {
 async function page(set: Partial<typeof s.visit.$inferInsert>, now = "2027-04-20T15:00:00Z") {
   await db.update(s.visit).set(set).where(eq(s.visit.id, "p3-blowout"))
   const data = (await loadPassPage(ctxFor(db, customerPerson(customerId), now)))!
-  const html = renderToString(<PassPageScreen pass={data.pass} passes={data.passes} today={data.today} pickDays={data.pickDays} />)
+  const html = renderToString(<PassPageScreen pass={data.pass} passes={data.passes} today={data.today} />)
   return { data, html }
 }
 

@@ -62,12 +62,12 @@ export function visitPageOf(job: PortalJobType, visit: PortalVisitType, customer
   const card = cardWords(customer.card)
   const priceLine = upcoming && visit.price > 0 ? (card ? `$${visit.price}, charged to the ${card} after the visit` : upcomingMoney(visit.price, false)) : ""
   const body = textRyanBody({ name: [customer.firstName, customer.lastName].filter(Boolean).join(" "), address: job.address, service: visit.name, day: visit.scheduledOn })
-  const day = dayParts({ ...visit, canPick: visit.reschedule === "yes" }, today, Boolean(customer.phone || customer.email))
+  const day = dayParts(visit, today, Boolean(customer.phone || customer.email))
   const owes = visit.status === "completed" || visit.money.tone === "invoice-sent" || visit.money.tone === "past-due"
   return {
     service: visit.name,
     label: job.season !== null ? job.name : null,
-    pill: visitPill({ status: visit.status, notDoneReason: visit.notDoneReason, canPick: visit.reschedule === "yes" }),
+    pill: visitPill({ status: visit.status, notDoneReason: visit.notDoneReason }),
     dayLine: day.sentence,
     dayHeading: day.heading,
     dayDetail: day.detail,

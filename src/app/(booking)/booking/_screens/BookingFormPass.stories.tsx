@@ -6,7 +6,7 @@ import { BookingForm, type BookingFormProps } from "./BookingForm"
 
 // The Season Pass path of the booking form, over fixtures at 375 (Phone) and 1280 (Laptop); nothing is sent. The pass can be bought whenever, and it holds each kind's next visit (docs/plans/2026-11-20-season-pass-booking-research.md,
 // Hannah's decisions of Nov 20 to 22 2026): a visit whose window is open now or opens within a month (April for the spring turn-on, September and October for the blowout) is booked with an exact day and time on a calendar;
-// every other visit takes Our recommended, Early season or Late season by name and is scheduled about two weeks before. No opening day is shown anywhere: the windows are the scheduler's settings (turn-on May 1 to 31,
+// every other visit takes Our recommended, Early season or Late season by name and is scheduled about two weeks before. No opening day is shown anywhere: the windows are the scheduler's settings (turn-on April 15 to May 31,
 // blowout October 1 to November 15) and the dates are not confirmed. The pass is a SETUP, not an order: each visit shows what it costs and the card says when it is charged. One purchase per story: January (two preferences),
 // April (the turn-on now, the blowout a preference), July (the blowout and next spring's turn-on, both preferences), October (the blowout now, next spring's turn-on a preference), November 20 (next season).
 const phone = { globals: { viewport: { value: "phone", isRotated: false } } } as const
@@ -91,13 +91,13 @@ const servicesNovember = on(at("november", { step: "service" }), "November, serv
 export const NovemberServicesPhone = servicesNovember.phone
 export const NovemberServicesLaptop = servicesNovember.laptop
 
-/** 2. April, the turn-on now: a calendar day and an exact time for the visit that is open (the blowout is not asked a day). It starts in May, so the calendar opens on May. */
+/** 2. April, the turn-on now: a calendar day and an exact time for the visit that is open (the blowout is not asked a day). Today is April 14 and the window opens April 15, so the calendar opens on April with that day the soonest. */
 const dayApril = on(at("april", { step: "day" }), "April, day", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Spring turn-on" })).toBeInTheDocument()
     await expect(canvas.queryByRole("heading", { name: "Fall blowout" })).toBeNull()
-    await expect(canvas.getByText("May 2027")).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: /Monday, May 3, soonest/ })).toHaveAttribute("aria-pressed", "true")
+    await expect(canvas.getByText("April 2027")).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /Thursday, April 15, soonest/ })).toHaveAttribute("aria-pressed", "true")
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
   },
 })
@@ -122,9 +122,9 @@ const prefApril = on(at("april", { step: "preference", picks: picked }), "April,
     await expect(canvas.getByRole("button", { name: /^Early season/ })).toHaveAttribute("aria-pressed", "false")
     await expect(canvas.getByRole("button", { name: /^Late season/ })).toHaveAttribute("aria-pressed", "false")
     await expect(canvas.getByText("We'll schedule it about two weeks before and tell you the day.")).toBeInTheDocument()
-    await expect(canvas.getByText("Early October")).toBeInTheDocument()
-    await expect(canvas.getByText("Mid October")).toBeInTheDocument()
-    await expect(canvas.getByText("Late October")).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /Early October$/ })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /Mid October$/ })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /Late October$/ })).toBeInTheDocument()
     await expect(canvas.queryByText(/freeze/)).toBeNull()
   },
 })
