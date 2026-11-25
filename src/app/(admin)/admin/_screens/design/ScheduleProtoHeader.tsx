@@ -80,7 +80,7 @@ export function ScheduleProtoHeader({ p }: { p: Proto }) {
             </Button>
           )}
           <Button type="button" variant="outline" className={toggle(p.panels.unscheduled)} aria-pressed={p.panels.unscheduled} onClick={() => p.togglePanel("unscheduled")}>
-            {`Unscheduled ${p.state.unscheduled.length}`}
+            {`Unscheduled (${p.state.unscheduled.length})`}
           </Button>
           <Button type="button" variant="outline" className={toggle(p.panels.map)} aria-pressed={p.panels.map} onClick={() => p.togglePanel("map")}>
             Map

@@ -11,7 +11,7 @@ import type { Proto } from "./use-schedule-prototype"
 
 // The prototype New job sheet (docs/plans/2026-11-25-scheduler-design.md, 7.7): Customer, Address, Service, then Find a time. Picking a row lights a dotted block on the grid and a pin on
 // the map (the screen reads `newJob.ghost`); Add job places the visit, Add without a day leaves it in Unscheduled. Opened from an Unscheduled row it is Find a time for that job and the
-// footer says Place. A docked panel from 1280, so the week stays in view; a sheet from the bottom on a phone. Fixtures only: no customer is saved.
+// footer says Schedule. A docked panel from 1280, so the week stays in view; a sheet from the bottom on a phone. Fixtures only: no customer is saved.
 
 const SELECT = "min-h-11 w-full rounded-lg border border-border bg-background px-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 md:text-sm"
 
@@ -51,7 +51,7 @@ export function ScheduleProtoNewJob({ p, className }: { p: Proto; className?: st
       footer={
         <>
           <Button type="button" className="min-h-11" disabled={!nj.canAdd} onClick={make}>
-            {nj.job ? "Place" : "Add job"}
+            {nj.job ? "Schedule" : "Add job"}
           </Button>
           {!nj.job && (
             <Button type="button" variant="outline" className="min-h-11" disabled={!nj.unscheduledJob("check")} onClick={later}>

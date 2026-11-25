@@ -47,7 +47,6 @@ export function ScheduleProtoDialogs({ p }: { p: Proto }) {
           open
           onOpenChange={close("confirm")}
           confirmLabel="Move anyway"
-          dismissLabel="Keep it where it was"
           slot="move-anyway-dialog"
           onConfirm={async () => {
             p.dispatch(d.action)

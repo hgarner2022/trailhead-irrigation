@@ -61,8 +61,8 @@ export function columnsFor(view: View, day: string, people: readonly Person[], b
     return dayColumns([day]).map((c) => ({ ...c, today: day === today, count: undefined, caption: fill }))
   }
   const days = weekDaysShown(mondayOf(day), people, blocks)
-  const counts = Object.fromEntries(days.map((d) => [d, blocks.filter((b) => b.day === d).length]))
-  return dayColumns(days, counts).map((c) => ({ ...c, today: c.day === today }))
+  // each day reads as the live day header does ("5 stops, 3 h open", `fillWords`), not as "5 visits"
+  return dayColumns(days).map((c) => ({ ...c, today: c.day === today, caption: fillWords(dayFill(visitsOf(blocks, meta, c.day), c.day, [...people], TIME_ZONE)) }))
 }
 
 /** The month's cells: the days that hold visits are read from the state, the other weeks keep the fixture's pattern. */

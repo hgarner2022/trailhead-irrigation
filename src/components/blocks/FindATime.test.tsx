@@ -66,7 +66,7 @@ describe("FindATime", () => {
   })
   it("says when nothing is open and when the address is outside the six towns", () => {
     const { rerender } = render(<FindATime {...base} state="none" noneBefore="Nov 30" />)
-    expect(screen.getByText("No time before Nov 30.")).toBeInTheDocument()
+    expect(screen.getByText("No open day before Nov 30.")).toBeInTheDocument()
     rerender(<FindATime {...base} state="outside" />)
     expect(screen.getByText("Outside the six towns.")).toBeInTheDocument()
   })

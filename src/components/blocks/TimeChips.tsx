@@ -2,6 +2,7 @@
 
 import { useId } from "react"
 import { clock12, type StartOption } from "@/lib/booking/day-time"
+import { RecommendedMark, recommendedChip, type RecommendedLook } from "@/components/blocks/RecommendedMark"
 import { cn } from "@/lib/utils"
 
 // The one start-time chip style (Hannah, Nov 23 2026: the calendar and its times are one pattern, everywhere): a group of radio chips, 44px, the chosen one navy and settling in with one 160 ms scale
@@ -25,11 +26,15 @@ export interface TimeChipsProps {
   /** what is missing, when Continue was pressed with no time chosen: the chips are marked invalid and the message sits under them */
   error?: string
   className?: string
+  /** the ONE start time to mark as recommended (the Schedule's pick; never says why). Nothing is chosen for the customer. Omit for no mark. */
+  recommendedStart?: string | null
+  /** which of the three candidate looks draws the mark (RecommendedMark); default A */
+  recommendedLook?: RecommendedLook
 }
 
 const CHIP = "flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2"
 
-export function TimeChips({ options, value, onChange, anyTime = false, legend, hideLegend = false, hint, density = "page", error, className }: TimeChipsProps) {
+export function TimeChips({ options, value, onChange, anyTime = false, legend, hideLegend = false, hint, density = "page", error, className, recommendedStart = null, recommendedLook }: TimeChipsProps) {
   const name = useId()
   return (
     <fieldset data-slot="time-chips" className={cn("min-w-0", className)}>
@@ -46,11 +51,14 @@ export function TimeChips({ options, value, onChange, anyTime = false, legend, h
         )}
         {options.map((t) => {
           const checked = value === t.start
+          const marked = Boolean(recommendedStart) && t.start === recommendedStart
           return (
             <label key={t.start} className="relative block">
               <input type="radio" name={name} checked={checked} aria-invalid={Boolean(error) || undefined} onChange={() => onChange(t.start)} className="peer sr-only" />
-              <span data-slot="time-chip" className={cn(CHIP, checked ? "settle border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
+              <span data-slot="time-chip" data-recommended={marked || undefined} className={cn(CHIP, checked ? "settle border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40", marked && "relative", marked && recommendedChip(recommendedLook, checked))}>
+                {marked && <RecommendedMark look={recommendedLook} position="before" checked={checked} />}
                 <span className="text-base font-semibold tabular-nums">{clock12(t.start)}</span>
+                {marked && <RecommendedMark look={recommendedLook} position="after" checked={checked} />}
               </span>
             </label>
           )

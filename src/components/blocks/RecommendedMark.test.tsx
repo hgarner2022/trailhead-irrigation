@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
 import { fixtureCalendarDays, type DayTimePick } from "@/lib/booking/day-time"
 import { DayCalendar } from "./DayCalendar"
-import { DayTimePicker } from "./DayTimePicker"
+import { TimeChips } from "./TimeChips"
 import { RecommendedMark, isRecommended, recommendedChip, type RecommendedLook } from "./RecommendedMark"
 
 const offers = fixtureCalendarDays(120, "2026-11-30", "2026-12-11")
@@ -59,8 +59,8 @@ describe("the mark", () => {
     expect(container.querySelector("[data-recommended]")).toBeNull()
     expect(container.querySelector('[data-slot="recommended-mark"]')).toBeNull()
   })
-  it("DayTimePicker marks the one time too", () => {
-    render(<DayTimePicker offers={offers} value={{ day: "2026-11-30", start: null }} onChange={() => {}} legend="Pick your day" recommendedStart="10:30" recommendedDay="2026-11-30" timesShown={20} />)
+  it("TimeChips marks the one time too", () => {
+    render(<TimeChips options={offers[0]!.times} value={null} onChange={() => {}} legend="Times" recommendedStart="10:30" />)
     expect(document.querySelectorAll('[data-slot="time-chip"][data-recommended]')).toHaveLength(1)
   })
 })

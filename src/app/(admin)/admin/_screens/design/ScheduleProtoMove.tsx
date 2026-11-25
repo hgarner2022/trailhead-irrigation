@@ -54,7 +54,7 @@ export function ScheduleProtoMove({ p, visit }: { p: Proto; visit: GridBlock }) 
             ))}
           </select>
         </FormRow>
-        <FormRow label="Person">
+        <FormRow label="Who">
           <select value={who} onChange={(e) => setWho(e.target.value)} className={SELECT}>
             {p.people.map((x) => (
               <option key={x.id} value={x.id}>

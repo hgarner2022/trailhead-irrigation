@@ -34,7 +34,7 @@ export interface FindATimeProps {
   /** "Book it anyway" is ticked for the chosen forced row */
   forcedTicked?: boolean
   onForcedTicked?: (ticked: boolean) => void
-  /** the day the search looked as far as, for "No time before Nov 30": already worded */
+  /** the day the search looked as far as, for "No open day before Nov 30": already worded */
   noneBefore?: string
   /** the Find a time button; the block draws it off before an address */
   onFind?: () => void
@@ -121,7 +121,7 @@ export function FindATime({ state, openings = [], forced = [], sort, onSort, sel
         </div>
       )}
 
-      {state === "none" && <EmptyState title={noneBefore ? `No time before ${noneBefore}.` : "No time open."} line="Pick a day yourself." className="py-6" />}
+      {state === "none" && <EmptyState title={noneBefore ? `No open day before ${noneBefore}.` : "No time open."} line="Pick a day yourself." className="py-6" />}
 
       {state === "outside" && <EmptyState icon={MapPinOff} title="Outside the six towns." line="Pick a day yourself." className="py-6" />}
 

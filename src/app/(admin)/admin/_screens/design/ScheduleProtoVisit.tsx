@@ -14,7 +14,7 @@ export function ScheduleProtoVisit({ p }: { p: Proto }) {
   const b = p.state.visits.find((v) => v.id === p.selectedId)
   const meta = b ? p.state.meta[b.id] : undefined
   const who = b ? p.people.find((x) => x.id === b.personId) : undefined
-  const facts: [string, string][] = b ? [["Service", b.service], ["When", visitWhen(b)], ["Person", firstNameOf(who?.name) ?? "No one yet"], ["Town", b.town]] : []
+  const facts: [string, string][] = b ? [["Service", b.service], ["When", visitWhen(b)], ["Who", firstNameOf(who?.name) ?? "No one yet"], ["Town", b.town]] : []
   return (
     <SidePanel
       open={Boolean(b)}
