@@ -97,3 +97,13 @@ describe("Schedule all", () => {
     expect(reduce(s1, { type: "undo" }).unscheduled).toEqual(j)
   })
 })
+
+describe("the Order the day story's Thursday", () => {
+  it("has three Any time stops the rule orders with a clear saving", async () => {
+    const { orderStory, ORDER_DAY } = await import("./schedule-order-fixture")
+    const f = orderStory()
+    const p = orderDay({ people: (await import("./walkthrough/visits-data")).WALK_PEOPLE, visits: f.visits, meta: f.meta, timeOff: [] }, (await import("./walkthrough/visits-data")).WALK_PEOPLE[0]!, ORDER_DAY)
+    expect(p.moves).toHaveLength(3)
+    expect(p.saved).toBeGreaterThanOrEqual(20)
+  })
+})

@@ -3,7 +3,7 @@ import { expect, fn, userEvent, within } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { SchedulePrototype } from "./SchedulePrototype"
 import type { ProtoInitial } from "./use-schedule-prototype"
-import { buildWalkWorld } from "./walkthrough/visits-data"
+import { orderStory } from "./schedule-order-fixture"
 
 // The Schedule prototype (docs/plans/2026-11-25-scheduler-design.md, sections 7 and 9) over the walkthrough's calendar: Ryan Garner and Hannah Garner, today Wednesday, Nov 18 2026, every
 // visit read from its job page. The walkthrough's own Schedule is the way in (Admin walkthrough, clickable); these stories keep the states it cannot open directly: Week with both panels,
@@ -194,15 +194,15 @@ export const ShortcutsHelp: Story = {
 /** Thursday has a stop with no set time: Order the day previews where each stop would go and the driving it saves, then one change with Undo and no message to anyone. */
 export const OrderTheDay: Story = {
   name: "Order the day",
-  // Ana Ruiz (Louisville, no set time) is Ryan's on Thursday, between his Lafayette and Erie stops: ordering slots her in between
-  args: { view: "day", day: "2026-11-19", toastSeconds: 0, state: { visits: buildWalkWorld().visits.map((v) => (v.id === "w-ana" ? { ...v, personId: "person_ryan" } : v)), meta: buildWalkWorld().meta } },
+  // Ryan has three stops with no set time on Thursday in a poor order (Longmont, Broomfield, Firestone): ordering slots them into the gaps and saves driving
+  args: { view: "day", day: "2026-11-19", toastSeconds: 0, state: orderStory() },
   play: async () => {
     await userEvent.click(await body().findByRole("button", { name: "Order the day" }))
     const dialog = within(await body().findByRole("dialog", { name: "Order the day" }))
     await expect(dialog.getByRole("region", { name: "Now" })).toBeInTheDocument()
     await expect(dialog.getByRole("region", { name: "Ordered" })).toBeInTheDocument()
     await userEvent.click(dialog.getByRole("button", { name: "Order the day" }))
-    await expect(await body().findByText(/^Ordered Thu, Nov 19/)).toBeInTheDocument()
+    await expect(await body().findByText(/^Ordered Thu, Nov 19, saves/)).toBeInTheDocument()
     await expect(body().queryByRole("button", { name: "Notify the customer" })).not.toBeInTheDocument()
   },
 }
@@ -275,3 +275,13 @@ export const TwoPeopleShown: Story = {
   },
 }
 export const TwoPeopleShownPhone: Story = phone(TwoPeopleShown)
+
+/** Nothing to reorder: Thursday's one stop with no set time already comes last in the best order, so there is no Order the day button. */
+export const OrderTheDayNothingToReorder: Story = {
+  name: "Order the day, nothing would change so no button",
+  args: { view: "day", day: "2026-11-19" },
+  play: async () => {
+    await expect(await body().findByRole("button", { name: "Show Hannah Garner's visits" })).toBeInTheDocument()
+    await expect(body().queryByRole("button", { name: "Order the day" })).not.toBeInTheDocument()
+  },
+}
