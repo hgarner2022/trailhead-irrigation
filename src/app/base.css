@@ -99,6 +99,23 @@ h1, h2, h3 {
   --motion-base: 220ms;
   --motion-draw: 520ms;
   --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+  /* A service card choosing and opening (the booking form's Service step). It is the one large surface that grows
+     under the finger, so it has its own, longer set and the shared tokens above stay as they are for the calendar,
+     the option chips and the dialogs. The order is choose, fill, open, read: the check lands at once, the header
+     cross-fades to navy over card-fill, the height starts one card-step later and takes card-open on a symmetric
+     ease (the shared ease covers most of its distance in its first third, which read as a snap on a panel this
+     tall), and the lines come in from the second step, one card-stagger apart. Closing is card-close: leaving is
+     quicker than arriving. Sources: Material 3 motion (medium 250 to 400ms for a component that expands, long 450
+     to 600ms only for large areas; exits shorter than entrances), NN/g "Executing UX Animations: Duration and Motion
+     Characteristics" (100 to 500ms, ease-out or ease-in-out, never linear), Apple HIG Motion (brief, in answer to
+     the person's action, off under Reduce Motion). */
+  --motion-card-step: 100ms;
+  --motion-card-fill: 280ms;
+  --motion-card-open: 400ms;
+  --motion-card-close: 260ms;
+  --motion-card-line: 260ms;
+  --motion-card-stagger: 40ms;
+  --motion-card-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* The chosen day or time in the booking calendar settles in: one short scale, once, nothing loops.
@@ -168,31 +185,38 @@ h1, h2, h3 {
 /* A press on a card: its icon answers with one short spring. */
 @keyframes svc-spring { 0% { transform: scale(0.94); } 55% { transform: scale(1.04); } 100% { transform: scale(1); } }
 .svc-spring { animation: svc-spring var(--motion-base) var(--motion-ease) both; }
-/* The card opens: the panel's row eases from 0fr to 1fr and its lines come in one after another. */
+/* The card opens one step after the choice: the panel's row eases from 0fr to 1fr, and its lines come in one after
+   another once the height is part-way. It closes at once and a little faster. */
 .svc-panel {
   display: grid;
   grid-template-rows: 0fr;
   visibility: hidden;
-  transition: grid-template-rows var(--motion-base) var(--motion-ease), visibility 0s linear var(--motion-base);
+  transition: grid-template-rows var(--motion-card-close) var(--motion-card-ease), visibility 0s linear var(--motion-card-close);
 }
 .svc-panel[data-open] {
   grid-template-rows: 1fr;
   visibility: visible;
-  transition: grid-template-rows var(--motion-base) var(--motion-ease), visibility 0s;
+  transition: grid-template-rows var(--motion-card-open) var(--motion-card-ease) var(--motion-card-step), visibility 0s;
 }
 .svc-panel > div { min-height: 0; overflow: hidden; }
-@keyframes svc-line { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes svc-line { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .svc-panel[data-open] [data-line] {
-  animation: svc-line var(--motion-base) var(--motion-ease) calc(60ms + var(--i, 0) * 30ms) both;
+  animation: svc-line var(--motion-card-line) var(--motion-card-ease) calc(var(--motion-card-step) * 2.2 + var(--i, 0) * var(--motion-card-stagger)) both;
 }
 .svc-chevron { transition: transform var(--motion-base) var(--motion-ease); }
 .svc-card { transition: transform var(--motion-press) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease), box-shadow var(--motion-fast) var(--motion-ease); }
 /* A press on a card's header: the whole card gives a little, not the header inside its edge. */
 .svc-card:has(> .opt:active) { transform: scale(0.985); }
 .svc-card > .opt:active { transform: none; }
-/* Chosen: the card settles once and the check draws in where the ring was. */
-@keyframes svc-settle { 0% { transform: scale(1); } 45% { transform: scale(1.02); } 100% { transform: scale(1); } }
-.svc-settle { animation: svc-settle var(--motion-fast) var(--motion-ease); }
+/* Chosen: the header, its second line and the icon tile cross-fade to the chosen colours over card-fill; unchosen they
+   come back in card-close. The card itself does not bounce while it grows: the ease's slow finish is the settle. */
+.svc-card { --svc-fill: var(--motion-card-close); }
+.svc-card[data-selected] { --svc-fill: var(--motion-card-fill); }
+/* The words change colour quickly, as the background passes its middle: navy words on the light half of the fade, white
+   on the dark half, so the name is never grey on grey. */
+.svc-card > .opt { transition: transform var(--motion-press) var(--motion-ease), color var(--motion-press) var(--motion-card-ease) calc(var(--svc-fill) * 0.3), background-color var(--svc-fill) var(--motion-card-ease); }
+.svc-card .svc-fade { transition: color var(--motion-press) var(--motion-card-ease) calc(var(--svc-fill) * 0.3), background-color var(--svc-fill) var(--motion-card-ease), border-color var(--svc-fill) var(--motion-card-ease); }
+/* The check lands where the ring was at once (the choice is made), its tick draws as the header fills. */
 .svc-check { animation: svc-pop var(--motion-fast) var(--motion-ease) both; }
 /* One soft ring leaves the check as it lands, once. */
 @keyframes svc-ring { from { transform: scale(1); opacity: 0.7; } to { transform: scale(2.4); opacity: 0; } }
@@ -203,12 +227,12 @@ h1, h2, h3 {
   border-radius: 9999px;
   border: 2px solid var(--color-primary);
   opacity: 0;
-  animation: svc-ring var(--motion-draw) var(--motion-ease) var(--motion-press) both;
+  animation: svc-ring var(--motion-draw) var(--motion-ease) var(--motion-card-step) both;
 }
 .svc-check path {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  animation: svc-draw var(--motion-base) var(--motion-ease) var(--motion-press) forwards;
+  animation: svc-draw var(--motion-base) var(--motion-ease) var(--motion-card-step) forwards;
 }
 /* The quote card answers a press: it gives a little and its arrow moves a few pixels, then both come back. */
 .svc-quote { transition: transform var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease); }
@@ -219,7 +243,7 @@ h1, h2, h3 {
   .svc-icon [data-draw], .svc-check path { animation: none; stroke-dashoffset: 0; }
   .svc-check::after { display: none; }
   .svc-spring { animation: none; }
-  .svc-icon [data-pop], .svc-icon [data-turn], .svc-icon [data-rise], .svc-settle, .svc-check, .svc-panel[data-open] [data-line] { animation: none; }
-  .svc-panel, .svc-panel[data-open], .svc-chevron, .svc-card, .svc-arrow, .svc-quote { transition: none; }
+  .svc-icon [data-pop], .svc-icon [data-turn], .svc-icon [data-rise], .svc-check, .svc-panel[data-open] [data-line] { animation: none; }
+  .svc-panel, .svc-panel[data-open], .svc-chevron, .svc-card, .svc-card > .opt, .svc-card .svc-fade, .svc-arrow, .svc-quote { transition: none; }
   .svc-quote:active, .svc-quote:active .svc-arrow, .svc-card:has(> .opt:active) { transform: none; }
 }

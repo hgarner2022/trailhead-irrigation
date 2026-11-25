@@ -17,7 +17,7 @@ const FOCUS = {
 /** The same ring drawn round a container whose control is inside it and fills it (the service card: the ring follows the card's own corners, on white and on navy alike). */
 export const optionFocusWithin = FOCUS.has
 
-/** `settle: false` is for an option whose container settles instead (the service card, whose header is the option and whose card holds the detail). */
+/** `settle: false` is for an option that answers by opening instead of a scale (the service card, whose header is the option and whose card grows to hold the detail). */
 export function optionClass({ selected, error = false, focus = "self", settle = true }: { selected: boolean; error?: boolean; focus?: keyof typeof FOCUS; settle?: boolean }): string {
   return cn(BASE, FOCUS[focus], selected ? cn(settle && "settle", "border-navy bg-navy text-white") : cn("bg-background text-navy", error ? "border-destructive" : "border-border hover:border-navy/40"))
 }
