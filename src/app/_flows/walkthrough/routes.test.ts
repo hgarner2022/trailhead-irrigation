@@ -39,6 +39,7 @@ describe("stepOf", () => {
     expect(stepOf("account", "visit")).toBe("visits")
     expect(stepOf("account", "receipt")).toBe("pay")
     expect(stepOf("account", "details")).toBe("details")
+    expect(stepOf("invoice")).toBe("pay")
     expect(stepOf("renew")).toBe("pass")
     expect(stepOf("receipts")).toBe("receipts")
     expect(stepOf("quote")).toBe("quote")
