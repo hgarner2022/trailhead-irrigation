@@ -2,9 +2,10 @@ import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe as suite, expect, it, vi } from "vitest"
 import { bookingEntries } from "@/lib/booking/pass-entry"
-import { CATALOGUE, QUOTE_SERVICES, SERVICES } from "@/lib/booking/services"
+import { CATALOGUE, QUOTE_SERVICES, SERVICES, shortLength } from "@/lib/booking/services"
 import { SERVICE_LIST } from "@/lib/services"
-import { ServicePicker, describe, priceRule } from "./ServicePicker"
+import { ServicePicker } from "./ServicePicker"
+import { describe, priceRule } from "./service-card-model"
 
 const entry = (key: string) => CATALOGUE.find((s) => s.key === key)!
 
@@ -25,12 +26,17 @@ suite("ServicePicker", () => {
   it("shows on a closed card its icon, the name and the price and length as the header's description", () => {
     const { container } = render(<ServicePicker entries={SERVICES} value={null} onChange={() => {}} />)
     const turnOn = screen.getByRole("button", { name: /^Spring turn-on/ })
-    expect(turnOn).toHaveAccessibleDescription("From $145 · about 1 hour")
+    expect(turnOn).toHaveAccessibleDescription("From $145 · 1 hr")
     // one drawn icon per card, each its own drawing, and every one decorative
     const icons = [...container.querySelectorAll("[data-slot=service-entry] [data-slot=service-icon]")]
     expect(icons).toHaveLength(SERVICES.length)
     expect(new Set(icons.map((i) => i.getAttribute("data-icon"))).size).toBe(SERVICES.length)
     expect(icons.every((i) => i.getAttribute("aria-hidden") === "true")).toBe(true)
+    // the Season Pass is a white card like the others: nothing but a chosen card looks chosen
+    const passCard = screen.getByRole("button", { name: /^Season Pass/ }).closest("li") as HTMLElement
+    expect(passCard.className).not.toMatch(/bg-navy|ring-navy/)
+    expect(document.querySelector("[data-selected]")).toBeNull()
+    expect(document.querySelector("[data-slot=service-check]")).toBeNull()
     // the pass card shows no price until it is opened
     expect(screen.getByRole("button", { name: /^Season Pass/ })).toHaveAccessibleDescription(expect.not.stringContaining("$"))
   })
@@ -66,21 +72,42 @@ suite("ServicePicker", () => {
     rerender(<ServicePicker entries={SERVICES} value="repair" onChange={onChange} defaultOpen="repair" />)
     expect(repair).toHaveAttribute("aria-expanded", "false")
     expect(repair).toHaveFocus()
-    // chosen is announced on the card and on its check, and the chosen card's panel no longer offers the button
+    // chosen is announced on the card, and exactly one check shows: the badge on its icon
     expect(repair).toHaveAccessibleName("Sprinkler repair, selected")
-    expect(screen.getByRole("button", { name: "Choose Sprinkler repair" })).toHaveAttribute("aria-pressed", "true")
-    await userEvent.click(repair)
-    expect(screen.queryByRole("button", { name: "Choose this service" })).toBeNull()
+    expect(document.querySelectorAll("[data-slot=service-check]")).toHaveLength(1)
+    expect(document.querySelector("[data-selected] [data-slot=service-check]")).not.toBeNull()
   })
-  it("chooses and unchooses with the round check, without opening the card", async () => {
+  it("removes the choice with one press on the chosen card's button, and a different card replaces it", async () => {
     const onChange = vi.fn()
-    const { rerender } = render(<ServicePicker entries={SERVICES} value={null} onChange={onChange} />)
-    await userEvent.click(screen.getByRole("button", { name: "Choose Fall blowout" }))
-    expect(onChange).toHaveBeenLastCalledWith("fall-blowout")
-    expect(screen.queryByRole("region")).toBeNull()
-    rerender(<ServicePicker entries={SERVICES} value="fall-blowout" onChange={onChange} />)
-    await userEvent.click(screen.getByRole("button", { name: "Choose Fall blowout" }))
+    const { rerender } = render(<ServicePicker entries={SERVICES} value="repair" onChange={onChange} defaultOpen="repair" />)
+    const chosen = screen.getByRole("button", { name: /Chosen/ })
+    expect(chosen).toHaveAttribute("aria-pressed", "true")
+    expect(chosen).toHaveTextContent("Remove")
+    expect(screen.queryByRole("button", { name: "Choose this service" })).toBeNull()
+    await userEvent.click(chosen)
     expect(onChange).toHaveBeenLastCalledWith(null)
+    rerender(<ServicePicker entries={SERVICES} value={null} onChange={onChange} defaultOpen="repair" />)
+    // the card stays open, unchosen, with the button to choose it back
+    expect(screen.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAccessibleName("Sprinkler repair")
+    expect(screen.getByRole("button", { name: "Choose this service" })).toBeEnabled()
+    await userEvent.click(screen.getByRole("button", { name: /^Fall blowout/ }))
+    await userEvent.click(screen.getByRole("button", { name: "Choose this service" }))
+    expect(onChange).toHaveBeenLastCalledWith("fall-blowout")
+  })
+  it("has no control beside the meta line, says what a press does, and writes every length short", async () => {
+    render(<ServicePicker entries={SERVICES} value="repair" onChange={() => {}} />)
+    expect(screen.queryByRole("button", { name: /^Choose / })).toBeNull()
+    expect(screen.getByRole("button", { name: /^Mid-season inspection/ })).toHaveAccessibleDescription("From $145 · 1 hr 30 min")
+    expect(screen.getByRole("button", { name: /^Fall blowout/ })).toHaveAccessibleDescription("From $95 · 30 min")
+    expect(screen.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAccessibleDescription("$145 · 2 hr")
+    const card = screen.getByRole("button", { name: /^Fall blowout/ }).closest("li") as HTMLElement
+    expect(card.querySelector("[data-slot=service-opener]")).toHaveTextContent("Details")
+    // (a press anywhere on the row reaches this button through its stretched target, which needs the stylesheet: the story HeaderPressTest presses the tile, the meta line and the pill)
+    await userEvent.click(screen.getByRole("button", { name: /^Fall blowout/ }))
+    expect(card.querySelector("[data-slot=service-opener]")).toHaveTextContent("Hide")
+    expect(shortLength(45)).toBe("45 min")
+    expect(shortLength(120)).toBe("2 hr")
   })
   it("opens the Season Pass to both visits, each with what it costs from", async () => {
     render(<ServicePicker entries={bookingEntries(SERVICES, "2027-04-14")} value={null} onChange={() => {}} />)
