@@ -1,9 +1,9 @@
 import { useState } from "react"
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect } from "storybook/test"
+import { expect, within } from "storybook/test"
 import { ContactPreference, type ContactChannel } from "./ContactPreference"
 
-// How we reach the customer, asked once with the contact details: Text, Email, or Text and email, with one line saying what the choice means.
+// How we reach the customer, asked once with the contact details: Text, Email, or Text and email, the meaning is a tooltip beside the question.
 function Harness({ start = "text" }: { start?: ContactChannel }) {
   const [value, setValue] = useState<ContactChannel>(start)
   return (
@@ -20,7 +20,9 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("radio", { name: "Text and email" }))
-    await expect(canvas.getByText("Every message both ways.")).toBeInTheDocument()
+    await expect(canvas.queryByText("Every message both ways.")).toBeNull()
+    await userEvent.click(canvas.getByRole("button", { name: "About how we reach you" }))
+    await expect(await within(document.body).findAllByText(/are sent this way/)).not.toHaveLength(0)
   },
 }
 

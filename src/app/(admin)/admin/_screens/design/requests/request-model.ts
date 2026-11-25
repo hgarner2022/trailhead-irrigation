@@ -1,3 +1,4 @@
+import { normalizeStreet } from "@/lib/booking/known-address"
 import type { PillStatus } from "@/components/blocks/StatusPill"
 import { relativeTime } from "@/components/blocks/needs-attention-time"
 import { FROM_ANDREA, photo } from "../job-fixtures"
@@ -77,8 +78,12 @@ export interface KnownCustomer {
 }
 export interface Match {
   customer: KnownCustomer
-  /** why they match: the same email, the same phone, or both */
+  /** why they match: the same email, the same phone, or both; empty when only the address matches */
   by: ("email" | "phone")[]
+  /** the request is for a property this customer has (the street and town; the booking form recognises a repeat customer by address, Nov 23 2026) */
+  address?: boolean
+  /** the address is on file but the email is not the one on file: it books as the same property and Ryan is told */
+  emailDiffers?: boolean
 }
 
 const digits = (s: string) => s.replace(/\D/g, "")
@@ -92,20 +97,30 @@ export const KNOWN_CUSTOMERS: readonly KnownCustomer[] = [
 ]
 
 /** The customer a request matches by email (any case) or by phone digits; null when none does. */
-export function matchOf(r: Pick<RequestData, "email" | "phone">, known: readonly KnownCustomer[] = KNOWN_CUSTOMERS): Match | null {
+export function matchOf(r: Pick<RequestData, "email" | "phone"> & Partial<Pick<RequestData, "street" | "town">>, known: readonly KnownCustomer[] = KNOWN_CUSTOMERS): Match | null {
   const hits = known
     .map((customer) => {
       const by: Match["by"] = []
       if (r.email.trim() && customer.email.toLowerCase() === r.email.trim().toLowerCase()) by.push("email")
       if (digits(r.phone).length >= 7 && digits(customer.phone) === digits(r.phone)) by.push("phone")
-      return { customer, by }
+      const address = sameProperty(r, customer)
+      return { customer, by, ...(address ? { address, ...(by.includes("email") ? {} : { emailDiffers: true as const }) } : {}) }
     })
-    .filter((m) => m.by.length)
-  // the email is the stronger sign: a shared phone only matches when no email does
-  return hits.find((m) => m.by.includes("email")) ?? hits[0] ?? null
+    .filter((m) => m.by.length || m.address)
+  // the email is the stronger sign: a shared phone only matches when no email does, and an address alone matches last
+  return hits.find((m) => m.by.includes("email")) ?? hits.find((m) => m.by.length) ?? hits[0] ?? null
 }
 
-export const matchWords = (m: Match) => `Same ${m.by.join(" and ")}`
+/** The request's street and town are the customer's property ("480 Briggs St" and "480 briggs street." are the same street). */
+function sameProperty(r: Partial<Pick<RequestData, "street" | "town">>, customer: KnownCustomer): boolean {
+  if (!r.street?.trim() || !r.town?.trim()) return false
+  const [street = "", town = ""] = customer.street.split(",").map((p) => p.trim())
+  return normalizeStreet(r.street) === normalizeStreet(street) && r.town.trim().toLowerCase() === town.toLowerCase()
+}
+
+export const matchWords = (m: Match) => `Same ${m.by.length ? m.by.join(" and ") : "address"}`
+/** What the office is told when the address is on file under another email. */
+export const matchNote = (m: Match): string | null => (m.emailDiffers ? "Email differs from the one on file" : null)
 
 /** "2 hours ago", from `needs-attention-time`; the list's When. */
 export const cameIn = (r: RequestData, now: string) => relativeTime(r.receivedAt, now)

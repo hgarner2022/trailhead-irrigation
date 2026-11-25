@@ -60,6 +60,8 @@ export interface ServiceEntry {
   window?: WindowKind
   /** the Season Pass only: the visits still ahead for the date */
   passVisits?: PassVisitLine[]
+  /** a real photo of the service from public/images for the card; none leaves a quiet icon */
+  photo?: string
 }
 
 /** What the booking form says about a backend service: only how it reads, never a price or a length. */
@@ -71,6 +73,7 @@ interface Presentation {
   perZone?: boolean
   details?: DetailsKind
   window?: WindowKind
+  photo?: string
 }
 
 export const PRICE_AT_VISIT = "Price set at the visit"
@@ -82,13 +85,13 @@ export const OFFICE_ONLY: readonly string[] = ["consult"]
 
 const PRESENTATION: readonly Presentation[] = [
   { key: "season-pass", name: "Season Pass", serviceKeys: [], kind: "pass", perZone: true },
-  { key: "spring-turn-on", name: "Spring turn-on", serviceKeys: ["turn-on-8", "turn-on-12", "turn-on-16"], kind: "day", perZone: true, window: "turn-on" },
-  { key: "fall-blowout", name: "Fall blowout", serviceKeys: ["blowout"], kind: "day", perZone: true, window: "blowout" },
-  { key: "inspection", name: "Mid-season inspection", serviceKeys: ["inspection-8", "inspection-12", "inspection-16"], kind: "day", perZone: true, window: "inspection" },
-  { key: "repair", name: "Sprinkler repair", serviceKeys: ["repair"], kind: "day" },
-  { key: "rachio-install", name: "Rachio smart controller install", serviceKeys: ["rachio-install-8", "rachio-install-16"], kind: "day", perZone: true, details: "rachio" },
-  { key: "water-efficiency", name: "Water efficiency and drip", serviceKeys: ["water-efficiency"], kind: "day", details: "efficiency" },
-  { key: "install", name: "New sprinkler system installation", serviceKeys: ["install"], kind: "day", details: "install" },
+  { key: "spring-turn-on", name: "Spring turn-on", serviceKeys: ["turn-on-8", "turn-on-12", "turn-on-16"], kind: "day", perZone: true, window: "turn-on", photo: "/images/sprinkler-spring.jpg" },
+  { key: "fall-blowout", name: "Fall blowout", serviceKeys: ["blowout"], kind: "day", perZone: true, window: "blowout", photo: "/images/sprinkler-blowout-erie-co.jpg" },
+  { key: "inspection", name: "Mid-season inspection", serviceKeys: ["inspection-8", "inspection-12", "inspection-16"], kind: "day", perZone: true, window: "inspection", photo: "/images/sprinkler-head.jpg" },
+  { key: "repair", name: "Sprinkler repair", serviceKeys: ["repair"], kind: "day", photo: "/images/sprinkler-repair.jpg" },
+  { key: "rachio-install", name: "Rachio smart controller install", serviceKeys: ["rachio-install-8", "rachio-install-16"], kind: "day", perZone: true, details: "rachio", photo: "/images/rachio-3-controller.jpg" },
+  { key: "water-efficiency", name: "Water efficiency and drip", serviceKeys: ["water-efficiency"], kind: "day", details: "efficiency", photo: "/images/micro-spray-garden-bed.jpg" },
+  { key: "install", name: "New sprinkler system installation", serviceKeys: ["install"], kind: "day", details: "install", photo: "/images/sprinkler-installation.jpg" },
   { key: "big-repair", name: "Larger sprinkler repair", serviceKeys: ["repair-large"], kind: "quote" },
   { key: "lights", name: "Christmas lights", serviceKeys: ["lights"], kind: "quote" },
   { key: "aeration", name: "Core aeration", serviceKeys: ["aeration"], kind: "day" },
@@ -103,6 +106,9 @@ export function lengthWords(minutes: number): string {
   if (h === 0) return `About ${m} minutes`
   return `About ${h} hour${h === 1 ? "" : "s"}${m ? ` ${m} minutes` : ""}`
 }
+
+/** What a visit includes as separate lines, for the open card's list: the catalogue's own sentences, each without its full stop. */
+export const includedList = (included?: string): string[] => (included ? included.split(/(?<=\.)\s+/).map((s) => s.replace(/\.$/, "").trim()).filter(Boolean) : [])
 
 /** The rows' own text for what a visit includes, without the sentences that are about quotes or a return visit: the form says what the visit is, not what it is not. */
 export function includedWords(description: string): string {
@@ -140,6 +146,7 @@ function entryOf(p: Presentation, overrides: Partial<Record<string, Online>>): S
     ...(amount !== undefined ? { amount } : {}),
     ...(p.details ? { details: p.details } : {}),
     ...(p.window ? { window: p.window } : {}),
+    ...(p.photo ? { photo: p.photo } : {}),
   }
 }
 

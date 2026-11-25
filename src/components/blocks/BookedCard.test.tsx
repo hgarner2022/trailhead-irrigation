@@ -12,21 +12,13 @@ describe("BookedCard", () => {
     expect(container.querySelector("[data-slot=pass-card-sheen]")).not.toBeNull()
   })
 
-  it("lists every visit of a Season Pass with its exact day and time or its preference and when it is scheduled", () => {
-    render(
-      <BookedCard
-        service="Season Pass 2027"
-        visits={[
-          { name: "Spring turn-on", when: "Tuesday, April 27 at 10:30 am" },
-          { name: "Fall blowout", when: "Preference: Early October", note: "We'll schedule it about two weeks before and tell you the day." },
-        ]}
-        where="123 Briggs St, Erie"
-        interactive={false}
-      />,
-    )
-    expect(screen.getByText("Tuesday, April 27 at 10:30 am")).toBeInTheDocument()
-    expect(screen.getByText("Preference: Early October")).toBeInTheDocument()
-    expect(screen.getByText("We'll schedule it about two weeks before and tell you the day.")).toBeInTheDocument()
-    expect(screen.getByRole("article")).toHaveAccessibleName(/Fall blowout Preference: Early October/)
+  it("is the clean wallet card for a Season Pass: the name, the status and the town and zones, with nothing dark over the art and no visits on it", () => {
+    const { container } = render(<BookedCard service="Season Pass 2027" status="Set up" detail="Erie · 8 zones" where="123 Briggs St, Erie" interactive={false} />)
+    expect(screen.getByText("Season Pass 2027")).toBeInTheDocument()
+    expect(screen.getByText("Set up")).toBeInTheDocument()
+    expect(screen.getByText("Erie · 8 zones")).toBeInTheDocument()
+    expect(container.querySelector("[data-slot=booked-card-band]")).toBeNull()
+    expect(container.querySelector("article")).toHaveClass("aspect-[8/5]")
+    expect(screen.getByRole("article")).toHaveAccessibleName("Season Pass 2027, set up, Erie · 8 zones")
   })
 })

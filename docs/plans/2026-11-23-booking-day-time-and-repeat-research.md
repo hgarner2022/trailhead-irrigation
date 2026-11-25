@@ -1,6 +1,6 @@
 # Research: the day-and-time step, and the repeat customer (booking form, third pass)
 
-Nov 23 2026. Hannah's phone review of Nov 22 asked for two things to be researched before they are built: "an e-commerce booking flow" for the day and time (a calendar, the soonest days marked, the recommended day already chosen, then the times), and what a customer who has booked before should not have to retype. This is the short version; the design that follows from it is in `2026-11-19-booking-form-design.md`, "Third pass (Nov 23 2026)". Where a source could not be confirmed it says so.
+Nov 23 2026. Hannah's phone review of Nov 22 asked for two things to be researched before they are built: "an e-commerce booking flow" for the day and time (a calendar, the soonest day marked and already chosen, then the times), and what a customer who has booked before should not have to retype. This is the short version; the design that follows from it is in `2026-11-19-booking-form-design.md`, "Third pass (Nov 23 2026)". Where a source could not be confirmed it says so.
 
 ## 1. The job
 
@@ -20,13 +20,13 @@ Nov 23 2026. Hannah's phone review of Nov 22 asked for two things to be research
 **What no source settled, so it is a choice**
 
 - Whether to choose a time for the customer. Booking tools differ. The form keeps the earlier decision: the day starts chosen (the soonest open day), a time never does, so a booking always needs one deliberate press for the time.
-- "Recommended" as a second mark next to "Soonest". Without a reason beside it ("We're already in Erie that day" is gone by Hannah's rule) it asks the customer to trust a label. The recommended day is the soonest open day, so there is one mark, not two. The scheduling engine's own ranking (same town first) is not shown and does not move the chosen day. See the open question in the PR.
+- A second mark next to "Soonest". Hannah, Nov 23 2026: the soonest open day is the only mark. The scheduling engine's own ranking (same town first) is not shown and does not move the chosen day.
 
 **What this gives the form**
 
 1. A month grid. Every day with an opening carries a quiet dot; days with none are plain and cannot be pressed. The soonest open day is chosen when the step opens, carries the orange dot and the word "Soonest" under the grid.
 2. The times of the chosen day are under the grid, earliest first, none chosen.
-3. No sentence about where Ryan is on which day, and no "Best fit".
+3. No sentence about where Ryan is on which day, and no label on a time.
 4. With no day open: one sentence and Ryan's phone number, as before.
 
 ## 3. Motion
@@ -38,29 +38,32 @@ Hannah: the chosen day settles in with one short scale, open days carry a quiet 
 
 ## 4. The repeat customer
 
-Hannah: "someone with an account who has had a visit before books again."
+Hannah: "someone with an account who has had a visit before books again." Her decision of Nov 23 2026, after the first version of this section proposed an emailed six-digit code: **no sign-in and no code. A repeat customer is recognised by their address** (the normalized street and ZIP).
 
-**What sources say**
+**The decision and the reason: privacy of what we show.** Anyone who knows an address can type it. So an address that matches a property is recognised, the booking links to that existing customer and property (no duplicate customer is made), and **nothing personal is shown back**: no name, phone, email, card, gate code or access note. Only non-sensitive yard facts prefill (the zone count and the controller). The form never asks anyone to sign in.
 
-- A returning shopper is recognised by their email and proves it with a one-time code, then their saved details are reused. Chargebee's hosted checkout and Salesforce's Storefront Next both describe it: email, a code by email (or text), then billing, address and payment method come back. ([Chargebee, returning customers](https://chargebee.com/checkout-portal-docs/feature-returning-customers.html); [Salesforce, email verification](https://developer.salesforce.com/docs/commerce/sfnext/guide/sfnext-email-verification.html); [Salesforce, one-click checkout](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/one-click-checkout.html).) BigCommerce describes the same with an emailed one-time link that expires in 15 minutes. ([BigCommerce, guest customers and checkout](https://support.bigcommerce.com/articles/en_US/Knowledge/Guest-Customers-and-Checkout).) Salesforce recommends a captcha in front of passwordless sign-in, to stop bots using it to send mail.
-- Housecall Pro does the quiet version: when the booking form is submitted, it matches an existing customer and attaches the booking to that record, to avoid duplicates. It does not ask the customer to sign in. ([Housecall Pro, online booking FAQ](https://help.housecallpro.com/en/articles/8330061-online-booking-faqs).) Jobber's Client Hub is the signed-in route to request work and see visits. ([Jobber, Client Hub](https://getjobber.com/features/client-hub/).)
-- Baymard (public summaries only): address lookup and autofill matter, and people kept on an old saved address risk picking the wrong one, so a saved address must be easy to change. ([Baymard, automatic address lookup](https://www.baymard.com/blog/automatic-address-lookup); [Baymard, address book](https://baymard.com/ecommerce-design-examples/59-address-book).)
+**What sources say (kept, because they explain the shape).**
 
-**Three things follow**
+- Housecall Pro does the quiet version of this: when the online booking form is submitted it matches an existing customer and attaches the booking to that record, to avoid duplicates, without asking the customer to sign in. ([Housecall Pro, online booking FAQ](https://help.housecallpro.com/en/articles/8330061-online-booking-faqs).) Jobber's Client Hub is the signed-in route to see visits and request work; its public booking form does not describe recognising a returning client. ([Jobber, Client Hub](https://getjobber.com/features/client-hub/).)
+- Checkout tools that do show saved details first ask for proof of identity (a one-time code or link) and then reuse billing, address and payment method. ([Chargebee](https://chargebee.com/checkout-portal-docs/feature-returning-customers.html); [Salesforce](https://developer.salesforce.com/docs/commerce/sfnext/guide/sfnext-email-verification.html); [BigCommerce](https://support.bigcommerce.com/articles/en_US/Knowledge/Guest-Customers-and-Checkout).) That is the reason this form shows nothing personal: without proof, nothing is shown. Hannah's answer takes the other branch, no proof and no personal detail.
+- Baymard (public summaries only): address lookup and autofill matter, and a saved address must be easy to change. ([Baymard, automatic address lookup](https://www.baymard.com/blog/automatic-address-lookup); [Baymard, address book](https://baymard.com/ecommerce-design-examples/59-address-book).)
 
-1. **Two jobs, kept apart.** *Matching* (so the visit lands on the right customer, no duplicate) happens on the server after the contact step, silently, as Housecall Pro does. *Saved details* (showing a name, an address and a card number's last four) need proof of identity first, because showing them to whoever types an email is a leak.
-2. **A code, in the form.** The account signs in by an emailed link (`/account/sign-in`). A link opens a new tab and takes the person out of a half-finished booking; a six-digit code is typed where they are. The form asks for the email, emails a code, takes the code, and fills in. The account's own sign-in is unchanged. [Wording from Hannah: whether the account should also move to a code; the code needs the same sender as the account's mail.] The code is a prototype stand-in in Storybook.
-3. **Never reveal who is a customer.** The offer is the same for every visitor ("Booked with us before?"), not a banner that appears only when the typed email matches. The earlier pass showed the offer only on a match, which tells anyone who types an email whether it is in the system. An unknown email with a code request answers the same as a known one ("We sent a code if we have that email"); a drawn prototype cannot show the difference, the PR says it.
+**What the form does**
 
-**What we keep, what is asked again**
+| Moment | New address | Address on file |
+|---|---|---|
+| Address step | as normal | as normal. Nothing about the customer shows. |
+| Service step | zones as typed | the zone count and the controller fill in (non-sensitive yard facts) |
+| Contact step | asks as normal | asks as normal: no name, phone or email is filled in |
+| Card step | asks for a card (a one-off may say "Not now") | **same email as on file and a card on file:** "Use the card on file", Visa ending 4242, with "Use a different card". **Any other email, or no card:** asks for a card as for a new customer |
+| Review | Address row marked **New** | Address row marked **On file** |
+| Booking | makes a new customer and property | links to the existing customer and property |
+| Office | none | a **different email** still books, as the same property; the request or booking shows "Email differs from the one on file" |
 
-| Kept (filled in after the code) | Asked again |
-|---|---|
-| First name, last name, email, phone | The service, the zones count (the yard may have changed; the saved count is the default) |
-| How we reach them (text or email) | The day and time |
-| The saved card (brand and last four, never more); the card step reads "Visa ending 4242" with Change | Access and the note for the crew (they belong to this visit) |
-| The address on file, offered when it is the one typed; a different address is added as a new one | The terms box |
+The visit is charged after the visit, as today. The card is the one place the email matters, and it is compared, never shown: the email on file is not on any screen of the form.
 
-Not kept: anything before the contact step is submitted. A visitor who leaves leaves nothing; the code request stores nothing but the code's expiry. "Not you?" empties every filled field.
+**What is a stand-in.** The lookup is one fixture, 480 Briggs St, Erie 80516 (`fixtureKnown`); the live form asks the server by `addressKey` (the normalized street and ZIP), which must answer the same way, in the same time, for every visitor, and be rate limited so it cannot be used to list addresses.
 
-**A signed-in customer** (already in their account) skips the code: the booking opens with the same fields filled. That needs the live session; in Storybook it is the "Signed in" story.
+**What leaks, stated.** The "On file" mark on Review tells a visitor that an address is a customer's. It is Hannah's mark and says nothing about who. A matched address with a different email books as the same property, so someone who knows an address can attach a booking to it; the office sees "Email differs from the one on file" and decides.
+
+**Not kept, not asked.** Nothing before the contact step is stored; the lookup stores nothing. No account, sign-in, code or link anywhere in the form.

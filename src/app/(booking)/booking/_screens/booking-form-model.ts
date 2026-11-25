@@ -31,14 +31,15 @@ export const QUESTIONS: Record<FormStep, string> = {
 export const QUOTE_QUESTIONS: Partial<Record<FormStep, string>> = { details: "Details" }
 
 /**
- * The steps a service goes through, in order; the last is the confirmation, which is not counted ("Step 3 of 6"). The address is first and qualifies the area, so nothing after it is offered outside
- * the six cities' ZIP codes. The service step holds the details of the chosen service in its open card, so there is no details step on a booking: a repair is address, service, day, contact, card and
- * review (six). A Season Pass adds a day for a visit that is exact now and a preference for a visit that is not.
+ * The steps a service goes through, in order; the last is the confirmation, which is not counted ("Step 3 of 7"). The address is first and qualifies the area, so nothing after it is offered outside
+ * the six cities' ZIP codes. The service step holds only the service cards (Hannah, Nov 23 2026: the zones and the access question in the card were too much for one screen); the next step, Details, holds
+ * what belongs to the chosen service: zones, access, a note and photos. A repair is address, service, details, day, contact, card and review (seven). A Season Pass adds a day for a visit that is exact now
+ * and a preference for a visit that is not. Every service has something to ask (access at least), so none skips Details.
  */
 export function stepsFor(entry: ServiceEntry | null, quote = false, plan: PassPlan | null = null): FormStep[] {
   if (quote || entry?.kind === "quote") return ["address", "quote-service", "details", "contact", "done"]
-  if (entry?.kind === "pass" && plan) return ["address", "service", ...(exactVisits(plan).length ? (["day"] as const) : []), ...(preferenceVisits(plan).length ? (["preference"] as const) : []), "contact", "card", "confirm", "done"]
-  return ["address", "service", "day", "contact", "card", "confirm", "done"]
+  if (entry?.kind === "pass" && plan) return ["address", "service", "details", ...(exactVisits(plan).length ? (["day"] as const) : []), ...(preferenceVisits(plan).length ? (["preference"] as const) : []), "contact", "card", "confirm", "done"]
+  return ["address", "service", "details", "day", "contact", "card", "confirm", "done"]
 }
 export const stepTotal = (steps: readonly FormStep[]) => steps.length - 1
 
@@ -66,10 +67,10 @@ export function contactProblem(field: "firstName" | "lastName" | "email" | "phon
   }
 }
 const CONTACT_FIELDS = ["firstName", "lastName", "email", "phone"] as const
-export const TERMS_PROBLEM = "Tick the box to accept the terms."
 export const ACCESS_PROBLEM = "Tell us whether we can get to the system without you."
 
-const contactOk = (f: CheckoutFields, terms: boolean) => CONTACT_FIELDS.every((k) => contactProblem(k, f[k]) === null) && (!terms || f.termsAccepted)
+// Agreement to the terms is pressing Continue on the contact step (Hannah, Nov 23 2026): there is no box to tick, so nothing here can block on it.
+const contactOk = (f: CheckoutFields) => CONTACT_FIELDS.every((k) => contactProblem(k, f[k]) === null)
 
 export interface FormAnswers {
   service: ServiceEntry | null
@@ -97,11 +98,12 @@ export function callbackMode(a: Pick<FormAnswers, "picks" | "offers" | "when">):
 export function canContinue(step: FormStep, a: FormAnswers): boolean {
   switch (step) {
     case "service":
-      return a.service !== null && a.fields.access !== null
     case "quote-service":
       return a.service !== null
+    case "details":
+      return a.service?.kind === "quote" || a.fields.access !== null
     case "contact":
-      return contactOk(a.fields, a.service?.kind !== "quote")
+      return contactOk(a.fields)
     case "address":
       return areaState(a.fields.place) === "ok"
     case "day":
@@ -116,10 +118,10 @@ export function problemsFor(step: FormStep, a: FormAnswers): string[] {
   switch (step) {
     case "contact": {
       const label = { firstName: "First name", lastName: "Last name", email: "Email", phone: "Phone" } as const
-      return [...CONTACT_FIELDS.filter((k) => contactProblem(k, a.fields[k]) !== null).map((k) => label[k]), ...(a.service?.kind === "quote" || a.fields.termsAccepted ? [] : ["Terms"])]
+      return CONTACT_FIELDS.filter((k) => contactProblem(k, a.fields[k]) !== null).map((k) => label[k])
     }
-    case "service":
-      return a.service !== null && a.fields.access === null ? ["Access"] : canContinue(step, a) ? [] : ["Your choice"]
+    case "details":
+      return a.service?.kind !== "quote" && a.fields.access === null ? ["Access"] : []
     default:
       return canContinue(step, a) ? [] : ["Your choice"]
   }
@@ -160,15 +162,14 @@ export function problemList(step: FormStep, a: FormAnswers): Problem[] {
       if (area === "needs-city" || a.addressTyped) return [{ message: a.fields.place === null && a.fields.address.trim().length < 3 ? STREET_PROBLEM : CITY_PROBLEM, field: a.fields.place === null && a.fields.address.trim().length < 3 ? "[name=address]" : "[name=city]" }]
       return [{ message: PICK_ADDRESS_PROBLEM, field: "[role=combobox]" }]
     }
-    case "service":
-      return a.service !== null && a.fields.access === null ? [{ message: ACCESS_PROBLEM, field: "[data-slot=access-choice] input" }] : []
+    case "details":
+      return a.service?.kind !== "quote" && a.fields.access === null ? [{ message: ACCESS_PROBLEM, field: "[data-slot=access-choice] input" }] : []
     case "contact": {
       const out: Problem[] = []
       for (const k of CONTACT_FIELDS) {
         const message = contactProblem(k, a.fields[k])
         if (message) out.push({ message, field: `[name=${k}]` })
       }
-      if (a.service?.kind !== "quote" && !a.fields.termsAccepted) out.push({ message: TERMS_PROBLEM, field: "[data-slot=booking-terms] [role=checkbox]" })
       return out
     }
     default:

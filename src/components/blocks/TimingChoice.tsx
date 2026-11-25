@@ -4,6 +4,7 @@ import { useId } from "react"
 import { cn } from "@/lib/utils"
 import type { TimingPreference } from "@/lib/admin/types"
 import { TIMING_PREFERENCES, preferenceLabel, preferenceReason } from "@/lib/admin/format"
+import { TIMING_LABEL } from "@/lib/portal/preference-words"
 
 // The three timing choices for a turn-on or a blowout, Earlier, Recommended
 // and Later, as large buttons with the customer's words under each and the
@@ -18,7 +19,7 @@ const SHORT_NAMES: Record<TimingPreference, string> = { earlier: "Early", recomm
 const MID_MEANS: Record<"turn-on" | "blowout", string> = { "turn-on": "Mid May means the first two weeks of May.", blowout: "Mid October means the second week of October." }
 
 /** The booking form's names for the three answers: names only, no dates and no month (Hannah, Nov 22 2026). "Our recommended" is the stored "recommended", which the rest of the app calls Mid. */
-export const PLAIN_NAMES: Record<TimingPreference, string> = { recommended: "Our recommended", earlier: "Early season", later: "Late season" }
+export const PLAIN_NAMES: Record<TimingPreference, string> = TIMING_LABEL
 /** The plain names in the order the booking form shows them: the preselected one first. */
 export const PLAIN_ORDER: readonly TimingPreference[] = ["recommended", "earlier", "later"]
 
@@ -31,7 +32,7 @@ export interface TimingChoiceProps {
   onChange: (value: TimingPreference) => void
   /** the booking form: the names Early, Mid and Late with each one's dates under it ("Oct 1 to Oct 10"), in place of the month and the "Mid means" line; the booking form says why under its own question, so no reason line follows */
   ranges?: Record<TimingPreference, string>
-  /** the booking form (Nov 22 2026): the plain names, Our recommended, Early season and Late season, and nothing under them */
+  /** the booking form: the account's own words, Early season, Our recommended and Late season, each with its month under it ("Early May"), read from `preferenceLabel` like the account's Preferences card */
   plain?: boolean
   /** the pressed button takes the step's focus (the checkout shell reads `data-autofocus`) */
   autofocus?: boolean
@@ -61,7 +62,7 @@ export function TimingChoice({ kind, labelledBy, label, value, onChange, ranges,
               )}
             >
               <span className="font-display text-2xl leading-none">{plain ? PLAIN_NAMES[preference] : (ranges ? SHORT_NAMES : CHOICE_NAMES)[preference]}</span>
-              {!plain && <span className={cn("mt-1.5 text-sm", pressed ? "text-white/80" : "text-muted-foreground")}>{ranges ? ranges[preference] : preferenceLabel(kind, preference)}</span>}
+              <span className={cn("mt-1.5 text-sm", pressed ? "text-white/80" : "text-muted-foreground")}>{ranges ? ranges[preference] : preferenceLabel(kind, preference)}</span>
             </button>
           )
         })}

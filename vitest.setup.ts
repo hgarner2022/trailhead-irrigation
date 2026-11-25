@@ -31,3 +31,6 @@ vi.mock("react-resizable-panels", () => {
   }
   return { Group, Panel, Separator }
 })
+
+// jsdom has no ResizeObserver, which Radix's popper (Tooltip, Popover) needs to place its content; the real one runs in Chromium.
+if (typeof globalThis.ResizeObserver === "undefined") vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} })

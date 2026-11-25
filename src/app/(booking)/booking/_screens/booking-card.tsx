@@ -2,11 +2,14 @@
 
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { CARD_ON_FILE_WORDS } from "@/lib/booking/known-address"
 import { CARD_SAVED, cardCharged } from "./booking-form-model"
 
 // The card step (Hannah, Nov 21 2026: "they never collected their card"; a repair gets one too). Stripe's own setup form, drawn: it saves a card and charges nothing, and no real card field is ever
 // on this screen, so the boxes are drawn, hidden from assistive tech, and a small note says so. Pressing Save card (the flow's button) keeps the card; the stories always keep the same Visa. A Season Pass
-// needs the card because it is billed after each visit; a one-off may put it off with "Not now". The one line says when the card is charged. Pure props, client component.
+// needs the card because it is billed after each visit; a one-off may put it off with "Not now". The one line says when the card is charged. A repeat customer is recognised by address only (Hannah, Nov 23 2026),
+// so the card on file (`onFile`, its brand and last four) is offered here, after the contact step, and only when the email typed there is the one on file; "Use a different card" puts the form back, and
+// "Use the card on file" brings the card back. Without a match this step is the same as for a new customer. Pure props, client component.
 
 const BOX = "flex min-h-12 items-center rounded-lg border border-border bg-background px-4 text-base text-muted-foreground"
 
@@ -16,14 +19,26 @@ export interface BookingCardProps {
   /** a Season Pass needs the card; a one-off may say "Not now" */
   pass: boolean
   onSkip: () => void
-  /** the card is one a returning customer already has on file: "Use a different card" puts the form back */
-  onReplace?: () => void
+  /** the card on file, "Visa ending 4242", offered only to the email on file; absent for everyone else */
+  onFile?: string
+  /** the customer chose a different card, so the form shows even though one is on file */
+  other?: boolean
+  onOther?: (other: boolean) => void
 }
 
-export function BookingCard({ saved, pass, onSkip, onReplace }: BookingCardProps) {
+export function BookingCard({ saved, pass, onSkip, onFile, other = false, onOther }: BookingCardProps) {
+  const useFile = Boolean(onFile) && !other
   return (
     <div data-slot="booking-card" className="space-y-6">
-      {saved ? (
+      {useFile ? (
+        <p data-slot="card-on-file" className="flex items-center gap-3 rounded-lg border-2 border-navy bg-background px-4 py-4 text-lg text-foreground">
+          <Check aria-hidden className="size-5 shrink-0 text-success" />
+          <span>
+            <span className="block text-sm text-muted-foreground">{CARD_ON_FILE_WORDS.use}</span>
+            {onFile}
+          </span>
+        </p>
+      ) : saved ? (
         <p data-slot="card-saved" className="flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-4 text-lg text-foreground">
           <Check aria-hidden className="size-5 shrink-0 text-success" />
           {CARD_SAVED}
@@ -43,15 +58,15 @@ export function BookingCard({ saved, pass, onSkip, onReplace }: BookingCardProps
           </p>
         </div>
       )}
-      {saved && onReplace && (
-        <Button type="button" variant="ghost" onClick={onReplace} className="h-auto min-h-11 px-0 text-base font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent">
-          Use a different card
+      {onFile && onOther && (
+        <Button type="button" variant="ghost" onClick={() => onOther(!other)} className="h-auto min-h-11 px-0 text-base font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent">
+          {other ? CARD_ON_FILE_WORDS.use : CARD_ON_FILE_WORDS.other}
         </Button>
       )}
       <p data-slot="card-charged" className="text-base text-foreground">
         {cardCharged(pass)}
       </p>
-      {!pass && !saved && (
+      {!pass && !saved && !useFile && (
         <Button type="button" variant="ghost" onClick={onSkip} className="h-auto min-h-11 px-0 text-base font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent">
           Not now
         </Button>

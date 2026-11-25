@@ -138,6 +138,16 @@ describe("the price and the review words", () => {
     expect(rows.find((r) => r.label === "Card")?.value).toBe("No card")
     expect(reviewRows({ service: svc("repair"), fields, town: "Erie", pick: { day: "2027-04-20", start: "10:30" }, when: "", callback: false, channel: "text", photos: 0, quote: false, card: "saved", go: () => {} }).find((r) => r.label === "Card")?.value).toBe("Visa ending 4242")
   })
+  it("marks the address On file or New and names the card on file, with nothing personal in either", () => {
+    const fields = { ...initialState(), ...person, place: FIXTURE_HOME, town: "Erie" as const, access: "yes" as const }
+    const base = { service: svc("repair"), fields, town: "Erie", pick: { day: "2027-04-20", start: "10:30" }, when: "", callback: false, channel: "text" as const, photos: 0, quote: false, go: () => {} }
+    expect(reviewRows(base).find((r) => r.label === "Address")?.value).toEqual(["123 Trailhead Way", "Erie, CO 80516", "New"])
+    const on = reviewRows({ ...base, onFile: true, card: "file", cardOnFile: "Visa ending 4242" })
+    expect(on.find((r) => r.label === "Address")?.value).toEqual(["123 Trailhead Way", "Erie, CO 80516", "On file"])
+    expect(on.find((r) => r.label === "Card")?.value).toBe("Visa ending 4242")
+    // a card on file that is no longer offered reads as no card
+    expect(reviewRows({ ...base, onFile: true, card: "file", cardOnFile: null }).find((r) => r.label === "Card")?.value).toBe("No card")
+  })
   it("sends a Change on a service answer back to the service step, where those answers now live", () => {
     const seen: string[] = []
     const fields = { ...initialState(), ...person, place: FIXTURE_HOME, town: "Erie" as const, access: "yes" as const, accessNote: "Gate" }
