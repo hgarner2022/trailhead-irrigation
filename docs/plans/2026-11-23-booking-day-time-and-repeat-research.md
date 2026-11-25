@@ -54,7 +54,7 @@ Hannah: "someone with an account who has had a visit before books again." Her de
 |---|---|---|
 | Address step | as normal | as normal. Nothing about the customer shows. |
 | Service step | zones as typed | the zone count and the controller fill in (non-sensitive yard facts) |
-| Contact step | asks as normal | asks as normal: no name, phone or email is filled in |
+| Contact step | asks as normal | asks as normal: nothing is filled in. **Once the email typed is the one on file, only the first and last name fill in** (Hannah, Nov 25 2026: never the phone or anything else). Any other email: nothing fills in |
 | Card step | asks for a card (a one-off may say "Not now") | **same email as on file and a card on file:** "Use the card on file", Visa ending 4242, with "Use a different card". **Any other email, or no card:** asks for a card as for a new customer |
 | Review | Address row marked **New** | Address row marked **On file** |
 | Booking | makes a new customer and property | links to the existing customer and property |
