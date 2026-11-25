@@ -104,7 +104,6 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   const [way, setWay] = useState<Way>("card")
   // the pay step: no card on file shows Stripe's card page; a card on file shows the one tap (the account has one, so both are walkable)
   const [payCard, setPayCard] = useState<"none" | "saved">("none")
-  const [passDay, setPassDay] = useState<"april" | "november">("april")
   const facts: TextFacts = booked ? { service: booked.service.toLowerCase(), day: booked.day, start: booked.start, street: booked.street, town: booked.town, firstName: booked.firstName } : DEFAULT_FACTS
   const pref = booked?.channel ?? channel
   const accountPage = s.route.page
@@ -228,14 +227,9 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
         <div className="bg-stone">
           {withNav(
             <>
-              <div className="mx-auto flex max-w-3xl gap-2 pt-6 container-padding-x" role="group" aria-label="Today in the prototype">
-                <Button type="button" size="sm" variant={passDay === "april" ? "default" : "outline"} onClick={() => setPassDay("april")}>See it in April</Button>
-                <Button type="button" size="sm" variant={passDay === "november" ? "default" : "outline"} onClick={() => setPassDay("november")}>See it from November 1</Button>
-              </div>
               <PassPageScreen
-                key={passDay}
                 pass={pass}
-                today={passDay === "april" ? "2027-04-14" : "2027-11-02"}
+                today="2027-04-14"
                 onAddInspection={() => setNotice("The July inspection is added to your pass. It is charged after the visit.")}
                 onSkip={() => setNotice("That visit is skipped. Your pass stays active.")}
                 onCancel={async () => ({ ok: true as const })}

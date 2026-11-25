@@ -80,9 +80,6 @@ export const Booked: Story = {
 
 export const AllDone: Story = { args: { pass: allDone, today: "2027-11-01" }, globals: wide }
 
-/** Every visit done and the next season on sale: Reserve next season. */
-export const ReserveNext: Story = { args: { pass: allDone, today: "2027-11-02" }, globals: wide }
-
 export const Canceled: Story = { args: { pass: cancelled }, globals: wide }
 
 /** A returning customer: the 2027 pass in full, the 2026 season as one line that opens to its visits. */
