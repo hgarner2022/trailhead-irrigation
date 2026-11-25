@@ -8,10 +8,9 @@ const NAMES: ServiceIconName[] = ["season-pass", "spring-turn-on", "fall-blowout
 
 function Tile({ name }: { name: ServiceIconName }) {
   const [play, setPlay] = useState(0)
-  const dark = name === "season-pass"
   return (
-    <button type="button" aria-label={`Draw ${name} again`} onClick={() => setPlay((n) => n + 1)} className={dark ? "flex size-14 cursor-pointer items-center justify-center rounded-lg border border-navy bg-navy" : "flex size-14 cursor-pointer items-center justify-center rounded-lg border border-border bg-cream"}>
-      <ServiceIcon key={play} name={name} tone={dark ? "dark" : "light"} />
+    <button type="button" aria-label={`Draw ${name} again`} onClick={() => setPlay((n) => n + 1)} className="flex size-14 cursor-pointer items-center justify-center rounded-lg border border-border bg-cream">
+      <ServiceIcon key={play} name={name} />
     </button>
   )
 }
