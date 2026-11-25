@@ -61,8 +61,8 @@ export const AprilServicesLaptop = servicesApril.laptop
 /** The pass's Details: the zones and what each visit costs at them; nothing is charged at sign-up. */
 const detailsApril = on(at("april", { step: "details" }), "April, details", {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("About $145")).toBeInTheDocument()
-    await expect(canvas.getByText("About $115")).toBeInTheDocument()
+    await expect(canvas.getByText("$145")).toBeInTheDocument()
+    await expect(canvas.getByText("$115")).toBeInTheDocument()
     await expect(canvas.queryByRole("switch")).toBeNull()
   },
 })
@@ -176,8 +176,8 @@ const confirmApril = on(at("april", { step: "confirm", picks: picked, prefs: { b
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Preference: Early season, early October")).toBeInTheDocument()
     await expect(canvas.getByText(/Tuesday, May 4 at 10:30 am/)).toBeInTheDocument()
-    await expect(canvas.getByText("About $145")).toBeInTheDocument()
-    await expect(canvas.getByText("About $115")).toBeInTheDocument()
+    await expect(canvas.getByText("$145")).toBeInTheDocument()
+    await expect(canvas.getByText("$115")).toBeInTheDocument()
     await expect(canvas.getByText(/We schedule your visits every season/)).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: "Set up my Season Pass" })).toBeEnabled()
     await expect(canvas.getByText("Visa ending 4242")).toBeInTheDocument()

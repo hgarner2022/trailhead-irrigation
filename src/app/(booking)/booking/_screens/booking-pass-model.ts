@@ -5,7 +5,7 @@ import type { ReviewRow } from "@/components/blocks/BookingReview"
 import type { BookedVisitLine } from "@/components/blocks/BookedCard"
 import type { TimingPreference } from "@/lib/admin/types"
 import { clock12, dayAtTime, type DayTimePick } from "@/lib/booking/day-time"
-import { exactVisits, type PassPlan, type PassVisitKind, type PassVisitPlan } from "@/lib/booking/pass-visits"
+import { exactVisits, passPlanFor, type PassPlan, type PassVisitKind, type PassVisitPlan } from "@/lib/booking/pass-visits"
 import { SCHEDULE_NOTE } from "@/lib/booking/pass-words"
 import { money } from "@/lib/booking/services"
 import { SEASON_PASS_VISITS, visitPrice } from "@/lib/season-pass"
@@ -21,7 +21,10 @@ type Picks = Record<string, DayTimePick>
 type Prefs = Record<string, TimingPreference>
 
 /** What a visit costs at the customer's zones: the only place the pass shows a price (a setup is not an order, so there is no total). */
-export const visitCostWords = (kind: PassVisitKind, zones: number) => `About ${money(visitPrice(SEASON_PASS_VISITS[kind === "turn-on" ? 0 : 2], zones))}`
+export const visitCostWords = (kind: PassVisitKind, zones: number) => `${money(visitPrice(SEASON_PASS_VISITS[kind === "turn-on" ? 0 : 2], zones))}`
+
+/** The Season Pass offer's two price lines for a zone count: each visit of the pass and what it costs, exactly. */
+export const upsellPrices = (today: string, zones: number) => passPlanFor(today).visits.map((v) => ({ name: visitName(v), price: visitCostWords(v.kind, zones) }))
 
 /** "Preference: Our recommended, mid May": the account's own phrasing (`timingLine`), so the form, the confirmation and the Season Pass tab read alike. */
 export const choiceStatement = (kind: PassVisitKind, preference: TimingPreference) => `Preference: ${timingLine(kind, preference)}`

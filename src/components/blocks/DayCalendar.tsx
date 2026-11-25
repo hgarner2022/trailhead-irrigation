@@ -27,6 +27,8 @@ export interface DayCalendarProps {
   /** the box under a full calendar, when a screen offers one */
   note?: string
   onNote?: (text: string) => void
+  /** what is missing, when Continue was pressed with no time chosen: the times are outlined and the message sits under them */
+  error?: string
   className?: string
 }
 
@@ -50,7 +52,7 @@ function weeksOf(ym: string): (string | null)[][] {
 const LINK = "inline-flex min-h-11 items-center font-semibold text-primary-deep underline underline-offset-2"
 const CHIP = "flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2"
 
-export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2, note = "", onNote, className }: DayCalendarProps) {
+export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2, note = "", onNote, error, className }: DayCalendarProps) {
   const Month = headingLevel === 2 ? "h2" : "h3"
   const id = useId()
   const grid = useRef<HTMLTableElement>(null)
@@ -180,7 +182,7 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
               const checked = value.start === t.start
               return (
                 <label key={t.start} className="relative block">
-                  <input type="radio" name={`${id}-time`} checked={checked} onChange={() => onChange({ day: current.day, start: t.start })} className="peer sr-only" />
+                  <input type="radio" name={`${id}-time`} checked={checked} aria-invalid={Boolean(error) || undefined} onChange={() => onChange({ day: current.day, start: t.start })} className="peer sr-only" />
                   <span data-slot="time-chip" className={cn(CHIP, checked ? "settle border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
                     <span className="text-base font-semibold tabular-nums">{clock12(t.start)}</span>
                   </span>
@@ -188,6 +190,7 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
               )
             })}
           </div>
+          {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
         </fieldset>
       )}
     </div>

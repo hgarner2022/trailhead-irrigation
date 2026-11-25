@@ -11,10 +11,10 @@ const base = (over = {}) => ({ service: svc("repair"), fields: initialState(), p
 const person = { firstName: "Andrea", lastName: "Dalton", email: "andrea@example.com", phone: "(970) 555-0123", termsAccepted: true }
 
 describe("the booking form's steps", () => {
-  it("starts on the address, puts the day before contact, holds the details in the service step, and gives a request the address first, contact last and no day", () => {
-    expect(stepsFor(svc("repair"))).toEqual(["address", "service", "day", "contact", "card", "confirm", "done"])
+  it("starts on the address, puts the day before contact, gives the details their own step after the service, and gives a request the address first, contact last and no day", () => {
+    expect(stepsFor(svc("repair"))).toEqual(["address", "service", "details", "day", "contact", "card", "confirm", "done"])
     expect(stepsFor(null, true)).toEqual(["address", "quote-service", "details", "contact", "done"])
-    expect(stepTotal(stepsFor(svc("repair")))).toBe(6)
+    expect(stepTotal(stepsFor(svc("repair")))).toBe(7)
     expect(stepTotal(stepsFor(null, true))).toBe(4)
   })
   it("qualifies the area from the address: the ZIP decides, and a city it cannot read is asked for", () => {
@@ -32,36 +32,42 @@ describe("the booking form's steps", () => {
     expect(canContinue("address", base({ fields: at(typedPlace("9 Elm St", "Longmont", "80516")) }))).toBe(false)
     expect(canContinue("address", base({ fields: at({ ...FIXTURE_HOME, town: "", zip: "" }) }))).toBe(false)
   })
-  it("names what is missing on the address step: the pick, each typed field, the mismatch, and nothing for a dead end", () => {
+  it("names what is missing on the address step: the pick, each typed field, the mismatch, and the dead end in the out-of-area words", () => {
     const fields = initialState()
     expect(problemList("address", base({ fields }))[0]!.message).toBe("Pick your address from the list.")
     expect(problemList("address", base({ fields, addressTyped: true, typed: { line1: "", city: "", zip: "" } })).map((p) => p.message)).toEqual(["We need your street address, with the house number.", "Add your city.", "Add your ZIP code."])
     expect(problemList("address", base({ fields, addressTyped: true, typed: { line1: "9 Cottonwood Ln", city: "Lafayette", zip: "800" } })).map((p) => [p.message, p.field])).toEqual([["A ZIP code is five digits.", "[name=zip]"]])
     expect(problemList("address", base({ fields: { ...fields, place: typedPlace("9 Elm St", "Longmont", "80516") } }))[0]).toMatchObject({ message: "ZIP 80516 is in Erie.", field: "[name=city]" })
     expect(problemList("address", base({ fields: { ...fields, place: { ...FIXTURE_HOME, town: "", zip: "" } } }))[0]!.field).toBe("[name=city]")
-    expect(problemList("address", base({ fields: { ...fields, place: FIXTURE_PLACES[9]! } }))).toEqual([])
+    expect(problemList("address", base({ fields: { ...fields, place: FIXTURE_PLACES[9]! } }))[0]!.message).toMatch(/^We don't serve Boulder yet\./)
   })
-  it("needs a picked service and, for a booking, the access answer, both on the service step", () => {
+  it("needs a picked service on the service step and, for a booking, the access answer on Details, and names each when Continue is pressed", () => {
     const fields = { ...initialState(), place: FIXTURE_HOME, town: "Erie" as const }
     expect(canContinue("service", base({ service: null, fields }))).toBe(false)
-    expect(canContinue("service", base({ fields }))).toBe(false)
-    expect(canContinue("service", base({ fields: { ...fields, access: "yes" as const } }))).toBe(true)
-    expect(problemList("service", base({ fields }))[0]).toMatchObject({ message: "Tell us whether we can get to the system without you." })
+    expect(canContinue("service", base({ fields }))).toBe(true)
+    expect(problemList("service", base({ service: null, fields }))[0]).toMatchObject({ message: "Choose a service." })
+    expect(problemList("quote-service", base({ service: null, fields }))[0]).toMatchObject({ message: "Choose a service." })
+    expect(canContinue("details", base({ fields }))).toBe(false)
+    expect(canContinue("details", base({ fields: { ...fields, access: "yes" as const } }))).toBe(true)
+    expect(problemList("details", base({ fields }))[0]).toMatchObject({ message: "Tell us whether we can get to the system without you." })
+    expect(canContinue("details", base({ service: svc("lights"), fields }))).toBe(true)
     expect(canContinue("quote-service", base({ service: svc("lights"), fields }))).toBe(true)
   })
-  it("writes contact problems as help and needs the terms on a booking but not a request", () => {
+  it("writes contact problems as help; the terms are agreed by pressing Continue, so there is nothing to tick and nothing blocks on them", () => {
     expect(contactProblem("phone", "")).toBe("Add your phone number.")
     expect(contactProblem("phone", "970555")).toBe("A phone number has ten digits. Check yours.")
     expect(contactProblem("phone", "(970) 555-0123")).toBeNull()
     const fields = { ...initialState(), ...person, termsAccepted: false }
-    expect(canContinue("contact", base({ fields }))).toBe(false)
-    expect(problemsFor("contact", base({ fields }))).toEqual(["Terms"])
+    expect(canContinue("contact", base({ fields }))).toBe(true)
+    expect(problemsFor("contact", base({ fields }))).toEqual([])
+    expect(problemsFor("contact", base({ fields: { ...fields, phone: "" } }))).toEqual(["Phone"])
     expect(canContinue("contact", base({ fields, service: svc("lights") }))).toBe(true)
   })
-  it("holds Continue on the day step until a time is tapped, and only a calendar with no open day ends in a call", () => {
+  it("does not pass the day step until a time is tapped, names it, and only a calendar with no open day ends in a call", () => {
     const offers = { visit: fixtureCalendarDays(120, "2027-04-15") }
     const a = base({ offers, picks: { visit: { day: "2027-04-20", start: null } } })
     expect(canContinue("day", a)).toBe(false)
+    expect(problemList("day", a)[0]).toMatchObject({ message: "Pick a time." })
     expect(canContinue("day", { ...a, picks: { visit: { day: "2027-04-20", start: "10:30" } } })).toBe(true)
     expect(callbackMode({ ...a, offers: { visit: [] } })).toBe(true)
     expect(callbackMode({ ...a, offers: { visit: [{ day: "2027-04-20", times: [] }] } })).toBe(true)
@@ -102,8 +108,8 @@ describe("the price and the review words", () => {
     expect(priceFor(svc("spring-turn-on"), 20)).toBe(265)
     expect(priceFor(svc("fall-blowout"), 6)).toBe(95)
     expect(priceFor(svc("fall-blowout"), 14)).toBe(175)
-    expect(priceWords(svc("spring-turn-on"), 10)).toBe("About $165")
-    expect(priceWords(svc("repair"), 6)).toBe("About $145")
+    expect(priceWords(svc("spring-turn-on"), 10)).toBe("$165")
+    expect(priceWords(svc("repair"), 6)).toBe("$145")
   })
   it("sizes the start times to the zone count where the catalogue's length depends on it", () => {
     expect(svc("spring-turn-on").minutesFor?.(8)).toBe(60)
@@ -152,7 +158,7 @@ describe("the price and the review words", () => {
     const seen: string[] = []
     const fields = { ...initialState(), ...person, place: FIXTURE_HOME, town: "Erie" as const, access: "yes" as const, accessNote: "Gate" }
     reviewRows({ service: svc("repair"), fields, town: "Erie", pick: undefined, when: "", callback: false, channel: "text", photos: 2, quote: false, go: (s) => seen.push(s) }).forEach((r) => r.onChange?.())
-    expect(seen).toEqual(["service", "address", "contact", "service", "service", "service", "card"])
+    expect(seen).toEqual(["service", "address", "contact", "details", "details", "details", "card"])
   })
   it("lists the service-specific answers as rows and asks to confirm leaving only once something is entered", () => {
     const fields = { ...initialState(), ...person, place: FIXTURE_HOME, town: "Erie" as const, access: "yes" as const }
@@ -163,6 +169,6 @@ describe("the price and the review words", () => {
   })
   it("lists each problem with the field it is about, in the order of the form", () => {
     const fields = { ...initialState(), firstName: "Andrea", lastName: "Dalton", email: "andrea@example.com" }
-    expect(problemList("contact", base({ fields })).map((p) => p.field)).toEqual(["[name=phone]", "[data-slot=booking-terms] [role=checkbox]"])
+    expect(problemList("contact", base({ fields })).map((p) => p.field)).toEqual(["[name=phone]"])
   })
 })

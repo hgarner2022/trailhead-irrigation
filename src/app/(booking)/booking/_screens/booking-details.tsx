@@ -32,6 +32,8 @@ interface Shared {
   photos: readonly PickedPhoto[]
   onAddPhotos: (p: PickedPhoto[]) => void
   onRemovePhoto: (name: string) => void
+  /** Storybook only: "Add 2 sample photos". Never in the customer screen. */
+  prototype?: boolean
 }
 
 function Price({ service, zones, plan }: { service: ServiceEntry; zones: number; plan: PassPlan | null }) {
@@ -91,8 +93,8 @@ export interface ServiceDetailsProps extends Shared {
   attempted: boolean
   extras: Extras
   onExtras: (x: Extras) => void
-  /** "Upgrade to a Season Pass": on a single turn-on or blowout, and on the pass the customer made of one; omitted elsewhere */
-  upsell?: { on: boolean; onChange: (on: boolean) => void }
+  /** the Season Pass offer card: on a single turn-on or blowout, and on the pass the customer made of one; omitted elsewhere. `prices` are what each visit costs at their zones. */
+  upsell?: { on: boolean; onChange: (on: boolean) => void; prices: readonly { name: string; price: string }[] }
 }
 
 const LABEL = "font-display text-xl leading-tight text-navy"
@@ -126,7 +128,7 @@ function NoteAndPhotos({ id, service, ...shared }: Shared & { id: string; servic
             <Textarea value={shared.note} onChange={(e) => shared.onNote(e.target.value)} className="min-h-20 text-base" />
           </FormRow>
           <Section id={`${id}-photos`} label="Photos">
-            <PhotoPicker photos={shared.photos} onAdd={shared.onAddPhotos} onRemove={shared.onRemovePhoto} samples={SAMPLES} hint={service.details === "install" ? "Strongly suggested." : undefined} />
+            <PhotoPicker photos={shared.photos} onAdd={shared.onAddPhotos} onRemove={shared.onRemovePhoto} samples={shared.prototype ? SAMPLES : undefined} hint={service.details === "install" ? "Strongly suggested." : undefined} />
           </Section>
         </div>
       )}
@@ -137,7 +139,7 @@ function NoteAndPhotos({ id, service, ...shared }: Shared & { id: string; servic
 /**
  * The Details step: what belongs to the chosen service and nothing else, one quiet question per section with generous space between them. Zones (when the price depends on them), the price (a pass:
  * each visit's price), the questions that belong to the service, whether we can reach the controller and shut-off without the customer (the one required answer), the optional note and photos folded
- * behind one row, and on a single turn-on or blowout "Upgrade to a Season Pass".
+ * behind one row, and on a single turn-on or blowout the Season Pass offer card after them.
  */
 export function ServiceDetails({ service, plan = null, zones, onZones, access, onAccess, attempted, extras, onExtras, upsell, ...shared }: ServiceDetailsProps) {
   const id = useId()
@@ -154,7 +156,7 @@ export function ServiceDetails({ service, plan = null, zones, onZones, access, o
       <ServiceQuestions service={service} extras={extras} onExtras={onExtras} />
       <AccessChoice compact value={access} onChange={onAccess} error={attempted && access === null ? ACCESS_PROBLEM : undefined} />
       <NoteAndPhotos id={id} service={service} {...shared} />
-      {upsell && <PassUpsell on={upsell.on} onChange={upsell.onChange} />}
+      {upsell && <PassUpsell on={upsell.on} onChange={upsell.onChange} prices={upsell.prices} />}
     </div>
   )
 }
@@ -170,7 +172,7 @@ export function QuoteDetails(shared: Shared) {
         <h2 id="photos-heading" className="mb-3 text-base font-semibold text-foreground">
           Photos
         </h2>
-        <PhotoPicker photos={shared.photos} onAdd={shared.onAddPhotos} onRemove={shared.onRemovePhoto} samples={SAMPLES} />
+        <PhotoPicker photos={shared.photos} onAdd={shared.onAddPhotos} onRemove={shared.onRemovePhoto} samples={shared.prototype ? SAMPLES : undefined} />
       </section>
     </div>
   )
