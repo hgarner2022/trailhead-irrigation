@@ -169,7 +169,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
     setAttempted(false)
     if (!history.back()) setStep(steps[Math.max(at - 1, 0)]!)
   }
-  // A card pressed opens and picks its service; the open card pressed again closes it. The answers that are about the visit start over, the ones about the yard stay.
+  // A service chosen on its card ("Choose this service", or the round check); the chosen one unchosen is null. Opening a card to read it chooses nothing. The answers that are about the visit start over, the ones about the yard stay.
   const choose = (key: string | null) => {
     if (key === serviceKey) return setServiceKey(null)
     setServiceKey(key)
@@ -212,8 +212,8 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
   const label = step === "confirm" ? confirmLabel : step === "contact" && quote ? SEND_REQUEST : step === "card" && (card === "saved" || (offered && !otherCard)) ? "Continue" : (ACTIONS[step] ?? "Continue")
   // Continue is off only where the screen says why: a choice not yet made (service, a start time) or a dead end (an address we do not serve). Everywhere else it stays on and a press names what is missing.
   const deadEnd = step === "address" && areaState(fields.place) === "outside"
-  const off = !valid && (deadEnd || (step === "service" && service === null) || step === "quote-service" || step === "day")
-  const hint = step === "day" ? DAY_HINT : step === "service" && service === null ? SERVICE_HINT : step === "quote-service" ? SERVICE_HINT : undefined
+  const off = !valid && (deadEnd || step === "quote-service" || step === "day")
+  const hint = step === "day" ? DAY_HINT : step === "quote-service" ? SERVICE_HINT : undefined
   const details = { note: fields.accessNote, onNote: (t: string) => set("accessNote", t), photos, onAddPhotos: addPhotos, onRemovePhoto: (n: string) => setPhotos((prev) => prev.filter((p) => p.name !== n)) }
 
   let body: React.ReactNode
@@ -222,7 +222,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       body = (
         <>
           <p className="-mt-3 mb-6 text-base text-muted-foreground">Choose what you need.</p>
-          <ServicePicker entries={lists.bookable} value={serviceKey} onChange={choose} onRequestQuote={startQuote} />
+          <ServicePicker entries={lists.bookable} value={serviceKey} onChange={choose} defaultOpen={initial.service} onRequestQuote={startQuote} />
         </>
       )
       break
