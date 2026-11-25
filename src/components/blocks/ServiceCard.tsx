@@ -1,18 +1,19 @@
 "use client"
 
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react"
-import { Check, Clock, Tag } from "lucide-react"
+import { Clock, Tag } from "lucide-react"
 import type { ServiceEntry } from "@/lib/booking/services"
 import { cn } from "@/lib/utils"
 import { ServiceIcon, iconFor } from "./ServiceIcon"
+import { Tick } from "./Tick"
 import { optionClass, optionDetailClass, optionFocusWithin } from "./option-styles"
 import { metaLine, panelOf } from "./service-card-model"
 
 // One service card of the booking form's Service step (Hannah, Nov 25 2026: "Can it just be a clickable card?... just go do it"; the options she chose from are pictured in
 // docs/review/2026-11-25-service-card-options, this is A2, pictured in docs/review/2026-11-26-service-card-a2). THE WHOLE CARD IS THE CHOICE: its header is one toggle button (aria-pressed). One press chooses the service; a second press removes the
 // choice; choosing another card replaces it. There is no pill and no second button. What says "press me": the card sits a little above the page, its edge darkens under a pointer, it
-// gives under a press, its icon draws on first view, and an empty ring at the right marks where the check will land. Chosen, the header is the one selected state of every option on the
-// customer's screens (optionClass: navy, white text), the ring becomes an orange check that draws in with one soft ring, and the card opens by itself to show what is included, the
+// gives under a press, its icon draws on first view, and an empty ring at the right marks it as a choice. Chosen, the header is the one selected state of every option on the
+// customer's screens (optionClass: navy, white text), the ring turns white and gains its dot (a radio's own mark; no tick, no badge, no pulse: docs/review/2026-11-26-check-redesign), and the card opens by itself to show what is included, the
 // length and the price rule, read from the catalogue. Every card is white until chosen, the Season Pass too (an orange tile and top rule set it apart). The motion is in app/base.css
 // (`.svc-*`), each piece once, in answer to a press, and off under prefers-reduced-motion.
 
@@ -92,15 +93,9 @@ export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCar
           <span className="block type-option text-balance">{entry.name}</span>
           {meta && <span className={cn("svc-fade mt-1 block text-sm leading-5 whitespace-nowrap tabular-nums", optionDetailClass(selected))}>{meta}</span>}
         </span>
-        {selected ? (
-          <span data-slot="service-check" aria-hidden className="svc-check relative flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-dark text-white">
-            <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path pathLength={1} d="M3.5 8.5l3 3 6-7" />
-            </svg>
-          </span>
-        ) : (
-          <span data-slot="service-ring" aria-hidden className="size-6 shrink-0 rounded-full border-2 border-navy/30" />
-        )}
+        <span data-slot="service-ring" aria-hidden className={cn("svc-fade flex size-6 shrink-0 items-center justify-center rounded-full border-2", selected ? "border-white" : "border-navy/30")}>
+          {selected && <span data-slot="service-dot" className="svc-dot size-2.5 rounded-full bg-white" />}
+        </span>
       </button>
       <div ref={panel} id={`${id}-panel`} role="region" aria-label={entry.name} aria-hidden={!selected} inert={!selected} data-slot="service-panel" data-open={selected || undefined} className="svc-panel">
         <div>
@@ -114,7 +109,7 @@ export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCar
               <ul data-slot="service-included" className="space-y-2">
                 {items.map((item, i) => (
                   <li key={item.text} {...line(i + 1)} className="flex items-start gap-2 text-base leading-snug text-foreground">
-                    <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-positive" strokeWidth={2.25} />
+                    <Tick className="mt-1" />
                     <span className="flex-1">{item.text}</span>
                     {item.price && <span className="shrink-0 font-semibold text-navy tabular-nums">{item.price}</span>}
                   </li>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react"
 import Image from "next/image"
-import { Check } from "lucide-react"
+import { Tick } from "./Tick"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { Pass, PassVisit } from "@/lib/admin/types"
@@ -84,7 +84,7 @@ function VisitCell({ visit, pass }: { visit: PassVisit; pass: Pass }) {
         )}
         {visit.completedAt && (
           <>
-            <Check className="size-3.5 shrink-0 text-primary-light" strokeWidth={3} aria-hidden />
+            <Tick className="size-3.5 text-white/80" />
             <span className="sr-only">done</span>
           </>
         )}

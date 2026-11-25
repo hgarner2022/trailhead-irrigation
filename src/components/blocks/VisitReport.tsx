@@ -1,4 +1,4 @@
-import { CheckCircle2 } from "lucide-react"
+import { Tick } from "./Tick"
 import { checkedItems, hasReport, type VisitReportData } from "@/emails/visit-report"
 import { cn } from "@/lib/utils"
 
@@ -28,7 +28,7 @@ export function VisitReport({ report, id = "visit-report", className }: VisitRep
         <ul className="divide-y divide-border border-y border-border">
           {items.map((label) => (
             <li key={label} className="flex items-start gap-3 py-2.5">
-              <CheckCircle2 aria-hidden className="mt-0.5 size-5 shrink-0 text-positive" />
+              <Tick className="mt-1" />
               <span className="min-w-0 flex-1 text-base text-foreground">{label}</span>
             </li>
           ))}

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
-import { Check, Home } from "lucide-react"
+import { Home } from "lucide-react"
+import { Tick } from "./Tick"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ADD_IT_BACK, CANCEL_CHANGED_MIND } from "@/lib/portal/words"
@@ -84,7 +85,7 @@ export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot, 
                 {m.receipts.map((r) => (
                   <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-x-4 text-base text-foreground">
                     <span className="inline-flex items-center gap-2">
-                      <Check aria-hidden className="size-4 text-positive" />
+                      <Tick />
                       {r.words}
                     </span>
                     <Link href={r.href} className="inline-flex min-h-11 items-center font-semibold text-primary-deep underline underline-offset-2">

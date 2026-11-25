@@ -34,10 +34,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Choose, switch, remove: one press chooses and opens the card; another card replaces the choice and the first closes; the chosen card pressed again removes the choice. Only the chosen card carries a check. */
+/** Choose, switch, remove: one press chooses and opens the card; another card replaces the choice and the first closes; the chosen card pressed again removes the choice. Only the chosen card's ring carries its dot. */
 export const Default: Story = {
   play: async ({ canvas, canvasElement, userEvent, args }) => {
-    const checks = () => canvasElement.querySelectorAll("[data-slot=service-check]").length
+    const checks = () => canvasElement.querySelectorAll("[data-slot=service-dot]").length
     const repair = canvas.getByRole("button", { name: /^Sprinkler repair/ })
     const turnOn = canvas.getByRole("button", { name: /^Spring turn-on/ })
     await expect(repair).toHaveAttribute("aria-pressed", "false")

@@ -1,7 +1,8 @@
 "use client"
 
 import Image from "next/image"
-import { Check, MessageSquareText, Phone } from "lucide-react"
+import { MessageSquareText, Phone } from "lucide-react"
+import { Tick } from "@/components/blocks/Tick"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { BUSINESS } from "@/emails/format"
@@ -87,7 +88,7 @@ function Approved({ quote, depositPaid, cardSaved, onAddCard }: Pick<QuoteScreen
       <Lines quote={quote} />
       <Total quote={quote} deposit={false} />
       <p data-slot="quote-approved" className="mt-6 flex items-center gap-2 text-base font-medium text-positive-deep">
-        <Check className="size-5 shrink-0 text-positive" aria-hidden />
+        <Tick className="size-5 text-current" />
         Approved
       </p>
       {depositPaid && quote.deposit ? (

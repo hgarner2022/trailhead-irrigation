@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react"
-import { Check } from "lucide-react"
+import { Tick } from "./Tick"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { MIN_QUERY, NO_MATCH_QUERY, type PlaceProvider, type PlaceSuggestion } from "@/lib/places"
@@ -136,7 +136,7 @@ export function AddressSearch({ value, picked, provider, onChange, onPick, onNoM
           onFocus={() => setOpen(true)}
           className={cn("h-14 rounded-lg bg-background px-4 text-base shadow-sm", picked && "pr-12", problem && "border-destructive")}
         />
-        {picked && !problem && <Check aria-hidden className="pointer-events-none absolute top-1/2 right-4 size-6 -translate-y-1/2 text-positive" />}
+        {picked && !problem && <Tick className="pointer-events-none absolute top-1/2 right-4 size-5 -translate-y-1/2" />}
       </div>
       <ul
         id={listId}
