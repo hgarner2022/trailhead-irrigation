@@ -360,7 +360,7 @@ const AREAS = [
   { id: "area-south", name: "Louisville, Lafayette and Broomfield", towns: ["Louisville", "Lafayette", "Broomfield"] },
 ]
 const WINDOWS = [
-  { kind: "turn-on", opensOn: "2027-04-26", closesOn: "2027-05-31", leadWeeks: 4 },
+  { kind: "turn-on", opensOn: "2027-04-15", closesOn: "2027-05-31", leadWeeks: 4 },
   { kind: "inspection", opensOn: "2027-07-01", closesOn: "2027-07-31", leadWeeks: 4 },
   { kind: "blowout", opensOn: "2027-10-01", closesOn: "2027-10-31", leadWeeks: 4 },
 ]

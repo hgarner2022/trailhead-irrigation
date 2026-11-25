@@ -47,22 +47,6 @@ export async function changePreference(passId: string, kind: "turn-on" | "blowou
   revalidatePath(PAGE)
 }
 
-/** A customer picks one of the offered days, to set a day or to change it; the visit is placed and the date is texted. */
-export async function pickDay(passId: string, kind: "turn-on" | "blowout", day: string): Promise<Result> {
-  try {
-    const ctx = await ctxFromAccount()
-    const pass = await callApi(ctx, passesGet, { id: passId })
-    const visit = pass.visits.find((v) => v.kind === kind)
-    if (!visit) return { ok: false, message: "We couldn't find that visit on your pass." }
-    await callApi(ctx, visitsPick, { id: visit.id, day })
-  } catch (error) {
-    return failure(error, DAY_FAILED)
-  }
-  drainAfter()
-  revalidatePath(PAGE)
-  return { ok: true }
-}
-
 /** Adds the July inspection while its window is still open. */
 export async function addInspection(passId: string): Promise<void> {
   await callApi(await ctxFromAccount(), passesAddInspection, { id: passId })

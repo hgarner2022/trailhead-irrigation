@@ -10,8 +10,10 @@ import { StatusPill } from "./StatusPill"
 export interface VisitRowProps {
   /** the visit page */
   href: string
-  /** "Tue, Apr 28" or "Day coming soon" */
+  /** "Tue, Apr 28", or for a visit with no day its preference in her words ("Our recommended, mid October") */
   dayWords: string
+  /** the line under a visit with no day: "We'll schedule it about two weeks before and tell you the day." */
+  note?: string | null
   service: string
   /** "Season Pass 2027" */
   label?: string | null
@@ -29,7 +31,7 @@ export interface VisitRowProps {
 
 const TONES: Record<MoneyTone, string> = { paid: "text-positive-deep", unpaid: "text-foreground", "invoice-sent": "text-foreground", "past-due": "text-destructive", none: "text-muted-foreground" }
 
-export function VisitRow({ href, dayWords, service, label, street, who, money, tone = "none", pill, receiptHref }: VisitRowProps) {
+export function VisitRow({ href, dayWords, note, service, label, street, who, money, tone = "none", pill, receiptHref }: VisitRowProps) {
   const gone = pill.status === "cancelled" || pill.status === "skipped"
   return (
     <li data-slot="visit-row" data-status={pill.status} className="flex items-start gap-4 py-4">
@@ -39,6 +41,7 @@ export function VisitRow({ href, dayWords, service, label, street, who, money, t
           <span>{[service, who].filter(Boolean).join(" · ")}</span>
           {label && <span className="rounded-full border border-border bg-stone px-2 py-0.5 text-xs font-semibold text-navy-light">{label}</span>}
         </p>
+        {note && <p className="text-sm text-muted-foreground">{note}</p>}
         {street && <p className="text-sm text-muted-foreground">{street}</p>}
         {money && <p className={cn("text-sm", TONES[tone])}>{money}</p>}
       </Link>

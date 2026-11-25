@@ -59,8 +59,9 @@ describe("changeFor", () => {
   it("offers nothing once the day has passed and the visit is still not closed", () => {
     expect(changeFor(base, now("2027-05-07T15:00:00Z"))).toEqual({ reschedule: "no", cancel: "no" })
   })
-  it("lets a visit with no day yet pick one, and cancel", () => {
-    expect(changeFor({ ...base, status: "unscheduled", scheduledOn: null }, now("2027-05-04T15:00:00Z"))).toEqual({ reschedule: "yes", cancel: "yes" })
+  it("never lets a visit with no day yet be picked by the customer (we schedule it), and still lets them cancel", () => {
+    expect(changeFor({ ...base, status: "unscheduled", scheduledOn: null }, now("2027-05-04T15:00:00Z"))).toEqual({ reschedule: "no", cancel: "yes" })
+    expect(changeFor({ ...base, status: "unscheduled", scheduledOn: null, hasWindow: false }, now("2027-05-04T15:00:00Z"))).toEqual({ reschedule: "no", cancel: "yes" })
   })
   it("sends a kind with no season window (an install, quoted work) to Text Ryan for the day and still lets the customer cancel", () => {
     expect(changeFor({ ...base, hasWindow: false }, now("2027-04-01T12:00:00Z"))).toEqual({ reschedule: "text", cancel: "yes" })

@@ -241,12 +241,12 @@ describe("ScheduleScreen's Unscheduled list", () => {
   })
 
   it("shows a refused Place's sentence under that row only, in the API's words", async () => {
-    const onMove = vi.fn().mockResolvedValue({ ok: false, message: "A turn-on visit must land between 2027-04-26 and 2027-05-31" })
+    const onMove = vi.fn().mockResolvedValue({ ok: false, message: "A turn-on visit must land between 2027-04-15 and 2027-05-31" })
     render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} textDelaySeconds={0} />)
     const name = within(rows()[0]).getByRole("button", { name: /^Schedule / }).getAttribute("aria-label")!
     await userEvent.click(within(rows()[0]).getByRole("button", { name: /^Schedule / }))
     const problem = await within(document.querySelector<HTMLElement>('[data-slot="to-schedule-tray"]')!).findByRole("alert", {}, { timeout: 5000 })
-    expect(problem).toHaveTextContent("A turn-on job must land between April 26 and May 31")
+    expect(problem).toHaveTextContent("A turn-on job must land between April 15 and May 31")
     // It sits under the row of the job that was refused.
     expect(problem.closest("li")).toContainElement(screen.getByRole("button", { name }))
     // Nowhere else: the status line is empty, and the other rows carry nothing.

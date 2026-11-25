@@ -4,9 +4,10 @@
 // (`EXACT_WITHIN_DAYS`: a buyer in April books the spring turn-on exactly, a buyer in September or October books the blowout exactly) is booked with an exact day and time ("exact"); every other visit,
 // this season's or next season's, takes only a preference ("preference") and is scheduled about two weeks before. The preference is kept per visit kind for every season, so a renewal schedules the
 // visit without asking again; for a kind booked exactly it defaults to the part of the window of the day picked (`preferenceOfDay`). **The windows are the scheduler's own settings**
-// (`defaultWindows` in src/lib/settings/defaults.ts: turn-on May 1 to 31, inspection July 1 to 31, blowout October 1 to November 15), read here and nowhere else in the booking form. Hannah, Nov 22 2026: the
-// old fixture's "Opens Apr 25" is not true, and no opening day is shown to a customer until the dates are confirmed. Nothing here knows about React or the server.
+// (`defaultWindows` in src/lib/settings/defaults.ts: turn-on April 15 to May 31, inspection July 1 to 31, blowout October 1 to November 15), read here and nowhere else in the booking form. Hannah, Nov 22 2026: the
+// old fixture's "Opens Apr 25" was not true, and no opening day is shown to a customer until the dates are confirmed. Nothing here knows about React or the server.
 import type { TimingPreference } from "@/lib/admin/types"
+import { timingRanges } from "@/lib/scheduling/timing"
 import { defaultWindows } from "@/lib/settings/defaults"
 
 export type PassVisitKind = "turn-on" | "blowout"
@@ -97,8 +98,13 @@ export function passPlanFor(today: string): PassPlan {
 export const exactVisits = (plan: PassPlan) => plan.visits.filter((v) => v.mode === "exact")
 export const preferenceVisits = (plan: PassPlan) => plan.visits.filter((v) => v.mode === "preference")
 
-/** The days of a visit's window, as one third each (the last gets the remainder): Early, Mid and Late. Used to work out which part a day falls in; the form shows the names only. */
-export function preferenceDates(v: Pick<PassVisitPlan, "opens" | "closes">): Record<TimingPreference, { from: string; to: string }> {
+/**
+ * The days of a visit's window each preference names; the form shows the names only. A kind with a recommended span (the turn-on's is early to mid May) has it as "recommended",
+ * the days before it "earlier" and the days after it "later"; any other window is split in thirds (the last gets the remainder).
+ */
+export function preferenceDates(v: Pick<PassVisitPlan, "opens" | "closes"> & { kind?: WindowKind }): Record<TimingPreference, { from: string; to: string }> {
+  const around = timingRanges(v.kind, v.opens, v.closes)
+  if (around) return around
   const start = toDays(v.opens)
   const total = toDays(v.closes) - start + 1
   const third = Math.floor(total / 3)
@@ -111,7 +117,7 @@ export function preferenceDates(v: Pick<PassVisitPlan, "opens" | "closes">): Rec
 }
 
 /** The part of a visit's window a day falls in: the preference a kind booked exactly starts with, kept for the seasons after. */
-export function preferenceOfDay(v: Pick<PassVisitPlan, "opens" | "closes">, day: string): TimingPreference {
+export function preferenceOfDay(v: Pick<PassVisitPlan, "opens" | "closes"> & { kind?: WindowKind }, day: string): TimingPreference {
   const dates = preferenceDates(v)
   return day <= dates.earlier.to ? "earlier" : day <= dates.recommended.to ? "recommended" : "later"
 }

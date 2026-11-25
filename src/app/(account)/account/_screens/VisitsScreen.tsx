@@ -23,7 +23,7 @@ export interface VisitsScreenProps {
 }
 
 export const rowOf = (r: TimelineRow, times?: BookedTimes) => (
-  <VisitRow key={r.id} href={r.href} dayWords={r.visit.status === "scheduled" ? rowDayWithTime(r.dayWords, times?.[r.id]) : r.dayWords} service={r.service} label={r.label} street={r.street} who={r.who} money={r.money} tone={r.tone} pill={r.pill} receiptHref={r.receiptId ? `/account/receipts/${r.receiptId}` : null} />
+  <VisitRow key={r.id} href={r.href} dayWords={r.visit.status === "scheduled" ? rowDayWithTime(r.dayWords, times?.[r.id]) : r.dayWords} note={r.note} service={r.service} label={r.label} street={r.street} who={r.who} money={r.money} tone={r.tone} pill={r.pill} receiptHref={r.receiptId ? `/account/receipts/${r.receiptId}` : null} />
 )
 
 function Section({ id, title, rows, empty, times }: { id: string; title: string; rows: TimelineRow[]; empty: string; times?: BookedTimes }) {
