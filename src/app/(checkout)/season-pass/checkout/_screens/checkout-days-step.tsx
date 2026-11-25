@@ -27,7 +27,7 @@ export function DaysStep({ state, offers: loaded, set, renewal, attempted = fals
         const held = state.days.find((d) => d.kind === kind)
         return (
           <section key={kind} aria-label={DAY_HEADINGS[kind]} data-slot="days-group" data-kind={kind} className="min-w-0">
-            <h2 className="font-display text-3xl leading-[1.05] text-navy">{DAY_HEADINGS[kind]}</h2>
+            <h2 className="type-heading text-navy">{DAY_HEADINGS[kind]}</h2>
             {list.length === 0 ? (
               <p className="mt-3 text-base text-muted-foreground">We don&apos;t have an open day to show yet. Ryan sets this one and we text it to you.</p>
             ) : (

@@ -22,6 +22,9 @@ export interface BookingReviewProps {
   className?: string
 }
 
+/** A line that is only an amount ("$145"): money reads the same in a review row as in a price list, heavier and in tabular numerals. */
+const MONEY = /^\$[\d,.]+$/
+
 export function BookingReview({ rows, happens, className }: BookingReviewProps) {
   return (
     <div data-slot="booking-review" className={cn("space-y-5", className)}>
@@ -31,8 +34,8 @@ export function BookingReview({ rows, happens, className }: BookingReviewProps) 
           return (
             <li key={row.label} data-slot="review-row" className="flex items-start justify-between gap-4 px-4 py-3">
               <div className="min-w-0">
-                <p className="text-sm text-muted-foreground">{row.label}</p>
-                <div className="mt-0.5 text-base text-foreground">{lines ? lines.map((line) => <span key={line} className="block">{line}</span>) : (row.value as ReactNode)}</div>
+                <p className="type-meta text-muted-foreground">{row.label}</p>
+                <div className={cn("mt-0.5 type-body text-foreground", typeof row.value === "string" && MONEY.test(row.value) && "font-semibold tabular-nums")}>{lines ? lines.map((line) => <span key={line} className={cn("block", MONEY.test(line) && "font-semibold tabular-nums")}>{line}</span>) : (row.value as ReactNode)}</div>
               </div>
               {row.onChange && (
                 <button type="button" onClick={row.onChange} aria-label={`Change ${row.label.toLowerCase()}`} className="-my-1 inline-flex min-h-11 shrink-0 cursor-pointer items-center text-sm font-semibold text-primary-deep underline underline-offset-2">

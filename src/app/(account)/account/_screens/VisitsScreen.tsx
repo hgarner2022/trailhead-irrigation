@@ -29,7 +29,7 @@ export const rowOf = (r: TimelineRow, times?: BookedTimes) => (
 function Section({ id, title, rows, empty, times }: { id: string; title: string; rows: TimelineRow[]; empty: string; times?: BookedTimes }) {
   return (
     <section aria-labelledby={id} className="space-y-4">
-      <h2 id={id} className="font-display text-2xl font-semibold leading-none text-navy">
+      <h2 id={id} className="type-heading text-navy">
         {title}
       </h2>
       {rows.length ? <ul className="divide-y divide-border rounded-lg border border-border bg-card px-4 shadow-sm sm:px-6">{rows.map((r) => rowOf(r, times))}</ul> : <p className="text-base text-muted-foreground">{empty}</p>}

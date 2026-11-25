@@ -11,9 +11,9 @@ export function PassVisitsList({ lines, where, who = "Ryan" }: { lines: readonly
       <ul className="divide-y divide-border border-y border-border">
         {lines.map((v) => (
           <li key={v.name} data-slot="booked-visit" className="py-4">
-            <p className="font-display text-2xl leading-none text-navy">{v.name}</p>
-            <p className="mt-1.5 text-base text-foreground">{v.when}</p>
-            {v.note && <p className="mt-1 text-sm text-muted-foreground">{v.note}</p>}
+            <p className="type-option text-navy">{v.name}</p>
+            <p className="mt-1.5 type-body text-foreground">{v.when}</p>
+            {v.note && <p className="mt-1 type-meta text-muted-foreground">{v.note}</p>}
           </li>
         ))}
       </ul>

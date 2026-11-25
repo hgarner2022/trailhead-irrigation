@@ -16,7 +16,7 @@ export function PayNotFound() {
       <Card className="h-fit w-full max-w-md">
         <CardContent className="p-5 pt-5 sm:p-8 sm:pt-8">
           <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={57} height={40} className="h-12 w-auto" priority />
-          <h1 className="mt-5 font-display text-4xl leading-none text-navy">We can&apos;t open that invoice</h1>
+          <h1 className="mt-5 type-title text-navy">We can&apos;t open that invoice</h1>
           <p className="mt-3 text-base text-foreground">{PAY_NOT_FOUND_LINE}</p>
           <div className="mt-6 space-y-4">
             <Button asChild size="lg" className="w-full">

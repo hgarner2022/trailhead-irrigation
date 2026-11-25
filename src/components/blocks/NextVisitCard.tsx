@@ -44,7 +44,7 @@ export function NextVisitCard({ visit, className }: { visit: NextVisitProps | nu
           <Stack gap="md">
             <Stack gap="sm">
               <Label />
-              <h2 className="font-display text-3xl leading-tight text-navy">Nothing booked right now.</h2>
+              <h2 className="type-heading text-navy">Nothing booked right now.</h2>
             </Stack>
             <Button asChild>
               <a href="/book">Book Online</a>
@@ -60,7 +60,7 @@ export function NextVisitCard({ visit, className }: { visit: NextVisitProps | nu
         <Stack gap="md">
           <Stack gap="sm">
             <Label />
-            <h2 className="font-display text-3xl leading-tight text-navy sm:text-4xl">
+            <h2 className="type-title text-navy">
               <Link href={visit.href} className="hover:underline">
                 {visit.heading}
               </Link>

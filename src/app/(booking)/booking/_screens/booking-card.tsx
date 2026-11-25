@@ -36,7 +36,7 @@ export function BookingCard({ saved, pass, onSkip, onFile, other = false, onOthe
   return (
     <div data-slot="booking-card" className="space-y-6">
       {useFile ? (
-        <p data-slot="card-on-file" className="flex items-center gap-3 rounded-lg border-2 border-navy bg-background px-4 py-4 text-lg text-foreground">
+        <p data-slot="card-on-file" className="flex items-center gap-3 rounded-lg border-2 border-navy bg-background px-4 py-4 type-body text-foreground">
           <Check aria-hidden className="size-5 shrink-0 text-positive" />
           <span>
             <span className="block text-sm text-muted-foreground">{CARD_ON_FILE_WORDS.use}</span>
@@ -44,7 +44,7 @@ export function BookingCard({ saved, pass, onSkip, onFile, other = false, onOthe
           </span>
         </p>
       ) : saved ? (
-        <p data-slot="card-saved" className="flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-4 text-lg text-foreground">
+        <p data-slot="card-saved" className="flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-4 type-body text-foreground">
           <Check aria-hidden className="size-5 shrink-0 text-positive" />
           {CARD_SAVED}
         </p>

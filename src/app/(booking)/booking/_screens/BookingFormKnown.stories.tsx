@@ -157,9 +157,8 @@ export const NewAddressReviewPhone: Story = { ...newReview.phone }
 export const NewAddressReviewLaptop: Story = { ...newReview.laptop }
 
 // ------------------------------------------------------------------------------------------------ the whole booking, clicked
-const choose = async (c: ReturnType<typeof within>, user: { click: (e: Element) => Promise<void> }, name: RegExp, label: string) => {
+const choose = async (c: ReturnType<typeof within>, user: { click: (e: Element) => Promise<void> }, name: RegExp) => {
   await user.click(await c.findByRole("button", { name }))
-  await user.click(await c.findByRole("button", { name: label }))
 }
 
 /** The whole booking as the SAME-EMAIL customer, clicked: address (On file), the repair card, Details (access already answered), the soonest time, only the email typed, the card on file, Review, booked. */
@@ -175,7 +174,7 @@ export const WholeBookingSameEmailTest: Story = {
     await userEvent.click(await c.findByRole("option", { name: /480 Briggs/ }))
     await expect(await c.findByText("On file")).toBeInTheDocument()
     await next()
-    await choose(c, userEvent, /^Sprinkler repair/, "Choose this service")
+    await choose(c, userEvent, /^Sprinkler repair/)
     await next()
     // the access answer is already there, marked On file: one tap on Continue
     await expect(await c.findByRole("radio", { name: /^Yes/ })).toBeChecked()
@@ -206,7 +205,7 @@ export const WholeBookingDifferentEmailTest: Story = {
     await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "480 Br")
     await userEvent.click(await c.findByRole("option", { name: /480 Briggs/ }))
     await next()
-    await choose(c, userEvent, /^Sprinkler repair/, "Choose this service")
+    await choose(c, userEvent, /^Sprinkler repair/)
     await next()
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /\d:\d\d [ap]m/ }))[0]!)

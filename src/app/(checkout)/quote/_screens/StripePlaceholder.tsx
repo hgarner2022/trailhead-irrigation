@@ -38,7 +38,7 @@ export function StripePlaceholder({ mode, quote, onPay, onBack }: StripePlacehol
           <h1 id="stripe-summary-h" className="mt-4 text-base text-muted-foreground">
             {deposit ? `Pay Trailhead Lawn & Irrigation` : "Save a card with Trailhead Lawn & Irrigation"}
           </h1>
-          <p className="mt-1 font-display text-5xl leading-none text-navy tabular-nums">{amount ?? "No charge"}</p>
+          <p className="mt-1 type-figure text-navy">{amount ?? "No charge"}</p>
           <p className="mt-3 text-base text-muted-foreground">{deposit ? `Deposit for quote ${quote.number}` : `For ${quote.firstName}, ${quote.address}`}</p>
         </section>
         <section aria-label={deposit ? "Pay with card" : "Save a card"} className="flex flex-col gap-4">

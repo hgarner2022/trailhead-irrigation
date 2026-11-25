@@ -24,7 +24,7 @@ export function PassSellCard({ href = "/season-pass", className }: PassSellCardP
     <Card data-slot="pass-sell" className={cn("overflow-hidden", className)}>
       <CardContent className="grid items-center gap-6 p-4 sm:p-6 md:grid-cols-2">
         <Stack gap="md">
-          <h2 className="font-display text-3xl leading-tight text-navy">Become a Season Pass holder</h2>
+          <h2 className="type-heading text-navy">Become a Season Pass holder</h2>
           <Stack gap="sm">
             <p className="text-base text-foreground">{`Your spring turn-on and fall blowout. ${PASS_SCHEDULES}`}</p>
             <p className="text-base text-foreground">Repair visits go to Season Pass customers first.</p>

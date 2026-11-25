@@ -112,9 +112,8 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
     await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
-    // the card opens in place and picks the service; Details asks access and takes two photos behind one row; then the soonest day is already chosen and only an exact start time (never a window) is tapped, and only then who we reach
+    // one press on the card picks the service and opens it; Details asks access and takes two photos behind one row; then the soonest day is already chosen and only an exact start time (never a window) is tapped, and only then who we reach
     await userEvent.click(await c.findByRole("button", { name: /^Sprinkler repair/ }))
-    await userEvent.click(await c.findByRole("button", { name: "Choose this service" }))
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
     await userEvent.upload(await c.findByLabelText("Add photos"), PHOTOS)

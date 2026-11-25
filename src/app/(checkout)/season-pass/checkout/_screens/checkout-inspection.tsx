@@ -33,7 +33,7 @@ export function InspectionStep({ state, set }: StepProps) {
               onClick={() => set("inspection", choice.value)}
               className={cn(optionClass({ selected: pressed }), "flex min-h-24 flex-col items-start justify-center px-4 py-3 text-left")}
             >
-              <span className="font-display text-2xl leading-none">{choice.name}</span>
+              <span className="type-option">{choice.name}</span>
               <span className={cn("mt-1.5 text-sm", pressed ? "text-white/80" : "text-muted-foreground")}>
                 {choice.value ? `${choice.detail}, ${formatMoney(price)} after the visit` : choice.detail}
               </span>

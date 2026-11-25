@@ -2,130 +2,109 @@
 
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react"
 import { Check, Clock, Tag } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import type { ServiceEntry } from "@/lib/booking/services"
 import { cn } from "@/lib/utils"
 import { ServiceIcon, iconFor } from "./ServiceIcon"
-import { DetailsPill } from "./DetailsPill"
-import { CHOOSE, CHOSEN, REMOVE, metaLine, panelOf } from "./service-card-model"
+import { optionClass, optionDetailClass, optionFocusWithin } from "./option-styles"
+import { metaLine, panelOf } from "./service-card-model"
 
-// One service card of the booking form's Service step (Hannah's final pass, Nov 25 2026; the review and its sources are in PR "Service step: final pass").
-// ONE interaction model: the header row opens and closes the card (an accordion header: a real button with aria-expanded, the whole row its target, a "Details" / "Hide" pill
-// saying what a press does); the one button inside the open card chooses the service or removes the choice (a toggle button, aria-pressed). Nothing else is pressable.
-// Every card is white, the Season Pass too (its orange tile and top rule set it apart without looking chosen): the ONLY strong state is a chosen card, with a navy edge,
-// a warm tint and one orange check on its icon. Closed, a card is the icon, the name and one meta line that never wraps. The motion is in app/base.css (`.svc-*`), each
-// piece once, in answer to a press: the icon draws and springs, the card opens and its lines come in, the check draws with one ring, the chosen card settles.
+// One service card of the booking form's Service step (Hannah, Nov 25 2026: "Can it just be a clickable card?... just go do it"; the options she chose from are pictured in
+// docs/review/2026-11-25-service-card-options, this is A2, pictured in docs/review/2026-11-26-service-card-a2). THE WHOLE CARD IS THE CHOICE: its header is one toggle button (aria-pressed). One press chooses the service; a second press removes the
+// choice; choosing another card replaces it. There is no pill and no second button. What says "press me": the card sits a little above the page, its edge darkens under a pointer, it
+// gives under a press, its icon draws on first view, and an empty ring at the right marks where the check will land. Chosen, the header is the one selected state of every option on the
+// customer's screens (optionClass: navy, white text), the ring becomes an orange check that draws in with one soft ring, and the card opens by itself to show what is included, the
+// length and the price rule, read from the catalogue. Every card is white until chosen, the Season Pass too (an orange tile and top rule set it apart). The motion is in app/base.css
+// (`.svc-*`), each piece once, in answer to a press, and off under prefers-reduced-motion.
 
 export interface ServiceCardProps {
   entry: ServiceEntry
   /** its place in the list: staggers the icon's first drawing */
   index?: number
-  open: boolean
   selected: boolean
+  /** chooses the service, or removes the choice when it is the chosen one */
   onToggle: () => void
-  /** true: chosen; false: the choice removed */
-  onChoose: (on: boolean) => void
 }
 
 const line = (i: number) => ({ "data-line": true, style: { "--i": i } as CSSProperties })
 
-export function ServiceCard({ entry, index = 0, open, selected, onToggle, onChoose }: ServiceCardProps) {
+export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCardProps) {
   const id = useId()
   const ref = useRef<HTMLLIElement>(null)
-  const header = useRef<HTMLButtonElement>(null)
-  /** a mouse press already opened (or closed) the card on the way down: the click that follows does nothing */
-  const handled = useRef(false)
   // The icon draws once on first appearance and, with a small spring, once more on each press.
   const [play, setPlay] = useState(0)
   const pass = entry.kind === "pass"
   const meta = metaLine(entry)
   const { lead, items, facts } = panelOf(entry)
 
-  // The check stays for a moment after the choice is removed, to undraw.
-  const [leaving, setLeaving] = useState(false)
-  const was = useRef(selected)
+  // The chosen card opens; once it HAS opened (the panel's own transition has ended, so the card is its full height) it comes into view, clear of the Continue bar.
+  // A timer alone measures a half-open card on a slow phone. Nothing moves on the first render.
+  const panel = useRef<HTMLDivElement>(null)
+  const first = useRef(true)
   useEffect(() => {
-    const removed = was.current && !selected
-    was.current = selected
-    setLeaving(removed)
-    if (!removed) return
-    const t = setTimeout(() => setLeaving(false), 160)
-    return () => clearTimeout(t)
+    if (first.current) return void (first.current = false)
+    if (!selected) return
+    const el = panel.current
+    const reduce = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    let shown = false
+    const show = () => {
+      if (shown) return
+      shown = true
+      ref.current?.scrollIntoView?.({ block: "nearest", behavior: reduce ? "auto" : "smooth" })
+    }
+    const opened = (e: TransitionEvent) => {
+      if (e.target === el && e.propertyName === "grid-template-rows") show()
+    }
+    el?.addEventListener("transitionend", opened)
+    // With no motion there is no transition to wait for. Otherwise this is the net under a transition that never started; one still running is left to report its own end.
+    const t = setTimeout(() => !el?.getAnimations?.().length && show(), reduce ? 0 : 400)
+    return () => {
+      el?.removeEventListener("transitionend", opened)
+      clearTimeout(t)
+    }
   }, [selected])
 
-  // The open card comes into view once it has finished opening.
-  useEffect(() => {
-    if (!open) return
-    const reduce = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    const t = setTimeout(() => ref.current?.scrollIntoView?.({ block: "nearest", behavior: reduce ? "auto" : "smooth" }), 240)
-    return () => clearTimeout(t)
-  }, [open])
-
-  const choose = (on: boolean) => {
-    if (on) setPlay((n) => n + 1)
-    onChoose(on)
-    if (on) header.current?.focus()
-  }
   return (
     <li
       ref={ref}
       data-slot="service-entry"
       data-kind={entry.kind}
-      data-open={open || undefined}
       data-selected={selected || undefined}
-      className={cn("svc-card scroll-mt-4 scroll-mb-28 rounded-lg border bg-background sm:scroll-mb-6", selected ? "svc-settle border-navy bg-primary/5 ring-1 ring-navy" : cn("border-border", pass && "border-t-2 border-t-primary", open ? "shadow-sm" : "hover:border-navy/40"))}
+      className={cn("svc-card scroll-mt-4 scroll-mb-28 overflow-hidden rounded-lg border bg-background sm:scroll-mb-6", optionFocusWithin, selected ? "svc-settle border-navy ring-1 ring-navy" : cn("border-border shadow-sm hover:border-navy/40 hover:shadow-md", pass && "border-t-2 border-t-primary"))}
     >
-      <div data-slot="service-head" className="svc-head relative flex min-h-[5.5rem] items-center gap-4 rounded-lg p-4 active:bg-navy/5">
-        <span data-slot="service-tile" className={cn("relative flex size-14 shrink-0 items-center justify-center rounded-lg border", pass ? "border-primary/30 bg-primary/10" : selected ? "border-border bg-background" : "border-border bg-cream")}>
+      <button
+        type="button"
+        aria-pressed={selected}
+        aria-controls={`${id}-panel`}
+        onClick={() => {
+          setPlay((n) => n + 1)
+          onToggle()
+        }}
+        data-slot="service-head"
+        data-autofocus={selected || undefined}
+        className={cn(optionClass({ selected, settle: false }), "flex min-h-[5.5rem] w-full items-center gap-4 rounded-none border-0 p-4 text-left focus-visible:ring-0 focus-visible:ring-offset-0")}
+      >
+        <span data-slot="service-tile" className={cn("flex size-14 shrink-0 items-center justify-center rounded-lg border", pass && !selected ? "border-primary/30 bg-primary/10" : "border-border bg-background")}>
           <span key={play} className={cn("flex", play > 0 && "svc-spring")}>
             <ServiceIcon name={iconFor(entry.key)} delay={play === 0 ? index * 40 : 0} />
           </span>
-          {(selected || leaving) && (
-            <span data-slot="service-check" data-leaving={leaving || undefined} aria-hidden className="svc-check absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-primary-dark text-white ring-2 ring-background">
-              <svg viewBox="0 0 16 16" className="size-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path pathLength={1} d="M3.5 8.5l3 3 6-7" />
-              </svg>
-            </span>
-          )}
         </span>
-        <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1">
-          <button
-            ref={header}
-            type="button"
-            aria-expanded={open}
-            aria-controls={`${id}-panel`}
-            aria-describedby={meta ? `${id}-meta` : undefined}
-            onPointerDown={(e) => {
-              setPlay((n) => n + 1)
-              // A mouse opens on the way down, so it feels instant; a finger opens on the tap itself, so a scroll that starts on a card never opens it.
-              if (e.pointerType === "mouse" && e.button === 0) {
-                handled.current = true
-                onToggle()
-              }
-            }}
-            onPointerLeave={() => (handled.current = false)}
-            onBlur={() => (handled.current = false)}
-            onClick={() => {
-              if (handled.current) return void (handled.current = false)
-              onToggle()
-            }}
-            data-autofocus={selected || undefined}
-            className="block w-full cursor-pointer pt-0.5 text-left font-display text-[1.375rem] leading-[1.1] text-balance text-navy after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-primary/60"
-          >
-            {entry.name}
-            {selected && <span className="sr-only">, selected</span>}
-          </button>
-          <DetailsPill open={open} />
-          {meta && (
-            <p id={`${id}-meta`} className="col-span-2 text-sm leading-5 whitespace-nowrap text-muted-foreground tabular-nums">
-              {meta}
-            </p>
-          )}
-        </div>
-      </div>
-      <div id={`${id}-panel`} role="region" aria-label={entry.name} aria-hidden={!open} inert={!open} data-slot="service-panel" data-open={open || undefined} className="svc-panel">
+        <span className="min-w-0 flex-1">
+          <span className="block type-option text-balance">{entry.name}</span>
+          {meta && <span className={cn("mt-1 block text-sm leading-5 whitespace-nowrap tabular-nums", optionDetailClass(selected))}>{meta}</span>}
+        </span>
+        {selected ? (
+          <span data-slot="service-check" aria-hidden className="svc-check relative flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-dark text-white">
+            <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path pathLength={1} d="M3.5 8.5l3 3 6-7" />
+            </svg>
+          </span>
+        ) : (
+          <span data-slot="service-ring" aria-hidden className="size-6 shrink-0 rounded-full border-2 border-navy/30" />
+        )}
+      </button>
+      <div ref={panel} id={`${id}-panel`} role="region" aria-label={entry.name} aria-hidden={!selected} inert={!selected} data-slot="service-panel" data-open={selected || undefined} className="svc-panel">
         <div>
-          <div className="mx-4 space-y-4 border-t border-border py-4">
+          <div className="space-y-4 p-4">
             {lead && (
               <p {...line(0)} className="text-base leading-relaxed text-foreground">
                 {lead}
@@ -143,7 +122,7 @@ export function ServiceCard({ entry, index = 0, open, selected, onToggle, onChoo
               </ul>
             )}
             {(facts.length || facts.rule) && (
-              <ul data-slot="service-facts" {...line(items.length + 1)} className="space-y-2 rounded-lg bg-background p-4 text-sm text-navy ring-1 ring-border">
+              <ul data-slot="service-facts" {...line(items.length + 1)} className="space-y-2 text-sm text-navy">
                 {facts.length && (
                   <li className="flex items-center gap-2">
                     <Clock aria-hidden className="size-4 shrink-0 text-muted-foreground" />
@@ -157,19 +136,6 @@ export function ServiceCard({ entry, index = 0, open, selected, onToggle, onChoo
                   </li>
                 )}
               </ul>
-            )}
-            {selected ? (
-              <Button {...line(items.length + 2)} type="button" size="lg" variant="outline" aria-pressed className="w-full justify-between border-navy/30 text-navy sm:w-auto sm:min-w-56" onClick={() => choose(false)}>
-                <span className="flex items-center gap-2">
-                  <Check aria-hidden className="size-4 text-primary-dark" strokeWidth={2.5} />
-                  {CHOSEN}
-                </span>
-                <span className="text-sm font-normal underline underline-offset-2">{REMOVE}</span>
-              </Button>
-            ) : (
-              <Button {...line(items.length + 2)} type="button" size="lg" className="w-full sm:w-auto sm:min-w-56" onClick={() => choose(true)}>
-                {CHOOSE}
-              </Button>
             )}
           </div>
         </div>

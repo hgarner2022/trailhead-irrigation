@@ -23,7 +23,7 @@ export default async function ConfirmSignInPage({ searchParams }: { searchParams
       <Card data-slot="sign-in-confirm" className="w-full max-w-sm">
         <CardContent className="flex flex-col gap-6 p-6 sm:p-8">
           <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={114} height={80} className="h-20 w-auto self-start" />
-          <h1 className="font-display text-3xl text-navy">{form ? "Finish signing in" : "This link is not valid"}</h1>
+          <h1 className="type-title text-navy">{form ? "Finish signing in" : "This link is not valid"}</h1>
           {form ? (
             <>
               <p className="text-muted-foreground">Press the button and you are in. The link works once.</p>

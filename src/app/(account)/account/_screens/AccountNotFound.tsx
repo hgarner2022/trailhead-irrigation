@@ -11,7 +11,7 @@ export const ACCOUNT_NOT_FOUND_LINE = "We can't open that visit. Go to your visi
 export function AccountNotFound() {
   return (
     <main data-slot="account-not-found" className="mx-auto max-w-xl container-padding-x py-10">
-      <h1 className="font-display text-3xl text-navy">We can&apos;t open that</h1>
+      <h1 className="type-title text-navy">We can&apos;t open that</h1>
       <p className="mt-3 text-base text-foreground">{ACCOUNT_NOT_FOUND_LINE}</p>
       <div className="mt-6 space-y-4">
         <Button asChild size="lg">

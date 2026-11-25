@@ -232,8 +232,8 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
               id={questionId}
               className={cn(
                 done
-                  ? "text-xs font-semibold uppercase tracking-wide text-primary-dark"
-                  : "font-display text-4xl leading-[1.05] text-navy lg:text-5xl",
+                  ? "type-caption text-primary-dark"
+                  : "type-title text-navy",
               )}
             >
               {current.question}

@@ -7,6 +7,7 @@ import { textRyanHref } from "@/lib/portal/words"
 import { VisitReport } from "@/components/blocks/VisitReport"
 import { PayForm, type PayAction } from "./PayForm"
 import { dueWords, introWords, lineTotal, money, paidWords, payLabel, payWithLabel, type PayBill } from "./pay-model"
+import { PriceLines, PriceTotal } from "@/components/blocks/PriceLines"
 
 // The pay page: one invoice, as the customer sees it, on a phone first. The Trailhead badge, "Your invoice", the frozen lines, the tax
 // line only when there is tax, the total, the due day and one button that opens Stripe's card form. A paid invoice says when and
@@ -22,34 +23,8 @@ export interface PayScreenProps {
 }
 
 function Lines({ bill }: { bill: PayBill }) {
-  return (
-    <dl data-slot="pay-lines" className="divide-y divide-border border-y border-border">
-      {bill.lines.map((line, i) => (
-        // One wrapper per line with the dt and every dd as its direct children (a dl's groups may not nest a second div), laid out on a grid: the name and the price on the first row, the description and "N at $X" under the name.
-        <div key={`${line.name}-${i}`} className="grid grid-cols-[1fr_auto] gap-x-4 py-3">
-          <dt className="col-start-1 row-start-1 min-w-0 text-base font-medium text-foreground">{line.name}</dt>
-          <dd className="col-start-2 row-start-1 text-base text-foreground tabular-nums">{money(lineTotal(line))}</dd>
-          {line.description && <dd className="col-start-1 mt-0.5 text-sm text-muted-foreground">{line.description}</dd>}
-          {line.quantity > 1 && <dd className="col-start-1 mt-0.5 text-sm text-muted-foreground">{line.quantity} at {money(line.unitPrice)}</dd>}
-        </div>
-      ))}
-      {bill.tax > 0 && (
-        <div className="flex items-baseline justify-between gap-4 py-3">
-          <dt className="text-base text-foreground">Tax</dt>
-          <dd className="text-base text-foreground tabular-nums">{money(bill.tax)}</dd>
-        </div>
-      )}
-    </dl>
-  )
-}
-
-function Total({ bill }: { bill: PayBill }) {
-  return (
-    <div data-slot="pay-total" className="mt-4 flex items-baseline justify-between gap-4">
-      <p className="text-base font-medium text-foreground">Total</p>
-      <p className="font-display text-4xl leading-none text-navy tabular-nums">{money(bill.total)}</p>
-    </div>
-  )
+  const lines = bill.lines.map((line) => ({ name: line.name, value: money(lineTotal(line)), notes: [line.description, line.quantity > 1 && `${line.quantity} at ${money(line.unitPrice)}`] }))
+  return <PriceLines data-slot="pay-lines" lines={bill.tax > 0 ? [...lines, { name: "Tax", value: money(bill.tax) }] : lines} />
 }
 
 function Open({ bill, payAction, payWithSavedAction }: PayScreenProps) {
@@ -58,10 +33,11 @@ function Open({ bill, payAction, payWithSavedAction }: PayScreenProps) {
     <>
       <Lines bill={bill} />
       {bill.report && <VisitReport report={bill.report} className="mt-6" />}
-      <Total bill={bill} />
-      <p data-slot="pay-due" className={bill.status === "overdue" ? "mt-1 text-right text-sm font-medium text-warning" : "mt-1 text-right text-sm text-muted-foreground"}>
-        {dueWords(bill)}
-      </p>
+      <PriceTotal
+        data-slot="pay-total"
+        value={money(bill.total)}
+        note={<p data-slot="pay-due" className={bill.status === "overdue" ? "mt-1 text-right type-meta font-medium text-warning" : "mt-1 text-right type-meta text-muted-foreground"}>{dueWords(bill)}</p>}
+      />
       {!saved && <p className="mt-6 text-sm text-foreground">You can keep the card for future visits on the next page.</p>}
       <div className={saved ? "mt-6" : "mt-3"}>
         <PayForm label={payLabel(bill)} action={payAction} saved={saved} />
@@ -76,7 +52,7 @@ function Paid({ bill }: { bill: PayBill }) {
     <>
       <Lines bill={bill} />
       {bill.report && <VisitReport report={bill.report} className="mt-6" />}
-      <Total bill={bill} />
+      <PriceTotal data-slot="pay-total" value={money(bill.total)} />
       <p data-slot="pay-paid" className="mt-6 flex items-center gap-2 text-base font-medium text-positive-deep">
         <Check className="size-5 shrink-0 text-positive" aria-hidden />
         {paidWords(bill)}
@@ -118,7 +94,7 @@ export function PayScreen({ bill, payAction, payWithSavedAction }: PayScreenProp
       <Card className="h-fit w-full max-w-md">
         <CardContent className="p-5 pt-5 sm:p-8 sm:pt-8">
           <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={57} height={40} className="h-12 w-auto" priority />
-          <h1 className="mt-5 font-display text-4xl leading-none text-navy">Your invoice</h1>
+          <h1 className="mt-5 type-title text-navy">Your invoice</h1>
           <p className="mt-2 mb-6 text-base text-muted-foreground">
             {introWords(bill)}
           </p>

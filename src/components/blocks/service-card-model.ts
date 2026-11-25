@@ -3,10 +3,6 @@ import { PASS_SCHEDULES } from "@/lib/booking/pass-words"
 import { includedList, money, shortLength, type ServiceEntry } from "@/lib/booking/services"
 import { SERVICE_LIST } from "@/lib/services"
 
-export const CHOOSE = "Choose this service"
-export const CHOSEN = "Chosen"
-export const REMOVE = "Remove"
-
 const upperFirst = (s: string) => `${s.charAt(0).toUpperCase()}${s.slice(1)}`
 
 /** The catalogue's description as the open card shows it: "A full system check: a, b and c." is a lead line and a list of its parts; any other text is read as it is written. */
