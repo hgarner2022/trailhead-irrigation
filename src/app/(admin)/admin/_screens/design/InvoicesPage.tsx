@@ -24,8 +24,8 @@ import { INVOICE_PILL, INVOICE_STATUSES, dayWords, invoiceTotals, money, sortInv
 // buttons and Open as an icon, and the invoice chip opens the invoice. Remind confirms with the exact text, Collect payment opens "How is this
 // paid?"; a result is a toast. Pure props: the rows come in.
 
-const TEXT_BUTTON = "inline-flex min-h-11 items-center whitespace-nowrap rounded-sm px-2 text-sm font-medium text-primary-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:text-muted-foreground disabled:no-underline"
-const ICON_LINK = "inline-flex size-11 items-center justify-center rounded-sm text-primary-dark hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+const TEXT_BUTTON = "inline-flex min-h-11 items-center whitespace-nowrap rounded-sm px-2 text-sm font-medium text-primary-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:text-muted-foreground disabled:no-underline"
+const ICON_LINK = "inline-flex size-11 items-center justify-center rounded-sm text-primary-dark hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 
 const reachOf = (r: InvoiceListRow): Reach => ({ first: r.customer.split(" ")[0]!, channel: "text", phone: "(970) 555-0123", email: `${r.customer.split(" ")[0]!.toLowerCase()}@example.com` })
 const CARD: GridCardSlots = { title: "label", line: ["customerText", "jobText"], state: "status", when: ["datesText"], money: "amount", actions: "actions" }

@@ -34,10 +34,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Choose, switch, remove: one press chooses and opens the card; another card replaces the choice and the first closes; the chosen card pressed again removes the choice. Only the chosen card carries a check. */
+/** Choose, switch, remove: one press chooses and opens the card; another card replaces the choice and the first closes; the chosen card pressed again removes the choice. The chosen card carries no mark: the navy header and the open detail say it. */
 export const Default: Story = {
   play: async ({ canvas, canvasElement, userEvent, args }) => {
-    const checks = () => canvasElement.querySelectorAll("[data-slot=service-check]").length
+    const checks = () => canvasElement.querySelectorAll("[data-slot=service-dot]").length
     const repair = canvas.getByRole("button", { name: /^Sprinkler repair/ })
     const turnOn = canvas.getByRole("button", { name: /^Spring turn-on/ })
     await expect(repair).toHaveAttribute("aria-pressed", "false")
@@ -51,7 +51,7 @@ export const Default: Story = {
     await expect(repair).toHaveAttribute("aria-pressed", "false")
     // its lines come in one after another
     await waitFor(() => expect(within(canvas.getByRole("region", { name: "Spring turn-on" })).getByText("$145 up to 8 zones, then $10 a zone")).toBeVisible())
-    await expect(checks()).toBe(1)
+    await expect(checks()).toBe(0)
     await userEvent.click(turnOn)
     await expect(canvas.getByTestId("chosen")).toHaveTextContent("none")
     await expect(checks()).toBe(0)

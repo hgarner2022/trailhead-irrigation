@@ -42,7 +42,7 @@ export const DEFAULT_WIDTH = 480
 export const STEP = 40
 const KEY = "trailhead.side-panel-width"
 // The body scrolls on its own, so it is a named region in the tab order for keyboard scrolling.
-const BODY = "min-w-0 flex-1 overflow-y-auto px-6 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
+const BODY = "min-w-0 flex-1 overflow-y-auto px-6 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
 
 const subscribeTo = (media: string) => (onChange: () => void) => {
   const query = window.matchMedia(media)
@@ -114,7 +114,7 @@ function Frame({ title, description, pills, back, children, footer }: Pick<SideP
               type="button"
               data-slot="side-panel-back"
               onClick={back.onClick}
-              className="-ml-1 flex min-h-11 max-w-full items-center rounded-sm px-1 text-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="-ml-1 flex min-h-11 max-w-full items-center rounded-sm px-1 text-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span aria-hidden>‹&nbsp;</span>
               <span className="truncate">{back.label}</span>

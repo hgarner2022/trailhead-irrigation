@@ -38,7 +38,7 @@ export function AdminAccountMenu({ user, profileHref, helpHref, customerHref, on
             "flex min-h-11 items-center gap-2 rounded-lg px-1.5 outline-hidden focus-visible:ring-2",
             rail
               ? "w-full text-white ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
-              : "text-navy hover:bg-stone focus-visible:ring-primary/50",
+              : "text-navy hover:bg-stone focus-visible:ring-ring",
           )}
         >
           <span aria-hidden className={cn("flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white", rail ? "bg-sidebar-primary" : "bg-navy")}>

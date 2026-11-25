@@ -194,7 +194,7 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
                         onKeyDown={(e) => onKey(e, day)}
                         onFocus={() => setFocus(day)}
                         className={cn(
-                          "relative mx-auto flex h-11 w-full max-w-11 flex-col items-center justify-center rounded-lg text-base tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1",
+                          "relative mx-auto flex h-11 w-full max-w-11 flex-col items-center justify-center rounded-lg text-base tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
                           selected ? "settle bg-navy font-semibold text-white" : enabled ? "cursor-pointer border border-border bg-background text-navy hover:border-navy/50" : "cursor-not-allowed text-muted-foreground/50",
                           yours && (selected ? "ring-2 ring-inset ring-white/70" : "border-2 border-navy font-semibold text-navy"),
                         )}

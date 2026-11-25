@@ -111,7 +111,7 @@ export function RecordLink({ kind, id, href, className, children }: { kind: Reco
 /** A button that opens a visit's panel, or a link to it where there is no host. It carries the 44px tap target. */
 export function OpenVisit({ id, className, children }: { id: string; className?: string; children: ReactNode }) {
   const open = useOpenVisit()
-  const cls = classes("flex min-h-11 w-full items-center text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", className)
+  const cls = classes("flex min-h-11 w-full items-center text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", className)
   return open ? (
     <button type="button" className={cls} onClick={() => open(id)}>
       {children}

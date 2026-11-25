@@ -16,7 +16,7 @@ import { jobStageOf } from "./quote-model"
 // is sent), Job (once approved: "Job created" with the job's chip), the earlier and later quotes of a revision, and the summary band. While the quote is a Draft the page leads with the
 // one Quote editor card instead (QuoteEditor.tsx). Pure props.
 
-export const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+export const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 export const QUIET = `min-h-11 ${LINK}`
 export const HOW_WORDS: Record<DepositHow, string> = { card: "card", check: "check", cash: "cash", venmo: "Venmo" }
 

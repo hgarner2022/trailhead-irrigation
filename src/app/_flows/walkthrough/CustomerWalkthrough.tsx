@@ -30,8 +30,10 @@ export function CustomerWalkthrough() {
   const frame = useRef<HTMLIFrameElement>(null)
   const [step, setStep] = useState<StepKey | "none">("book")
   const [run, setRun] = useState(0)
+  const [card, setCard] = useState<"none" | "saved">("none")
   const scale = useScale()
   const at = STEPS.findIndex((s) => s.key === step)
+  const chooseCard = (c: "none" | "saved") => (setCard(c), tell("payCard", { card: c }))
   const tell = useCallback((cmd: string, extra?: object) => frame.current?.contentWindow?.postMessage({ walk: "cmd", cmd, ...extra }, "*"), [])
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
@@ -61,13 +63,23 @@ export function CustomerWalkthrough() {
                       <button type="button" disabled={at <= 0} onClick={() => tell("back")} className="min-h-11 flex-1 rounded-lg border border-input bg-background text-base font-medium text-foreground disabled:opacity-40">‹ Back</button>
                       <button type="button" disabled={at >= STEPS.length - 1} onClick={() => tell("next")} className="min-h-11 flex-[2] rounded-lg bg-primary-dark text-lg font-semibold text-white disabled:opacity-40">Next ›</button>
                     </div>
+                    {s.key === "pay" && (
+                      <div data-slot="prototype-control" role="group" aria-label="Prototype only" className="mt-4 border-t border-border pt-3">
+                        <p className="text-sm font-semibold text-navy">Prototype only</p>
+                        <p className="text-sm text-muted-foreground">Does Andrea have a card on file when she opens the pay page?</p>
+                        <div className="mt-2 flex gap-2">
+                          <button type="button" aria-pressed={card === "none"} onClick={() => chooseCard("none")} className={cn("min-h-10 flex-1 rounded-lg border text-sm font-medium", card === "none" ? "border-navy bg-navy text-white" : "border-input bg-background text-foreground")}>No card on file</button>
+                          <button type="button" aria-pressed={card === "saved"} onClick={() => chooseCard("saved")} className={cn("min-h-10 flex-1 rounded-lg border text-sm font-medium", card === "saved" ? "border-navy bg-navy text-white" : "border-input bg-background text-foreground")}>Card on file</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </li>
             )
           })}
         </ol>
-        <button type="button" onClick={() => (setStep("book"), setRun((n) => n + 1))} className="mt-4 min-h-11 rounded-lg px-3 text-base font-medium text-primary-dark underline underline-offset-2">Start over</button>
+        <button type="button" onClick={() => (setStep("book"), setCard("none"), setRun((n) => n + 1))} className="mt-4 min-h-11 rounded-lg px-3 text-base font-medium text-primary-dark underline underline-offset-2">Start over</button>
       </nav>
       <div style={{ width: FRAME_W * scale, height: FRAME_H * scale }} className="shrink-0">
         <div style={{ width: FRAME_W, height: FRAME_H, transform: `scale(${scale})`, transformOrigin: "top left" }} className="rounded-[52px] bg-navy p-3 shadow-2xl">

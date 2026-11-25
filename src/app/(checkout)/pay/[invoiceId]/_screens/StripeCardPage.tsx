@@ -36,7 +36,7 @@ export function StripeCardPage({ bill, email, onPay, onBack, processing = false 
       <p className="border-b border-dashed border-warning/60 bg-warning/10 px-4 py-2 text-center text-sm text-warning-ink">Stripe&apos;s own page, drawn here as a placeholder. No card is entered and nothing is charged.</p>
       <div className="mx-auto grid w-full max-w-4xl gap-8 px-4 py-6 md:grid-cols-2 md:gap-12 md:py-12">
         <section aria-labelledby="stripe-pay-h">
-          <button type="button" onClick={onBack} disabled={processing} className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-sm px-2 text-base text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-50">
+          <button type="button" onClick={onBack} disabled={processing} className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-sm px-2 text-base text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50">
             <ChevronLeft aria-hidden className="size-4" />
             {BUSINESS.name}
           </button>

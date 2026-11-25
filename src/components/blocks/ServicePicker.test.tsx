@@ -23,7 +23,7 @@ suite("ServicePicker", () => {
     expect(screen.queryByRole("button", { name: /New sprinkler system installation/ })).toBeNull()
     expect(screen.getByRole("button", { name: /^Water efficiency and drip/ })).toBeEnabled()
   })
-  it("makes the whole card the one control: its icon, name and short one-line meta, a ring where the check lands, and no pill or second button", () => {
+  it("makes the whole card the one control: its icon, name and short one-line meta, a ring that marks it as a choice, and no pill or second button", () => {
     const { container } = render(<ServicePicker entries={SERVICES} value={null} onChange={() => {}} />)
     expect(screen.getByRole("button", { name: /^Spring turn-on/ })).toHaveTextContent("From $145 · 1 hr")
     expect(screen.getByRole("button", { name: /^Mid-season inspection/ })).toHaveTextContent("From $145 · 1 hr 30 min")
@@ -37,7 +37,7 @@ suite("ServicePicker", () => {
     expect(container.querySelectorAll("[data-slot=service-entry] button")).toHaveLength(SERVICES.length)
     expect(screen.queryByText(/^(Details|Hide|Choose this service|Chosen|Remove)$/)).toBeNull()
     expect(container.querySelectorAll("[data-slot=service-ring]")).toHaveLength(SERVICES.length)
-    expect(container.querySelector("[data-slot=service-check]")).toBeNull()
+    expect(container.querySelector("[data-slot=service-dot]")).toBeNull()
     // the Season Pass is a white card like the others: nothing but a chosen card looks chosen
     expect((screen.getByRole("button", { name: /^Season Pass/ }).closest("li") as HTMLElement).className).not.toMatch(/bg-navy|ring-navy/)
     expect(shortLength(45)).toBe("45 min")
@@ -60,10 +60,15 @@ suite("ServicePicker", () => {
     expect(within(region).getByText("About 2 hours")).toBeInTheDocument()
     expect(within(region).getByText("$145")).toBeInTheDocument()
     expect(within(region).queryByRole("button")).toBeNull()
-    // exactly one check, on the chosen card, where its ring was; only the chosen card is open
-    expect(document.querySelectorAll("[data-slot=service-check]")).toHaveLength(1)
-    expect(repair.querySelector("[data-slot=service-check]")).not.toBeNull()
+    // the chosen card carries no mark at all (the navy header and the open detail say it): no ring, no dot, no badge; only the chosen card is open
+    expect(document.querySelectorAll("[data-slot=service-dot]")).toHaveLength(0)
     expect(repair.querySelector("[data-slot=service-ring]")).toBeNull()
+    expect(repair.querySelector("svg[data-slot=tick], [data-slot=service-check]")).toBeNull()
+    // what is included is marked by the one thin tick, in ink: never green or orange
+    rerender(<ServicePicker entries={SERVICES} value="spring-turn-on" onChange={onChange} />)
+    const ticks = [...screen.getByRole("region", { name: "Spring turn-on" }).querySelectorAll("[data-slot=service-included] [data-slot=tick]")]
+    expect(ticks.length).toBeGreaterThan(0)
+    for (const tick of ticks) expect(tick.getAttribute("class")).not.toMatch(/positive|success|primary/)
     expect(screen.getAllByRole("region")).toHaveLength(1)
   })
   it("removes the choice with a second press, and a different card replaces it", async () => {

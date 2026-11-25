@@ -40,7 +40,7 @@ import { NOW, noteOk } from "./job-fixtures"
 // to reach them), Property, Consent. Every record named is a chip. Every action that reaches the customer or their money confirms in a dialog
 // with the effect and the customer's channel; a result is a toast, never a message in a section. Pure props, nothing wired.
 
-const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 export type CustomerDialog = "archive" | "message" | "collect" | "card-link" | "refund" | "remind" | "edit" | "merge" | "delete" | null
 
 const scrollTo = (id: string) => () => {
@@ -87,7 +87,7 @@ function Earlier({ area, customer }: { area: PassArea; customer: string }) {
   )
 }
 
-/** The Season Pass block exists only for a customer who has one: a customer without a pass has no block at all (selling one is New job, then Season Pass, and More, then Sell a Season Pass). From November 1 a holder's block offers Reserve next season. */
+/** The Season Pass block exists only for a customer who has one: a customer without a pass has no block at all (selling one is New job, then Season Pass, and More, then Sell a Season Pass). */
 function SeasonPassCard({ d }: { d: CustomerPageData }) {
   const { area } = d
   if (area.kind !== "pass") return null
@@ -104,11 +104,6 @@ function SeasonPassCard({ d }: { d: CustomerPageData }) {
           <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
             Renewed as {seasonChip(area.renewedAs, d.name)}
           </p>
-        )}
-        {area.reserveNext && (
-          <Button asChild variant="outline" className="min-h-11 self-start">
-            <Link href={`/admin/jobs?new=1&customer=${d.id}&service=season-pass&renew=${area.jobId}`}>Reserve next season</Link>
-          </Button>
         )}
         <Earlier area={area} customer={d.name} />
       </div>
@@ -143,8 +138,8 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
   const act = (label: string, onClick: () => void): FooterAction => ({ label, onClick })
   const unpaid = d.unpaid !== undefined
   const secondary: [FooterAction] | [FooterAction, FooterAction] = unpaid ? [act("Send a message", open("message")), act("Collect payment", open("collect"))] : [act("Send a message", open("message"))]
-  // Selling a pass lives here and in New job, never in a card of its own; a lapsed holder is offered the next season instead.
-  const sell: FooterAction = d.area.kind === "pass" ? (d.area.reserveNext ? { label: "Reserve next season", href: `/admin/jobs?new=1&customer=${d.id}&service=season-pass&renew=${d.area.jobId}` } : { label: "" }) : { label: d.area.earlier.length ? "Reserve next season" : "Sell a Season Pass", href: `/admin/jobs?new=1&customer=${d.id}&service=season-pass` }
+  // Selling a pass lives here and in New job, never in a card of its own. A pass renews itself, so a holder has no sell or reserve action at all.
+  const sell: FooterAction = d.area.kind === "pass" ? { label: "" } : { label: "Sell a Season Pass", href: `/admin/jobs?new=1&customer=${d.id}&service=season-pass` }
   const more = [act("Edit details", open("edit")), { label: "New quote", href: `/admin/quotes?new=1&customer=${d.id}` }, ...(sell.label ? [sell] : []), act("Send card link", open("card-link")), act("Merge", open("merge")), ...(archivedAt ? [] : [act("Archive customer", open("archive"))])]
   const pay = row ?? (d.billing.payments[0] ? { amount: d.billing.payments[0].amount, how: d.billing.payments[0].how.split(" ")[0]!.toLowerCase() } : undefined)
   const inv = row?.number ? row : d.openInvoice ? { number: d.openInvoice.number, amount: d.openInvoice.amount, due: d.openInvoice.due, pastDue: false } : undefined

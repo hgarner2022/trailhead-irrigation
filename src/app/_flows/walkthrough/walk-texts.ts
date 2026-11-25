@@ -1,4 +1,5 @@
 import { receiptEmail } from "@/emails/account-messages"
+import { invoiceEmail } from "@/emails/invoice"
 import type { InvoiceData, VisitData } from "@/emails/types"
 import { clock12 } from "@/lib/booking/day-time"
 import { dateConfirmText, dateSetText, dayBeforeText, invoiceText, onTheWayText } from "@/sms/texts"
@@ -49,6 +50,22 @@ function inChannel(kind: Kind, body: string, f: TextFacts, channel: ContactChann
 /** The date-set message alone: what the booking sends the moment it is made. It is the first text this number ever gets, so it ends with the opt-out line (`isFirstText`). */
 export function bookingMessages(f: TextFacts, channel: ContactChannel): FlowText[] {
   return inChannel("date-set", dateSetText({ ...base, firstName: f.firstName, visit: visitOf(f) }, { optOut: true }), f, channel)
+}
+
+// The invoice the Pay an invoice step starts from: $115 for the repair, the amount the pay page shows.
+const invoiceOf = (f: TextFacts): InvoiceData =>
+  ({ ...base, firstName: f.firstName, invoiceNumber: "INV-2027-0001", visitName: "repair", address: f.street, lines: [{ name: "Repair", amount: 115 }], total: 115, dueOn: "2027-12-01", payUrl: `${ORIGIN}/pay/inv_1?token=abc` }) as InvoiceData
+
+/** The invoice message alone, which is where the Pay an invoice step begins: the invoice text and the real invoice email, each with its one pay link. */
+export function invoiceMessages(f: TextFacts, channel: ContactChannel): FlowText[] {
+  const d = invoiceOf(f)
+  const out: FlowText[] = []
+  if (channel !== "email") out.push({ id: "invoice-text", channel: "text", body: invoiceText(d, { optOut: false }) })
+  if (channel !== "text") {
+    const mail = invoiceEmail(d)
+    out.push({ id: "invoice-email", channel: "email", subject: mail.subject, body: mail.text })
+  }
+  return out
 }
 
 /** The whole sequence for the Texts and emails step. */

@@ -22,7 +22,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           data-slot="input"
           aria-invalid={!!error}
           className={cn(
-            "h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-base md:text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50",
+            "h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-base md:text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
             error && "border-red-500 focus-visible:ring-red-500/50",
             className
           )}

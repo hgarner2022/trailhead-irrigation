@@ -8,7 +8,7 @@ import { BookingForm } from "./BookingForm"
 // below run the whole booking, step by step at 375 and 1280, for the three people who can meet the form at an address Trailhead already holds, or not.
 //
 // 1. SAME EMAIL, the fast path. The customer sees: the picked address with an "On file" mark (nothing about who); the zones and the access answer already filled in from the yard, each with "On file", so Details
-//    is one tap; on the contact step, once the email they type is the one on file, their name and phone fill in (with one small settle) so nothing is retyped; "Use the card on file" with its brand and last
+//    is one tap; on the contact step, once the email they type is the one on file, their first and last name fill in (with one small settle), the phone stays empty; "Use the card on file" with its brand and last
 //    four; Review marks the address "On file". The office sees: a booking linked to the existing customer and property, no duplicate, nothing to check.
 // 2. DIFFERENT EMAIL, a new person at a known property. The customer sees: the same "On file" address and the same prefilled yard facts, but nothing fills in on the contact step and no card is offered:
 //    the card step asks for a card as for a new customer. The office sees: the booking at the same property with the note "Email differs from the one on file" (Admin / Requests, "New, address on file, another email").
@@ -35,7 +35,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A repeat customer is recognised by the address alone: no sign-in, no code. Three people, each as a whole booking at 375 and 1280: the same email (the fast path: the address marked On file, the yard already filled in, the name and phone filled in once the email matches, the card on file), a different email at a known address (a new person at a known property: nothing fills in, a card is asked, the office is told Email differs from the one on file), and a new address. Never shown back: a gate code, an access note, a card number beyond its brand and last four, anything personal before the email is confirmed.",
+          "A repeat customer is recognised by the address alone: no sign-in, no code. Three people, each as a whole booking at 375 and 1280: the same email (the fast path: the address marked On file, the yard already filled in, the first and last name filled in once the email matches (the phone empty), the card on file), a different email at a known address (a new person at a known property: nothing fills in, a card is asked, the office is told Email differs from the one on file), and a new address. Never shown back: a gate code, an access note, a card number beyond its brand and last four, anything personal before the email is confirmed.",
       },
     },
   },
@@ -71,12 +71,12 @@ const sameDetails = on({ initial: { step: "details", service: "spring-turn-on", 
 })
 export const SameEmailDetailsPhone: Story = { ...sameDetails.phone }
 export const SameEmailDetailsLaptop: Story = { ...sameDetails.laptop }
-/** 1c. Contact: only the email is typed; the name and phone fill in once it is the one on file, and settle in once. */
+/** 1c. Contact: only the email is typed; the first and last name fill in once it is the one on file, and settle in once. The phone stays empty. */
 const sameContact = on({ initial: { step: "contact", service: "repair", fields: { ...known, ...yard, email: SAME }, picks: picked } }, "Same email, 3 Contact", {
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getByLabelText("First name")).toHaveValue("Andrea"))
     await expect(canvas.getByLabelText("Last name")).toHaveValue("Dalton")
-    await expect(canvas.getByLabelText("Phone")).toHaveValue("(970) 555-0123")
+    await expect(canvas.getByLabelText("Phone")).toHaveValue("")
   },
 })
 export const SameEmailContactPhone: Story = { ...sameContact.phone }
@@ -161,7 +161,7 @@ const choose = async (c: ReturnType<typeof within>, user: { click: (e: Element) 
   await user.click(await c.findByRole("button", { name }))
 }
 
-/** The whole booking as the SAME-EMAIL customer, clicked: address (On file), the repair card, Details (access already answered), the soonest time, only the email typed, the card on file, Review, booked. */
+/** The whole booking as the SAME-EMAIL customer, clicked: address (On file), the repair card, Details (access already answered), the soonest time, the email typed and the phone added by hand, the card on file, Review, booked. */
 export const WholeBookingSameEmailPhone: Story = { ...phone, name: "Same email, whole booking, phone" }
 export const WholeBookingSameEmailTest: Story = {
   ...phone,
@@ -183,7 +183,8 @@ export const WholeBookingSameEmailTest: Story = {
     await next()
     await userEvent.type(await c.findByLabelText("Email"), SAME)
     await waitFor(() => expect(c.getByLabelText("First name")).toHaveValue("Andrea"))
-    await expect(c.getByLabelText("Phone")).toHaveValue("(970) 555-0123")
+    await expect(c.getByLabelText("Phone")).toHaveValue("")
+    await userEvent.type(c.getByLabelText("Phone"), "9705550123")
     await next()
     await expect(await c.findByText("Visa ending 4242")).toBeInTheDocument()
     await next()

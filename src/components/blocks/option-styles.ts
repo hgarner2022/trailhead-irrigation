@@ -9,15 +9,15 @@ import { cn } from "@/lib/utils"
 const BASE = "opt cursor-pointer rounded-lg border"
 /** where the focus ring comes from: the element itself (a button), a hidden input before it (`peer`), or a hidden input inside it (a label) */
 const FOCUS = {
-  self: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
-  peer: "peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2",
-  has: "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/50 has-[:focus-visible]:ring-offset-2",
+  self: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+  peer: "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
+  has: "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2",
 } as const
 
 /** The same ring drawn round a container whose control is inside it and fills it (the service card: the ring follows the card's own corners, on white and on navy alike). */
 export const optionFocusWithin = FOCUS.has
 
-/** `settle: false` is for an option whose container settles instead (the service card, whose header is the option and whose card holds the detail). */
+/** `settle: false` is for an option that answers by opening instead of a scale (the service card, whose header is the option and whose card grows to hold the detail). */
 export function optionClass({ selected, error = false, focus = "self", settle = true }: { selected: boolean; error?: boolean; focus?: keyof typeof FOCUS; settle?: boolean }): string {
   return cn(BASE, FOCUS[focus], selected ? cn(settle && "settle", "border-navy bg-navy text-white") : cn("bg-background text-navy", error ? "border-destructive" : "border-border hover:border-navy/40"))
 }

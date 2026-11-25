@@ -77,7 +77,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
   const town = townOf(fields)
   // A repeat customer is recognised by the address alone (Hannah, Nov 23 2026): nothing personal is shown, the yard's zone count and controller prefill, and the card on file is offered on the card step to the email on file only.
-  const { property, offered, otherCard, setOtherCard, filled, prefillOnce } = useKnownProperty({ place: fields.place, email: fields.email, known, other: initial.other, contactStep: step === "contact" && !quote, fields, setField: (f, v) => set(f, v) })
+  const { property, offered, otherCard, setOtherCard, prefillOnce } = useKnownProperty({ place: fields.place, email: fields.email, known, other: initial.other, contactStep: step === "contact" && !quote, fields, setField: (f, v) => set(f, v) })
   const cardNow: CardChoice = card === "file" && !offered ? null : card
   const first = useRef(true)
 
@@ -224,7 +224,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
     case "service":
       body = (
         <>
-          <p className="-mt-3 mb-6 text-base text-muted-foreground">Choose what you need.</p>
+          <p className="-mt-3 mb-6 text-base text-muted-foreground">How can we help?</p>
           <StepField error={stepError}><ServicePicker entries={lists.bookable} value={serviceKey} onChange={choose} onRequestQuote={startQuote} /></StepField>
         </>
       )
@@ -270,7 +270,6 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
             channel={channel}
             onChannel={setChannel}
             attempted={attempted}
-            filled={filled}
           />
           {quote && <p data-slot="quote-happens" className="mt-8 text-base text-foreground">{happensWords({ channel, phone: fields.phone, email: fields.email, quote: true, callback: false })}</p>}
         </>

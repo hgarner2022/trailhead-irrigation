@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect } from "storybook/test"
 import { OnFileMark } from "./OnFileMark"
 
-// "On file": a quiet chip with a check that draws in once, beside an address, the zones or the access answer that started from what we hold.
+// "On file": a quiet chip with the one thin tick (Tick) that draws in once, beside an address, the zones or the access answer that started from what we hold.
 const meta = { title: "Blocks/OnFileMark", component: OnFileMark, parameters: { layout: "centered" } } satisfies Meta<typeof OnFileMark>
 export default meta
 type Story = StoryObj<typeof meta>

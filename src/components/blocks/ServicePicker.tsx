@@ -36,7 +36,7 @@ function QuoteRow({ onRequestQuote }: { onRequestQuote: () => void }) {
       aria-label={REQUEST_QUOTE}
       onPointerDown={() => setPlay((n) => n + 1)}
       onClick={onRequestQuote}
-      className="svc-quote flex min-h-[5.5rem] w-full cursor-pointer items-center gap-4 rounded-lg border border-dashed border-navy/25 p-4 text-left hover:border-navy/50 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+      className="svc-quote flex min-h-[5.5rem] w-full cursor-pointer items-center gap-4 rounded-lg border border-dashed border-navy/25 p-4 text-left hover:border-navy/50 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <span className="flex size-14 shrink-0 items-center justify-center rounded-lg border border-border bg-background">
         <ServiceIcon key={play} name="quote" />

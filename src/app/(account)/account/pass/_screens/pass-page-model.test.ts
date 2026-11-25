@@ -122,7 +122,7 @@ describe("passHeadline", () => {
     expect(passHeadline(booked, "2027-04-20")).toMatchObject({ action: "change-day", kind: "turn-on", title: "Next up: spring turn-on, May 5." })
     const done: Pass = { ...pass, visits: pass.visits.map((v) => ({ ...v, completedAt: v.completedAt ?? "2027-10-05T16:40:00Z" })) }
     expect(passHeadline(done, "2027-10-20")).toMatchObject({ action: null, title: "Your 2027 season is done." })
-    expect(passHeadline(done, "2027-11-02")).toMatchObject({ action: "reserve-next" })
+    expect(passHeadline(done, "2027-11-02")).toMatchObject({ action: null, title: "Your 2027 season is done.", line: "We'll email you in January about 2028." })
   })
 })
 

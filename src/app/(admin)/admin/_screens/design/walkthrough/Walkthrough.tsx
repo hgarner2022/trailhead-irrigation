@@ -81,7 +81,7 @@ function Strip({ stack, onJump, onStartOver }: { stack: Route[]; onJump: (index:
               {last ? (
                 <span aria-current="page" className="font-medium text-foreground">{name}</span>
               ) : (
-                <button type="button" onClick={() => onJump(i)} className="min-h-11 rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 md:min-h-8">
+                <button type="button" onClick={() => onJump(i)} className="min-h-11 rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-8">
                   {name}
                 </button>
               )}

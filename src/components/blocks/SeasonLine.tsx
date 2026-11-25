@@ -1,4 +1,3 @@
-import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Pass, PassVisit, TimingPreference } from "@/lib/admin/types"
 import { monthName, monthShort, preferenceLabel, preferenceOf, writtenDate } from "@/lib/admin/format"
@@ -114,13 +113,12 @@ function Dot({ visit, crowded, preferences }: { visit: PassVisit; crowded: boole
         className={cn(
           "absolute bottom-0 left-1/2 flex -translate-x-1/2 translate-y-[calc(50%+1px)] items-center justify-center rounded-full",
           blowout ? "size-[18px]" : "size-3.5",
-          state === "completed" && "bg-positive",
+          state === "completed" && "bg-navy",
           state === "scheduled" && "bg-primary",
           state === "window" && "border-2 border-navy bg-background",
           preference && "ring-2 ring-primary/40 ring-offset-2",
         )}
       >
-        {state === "completed" && <Check className="size-2.5 text-white" strokeWidth={3} aria-hidden />}
       </span>
     </div>
   )

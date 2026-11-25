@@ -57,7 +57,7 @@ export function SegmentedControl({ options, value, onChange, label, className }:
             onClick={() => !o.disabled && onChange(o.value)}
             onKeyDown={(e) => move(e, i)}
             className={cn(
-              "min-h-11 min-w-16 rounded-md px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+              "min-h-11 min-w-16 rounded-md px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               o.disabled ? "cursor-not-allowed text-muted-foreground opacity-50" : "cursor-pointer",
               on ? "bg-navy text-white" : o.disabled ? "" : "text-muted-foreground hover:bg-stone hover:text-foreground",
             )}

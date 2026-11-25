@@ -35,8 +35,9 @@ describe("what a found address allows", () => {
     expect(cardToOffer(null, "andrea.dalton@example.com")).toBeNull()
     expect(cardToOffer({ ...FIXTURE_KNOWN, card: null }, "andrea.dalton@example.com")).toBeNull()
   })
-  it("fills the name and phone in only once the typed email is the one on file, and starts access from whether anyone must be home", () => {
-    expect(contactToFill(FIXTURE_KNOWN, "ANDREA.dalton@example.com")).toEqual({ firstName: "Andrea", lastName: "Dalton", phone: "(970) 555-0123" })
+  it("fills the first and last name in, and nothing else, only once the typed email is the one on file, and starts access from whether anyone must be home", () => {
+    expect(contactToFill(FIXTURE_KNOWN, "ANDREA.dalton@example.com")).toEqual({ firstName: "Andrea", lastName: "Dalton" })
+    expect(Object.keys(contactToFill(FIXTURE_KNOWN, "andrea.dalton@example.com")!).sort()).toEqual(["firstName", "lastName"])
     expect(contactToFill(FIXTURE_KNOWN, "andrea@work.example.com")).toBeNull()
     expect(contactToFill(FIXTURE_KNOWN, "")).toBeNull()
     expect(contactToFill(null, "andrea.dalton@example.com")).toBeNull()

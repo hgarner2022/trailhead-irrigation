@@ -25,7 +25,7 @@ type Channel = "email" | "text"
 const CHANNEL_WORDS: Record<Channel, string> = { email: "Email", text: "Text" }
 const SOURCES = ["They asked me by phone", "In person", "Website form"] as const
 const SELECT = "min-h-11 rounded-lg border border-input bg-background px-3 text-sm"
-const LINK = "inline-flex min-h-11 items-center rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+const LINK = "inline-flex min-h-11 items-center rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 
 function Switch({ checked, label, onChange }: { checked: boolean; label: string; onChange: (next: boolean) => void }) {
   return (
@@ -35,7 +35,7 @@ function Switch({ checked, label, onChange }: { checked: boolean; label: string;
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className="group inline-flex size-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+      className="group inline-flex size-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <span className={cn("flex h-6 w-11 items-center rounded-full border px-0.5 transition-colors", checked ? "border-primary-dark bg-primary-dark" : "border-input bg-stone")}>
         <span className={cn("size-5 rounded-full bg-white shadow-sm transition-transform", checked ? "translate-x-5" : "translate-x-0")} />

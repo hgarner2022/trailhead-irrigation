@@ -18,7 +18,7 @@ export interface PassJobFacts {
 /**
  * Canceled (the job's `cancelled_at`), pending (not sold yet), lapsed once the season's year is over, else active. A season runs to the end of
  * its calendar year even though `currentSeason` rolls on November 1 (the renewal sale): a pass bought for 2026 is still active on
- * November 17, with its blowout window open until the 15th and "Reserve next season" on its page.
+ * November 17, with its blowout window open until the 15th.
  * `today` is the Mountain day string (`YYYY-MM-DD`).
  */
 export function passStatus(job: PassJobFacts, today: string): PassStatusValue {

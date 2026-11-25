@@ -1,6 +1,6 @@
 "use client"
 
-import { Check } from "lucide-react"
+import { Tick } from "@/components/blocks/Tick"
 import { Button } from "@/components/ui/button"
 import { CARD_ON_FILE_WORDS } from "@/lib/booking/known-address"
 import { CARD_SAVED, cardCharged } from "./booking-form-model"
@@ -37,7 +37,7 @@ export function BookingCard({ saved, pass, onSkip, onFile, other = false, onOthe
     <div data-slot="booking-card" className="space-y-6">
       {useFile ? (
         <p data-slot="card-on-file" className="flex items-center gap-3 rounded-lg border-2 border-navy bg-background px-4 py-4 type-body text-foreground">
-          <Check aria-hidden className="size-5 shrink-0 text-positive" />
+          <Tick className="size-5" />
           <span>
             <span className="block text-sm text-muted-foreground">{CARD_ON_FILE_WORDS.use}</span>
             {onFile}
@@ -45,7 +45,7 @@ export function BookingCard({ saved, pass, onSkip, onFile, other = false, onOthe
         </p>
       ) : saved ? (
         <p data-slot="card-saved" className="flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-4 type-body text-foreground">
-          <Check aria-hidden className="size-5 shrink-0 text-positive" />
+          <Tick className="size-5" />
           {CARD_SAVED}
         </p>
       ) : (

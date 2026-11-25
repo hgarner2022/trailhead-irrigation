@@ -24,7 +24,7 @@ const initialsOf = (name: string) =>
     .map((w) => w[0]!.toUpperCase())
     .join("")
 
-const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 
 export function AsideCard({ name, href, phone, address, title = "Customer" }: AsideCardProps) {
   return (

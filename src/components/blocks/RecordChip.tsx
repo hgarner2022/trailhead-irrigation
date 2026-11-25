@@ -34,7 +34,7 @@ export interface RecordChipProps {
   className?: string
 }
 
-const LINK = "rounded-sm text-primary-dark underline decoration-primary/40 underline-offset-2 hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+const LINK = "rounded-sm text-primary-dark underline decoration-primary/40 underline-offset-2 hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 
 export function RecordChip({ kind, name, href, size = "row", noMark, flag, short, onOpen, preview, previewOpen, className }: RecordChipProps) {
   const [open, setOpen] = useState(Boolean(previewOpen))

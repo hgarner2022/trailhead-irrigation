@@ -181,9 +181,11 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
       slot="visit-panel"
       notice={
         !collectPlan && notes.length > 0 ? (
-          <p data-slot="customer-change" className="text-sm text-muted-foreground">
-            {notes.join(" ")}
-          </p>
+          <div data-slot="customer-change" className="space-y-1 text-sm text-muted-foreground">
+            {notes.map((note) => (
+              <p key={note}>{note}</p>
+            ))}
+          </div>
         ) : undefined
       }
       footer={

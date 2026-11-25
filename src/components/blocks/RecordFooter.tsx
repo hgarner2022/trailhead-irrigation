@@ -9,7 +9,8 @@ import { FooterSlotContext } from "./record-slot"
 
 // The footer of a record panel (docs/DESIGN.md, "The recipe"): left to right one filled primary, up to two outlines, a More menu and one
 // destructive ghost at the far right. A button either acts at once (with ten seconds of Undo, which the caller's action raises) or
-// opens one dialog; nothing in the footer grows a form. On a phone the primary has its own row. Pure props: the caller says which
+// opens one dialog; nothing in the footer grows a form. On a phone the primary has its own row. The buttons use px-4 (the destructive ghost px-2, its hover
+// fill is the only edge) so a state with four buttons and a destructive one still fits one row at the panel's default 480px width. Pure props: the caller says which
 // buttons the record's state allows (`footerPlan`, `visitFooterPlan`) and what each does.
 
 export interface FooterAction {
@@ -37,7 +38,7 @@ export interface RecordFooterProps {
 }
 
 function Act({ action, variant, className }: { action: FooterAction; variant: "default" | "outline" | "ghost"; className?: string }) {
-  const cls = cn("min-h-11", className)
+  const cls = cn("min-h-11 px-4", className)
   if (action.href && !action.disabled)
     return (
       <Button variant={variant} className={cls} asChild>
@@ -69,7 +70,7 @@ export function RecordFooter({ primary, secondary, more = [], destructive, destr
       {(more.length > 0 || inMenu) && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button type="button" variant="outline" className="min-h-11">
+            <Button type="button" variant="outline" className="min-h-11 px-4">
               More
             </Button>
           </DropdownMenuTrigger>
@@ -100,7 +101,7 @@ export function RecordFooter({ primary, secondary, more = [], destructive, destr
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      {destructive && !inMenu && <Act action={destructive} variant="ghost" className="ml-auto text-destructive hover:text-destructive" />}
+      {destructive && !inMenu && <Act action={destructive} variant="ghost" className="ml-auto px-2 text-destructive hover:text-destructive" />}
     </div>
   )
 }

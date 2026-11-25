@@ -94,7 +94,7 @@ function Row({ item, now, onAction, onDismiss, readOnly }: { item: Attention; no
   const href = attentionHref(item)
   const record = attentionRecord(item)
   const layout = "flex min-w-0 flex-1 items-start gap-3"
-  const link = cn(layout, "-mx-2 min-h-11 rounded-lg px-2 py-1 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50")
+  const link = cn(layout, "-mx-2 min-h-11 rounded-lg px-2 py-1 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring")
   return (
     <li data-kind={item.kind} className="flex flex-col gap-2 py-3 has-[[data-dismissed]]:hidden sm:flex-row sm:items-center sm:gap-3">
       {record ? (

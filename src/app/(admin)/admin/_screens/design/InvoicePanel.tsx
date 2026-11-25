@@ -29,7 +29,7 @@ import { NOW, noteOk } from "./job-fixtures"
 // with Pause), Messages and Notes and history; the aside holds the Customer, the Job and the Property. Every action that reaches the customer
 // confirms with the exact effect and their channel; a result is a toast and the section changes state (a new reminder row, a new pill). Pure props.
 
-const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 const scrollTo = (id: string) => () => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
 type Dialog = "remind" | "collect" | "resend" | "cancel" | null
 

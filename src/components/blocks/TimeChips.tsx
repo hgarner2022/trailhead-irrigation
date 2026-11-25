@@ -32,7 +32,7 @@ export interface TimeChipsProps {
   recommendedLook?: RecommendedLook
 }
 
-const CHIP = "flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2"
+const CHIP = "flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2"
 
 export function TimeChips({ options, value, onChange, anyTime = false, legend, hideLegend = false, hint, density = "page", error, className, recommendedStart = null, recommendedLook }: TimeChipsProps) {
   const name = useId()

@@ -110,7 +110,7 @@ function PersonFacts({ person, apply, timeOff }: { person: Person; apply: Apply;
           ))}
         </div>
       </FormRow>
-      <FormRow label="Hours" inline htmlFor={`${person.id}-hours-start`} hint={timeOff ? "The weekly rule. A day off or a dentist visit goes under Time off." : "The weekly rule."}>
+      <FormRow label="Hours" inline className="lg:col-span-2" htmlFor={`${person.id}-hours-start`} hint={timeOff ? "The weekly rule. A day off or a dentist visit goes under Time off." : "The weekly rule."}>
         <div className="flex items-center gap-2">
           <TimeField id={`${person.id}-hours-start`} label={`${name} day starts`} value={hours.start} onChange={(v) => apply((s, a) => setHours(s, person.id, "hoursStart", v, a))} />
           <span className="text-sm text-muted-foreground">to</span>
@@ -118,8 +118,8 @@ function PersonFacts({ person, apply, timeOff }: { person: Person; apply: Apply;
         </div>
       </FormRow>
       {timeOff && <TimeOffRow person={person} t={timeOff} />}
-      <FormRow label="Most per day, by kind" inline htmlFor={`${person.id}-most-turn-on`} hint="The most of each kind in one day. 0 means this person takes none of that kind.">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <FormRow label="Most per day, by kind" inline className="lg:col-span-2" htmlFor={`${person.id}-most-turn-on`} hint="The most of each kind in one day. 0 means this person takes none of that kind.">
+        <div className="grid max-w-md grid-cols-2 gap-3 sm:grid-cols-4">
           {PER_DAY.map((kind) => (
             <div key={kind} className="min-w-0 space-y-1">
               <span aria-hidden className="block text-xs text-muted-foreground">
