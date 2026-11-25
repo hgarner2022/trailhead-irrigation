@@ -85,7 +85,7 @@ export const JulyServicesLaptop = servicesJuly.laptop
 /** November 20, after the last window closed: the pass is next season's and both visits are months away. */
 const servicesNovember = on(at("november", { step: "service" }), "November, service", {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: /Season Pass 2028/ })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /^Season Pass 2028/ })).toBeInTheDocument()
   },
 })
 export const NovemberServicesPhone = servicesNovember.phone
