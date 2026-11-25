@@ -102,10 +102,10 @@ suite("ServicePicker", () => {
     expect(screen.getByRole("button", { name: /^Fall blowout/ })).toHaveAccessibleDescription("From $95 · 30 min")
     expect(screen.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAccessibleDescription("$145 · 2 hr")
     const card = screen.getByRole("button", { name: /^Fall blowout/ }).closest("li") as HTMLElement
-    expect(card.querySelector("[data-slot=service-opener]")).toHaveTextContent("Details")
+    expect(card.querySelector("[data-slot=details-pill]")).toHaveTextContent("Details")
     // (a press anywhere on the row reaches this button through its stretched target, which needs the stylesheet: the story HeaderPressTest presses the tile, the meta line and the pill)
     await userEvent.click(screen.getByRole("button", { name: /^Fall blowout/ }))
-    expect(card.querySelector("[data-slot=service-opener]")).toHaveTextContent("Hide")
+    expect(card.querySelector("[data-slot=details-pill]")).toHaveTextContent("Hide")
     expect(shortLength(45)).toBe("45 min")
     expect(shortLength(120)).toBe("2 hr")
   })

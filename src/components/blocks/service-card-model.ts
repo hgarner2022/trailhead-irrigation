@@ -6,8 +6,6 @@ import { SERVICE_LIST } from "@/lib/services"
 export const CHOOSE = "Choose this service"
 export const CHOSEN = "Chosen"
 export const REMOVE = "Remove"
-export const DETAILS = "Details"
-export const HIDE = "Hide"
 
 const upperFirst = (s: string) => `${s.charAt(0).toUpperCase()}${s.slice(1)}`
 

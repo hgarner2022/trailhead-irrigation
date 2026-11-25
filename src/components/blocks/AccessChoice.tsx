@@ -2,6 +2,7 @@
 
 import { useId } from "react"
 import { cn } from "@/lib/utils"
+import { optionClass, optionDetailClass } from "./option-styles"
 
 // "Can we reach the controller and the water shut-off without you?" (Jobber asks the same as a required access confirmation): most visits need nobody home, so the answer decides
 // whether the day step offers days with Ryan arriving on his own, or days for a customer who must be there. Two large native radios, so the arrow keys work; required, so an error
@@ -36,14 +37,10 @@ export function AccessChoice({ value, onChange, error, compact, className }: Acc
             <label key={choice.value} className="relative block">
               <input type="radio" name={`${id}-access`} value={choice.value} checked={checked} aria-invalid={(Boolean(error) && i === 0) || undefined} onChange={() => onChange(choice.value)} className="peer sr-only" />
               <span
-                className={cn(
-                  "flex cursor-pointer flex-col justify-center rounded-lg border px-4 py-3 text-left transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2",
-                  compact ? "min-h-14" : "min-h-20",
-                  checked ? "border-navy bg-navy text-white" : error ? "border-destructive bg-background text-navy" : "border-border bg-background text-navy hover:border-navy/40",
-                )}
+                className={cn(optionClass({ selected: checked, error: Boolean(error), focus: "peer" }), "flex flex-col justify-center px-4 py-3 text-left", compact ? "min-h-14" : "min-h-20")}
               >
                 <span className="font-display text-2xl leading-none">{compact ? choice.short : choice.name}</span>
-                {!compact && <span className={cn("mt-1.5 text-sm", checked ? "text-white/85" : "text-muted-foreground")}>{choice.detail}</span>}
+                {!compact && <span className={cn("mt-1.5 text-sm", optionDetailClass(checked))}>{choice.detail}</span>}
               </span>
             </label>
           )

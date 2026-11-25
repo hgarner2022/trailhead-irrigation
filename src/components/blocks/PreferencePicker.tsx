@@ -2,6 +2,7 @@
 
 import { useId } from "react"
 import { cn } from "@/lib/utils"
+import { optionClass, optionDetailClass } from "./option-styles"
 import type { TimingPreference } from "@/lib/admin/types"
 import { TIMING_CHOICES, TIMING_LABEL, TIMING_TITLE, timingMonth, type TimingKind } from "@/lib/portal/preference-words"
 
@@ -30,14 +31,11 @@ export function PreferencePicker({ kind, value, onChange, legend = false, classN
             <label
               key={choice}
               data-preference={choice}
-              className={cn(
-                "flex min-h-14 cursor-pointer flex-col justify-center rounded-lg border px-4 py-2 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/50 has-[:focus-visible]:ring-offset-2",
-                checked ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40",
-              )}
+              className={cn(optionClass({ selected: checked, focus: "has" }), "flex min-h-14 flex-col justify-center px-4 py-2")}
             >
               <input type="radio" name={name} value={choice} checked={checked} onChange={() => onChange(choice)} className="sr-only" />
               <span className="text-base font-semibold leading-tight">{TIMING_LABEL[choice]}</span>
-              <span className={cn("text-sm", checked ? "text-white/80" : "text-muted-foreground")}>{timingMonth(kind, choice)}</span>
+              <span className={cn("text-sm", optionDetailClass(checked))}>{timingMonth(kind, choice)}</span>
             </label>
           )
         })}
