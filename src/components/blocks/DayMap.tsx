@@ -7,7 +7,7 @@ import "maplibre-gl/dist/maplibre-gl.css"
 import { cn } from "@/lib/utils"
 import type { Person, Visit } from "@/lib/admin/types"
 import { EmptyState } from "./EmptyState"
-import { hasPoint, personClass, readTokenColour, routeNumbers, routesOf, shadeOf, stopLine, stopsDescription, townBounds, type Stop } from "./day-map-helpers"
+import { hasPoint, personClass, readTokenColour, routeNumbers, routesOf, shadeOf, stopLine, stopsDescription, townBounds, type HollowStop, type Stop } from "./day-map-helpers"
 
 // One day's stops on real geography: open tiles from OpenFreeMap (no key),
 // one numbered pin per visit in its person's colour (the number is the stop's place in that person's route), a line through each person's route in their colour, a translucent patch
@@ -28,10 +28,32 @@ export interface DayMapProps {
   people: Person[]
   selectedId?: string
   onSelect: (visitId: string | undefined) => void
+  /** jobs with no day, drawn as hollow pins (the Schedule's Map panel); they are not part of any route */
+  hollow?: readonly HollowStop[]
+  /** the pin to light, a stop's id or a hollow stop's id, from outside the map */
+  hoverId?: string
+  /** the pointer is on a pin (its id) or has left it (undefined) */
+  onHover?: (id: string | undefined) => void
   className?: string
 }
 
 const STYLE = "https://tiles.openfreemap.org/styles/liberty"
+/** Used when the tile style cannot be fetched (offline, blocked): a plain background, so the pins and route lines still draw. */
+const BLANK_STYLE = { version: 8 as const, sources: {}, layers: [{ id: "background", type: "background" as const, paint: { "background-color": "#f5f5f4" } }] }
+const STYLE_WAIT_MS = 4000
+
+/** The tile style when it answers in time, else the plain one. */
+async function styleOrBlank(): Promise<string | typeof BLANK_STYLE> {
+  try {
+    const ctl = new AbortController()
+    const timer = setTimeout(() => ctl.abort(), STYLE_WAIT_MS)
+    const res = await fetch(STYLE, { signal: ctl.signal })
+    clearTimeout(timer)
+    return res.ok ? STYLE : BLANK_STYLE
+  } catch {
+    return BLANK_STYLE
+  }
+}
 const SHADES = "person-shades"
 const ROUTES = "person-routes"
 const PIN = "flex size-7 cursor-pointer items-center justify-center rounded-full text-xs font-semibold text-white shadow-md ring-2 ring-white"
@@ -75,18 +97,23 @@ interface Pin {
 }
 
 const SELECTED_PIN = "ring-4 ring-primary/50"
+const HOVER_PIN = ["ring-4", "ring-primary", "scale-125", "z-10"]
+const HOLLOW_PIN = "flex size-6 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-navy bg-background shadow-md transition-transform"
 
-export function DayMap({ stops, people, selectedId, onSelect, className }: DayMapProps) {
+export function DayMap({ stops, people, selectedId, onSelect, hollow = [], hoverId, onHover, className }: DayMapProps) {
   const container = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const MarkerCtor = useRef<typeof Marker | null>(null)
   const pins = useRef(new globalThis.Map<string, Pin>())
+  const hollowPins = useRef(new globalThis.Map<string, Pin>())
   const popup = useRef<Popup | null>(null)
+  const hover = useRef(onHover)
   const select = useRef(onSelect)
   const selected = useRef(selectedId)
   const [state, setState] = useState<"loading" | "ready" | "unsupported">("loading")
   useEffect(() => {
     select.current = onSelect
+    hover.current = onHover
     selected.current = selectedId
   })
 
@@ -99,11 +126,12 @@ export function DayMap({ stops, people, selectedId, onSelect, className }: DayMa
     let cancelled = false
     let map: MapLibreMap | undefined
     const livePins = pins.current
+    const liveHollow = hollowPins.current
     // MapLibre is resolved once here; the effects below then run synchronously.
-    import("maplibre-gl").then(({ Map: MapLibre, Popup: MapPopup, Marker: MapMarker }) => {
+    Promise.all([import("maplibre-gl"), styleOrBlank()]).then(([{ Map: MapLibre, Popup: MapPopup, Marker: MapMarker }, style]) => {
       if (cancelled) return
       try {
-        map = new MapLibre({ container: el, style: STYLE, attributionControl: { compact: true }, bounds: townBounds(), fitBoundsOptions: { padding: 40 } })
+        map = new MapLibre({ container: el, style, attributionControl: { compact: true }, bounds: townBounds(), fitBoundsOptions: { padding: 40 } })
       } catch (error) {
         console.error("day map: could not start", error)
         setState("unsupported")
@@ -113,8 +141,9 @@ export function DayMap({ stops, people, selectedId, onSelect, className }: DayMa
       let ready = false
       map.on("error", (event) => {
         console.error("day map error", event.error)
-        // Before the style has loaded an error means there is no map to show; after, a missed tile is only logged.
-        if (!ready && !cancelled) setState("unsupported")
+        // A missed tile or glyph is only logged: the pins and routes draw over whatever loaded. Only a style that cannot start leaves no map.
+        const e = event as unknown as { sourceId?: string; tile?: unknown }
+        if (!ready && !cancelled && !e.sourceId && !e.tile) setState("unsupported")
       })
       map.on("load", () => {
         if (cancelled || !map) return
@@ -136,6 +165,7 @@ export function DayMap({ stops, people, selectedId, onSelect, className }: DayMa
       popup.current = null
       MarkerCtor.current = null
       livePins.clear()
+      liveHollow.clear()
       map?.remove()
     }
   }, [])
@@ -179,6 +209,8 @@ export function DayMap({ stops, people, selectedId, onSelect, className }: DayMa
         event.stopPropagation()
         select.current(stop.id === selected.current ? undefined : stop.id)
       })
+      pin.addEventListener("mouseenter", () => hover.current?.(stop.id))
+      pin.addEventListener("mouseleave", () => hover.current?.(undefined))
       pins.current.set(stop.id, { marker: new MarkerClass({ element: pin }).setLngLat([stop.lng, stop.lat]).addTo(map), el: pin, key })
     })
     const source = map.getSource(SHADES)
@@ -205,6 +237,48 @@ export function DayMap({ stops, people, selectedId, onSelect, className }: DayMa
       popup.current.setLngLat([chosen.lng, chosen.lat]).setDOMContent(line).addTo(map)
     } else popup.current?.remove()
   }, [state, stops, selectedId])
+
+  // Hollow pins are the jobs with no day: dashed rings at their points, kept by id like the stops' pins.
+  useEffect(() => {
+    const map = mapRef.current
+    const MarkerClass = MarkerCtor.current
+    if (state !== "ready" || !map || !MarkerClass) return
+    const keep = new Set(hollow.map((h) => h.id))
+    for (const [id, pin] of hollowPins.current) {
+      if (!keep.has(id)) {
+        pin.marker.remove()
+        hollowPins.current.delete(id)
+      }
+    }
+    for (const h of hollow) {
+      const key = `${h.lng},${h.lat}`
+      const existing = hollowPins.current.get(h.id)
+      if (existing?.key === key) continue
+      if (existing) {
+        existing.marker.setLngLat([h.lng, h.lat])
+        existing.key = key
+        continue
+      }
+      const pin = document.createElement("div")
+      pin.className = HOLLOW_PIN
+      pin.dataset.unscheduled = h.id
+      pin.setAttribute("aria-hidden", "true")
+      pin.addEventListener("mouseenter", () => hover.current?.(h.id))
+      pin.addEventListener("mouseleave", () => hover.current?.(undefined))
+      hollowPins.current.set(h.id, { marker: new MarkerClass({ element: pin }).setLngLat([h.lng, h.lat]).addTo(map), el: pin, key })
+    }
+    if (stops.filter(hasPoint).length === 0 && hollow.length > 0) {
+      const lngs = hollow.map((h) => h.lng)
+      const lats = hollow.map((h) => h.lat)
+      map.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], { padding: 60, maxZoom: 14, duration: 0 })
+    }
+  }, [state, hollow, stops])
+
+  // A pin lit from outside (a row or a block under the pointer) is ringed and a little larger.
+  useEffect(() => {
+    if (state !== "ready") return
+    for (const group of [pins.current, hollowPins.current]) for (const [id, pin] of group) for (const c of HOVER_PIN) pin.el.classList.toggle(c, id === hoverId)
+  }, [state, stops, hollow, hoverId])
 
   if (state === "unsupported") {
     return (

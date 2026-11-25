@@ -14,7 +14,7 @@
 import { existsSync, readFileSync } from "node:fs"
 
 /** The nine blocks step 1 adds, and step 6's SettingsList and SaveBar; each needs Default, Empty and Phone stories. */
-export const NEW_BLOCKS = ["RecordPanel", "RecordFooter", "ConfirmDialog", "SplitButton", "MoneyCell", "FormRow", "SectionHeading", "StatusPill", "SegmentedControl", "SettingsList", "SaveBar"]
+export const NEW_BLOCKS = ["RecordPanel", "RecordFooter", "ConfirmDialog", "SplitButton", "MoneyCell", "FormRow", "SectionHeading", "StatusPill", "SegmentedControl", "SettingsList", "SaveBar", "UnscheduledPanel", "MapPanel", "FindATime", "MovedToast", "NotifyDialog", "NotTold", "TimeOffDialog", "PlanStrip", "RecommendedMark", "TimeGrid", "TimeBlock", "AnytimeStrip", "TimeOffBand", "MonthGrid"]
 
 /**
  * file (path suffix) -> { rule: "date, the build-order step that removes it" }. A file in here still fails the rule; it is the debt, and each

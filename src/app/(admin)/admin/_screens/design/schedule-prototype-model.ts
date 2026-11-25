@@ -1,0 +1,170 @@
+import { worksOn } from "@/lib/admin/calendar"
+import { firstNameOf, hoursOf } from "@/lib/admin/people"
+import type { Person } from "@/lib/admin/types"
+import { dayShort } from "@/components/blocks/find-a-time-model"
+import type { NotToldVisit, UnscheduledJob } from "@/components/blocks/scheduler-panels-types"
+import { clockToMinutes, clockWords, hoursSpan, rangeWords, type GridBlock, type TimeOff } from "@/components/blocks/time-grid-model"
+
+// The Schedule prototype's state and every change to it, pure (docs/plans/2026-11-25-scheduler-design.md, 7.8 to 7.11). A move by any route (a drag, a
+// resize, the keyboard, a block's menu, a row dropped from Unscheduled, Jev's plan) goes through `reduce`: the visit changes, the customer is marked not told,
+// one toast is made and its Undo holds the state before, so Undo restores exactly. NOTHING is ever sent here: Notify and Don't tell only clear the mark.
+
+export interface Place { day: string; personId: string; start: number | null; minutes: number }
+/** What the prototype knows about the customer and the yard, by visit or job id. */
+export interface Meta { customer: string; phone?: string; email?: string; lat: number; lng: number }
+/** A job with no day: the Unscheduled row plus what placing it needs. */
+export interface ProtoJob extends UnscheduledJob { street: string; minutes: number; kind: GridBlock["kind"]; phone?: string; email?: string }
+
+export interface Snapshot { visits: GridBlock[]; was: Record<string, Place>; unscheduled: ProtoJob[]; meta: Record<string, Meta> }
+export interface ProtoToast { key: number; title: string; detail?: string; many: boolean; ids: string[]; undo: Snapshot }
+export interface ProtoState extends Snapshot { timeOff: TimeOff[]; toast: ProtoToast | null; seq: number }
+
+export interface Target { day: string; personId: string; start: number | null }
+export type Action =
+  | { type: "move"; id: string; to: Target }
+  | { type: "resize"; id: string; minutes: number }
+  | { type: "place"; jobId: string; to: Target }
+  | { type: "add"; visit: GridBlock; meta: Meta }
+  | { type: "add-unscheduled"; job: ProtoJob }
+  | { type: "undo" }
+  | { type: "dismiss-toast" }
+  | { type: "told"; ids: string[] }
+  | { type: "apply-plan"; moves: { id: string; to: Target }[] }
+  | { type: "time-off-save"; value: TimeOff }
+  | { type: "time-off-remove"; id: string }
+
+const snapshotOf = (s: ProtoState): Snapshot => ({ visits: s.visits, was: s.was, unscheduled: s.unscheduled, meta: s.meta })
+const placeOf = (b: GridBlock): Place => ({ day: b.day, personId: b.personId, start: b.start, minutes: b.minutes })
+const clockOrAny = (start: number | null) => (start === null ? "Any time" : clockWords(start))
+const lower = (service: string) => service.charAt(0).toLowerCase() + service.slice(1)
+
+/** "Thu, Nov 26, 9:00 am" or "Thu, Nov 26, Any time". */
+export const whenWords = (p: { day: string; start: number | null }) => `${dayShort(p.day)}, ${clockOrAny(p.start)}`
+
+/** The notified words from the saved "Day moved, text" template (src/emails/editable.ts): "Trailhead: your spring turn-on moved to Thu, Nov 26 at 9:00 am." */
+export const moveMessage = (b: Pick<GridBlock, "service" | "day" | "start">): string =>
+  `Trailhead: your ${lower(b.service)} moved to ${dayShort(b.day)}${b.start === null ? "" : ` at ${clockWords(b.start)}`}.`
+
+/** What each change says in its toast. */
+function stamp(s: ProtoState, title: string, detail: string, ids: string[], many = false): ProtoToast {
+  return { key: s.seq + 1, title, detail, many, ids, undo: snapshotOf(s) }
+}
+
+/** Marks a visit not told, remembering where it was the first time. */
+function untold(was: Record<string, Place>, before: GridBlock): Record<string, Place> {
+  return before.notTold ? was : { ...was, [before.id]: placeOf(before) }
+}
+
+function moveOne(s: ProtoState, id: string, patch: Partial<GridBlock>): Pick<ProtoState, "visits" | "was"> | null {
+  const before = s.visits.find((b) => b.id === id)
+  if (!before) return null
+  return { visits: s.visits.map((b) => (b.id === id ? { ...b, ...patch, notTold: true } : b)), was: untold(s.was, before) }
+}
+
+export function reduce(s: ProtoState, a: Action): ProtoState {
+  switch (a.type) {
+    case "move": {
+      const before = s.visits.find((b) => b.id === a.id)
+      // a drop where it already was is not a move: no toast and no "not told"
+      if (before && before.day === a.to.day && before.personId === a.to.personId && before.start === a.to.start) return s
+      const next = moveOne(s, a.id, { day: a.to.day, personId: a.to.personId, start: a.to.start })
+      if (!before || !next) return s
+      return { ...s, ...next, seq: s.seq + 1, toast: stamp(s, "Visit moved", `${before.title} to ${whenWords(a.to)}`, [a.id]) }
+    }
+    case "resize": {
+      const before = s.visits.find((b) => b.id === a.id)
+      if (before && before.minutes === a.minutes) return s
+      const next = moveOne(s, a.id, { minutes: a.minutes })
+      if (!before || !next) return s
+      const detail = `${before.title} now ${before.start === null ? `${a.minutes} minutes` : rangeWords(before.start, a.minutes)}`
+      return { ...s, ...next, seq: s.seq + 1, toast: stamp(s, "Visit moved", detail, [a.id]) }
+    }
+    case "place": {
+      const job = s.unscheduled.find((j) => j.id === a.jobId)
+      if (!job) return s
+      const visit = visitOfJob(job, a.to)
+      return { ...s, visits: [...s.visits, visit], unscheduled: s.unscheduled.filter((j) => j.id !== job.id), meta: { ...s.meta, [job.id]: metaOfJob(job) }, seq: s.seq + 1, toast: stamp(s, "Visit scheduled", `${job.street}, ${whenWords(a.to)}`, [job.id]) }
+    }
+    case "add": {
+      return { ...s, visits: [...s.visits, { ...a.visit, notTold: true }], meta: { ...s.meta, [a.visit.id]: a.meta }, seq: s.seq + 1, toast: stamp(s, "Visit scheduled", `${a.visit.title}, ${whenWords(a.visit)}`, [a.visit.id]) }
+    }
+    case "add-unscheduled":
+      return { ...s, unscheduled: [...s.unscheduled, a.job], toast: null }
+    case "undo":
+      return s.toast ? { ...s, ...s.toast.undo, toast: null } : s
+    case "dismiss-toast":
+      return s.toast ? { ...s, toast: null } : s
+    case "told": {
+      const ids = new Set(a.ids)
+      const was = Object.fromEntries(Object.entries(s.was).filter(([id]) => !ids.has(id)))
+      return { ...s, was, visits: s.visits.map((b) => (ids.has(b.id) ? { ...b, notTold: false } : b)) }
+    }
+    case "apply-plan": {
+      if (a.moves.length === 0) return s
+      let visits = s.visits
+      let was = s.was
+      for (const m of a.moves) {
+        const before = visits.find((b) => b.id === m.id)
+        if (!before) continue
+        was = untold(was, before)
+        visits = visits.map((b) => (b.id === m.id ? { ...b, day: m.to.day, personId: m.to.personId, start: m.to.start, notTold: true } : b))
+      }
+      const n = a.moves.length
+      return { ...s, visits, was, seq: s.seq + 1, toast: stamp(s, `${n} ${n === 1 ? "visit" : "visits"} moved`, "", a.moves.map((m) => m.id), true) }
+    }
+    case "time-off-save":
+      return { ...s, timeOff: [...s.timeOff.filter((o) => o.id !== a.value.id), a.value] }
+    case "time-off-remove":
+      return { ...s, timeOff: s.timeOff.filter((o) => o.id !== a.id) }
+  }
+}
+
+export const metaOfJob = (j: ProtoJob): Meta => ({ customer: j.customer, phone: j.phone, email: j.email, lat: j.lat ?? 40.05, lng: j.lng ?? -105.05 })
+
+export function visitOfJob(j: ProtoJob, to: Target): GridBlock {
+  return { id: j.id, day: to.day, personId: to.personId, start: to.start, minutes: j.minutes, title: j.street, name: j.customer.split(" ")[0] ?? j.customer, kind: j.kind, town: j.town, service: j.service, notTold: true }
+}
+
+/** The visits whose customer has not been told, as the Not told tab lists them. */
+export function notToldList(s: Pick<ProtoState, "visits" | "was" | "meta">): NotToldVisit[] {
+  return s.visits.filter((b) => b.notTold).map((b) => {
+    const m = s.meta[b.id]
+    const was = s.was[b.id]
+    return { id: b.id, customer: m?.customer ?? b.name, town: b.town, service: b.service, was: was ? whenWords(was) : "Not scheduled", now: whenWords(b), phone: m?.phone, email: m?.email }
+  })
+}
+
+/** The jobs of the Unscheduled panel as it takes them (the panel reads UnscheduledJob; the extra fields ride along). */
+export const jobsOf = (s: Pick<ProtoState, "unscheduled">): UnscheduledJob[] => s.unscheduled
+
+// What a place breaks, in plain words. A drop on any of these asks "Move anyway?"; an empty list moves at once.
+
+export interface PlaceInput { id: string; day: string; personId: string; start: number | null; minutes: number }
+
+export function placementProblems(s: Pick<ProtoState, "visits" | "timeOff">, people: readonly Person[], p: PlaceInput): string[] {
+  const person = people.find((x) => x.id === p.personId)
+  if (!person) return []
+  const who = firstNameOf(person.name) ?? "They"
+  if (!worksOn(person, p.day)) return [`${who} does not work that day.`]
+  const out: string[] = []
+  if (p.start === null) return out
+  const end = p.start + p.minutes
+  const hours = hoursOf(person)
+  const hs = clockToMinutes(hours.start) ?? 540
+  const he = clockToMinutes(hours.end) ?? 1020
+  if (p.start < hs) out.push(`${who} starts at ${clockWords(hs)}.`)
+  if (end > he) out.push(`${who} works until ${clockWords(he)}.`)
+  for (const b of s.visits) {
+    if (b.id === p.id || b.day !== p.day || b.personId !== p.personId || b.start === null || b.planned) continue
+    if (p.start < b.start + b.minutes && b.start < end) out.push(`${who} has ${b.title} at ${clockWords(b.start)}.`)
+  }
+  for (const o of s.timeOff) {
+    if (o.day !== p.day || o.personId !== p.personId) continue
+    const whole = o.start === null || o.end === null
+    if (whole || (p.start < o.end! && o.start! < end)) out.push(`${who} is off ${whole ? "all day" : hoursSpan(o.start!, o.end!)}.`)
+  }
+  return out
+}
+
+/** The size of a block's day for the side panel: "Wed, Nov 25, 9:00 to 11:00 am". */
+export const visitWhen = (b: Pick<GridBlock, "day" | "start" | "minutes">): string => (b.start === null ? `${dayShort(b.day)}, Any time` : `${dayShort(b.day)}, ${rangeWords(b.start, b.minutes)}`)

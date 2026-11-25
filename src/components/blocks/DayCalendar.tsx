@@ -8,6 +8,7 @@ import { DAYS_FULL, clock12, type DayTimeOffer, type DayTimePick } from "@/lib/b
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { longDay } from "@/lib/portal/words"
 import { cn } from "@/lib/utils"
+import { RecommendedMark, isRecommended, recommendedChip, type RecommendedLook } from "./RecommendedMark"
 
 // The day-and-time question as a calendar (docs/plans/2026-11-23-booking-day-time-and-repeat-research.md, docs/plans/2026-11-19-booking-form-design.md "Third pass"): one month at a time as a grid, a quiet dot on
 // every day with an opening, days with none plain and not pressable, and the SOONEST open day already chosen, with an orange dot (Hannah, Nov 22 2026: always steer to the soonest). Picking a day shows its
@@ -27,6 +28,11 @@ export interface DayCalendarProps {
   /** the box under a full calendar, when a screen offers one */
   note?: string
   onNote?: (text: string) => void
+  /** the one start time to mark (HH:MM); with `recommendedDay` only that day's button carries it. The mark never says why (docs/plans/2026-11-25-scheduler-design.md, 7.12) */
+  recommendedStart?: string | null
+  recommendedDay?: string | null
+  /** which of the three candidate looks to draw until the owner picks one; A by default */
+  recommendedLook?: RecommendedLook
   className?: string
 }
 
@@ -50,7 +56,7 @@ function weeksOf(ym: string): (string | null)[][] {
 const LINK = "inline-flex min-h-11 items-center font-semibold text-primary-deep underline underline-offset-2"
 const CHIP = "flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2"
 
-export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2, note = "", onNote, className }: DayCalendarProps) {
+export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2, note = "", onNote, recommendedStart, recommendedDay, recommendedLook = "A", className }: DayCalendarProps) {
   const Month = headingLevel === 2 ? "h2" : "h3"
   const id = useId()
   const grid = useRef<HTMLTableElement>(null)
@@ -178,11 +184,14 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
           <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
             {current.times.map((t) => {
               const checked = value.start === t.start
+              const marked = isRecommended(t.start, current.day, recommendedStart, recommendedDay)
               return (
                 <label key={t.start} className="relative block">
                   <input type="radio" name={`${id}-time`} checked={checked} onChange={() => onChange({ day: current.day, start: t.start })} className="peer sr-only" />
-                  <span data-slot="time-chip" className={cn(CHIP, checked ? "settle border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
+                  <span data-slot="time-chip" data-recommended={marked || undefined} className={cn(CHIP, checked ? "settle border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40", marked && recommendedChip(recommendedLook, checked))}>
+                    {marked && <RecommendedMark look={recommendedLook} position="before" checked={checked} />}
                     <span className="text-base font-semibold tabular-nums">{clock12(t.start)}</span>
+                    {marked && <RecommendedMark look={recommendedLook} position="after" checked={checked} />}
                   </span>
                 </label>
               )

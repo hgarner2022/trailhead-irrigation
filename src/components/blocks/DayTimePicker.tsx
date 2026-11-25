@@ -8,6 +8,7 @@ import { DAYS_FULL, NONE_FIT, clock12, type DayTimeOffer, type DayTimePick } fro
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { longDay } from "@/lib/portal/words"
 import { cn } from "@/lib/utils"
+import { RecommendedMark, isRecommended, recommendedChip, type RecommendedLook } from "./RecommendedMark"
 
 // The one day-and-time question (docs/plans/2026-11-18-scheduling-engine-design.md section 4.4): up to three day cards with the best one selected, "Show more days" for up to five,
 // then only the selected day's open start times as chips. The best time is marked "Best fit" and never selected, so Continue stays off until a time is tapped. The booking flow,
@@ -29,6 +30,11 @@ export interface DayTimePickerProps {
   onNote?: (text: string) => void
   /** times shown before "More times"; default 6 */
   timesShown?: number
+  /** the one start time to mark (HH:MM); with `recommendedDay` only that day's button carries it. The mark never says why (docs/plans/2026-11-25-scheduler-design.md, 7.12) */
+  recommendedStart?: string | null
+  recommendedDay?: string | null
+  /** which of the three candidate looks to draw until the owner picks one; A by default */
+  recommendedLook?: RecommendedLook
   className?: string
 }
 
@@ -36,7 +42,7 @@ const CARD = "flex min-h-20 cursor-pointer flex-col justify-center rounded-lg bo
 const CHIP = "flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2"
 const LINK = "inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary-deep underline underline-offset-2 hover:text-primary-dark"
 
-export function DayTimePicker({ offers, value, onChange, legend, length, shown = 3, note = "", onNote, timesShown = 6, className }: DayTimePickerProps) {
+export function DayTimePicker({ offers, value, onChange, legend, length, shown = 3, note = "", onNote, timesShown = 6, recommendedStart, recommendedDay, recommendedLook = "A", className }: DayTimePickerProps) {
   const id = useId()
   const [more, setMore] = useState(() => offers.findIndex((o) => o.day === value.day) >= shown)
   const [moreTimes, setMoreTimes] = useState(false)
@@ -104,11 +110,14 @@ export function DayTimePicker({ offers, value, onChange, legend, length, shown =
           <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
             {visible.map((t) => {
               const checked = value.start === t.start
+              const marked = isRecommended(t.start, current.day, recommendedStart, recommendedDay)
               return (
                 <label key={t.start} className="relative block">
                   <input type="radio" name={`${id}-time`} checked={checked} onChange={() => onChange({ day: current.day, start: t.start })} className="peer sr-only" />
-                  <span data-slot="time-chip" data-best={t.best || undefined} className={cn(CHIP, checked ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
+                  <span data-slot="time-chip" data-best={t.best || undefined} data-recommended={marked || undefined} className={cn(CHIP, checked ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40", marked && recommendedChip(recommendedLook, checked))}>
+                    {marked && <RecommendedMark look={recommendedLook} position="before" checked={checked} />}
                     <span className="text-base font-semibold tabular-nums">{clock12(t.start)}</span>
+                    {marked && <RecommendedMark look={recommendedLook} position="after" checked={checked} />}
                     {t.best && <span className={cn("text-xs font-semibold", checked ? "text-white/85" : "text-primary-deep")}>Best fit</span>}
                   </span>
                 </label>

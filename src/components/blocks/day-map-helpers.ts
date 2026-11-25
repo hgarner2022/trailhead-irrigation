@@ -45,6 +45,14 @@ export function townBounds(): [[number, number], [number, number]] {
   return [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]]
 }
 
+/** A job with no day, drawn as a hollow pin on the Schedule's Map panel. */
+export interface HollowStop {
+  id: string
+  lat: number
+  lng: number
+  name: string
+}
+
 /** A visit with a point. */
 export type Stop = Visit & { lat: number; lng: number }
 export const hasPoint = (v: Visit): v is Stop => typeof v.lat === "number" && typeof v.lng === "number"
