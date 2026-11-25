@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { MONTH_NAMES, TIME_ZONE, monthDay, monthName, monthShort, preferenceLabel, preferenceOf, preferencePhrase, preferenceReason, shortDate, writtenDate } from "./format"
+import { MONTH_NAMES, TIME_ZONE, longDay, money, moneyRounded, moneySigned, monthDay, monthName, monthShort, preferenceLabel, preferenceOf, preferencePhrase, preferenceReason, shortDate, shortDay, weekdayName, writtenDate } from "./format"
 
 describe("month names", () => {
   it("names the twelve months by number", () => {
@@ -73,5 +73,57 @@ describe("timing preferences", () => {
   it("gives one plain reason for each recommendation", () => {
     expect(preferenceReason("turn-on")).toBe("Front Range systems are usually safe to run by early May.")
     expect(preferenceReason("blowout")).toBe("The first hard freeze usually arrives between mid and late October, so the second week leaves room.")
+  })
+})
+
+describe("money", () => {
+  it("writes whole dollars with a thousands comma, exactly as given", () => {
+    expect(money(0)).toBe("$0")
+    expect(money(95)).toBe("$95")
+    expect(money(1234)).toBe("$1,234")
+    expect(money(1234567)).toBe("$1,234,567")
+  })
+
+  it("does not round: a cent is kept as the number says it", () => {
+    expect(money(12.5)).toBe("$12.5")
+  })
+})
+
+describe("moneyRounded", () => {
+  it("rounds to the dollar first", () => {
+    expect(moneyRounded(12.4)).toBe("$12")
+    expect(moneyRounded(12.5)).toBe("$13")
+    expect(moneyRounded(1234.6)).toBe("$1,235")
+    expect(moneyRounded(95)).toBe("$95")
+  })
+})
+
+describe("moneySigned", () => {
+  it("writes a credit as -$45, never $-45", () => {
+    expect(moneySigned(-45)).toBe("-$45")
+    expect(moneySigned(-1234)).toBe("-$1,234")
+    expect(moneySigned(45)).toBe("$45")
+    expect(moneySigned(0)).toBe("$0")
+  })
+
+  it("reads negative zero as $0", () => {
+    expect(moneySigned(-0)).toBe("$0")
+  })
+})
+
+describe("the day words", () => {
+  it("names the weekday of a calendar day", () => {
+    expect(weekdayName("2026-05-05")).toBe("Tuesday")
+    expect(weekdayName("2026-10-14")).toBe("Wednesday")
+  })
+
+  it("writes a short day with its weekday for a card or a band", () => {
+    expect(shortDay("2026-04-28")).toBe("Tue, Apr 28")
+    expect(shortDay("2026-10-15")).toBe("Thu, Oct 15")
+  })
+
+  it("writes a long day where there is room", () => {
+    expect(longDay("2026-05-05")).toBe("Tuesday, May 5")
+    expect(longDay("2026-10-15")).toBe("Thursday, October 15")
   })
 })
