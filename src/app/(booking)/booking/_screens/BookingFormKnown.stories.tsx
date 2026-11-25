@@ -220,7 +220,6 @@ export const WholeBookingDifferentEmailTest: Story = {
     await expect(await c.findByText("Card information")).toBeInTheDocument()
     await expect(c.queryByText(/4242/)).toBeNull()
     await next("Save card")
-    await next()
     await next("Confirm and book")
     await waitFor(() => expect(args.onBooked).toHaveBeenCalledWith(expect.objectContaining({ onFile: true, emailDiffers: true })))
   },

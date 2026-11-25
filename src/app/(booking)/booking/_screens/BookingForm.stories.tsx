@@ -411,7 +411,7 @@ export const ServiceNothingClearsTest: Story = {
   play: async ({ canvas, userEvent }) => {
     await expect((await canvas.findAllByText("Choose a service.")).length).toBe(2)
     await userEvent.click(canvas.getByRole("button", { name: /^Sprinkler repair/ }))
-    await userEvent.click(await canvas.findByRole("button", { name: "Choose Sprinkler repair" }))
+    await userEvent.click(await canvas.findByRole("button", { name: "Choose this service" }))
     await waitFor(() => expect(canvas.queryAllByText("Choose a service.")).toHaveLength(0))
   },
 }
@@ -482,7 +482,8 @@ export const AddressOnFileTest: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "480 Br")
     await userEvent.click(await canvas.findByRole("option", { name: /480 Briggs/ }))
-    await expect(canvas.queryByText(/Andrea|Dalton|4242|On file|Welcome back/)).toBeNull()
+    await expect(await canvas.findByText("On file")).toBeInTheDocument()
+    await expect(canvas.queryByText(/Andrea|Dalton|4242|Welcome back/)).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await userEvent.click(await canvas.findByRole("button", { name: /^Spring turn-on/ }))
     await userEvent.click(await canvas.findByRole("button", { name: "Choose this service" }))
