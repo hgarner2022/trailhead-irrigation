@@ -89,7 +89,7 @@ export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCar
           </span>
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block font-display text-[1.375rem] leading-[1.1] text-balance">{entry.name}</span>
+          <span className="block type-option text-balance">{entry.name}</span>
           {meta && <span className={cn("mt-1 block text-sm leading-5 whitespace-nowrap tabular-nums", optionDetailClass(selected))}>{meta}</span>}
         </span>
         {selected ? (

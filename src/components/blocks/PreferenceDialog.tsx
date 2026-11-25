@@ -50,7 +50,7 @@ export function PreferenceDialog({ kind, value, onSave, label = "Change", asButt
         {saved ? (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-navy">{`Got it. You asked for ${preferencePhrase(kind, chosen)} for your ${NAMES[kind]}.`}</DialogTitle>
+              <DialogTitle className="type-heading text-navy">{`Got it. You asked for ${preferencePhrase(kind, chosen)} for your ${NAMES[kind]}.`}</DialogTitle>
               <DialogDescription className="text-base">We&apos;ll set the day in that window and email you the date.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -62,7 +62,7 @@ export function PreferenceDialog({ kind, value, onSave, label = "Change", asButt
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-navy">{QUESTIONS[kind]}</DialogTitle>
+              <DialogTitle className="type-heading text-navy">{QUESTIONS[kind]}</DialogTitle>
               <DialogDescription className="text-base">You can change this until we set the day.</DialogDescription>
             </DialogHeader>
             <TimingChoice kind={kind} label={QUESTIONS[kind]} value={chosen} onChange={setChosen} />

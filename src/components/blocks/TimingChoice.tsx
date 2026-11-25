@@ -59,7 +59,7 @@ export function TimingChoice({ kind, labelledBy, label, value, onChange, ranges,
               onClick={() => onChange(preference)}
               className={cn(optionClass({ selected: pressed }), "flex min-h-20 flex-col items-start justify-center px-4 py-3 text-left")}
             >
-              <span className="font-display text-2xl leading-none">{plain ? PLAIN_NAMES[preference] : (ranges ? SHORT_NAMES : CHOICE_NAMES)[preference]}</span>
+              <span className="type-option">{plain ? PLAIN_NAMES[preference] : (ranges ? SHORT_NAMES : CHOICE_NAMES)[preference]}</span>
               <span className={cn("mt-1.5 text-sm", optionDetailClass(pressed))}>{ranges ? ranges[preference] : preferenceLabel(kind, preference)}</span>
             </button>
           )

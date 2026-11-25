@@ -21,7 +21,7 @@ export function CalendarGroups({ groups, picks, onPick, note, onNote, error }: {
     <div data-slot="day-time-groups" className="space-y-12">
       {groups.map((g, i) => (
         <section key={g.key} aria-label={g.heading ?? "Day and time"} data-kind={g.key}>
-          {g.heading && <h2 className="mb-4 font-display text-3xl leading-[1.05] text-navy">{g.heading}</h2>}
+          {g.heading && <h2 className="mb-4 type-heading text-navy">{g.heading}</h2>}
           <DayCalendar headingLevel={g.heading ? 3 : 2} offers={g.offers} value={picks[g.key] ?? { day: null, start: null }} onChange={(next) => onPick(g.key, next)} legend={g.heading ?? "Pick your day"} error={pickComplete(g.offers, picks[g.key] ?? { day: null, start: null }) ? undefined : error} note={i === groups.length - 1 ? note : undefined} onNote={i === groups.length - 1 ? onNote : undefined} />
         </section>
       ))}

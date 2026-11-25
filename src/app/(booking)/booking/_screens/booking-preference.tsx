@@ -20,7 +20,7 @@ function Group({ visit, value, onChange, single }: { visit: PassVisitPlan; value
     // A single visit is named by the step's own heading and the choice group's label, so it is a plain block; two visits are each a region named by their own heading.
     <div role={single ? undefined : "region"} aria-labelledby={single ? undefined : id} data-slot="preference-group" data-kind={visit.kind}>
       {!single && (
-        <h2 id={id} className="mb-4 font-display text-3xl leading-[1.05] text-navy">
+        <h2 id={id} className="mb-4 type-heading text-navy">
           {visitName(visit)}
         </h2>
       )}

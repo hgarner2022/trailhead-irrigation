@@ -30,7 +30,7 @@ export interface TypedAddressProps {
   onValues?: (values: TypedValues) => void
 }
 
-const FIELD = "h-14 rounded-lg bg-background px-4 text-lg shadow-sm"
+const FIELD = "h-14 rounded-lg bg-background px-4 text-base shadow-sm"
 const MIN_STREET = 3
 export const STREET_PROBLEM = "We need your street address, with the house number."
 export const CITY_PROBLEM = "Add your city."

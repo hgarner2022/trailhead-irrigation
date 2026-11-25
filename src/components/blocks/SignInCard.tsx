@@ -56,7 +56,7 @@ export function SignInCard({ audience, state = "form", email = "", action, retry
           <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={114} height={80} className="h-20 w-auto self-start" />
           {sent ? (
             <div className="flex flex-col gap-3" role="status">
-              <h1 className="font-display text-3xl font-semibold text-navy">Check your email</h1>
+              <h1 className="type-title text-navy">Check your email</h1>
               <p className="text-sm text-foreground">
                 We sent a sign-in link to {email ? <strong data-slot="sent-to" className="break-all font-semibold">{maskEmail(email)}</strong> : "your email"}.
               </p>
@@ -79,7 +79,7 @@ export function SignInCard({ audience, state = "form", email = "", action, retry
           ) : (
             <form action={action} onSubmit={action ? undefined : (e) => e.preventDefault()} className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <h1 className="font-display text-3xl font-semibold text-navy">{copy.title}</h1>
+                <h1 className="type-title text-navy">{copy.title}</h1>
                 <p className="text-sm text-muted-foreground">{copy.lead}</p>
               </div>
               <div className="flex flex-col gap-2">

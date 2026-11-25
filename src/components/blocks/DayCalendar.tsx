@@ -146,7 +146,7 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
           <button type="button" aria-label="Previous month" disabled={month <= first} onClick={() => setMonth(shiftMonth(month, -1))} className="flex size-11 cursor-pointer items-center justify-center rounded-lg border border-border text-navy disabled:cursor-not-allowed disabled:opacity-40">
             <ChevronLeft aria-hidden className="size-5" />
           </button>
-          <Month id={`${id}-month`} aria-live="polite" className={cn("font-display leading-none text-navy", sheet ? "text-xl" : "text-2xl")}>{monthWords}</Month>
+          <Month id={`${id}-month`} aria-live="polite" className={cn("text-navy", sheet ? "type-option" : "type-heading")}>{monthWords}</Month>
           <button type="button" aria-label="Next month" disabled={month >= last} onClick={() => setMonth(shiftMonth(month, 1))} className="flex size-11 cursor-pointer items-center justify-center rounded-lg border border-border text-navy disabled:cursor-not-allowed disabled:opacity-40">
             <ChevronRight aria-hidden className="size-5" />
           </button>

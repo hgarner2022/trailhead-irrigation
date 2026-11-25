@@ -36,11 +36,12 @@ export function PassVisitRows({ pass, onChangePreference, times, note = true }: 
           return (
             <li key={row.kind} data-slot="pass-visit-row" className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:gap-3">
               <span className="min-w-0 flex-1">
-                <span className="block text-base font-semibold text-foreground">
-                  {row.name}
-                  <span className="font-normal text-muted-foreground">{` · ${info.price}`}</span>
+                <span className="flex items-baseline justify-between gap-4">
+                  <span className="type-item font-semibold text-foreground">{row.name}</span>
+                  <span className="sr-only">{" · "}</span>
+                  <span className="type-value text-foreground">{info.price}</span>
                 </span>
-                {when !== row.label && <span className="block text-sm text-muted-foreground">{when}</span>}
+                {when !== row.label && <span className="block type-meta text-muted-foreground">{when}</span>}
               </span>
               <span className="flex flex-wrap items-center gap-3">
                 {preference && canChange(visit) && <TimingDialog kind={visit.kind} value={preference} onSave={onChangePreference} />}

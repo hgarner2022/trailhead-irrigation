@@ -245,9 +245,9 @@ When you need a new section pattern:
 App surfaces (admin dashboard, Season Pass checkout, customer pass page) follow `docs/DESIGN.md`; app tokens live in the same `@theme` block in `globals.css`.
 
 ### Typography
-- **Headings**: System sans-serif stack or Inter — bold, clean
-- **Body**: Same family, regular weight
-- **Sizes**: Use Tailwind defaults (`text-sm` through `text-5xl`)
+- **Headings**: Barlow Condensed (`font-display`); **body**: Source Sans 3. Both through `next/font` in `src/lib/fonts.ts`
+- **Marketing sizes**: Tailwind defaults (`text-sm` through `text-5xl`)
+- **Customer screens** (booking form, account, pay, quote, Season Pass checkout) set type by ROLE, never by size: `type-title` (36), `type-heading` (24, a section label), `type-option` (20), `type-body`, `type-item` and `type-value` (a line item's name and value), `type-label`, `type-meta`, `type-caption`, `type-figure` (the one total). They live at the top of `src/app/base.css`; the table is in `docs/DESIGN.md` "The customer type scale". A heading is never smaller than what is under it; every list of money is the `PriceLines` block (name regular at the left, value heavier at the right, tabular, one baseline) with `PriceTotal` for the total (Hannah, Nov 25 2026)
 - Keep it simple — no more than 2 font weights on a page
 
 ### Spacing & Layout

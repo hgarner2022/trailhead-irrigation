@@ -5,6 +5,7 @@ import type { ReceiptOutType } from "@/api/v1/portal/schemas"
 import { receiptNumber } from "@/emails/format"
 import { fullDay, METHOD_PHRASE } from "@/lib/portal/words"
 import { PrintButton } from "./PrintButton"
+import { PriceLines, PriceTotal } from "@/components/blocks/PriceLines"
 
 // The printable receipt for one payment, built from the payment row: who paid, for what, how and when. It is the receipt for a check, Venmo or cash
 // payment, which has no card receipt; a card payment's page also links the card receipt. "What we did" (the visit's checklist and the photos shared with the customer) sits under the
@@ -19,7 +20,7 @@ export function ReceiptScreen({ receipt }: { receipt: ReceiptOutType }) {
         <CardContent className="space-y-5 p-6 sm:p-8">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
-              <h1 className="font-display text-3xl leading-none text-navy">Receipt</h1>
+              <h1 className="type-title text-navy">Receipt</h1>
               <p className="text-base text-muted-foreground">{receipt.paidOn ? `Paid ${fullDay(receipt.paidOn)}` : "Paid"}</p>
             </div>
             <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={57} height={40} className="h-10 w-auto" />
@@ -53,20 +54,10 @@ export function ReceiptScreen({ receipt }: { receipt: ReceiptOutType }) {
               </>
             )}
           </dl>
-          {receipt.lines.length > 0 && (
-            <ul className="divide-y divide-border border-y border-border">
-              {receipt.lines.map((l, i) => (
-                <li key={i} className="flex items-baseline justify-between gap-4 py-2">
-                  <span className="text-base text-foreground">{l.quantity > 1 ? `${l.name} × ${l.quantity}` : l.name}</span>
-                  <span className="text-base text-foreground">{`$${l.quantity * l.unitPrice}`}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <p className="flex items-baseline justify-between gap-4 text-xl font-semibold text-foreground">
-            <span>Amount paid</span>
-            <span>{`$${receipt.amount}`}</span>
-          </p>
+          <div>
+            {receipt.lines.length > 0 && <PriceLines lines={receipt.lines.map((l) => ({ name: l.quantity > 1 ? `${l.name} × ${l.quantity}` : l.name, value: `$${l.quantity * l.unitPrice}` }))} />}
+            <PriceTotal label="Amount paid" value={`$${receipt.amount}`} />
+          </div>
           {receipt.report && <VisitReport report={receipt.report} className="border-t border-border pt-5" />}
         </CardContent>
       </Card>

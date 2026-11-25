@@ -5,6 +5,7 @@ import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PASS_SCHEDULES } from "@/lib/booking/pass-words"
 import { cn } from "@/lib/utils"
+import { PriceLines } from "@/components/blocks/PriceLines"
 
 // The Season Pass offer on the Details step of a single spring turn-on or fall blowout (Hannah, Nov 25 2026: customers do not know what it is, "you should sell them a bit"): its own quiet card after the
 // details, not a switch. A heading, three short lines that only say what Hannah has approved (CLAUDE.md's Season Pass description: we schedule every season so you never have to remember; the same price per visit
@@ -32,7 +33,7 @@ export function PassUpsell({ on, onChange, prices, className }: PassUpsellProps)
     <section data-slot="pass-upsell" data-on={on || undefined} aria-labelledby={`${id}-title`} className={cn("rounded-lg border-2 px-4 py-5 transition-colors motion-reduce:transition-none", on ? "border-navy bg-cream" : "border-border bg-background", className)}>
       {on ? (
         <div className="flex items-center justify-between gap-4">
-          <p id={`${id}-title`} className="flex items-center gap-3 font-display text-2xl leading-none text-navy">
+          <p id={`${id}-title`} className="flex items-center gap-3 type-heading text-navy">
             <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary-dark text-white">
               <svg viewBox="0 0 16 16" className="draw-check size-4" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3.5 8.5l3 3 6-7" />
@@ -46,25 +47,18 @@ export function PassUpsell({ on, onChange, prices, className }: PassUpsellProps)
         </div>
       ) : (
         <>
-          <h2 id={`${id}-title`} className="font-display text-2xl leading-tight text-navy">
+          <h2 id={`${id}-title`} className="type-heading text-navy">
             {UPSELL_TITLE}
           </h2>
           <ul className="mt-3 space-y-2">
             {UPSELL_LINES.map((line) => (
-              <li key={line} className="flex items-start gap-2.5 text-base leading-snug text-foreground">
+              <li key={line} className="flex items-start gap-2.5 type-body leading-snug text-foreground">
                 <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-positive" />
                 {line}
               </li>
             ))}
           </ul>
-          <dl className="mt-4 divide-y divide-border border-y border-border">
-            {prices.map((p) => (
-              <div key={p.name} className="flex items-baseline justify-between gap-4 py-2.5">
-                <dt className="text-base text-foreground">{p.name}</dt>
-                <dd className="text-base font-semibold tabular-nums text-navy">{p.price}</dd>
-              </div>
-            ))}
-          </dl>
+          <PriceLines className="mt-4" lines={prices.map((p) => ({ name: p.name, value: p.price }))} />
           <Button type="button" variant="outline" size="lg" onClick={() => onChange(true)} className="mt-4 min-h-12 w-full text-base sm:w-auto">
             {UPSELL_ADD}
           </Button>

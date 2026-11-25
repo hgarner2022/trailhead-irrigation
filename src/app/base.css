@@ -47,6 +47,48 @@ h1, h2, h3 {
   text-wrap: balance;
 }
 
+/* TYPE, one scale for every customer screen (the booking form, the account, the pay and quote pages, the Season Pass
+   checkout), named by role. Nothing on those screens sets a display size or a money style of its own (Hannah, Nov 25
+   2026: "Price is smaller than the line items... make sure everything is sized").
+   Two faces, each with one job. Barlow Condensed (the display face) NAMES things: the page, a section, an option, and
+   the one total a bill exists to state. Source Sans 3 (the body face) SAYS things: sentences, line items and their
+   prices, labels, buttons.
+   Six sizes, each a clear step from the next: 36 title and total, 24 heading, 20 option, 16 body, 14 meta, 12 caption.
+   The rules the scale keeps:
+     1. A heading is never smaller than what sits under it: 24 over options at 20 and body at 16.
+     2. A line item is a pair in the body face: the name regular, the value the same size and heavier, right aligned,
+        tabular numerals, both on one baseline.
+     3. Money in a list is always type-value; the total of a bill, a quote or a season is the one type-figure.
+     4. 12px is for an overline or a short status only, never a sentence. Inputs are 16px on a phone (ui/input.tsx).
+   Colour is not part of a role: text-navy for the display face, text-foreground for body and values,
+   text-muted-foreground for meta (5.0:1 on white, 4.8:1 on cream, 4.59:1 on stone); orange words are primary-dark
+   (5.0:1 on white) or primary-deep, never plain primary.
+   A button's type is set once in src/components/ui/button.tsx (body face, medium, 16px in a flow's lg button, 14px
+   elsewhere). The pass card (PassCard, BookedCard) is artwork with its own small lettering, like the logo. */
+:root {
+  --type-title: 2.25rem;    /* 36: the page's one h1 */
+  --type-heading: 1.5rem;   /* 24: a section, a card, a dialog, the question over a set of options */
+  --type-option: 1.25rem;   /* 20: the name on something to choose */
+  --type-body: 1rem;        /* 16: sentences, line items, values, inputs */
+  --type-meta: 0.875rem;    /* 14: field labels, quiet second lines */
+  --type-caption: 0.75rem;  /* 12: overlines and short statuses */
+  --type-figure: 2.25rem;   /* 36: the one total */
+}
+@utility type-title { font-family: var(--font-display); font-size: var(--type-title); font-weight: 600; line-height: 1.05; letter-spacing: 0.01em; text-wrap: balance; }
+@utility type-heading { font-family: var(--font-display); font-size: var(--type-heading); font-weight: 600; line-height: 1.15; letter-spacing: 0.01em; text-wrap: balance; }
+@utility type-option { font-family: var(--font-display); font-size: var(--type-option); font-weight: 600; line-height: 1.15; letter-spacing: 0.01em; }
+@utility type-body { font-family: var(--font-sans); font-size: var(--type-body); font-weight: 400; line-height: 1.5; }
+@utility type-item { font-family: var(--font-sans); font-size: var(--type-body); font-weight: 400; line-height: 1.4; }
+@utility type-value { font-family: var(--font-sans); font-size: var(--type-body); font-weight: 600; line-height: 1.4; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+@utility type-label { font-family: var(--font-sans); font-size: var(--type-meta); font-weight: 500; line-height: 1.4; }
+@utility type-meta { font-family: var(--font-sans); font-size: var(--type-meta); font-weight: 400; line-height: 1.4; }
+@utility type-caption { font-family: var(--font-sans); font-size: var(--type-caption); font-weight: 600; line-height: 1.3; letter-spacing: 0.06em; text-transform: uppercase; }
+@utility type-figure { font-family: var(--font-display); font-size: var(--type-figure); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* The h1, h2, h3 rule above is unlayered, so it outranks a utility: these keep a role the same on a heading tag as on any other. */
+:is(h1, h2, h3):is(.type-heading, .type-option) { line-height: 1.15; }
+:is(h1, h2, h3):is(.type-body, .type-item, .type-value, .type-label, .type-meta, .type-caption) { font-family: var(--font-sans); letter-spacing: normal; line-height: 1.4; }
+:is(h1, h2, h3).type-caption { letter-spacing: 0.06em; line-height: 1.3; }
+
 /* MOTION, one set for every customer screen (and nothing else defines a duration or an easing): a press answers in
    --motion-press, a state settles in --motion-fast, something opens in --motion-base, an icon draws in --motion-draw,
    all on one easing. Everything plays once, in answer to a press or on first appearance; nothing loops; and under

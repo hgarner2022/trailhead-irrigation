@@ -7,6 +7,7 @@ import { FormRow } from "@/components/blocks/FormRow"
 import { InfoTip } from "@/components/blocks/InfoTip"
 import { OnFileMark } from "@/components/blocks/OnFileMark"
 import { PassUpsell } from "@/components/blocks/PassUpsell"
+import { PriceLines } from "@/components/blocks/PriceLines"
 import { PhotoPicker, type PickedPhoto } from "@/components/blocks/PhotoPicker"
 import { ZonePicker } from "@/components/blocks/ZonePicker"
 import { Input } from "@/components/ui/input"
@@ -37,27 +38,11 @@ interface Shared {
 }
 
 function Price({ service, zones, plan }: { service: ServiceEntry; zones: number; plan: PassPlan | null }) {
-  // A Season Pass is a setup, not an order: what each visit costs at this zone count, and when it is charged, with no total.
-  if (service.kind === "pass" && plan)
-    return (
-      <div data-slot="booking-price">
-        <ul className="space-y-2">
-          {plan.visits.map((v) => (
-            <li key={v.kind} className="flex items-baseline justify-between gap-4">
-              <span className="font-display text-2xl leading-none text-navy">{visitName(v)}</span>
-              <span className="text-base tabular-nums text-foreground">{visitCostWords(v.kind, zones)}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    )
-  const price = priceFor(service, zones)
-  if (price === null) return <p data-slot="booking-price" className="font-display text-3xl leading-none text-navy">{PRICE_AT_VISIT}</p>
-  return (
-    <div data-slot="booking-price">
-      <p className="font-display text-4xl leading-none text-navy tabular-nums">{priceWords(service, zones)}</p>
-    </div>
-  )
+  // The price is always the same list (PriceLines): what is being bought at the left, what it costs at the right. A Season Pass is a setup, not an order: what each visit costs at this zone
+  // count, with no total. A service with no catalogue price says so in a sentence.
+  if (service.kind === "pass" && plan) return <PriceLines data-slot="booking-price" lines={plan.visits.map((v) => ({ name: visitName(v), value: visitCostWords(v.kind, zones) }))} />
+  if (priceFor(service, zones) === null) return <p data-slot="booking-price" className="type-body text-foreground">{PRICE_AT_VISIT}</p>
+  return <PriceLines data-slot="booking-price" lines={[{ name: service.name, value: priceWords(service, zones) }]} />
 }
 
 /** The questions that belong to the service, above the note. */
@@ -99,7 +84,7 @@ export interface ServiceDetailsProps extends Shared {
   upsell?: { on: boolean; onChange: (on: boolean) => void; prices: readonly { name: string; price: string }[] }
 }
 
-const LABEL = "font-display text-xl leading-tight text-navy"
+const LABEL = "type-heading text-navy"
 
 /** One quiet section: a short label (with its tooltip when the choice needs explaining) and the control under it. */
 function Section({ id, label, tip, mark, children }: { id: string; label: string; tip?: string; mark?: boolean; children: React.ReactNode }) {
@@ -164,7 +149,7 @@ export function QuoteDetails(shared: Shared) {
         <Textarea value={shared.note} onChange={(e) => shared.onNote(e.target.value)} className="min-h-28 text-base" data-autofocus />
       </FormRow>
       <section aria-labelledby="photos-heading">
-        <h2 id="photos-heading" className="mb-3 text-base font-semibold text-foreground">
+        <h2 id="photos-heading" className="mb-3 type-heading text-navy">
           Photos
         </h2>
         <PhotoPicker photos={shared.photos} onAdd={shared.onAddPhotos} onRemove={shared.onRemovePhoto} samples={shared.prototype ? SAMPLES : undefined} />

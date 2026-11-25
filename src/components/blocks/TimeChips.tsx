@@ -33,7 +33,7 @@ export function TimeChips({ options, value, onChange, anyTime = false, legend, h
   const name = useId()
   return (
     <fieldset data-slot="time-chips" className={cn("min-w-0", className)}>
-      <legend className={cn("text-base font-semibold text-foreground", hideLegend && "sr-only")}>{legend}</legend>
+      <legend className={cn("type-option text-navy", hideLegend && "sr-only")}>{legend}</legend>
       {hint && <p className="mt-1 text-sm text-muted-foreground">{hint}</p>}
       <div className={cn("mt-3 grid grid-cols-3 gap-2", density === "sheet" ? "sm:grid-cols-4" : "sm:grid-cols-4 lg:grid-cols-6")}>
         {anyTime && (

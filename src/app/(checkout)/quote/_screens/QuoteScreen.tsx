@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { BUSINESS } from "@/emails/format"
 import { textRyanHref } from "@/lib/portal/words"
 import { approveLabel, money, quoteOf, type QuoteStatus, type QuoteView } from "./quote-view"
+import { PriceLines, PriceTotal } from "@/components/blocks/PriceLines"
 
 // The quote page (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.6 and "Deposits and card on file at approval"; Hannah's answers 3 to 7 of
 // Nov 20 2026): one quote behind a signed link, on a phone first, built like the pay page. The Trailhead badge, "Your quote", what it includes with its prices, the total,
@@ -30,32 +31,14 @@ export interface QuoteScreenProps {
 }
 
 function Lines({ quote }: { quote: QuoteView }) {
-  return (
-    <dl data-slot="quote-lines" className="divide-y divide-border border-y border-border">
-      {quote.lines.map((l, i) => (
-        <div key={`${l.name}-${i}`} className="grid grid-cols-[1fr_auto] gap-x-4 py-3">
-          <dt className="col-start-1 row-start-1 min-w-0 text-base font-medium text-foreground">{l.name}</dt>
-          <dd className="col-start-2 row-start-1 text-base text-foreground tabular-nums">{money(l.amount)}</dd>
-          {l.description && <dd className="col-start-1 mt-0.5 text-sm text-muted-foreground">{l.description}</dd>}
-        </div>
-      ))}
-    </dl>
-  )
+  return <PriceLines data-slot="quote-lines" lines={quote.lines.map((l) => ({ name: l.name, value: money(l.amount), notes: [l.description] }))} />
 }
 
 function Total({ quote, deposit = true }: { quote: QuoteView; deposit?: boolean }) {
   return (
     <>
-      <div data-slot="quote-total" className="mt-4 flex items-baseline justify-between gap-4">
-        <p className="text-base font-medium text-foreground">Total</p>
-        <p className="font-display text-4xl leading-none text-navy tabular-nums">{money(quote.total)}</p>
-      </div>
-      {deposit && quote.deposit ? (
-        <div data-slot="quote-deposit" className="mt-3 flex items-baseline justify-between gap-4 border-t border-border pt-3">
-          <p className="text-base text-foreground">Deposit due when you approve</p>
-          <p className="text-xl font-semibold text-foreground tabular-nums">{money(quote.deposit)}</p>
-        </div>
-      ) : null}
+      <PriceTotal data-slot="quote-total" value={money(quote.total)} />
+      {deposit && quote.deposit ? <PriceLines data-slot="quote-deposit" className="mt-4" lines={[{ name: "Deposit due when you approve", value: money(quote.deposit) }]} /> : null}
     </>
   )
 }
@@ -182,7 +165,7 @@ export function QuoteScreen({ quote, status, depositPaid, cardSaved, onApprove, 
       <Card className="h-fit w-full max-w-md">
         <CardContent className="p-5 pt-5 sm:p-8 sm:pt-8">
           <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={57} height={40} className="h-12 w-auto" priority />
-          <h1 className="mt-5 font-display text-4xl leading-none text-navy">{HEADLINE[status]}</h1>
+          <h1 className="mt-5 type-title text-navy">{HEADLINE[status]}</h1>
           {status !== "old-link" && (
             <p className="mt-2 mb-6 text-base text-muted-foreground">
               Hi {quote.firstName}, here is quote {quote.number} for {quoteOf(quote)}.

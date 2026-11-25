@@ -17,7 +17,7 @@ export interface EarlierSeasonsProps {
 }
 
 function Title({ children }: { children: string }) {
-  return <h2 className="font-display text-2xl font-semibold leading-none text-navy">{children}</h2>
+  return <h2 className="type-heading text-navy">{children}</h2>
 }
 
 export function EarlierSeasons({ passes }: EarlierSeasonsProps) {

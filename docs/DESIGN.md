@@ -87,6 +87,26 @@ Every colour the app uses is a token in `src/app/globals.css`, inside the `@them
 
 Both faces are self hosted through `next/font` in `src/lib/fonts.ts`, which sets `--font-body-src` and `--font-display-src`. Storybook imports `globals.css` so stories render in the brand faces. There is no radius scale; `rounded-lg` is the radius for everything except circles. `--radius` is informational; `rounded-lg` resolves to Tailwind's own `--radius-lg`, which is the same 0.5rem. Never paste shadcn's base layer (`* { @apply border-border outline-ring/50 }`) into globals.css; it would change every bare border on the marketing site. Add primitives with `npx shadcn@latest add` only.
 
+### The customer type scale (Nov 25 2026)
+
+Every customer screen (the booking form, the account, the pay and quote pages, the Season Pass checkout) sets type by role, from one place: the `type-*` utilities and `--type-*` sizes at the top of `src/app/base.css`. A screen never writes `font-display text-…` or styles money by hand.
+
+| Role | Class | Face, size, weight | Used for |
+|---|---|---|---|
+| Page title | `type-title` | Display, 36, 600 | The page's one h1; "Your invoice", "Details", the next visit's day |
+| Heading (section label) | `type-heading` | Display, 24, 600 | A section in a step ("Zones", "Price"), a card, a dialog title, the question over a set of options |
+| Option | `type-option` | Display, 20, 600 | The name on something to choose (a zone chip, Yes or No, a service card), a visit's name in a list, the day over its times |
+| Body | `type-body` | Body, 16, 400, 1.5 | Sentences |
+| Line-item name | `type-item` | Body, 16, 400 | The name half of a line item |
+| Line-item value | `type-value` | Body, 16, 600, tabular, right aligned | The value half, and any amount in a list |
+| Field label | `type-label` | Body, 14, 500 | The label over an input (`FormRow` writes it) |
+| Meta | `type-meta` | Body, 14, 400 | A quiet second line, a label over a value in a review row |
+| Caption | `type-caption` | Body, 12, 600, uppercase | An overline ("Booked", "What happens next"); never a sentence |
+| Price (total) | `type-figure` | Display, 36, 600, tabular | The one total of a bill, a quote or a season |
+| Button | `ui/button.tsx` | Body, 500, 16 in a flow's `lg` button, 14 elsewhere | Every button |
+
+The rules: a heading is never smaller than what sits under it (24 over options at 20 and body at 16); a line item is a name and a value on one baseline in the body face, the value the same size and heavier, right aligned, in tabular numerals; money in a list is always `type-value` and a total is the one `type-figure`. Every list of money is the `PriceLines` block (with `PriceTotal`): the booking form's price, the Season Pass offer, a quote, an invoice, a receipt, the checkout's order summary. Colour is not part of a role: `text-navy` on the display face, `text-foreground` on body and values, `text-muted-foreground` on meta (5.0:1 on white, 4.8:1 on cream, 4.6:1 on stone). Inputs stay 16px on a phone. The pass card (`PassCard`, `BookedCard`) is artwork with its own lettering. The blocks the account shares with the admin (`SummaryBand`, `SectionHeading`, `EmptyState`, `VisitReport`, `StatusPill`) keep their own classes until the admin moves onto the scale.
+
 ### The rule
 
 In `src/components/blocks/` and `src/app/(admin)/`: only semantic tokens; no hex, no `rgb()`, no arbitrary-value colours, and no Tailwind palette colours (`red-500`, `amber-100`, and so on). `white` and `black` are allowed. In `src/components/ui/`: the same, except that files that predate this document may keep their palette colours until they are next touched. Marketing sections in `src/components/sections/` follow `CLAUDE.md`, not this rule.
