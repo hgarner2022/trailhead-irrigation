@@ -69,6 +69,20 @@ export const NewPhone: Story = { name: "New, phone", args: List.args, render: ()
 /** The email matches Andrea Dalton: the panel says so and the band's Customer tile opens her. The request still waits for Ryan. */
 export const NewMatches: Story = { name: "New, matches a customer", args: List.args, render: () => page(byId("rq-andrea")), globals: laptop }
 export const NewMatchesPhone: Story = { name: "New, matches a customer, phone", args: List.args, render: () => page(byId("rq-andrea")), globals: phone }
+/** The booking form recognises a repeat customer by address only (Hannah, Nov 23 2026), so a request can come from a property we have under another email: it matches by address and Ryan is told the email differs. */
+const sameAddress = () => ({ ...byId("rq-andrea"), id: "rq-address-only", email: "andrea@work.example.com", phone: "(970) 555-0999" })
+export const NewAddressOnFile: Story = {
+  name: "New, address on file, another email",
+  args: List.args,
+  render: () => page(sameAddress()),
+  globals: laptop,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await expect((await c.findAllByText(/Same address/)).length).toBeGreaterThan(0)
+    await expect((await c.findAllByText(/Email differs from the one on file/)).length).toBeGreaterThan(0)
+  },
+}
+export const NewAddressOnFilePhone: Story = { name: "New, address on file, another email, phone", args: List.args, render: () => page(sameAddress()), globals: phone }
 
 /** Opening a New request writes Seen once: the pill reads Seen. */
 export const Opened: Story = { name: "Opened", args: List.args, render: () => <RequestsShell><RequestPage request={byId("rq-rosa")} now={NOW} /></RequestsShell>, globals: laptop }

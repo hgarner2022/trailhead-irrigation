@@ -98,7 +98,7 @@ export const PhoneSteps: StoryObj<typeof CustomerPhone> = {
   },
 }
 
-/** Book online end to end: address, the service card opened with access and two photos, the soonest day and an exact time, contact with how we reach you, a card, Review, Confirm and book, and the holographic card. Six steps. */
+/** Book online end to end: address, the service card opened with access and two photos, the soonest day and an exact time, contact with how we reach you, a card, Review, Confirm and book, and the holographic card. Seven steps. */
 export const BookingPath: StoryObj<typeof CustomerPhone> = {
   name: "Booking path",
   tags: ["!dev", "!autodocs"],
@@ -109,9 +109,11 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
     await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
-    // the card opens in place: access and two photos are answered inside it, then the soonest day is already chosen and only an exact start time (never a window) is tapped, and only then who we reach
+    // the card opens in place and picks the service; Details asks access and takes two photos behind one row; then the soonest day is already chosen and only an exact start time (never a window) is tapped, and only then who we reach
     await userEvent.click(await c.findByRole("button", { name: /^Sprinkler repair/ }))
+    await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
+    await userEvent.click(await c.findByRole("button", { name: /Add a note or photos/ }))
     await userEvent.click(await c.findByRole("button", { name: "Add 2 sample photos" }))
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /\d:\d\d [ap]m/ }))[0]!)
@@ -121,7 +123,8 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.type(await c.findByLabelText("Email"), "andrea.dalton@example.com")
     await userEvent.type(await c.findByLabelText(/Mobile|Phone/), "9705550123")
     await expect(await c.findByLabelText("Send me tips and offers from Trailhead by email")).not.toBeChecked()
-    for (const box of await c.findAllByRole("checkbox")) await userEvent.click(box)
+    // the terms are agreed by pressing Continue, so the only box is the marketing one
+    await userEvent.click(await c.findByRole("checkbox", { name: "Send me tips and offers from Trailhead by email" }))
     await userEvent.click(await c.findByRole("radio", { name: /Text and email/ }))
     await next()
     // a card is asked in every booking, a repair too: Stripe's form, drawn, kept with Save card

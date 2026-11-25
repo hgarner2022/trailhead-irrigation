@@ -4,7 +4,7 @@ import { RequestPage } from "./RequestPage"
 import { RequestsList } from "./RequestsList"
 import { createWords } from "./RequestDialogs"
 import { catalogueEntry, isQuoteFirst } from "./request-catalogue"
-import { ARCHIVE_REASONS, QUOTE_ARCHIVE_REASONS, REQUESTS_NOW, REQUEST_FIXTURES, listOrder, matchOf, newCount, openRequests, stateOf, type RequestData } from "./request-model"
+import { ARCHIVE_REASONS, QUOTE_ARCHIVE_REASONS, REQUESTS_NOW, REQUEST_FIXTURES, listOrder, matchNote, matchOf, matchWords, newCount, openRequests, stateOf, type RequestData } from "./request-model"
 import { fromSent, requestStore } from "./request-store"
 
 beforeAll(() => {
@@ -55,6 +55,22 @@ describe("the customer match", () => {
     expect(matchOf(req("rq-andrea"))?.by).toEqual(["email", "phone"])
     expect(matchOf({ email: "nobody@example.com", phone: "970 555 0188" })?.customer.name).toBe("Marcus Bell")
     expect(matchOf({ email: "marcus.bell@example.com", phone: "(970) 555-0123" })?.customer.name).toBe("Marcus Bell")
+  })
+  it("matches a property by its address, and says when the email is not the one on file", () => {
+    const sameAddress = { email: "andrea@work.example.com", phone: "(970) 555-0999", street: "480 briggs street.", town: "Erie" }
+    const m = matchOf(sameAddress)!
+    expect(m.customer.name).toBe("Andrea Dalton")
+    expect(m.by).toEqual([])
+    expect(m.address).toBe(true)
+    expect(m.emailDiffers).toBe(true)
+    expect(matchWords(m)).toBe("Same address")
+    expect(matchNote(m)).toBe("Email differs from the one on file")
+    // the same email at the same address is the ordinary match, with nothing to tell
+    const same = matchOf({ ...sameAddress, email: "Andrea.Dalton@example.com" })!
+    expect(same.by).toEqual(["email"])
+    expect(matchNote(same)).toBeNull()
+    // a street alone, in another town, is not a match
+    expect(matchOf({ ...sameAddress, town: "Longmont" })).toBeNull()
   })
   it("has no match for a stranger, and none for a short phone", () => {
     expect(matchOf(req("rq-rosa"))).toBeNull()

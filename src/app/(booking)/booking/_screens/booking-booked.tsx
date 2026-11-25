@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { AddToCalendarLinks } from "@/components/blocks/AddToCalendarLinks"
 import { BookedCard, type BookedVisitLine } from "@/components/blocks/BookedCard"
+import { PassVisitsList } from "./booking-pass-visits"
 import { channelWords, type ContactChannel } from "@/components/blocks/ContactPreference"
 import { photoCount } from "@/components/blocks/PhotoPicker"
 import { clock12, type DayTimePick } from "@/lib/booking/day-time"
@@ -46,6 +47,8 @@ function Trail({ lines }: { lines: { key: string; lead: string; text: string }[]
 /** A Season Pass bought on a date: its name, one card line per visit (the exact day and time or the preference), and the visits that have an exact day for the reminder and the calendar. */
 export interface BookedPass {
   name: string
+  /** "Erie · 8 zones": the town and zones on the card */
+  detail?: string
   lines: BookedVisitLine[]
   exact: { name: string; day: string; start: string }[]
 }
@@ -96,7 +99,8 @@ export function BookingBooked({ service, where, channel, phone, email, pick, pho
     return (
       <div>
         <h2 className="mb-5 font-display text-4xl leading-none text-navy">{`Your ${pass.name} is set up.`}</h2>
-        <BookedCard service={pass.name} visits={pass.lines} where={where} status="Set up" />
+        <BookedCard service={pass.name} detail={pass.detail} where={where} status="Set up" />
+        <PassVisitsList lines={pass.lines} where={where} />
         {photoLine}
         {cardLine}
         <Trail

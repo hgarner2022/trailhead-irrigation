@@ -4,13 +4,13 @@ import { expect, fn } from "storybook/test"
 import { QUOTE_SERVICES, SERVICES, type ServiceEntry } from "@/lib/booking/services"
 import { ServicePicker } from "./ServicePicker"
 
-// The service list a customer picks from: one card per service with its price and a chevron, the whole header the button. The open card is the picked service and holds what the screen puts in it. The Season
-// Pass is first, and under the list one link requests a quote. Services we quote are not in it.
+// The service list a customer picks from: one card per service with a photo, its name, one line, its price and length and a chevron, the whole header the button. The open card is the picked service and holds only
+// what is included. The Season Pass is first, and under the list a quiet row requests a quote. Services we quote are not in it.
 function Harness({ entries, initial, onRequestQuote, quote }: { entries: readonly ServiceEntry[]; initial?: string | null; onRequestQuote?: () => void; quote?: boolean }) {
   const [value, setValue] = useState<string | null>(initial ?? null)
   return (
     <div className="mx-auto max-w-3xl container-padding-x py-8">
-      <ServicePicker entries={entries} value={value} onChange={setValue} onRequestQuote={onRequestQuote} renderPanel={quote ? undefined : (e) => <p className="text-base text-foreground">{e.included ?? `What ${e.name} includes, and its questions, go here.`}</p>} />
+      <ServicePicker entries={entries} value={value} onChange={setValue} onRequestQuote={onRequestQuote} mode={quote ? "quote" : "book"} />
     </div>
   )
 }

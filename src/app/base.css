@@ -59,3 +59,17 @@ h1, h2, h3 {
 @media (prefers-reduced-motion: reduce) {
   .settle { animation: none; }
 }
+
+/* The check on a chosen service card draws in once (a stroke, 220 ms) and nothing else moves.
+   Under prefers-reduced-motion it is simply drawn. */
+@keyframes draw-check {
+  to { stroke-dashoffset: 0; }
+}
+.draw-check path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: draw-check 220ms ease-out 60ms forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .draw-check path { animation: none; stroke-dashoffset: 0; }
+}

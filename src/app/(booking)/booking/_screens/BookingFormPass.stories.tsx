@@ -44,23 +44,30 @@ const at = (month: keyof typeof TODAY, initial: NonNullable<Args["initial"]>): A
 // May 4 is a Tuesday inside the turn-on's window; October 14 is inside the blowout's.
 const picked = { "turn-on": { day: "2027-05-04", start: "10:30" } }
 
-/** 1. The pass card in April, open: the visits with their prices at the zone count, the one line about every season, and no opening day or "Opens". */
+/** 1. The pass card in April, open: only the visits it holds (no zones, no prices; those are on Details), the one line about every season on the card, and no opening day or "Opens". */
 const servicesApril = on(at("april", { step: "service" }), "April, service", {
   play: async ({ canvas }) => {
     const card = canvas.getByRole("region", { name: /Season Pass 2027/ })
     await expect(within(card).getByText("Spring turn-on")).toBeInTheDocument()
     await expect(within(card).getByText("Fall blowout")).toBeInTheDocument()
-    await expect(within(card).getByText("About $145")).toBeInTheDocument()
-    await expect(within(card).getByText("About $115")).toBeInTheDocument()
-    await expect(within(card).queryByText("Charged after each visit.")).toBeNull()
-    await expect(within(card).getByText("We schedule your visits every season, so you never have to remember.")).toBeInTheDocument()
-    await expect(canvas.queryByText(/Opens|Apr 25|Auto-renews|What happens for you/)).toBeNull()
-    // the upsell is a single visit's card, not the pass's own
+    await expect(within(card).queryByText(/\$/)).toBeNull()
+    await expect(canvas.getByText("We schedule your visits every season, so you never have to remember.")).toBeInTheDocument()
+    await expect(canvas.queryByText(/Opens|Apr 25|Auto-renews|What happens for you|Zones/)).toBeNull()
     await expect(canvas.queryByRole("switch")).toBeNull()
   },
 })
 export const AprilServicesPhone = servicesApril.phone
 export const AprilServicesLaptop = servicesApril.laptop
+/** The pass's Details: the zones and what each visit costs at them; nothing is charged at sign-up. */
+const detailsApril = on(at("april", { step: "details" }), "April, details", {
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("About $145")).toBeInTheDocument()
+    await expect(canvas.getByText("About $115")).toBeInTheDocument()
+    await expect(canvas.queryByRole("switch")).toBeNull()
+  },
+})
+export const AprilDetailsPhone = detailsApril.phone
+export const AprilDetailsLaptop = detailsApril.laptop
 /** January: both visits are months away, so both take a preference. */
 const servicesJanuary = on(at("january", { step: "service" }), "January, service")
 export const JanuaryServicesPhone = servicesJanuary.phone
@@ -107,7 +114,7 @@ const dayOctober = on(at("october", { step: "day" }), "October, day", {
 export const OctoberDayPhone = dayOctober.phone
 export const OctoberDayLaptop = dayOctober.laptop
 
-/** 3. The preference step: the visit by name, Our recommended pressed, Early season and Late season, with no dates and no months, and when it is scheduled. April asks the blowout only. */
+/** 3. The preference step: the visit by name, Our recommended pressed, Early season and Late season, each with its month under it in the account's own words, and when it is scheduled. April asks the blowout only. */
 const prefApril = on(at("april", { step: "preference", picks: picked }), "April, preference", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Fall blowout" })).toBeInTheDocument()
@@ -115,7 +122,10 @@ const prefApril = on(at("april", { step: "preference", picks: picked }), "April,
     await expect(canvas.getByRole("button", { name: "Early season" })).toHaveAttribute("aria-pressed", "false")
     await expect(canvas.getByRole("button", { name: "Late season" })).toHaveAttribute("aria-pressed", "false")
     await expect(canvas.getByText("We'll schedule it about two weeks before and tell you the day.")).toBeInTheDocument()
-    await expect(canvas.queryByText(/Oct|freeze|Mid/)).toBeNull()
+    await expect(canvas.getByText("Early October")).toBeInTheDocument()
+    await expect(canvas.getByText("Mid October")).toBeInTheDocument()
+    await expect(canvas.getByText("Late October")).toBeInTheDocument()
+    await expect(canvas.queryByText(/freeze/)).toBeNull()
   },
 })
 export const AprilPreferencePhone = prefApril.phone
@@ -164,7 +174,7 @@ export const AprilCardLaptop = cardPass.laptop
 /** 5. Review: one row per visit, the exact day and time or the preference by name, and what each costs; the one line about every season. */
 const confirmApril = on(at("april", { step: "confirm", picks: picked, prefs: { blowout: "earlier" }, ...SAVED }), "April, review", {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Preference: Early season")).toBeInTheDocument()
+    await expect(canvas.getByText("Preference: Early season, early October")).toBeInTheDocument()
     await expect(canvas.getByText(/Tuesday, May 4 at 10:30 am/)).toBeInTheDocument()
     await expect(canvas.getByText("About $145")).toBeInTheDocument()
     await expect(canvas.getByText("About $115")).toBeInTheDocument()
@@ -190,18 +200,22 @@ export const NovemberConfirmLaptop = confirmNovember.laptop
 /** October: the blowout has its day, next spring's turn-on has its own preference, each with what it costs. */
 const confirmOctober = on(at("october", { step: "confirm", picks: { blowout: { day: "2027-10-14", start: "09:00" } }, prefs: { "turn-on": "later" }, ...SAVED }), "October, review", {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Preference: Late season")).toBeInTheDocument()
+    await expect(canvas.getByText("Preference: Late season, late May")).toBeInTheDocument()
     await expect(canvas.getByText(/Thursday, October 14 at 9:00 am/)).toBeInTheDocument()
   },
 })
 export const OctoberConfirmPhone = confirmOctober.phone
 export const OctoberConfirmLaptop = confirmOctober.laptop
 
-/** 6. Set up: the holographic card lists every visit, with its exact day and time or its preference and when it is scheduled. */
+/** 6. Set up: the clean wallet card with nothing over the art, and the visits as a list under it, each with its exact day and time or its preference and when it is scheduled. */
 const bookedApril = on(at("april", { step: "done", picks: picked, prefs: { blowout: "earlier" }, ...SAVED }), "April, set up", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Your Season Pass 2027 is set up." })).toBeInTheDocument()
-    await expect(canvas.getByRole("article", { name: /Season Pass 2027, set up.*Fall blowout Preference: Early season/ })).toBeInTheDocument()
+    await expect(canvas.getByRole("article", { name: "Season Pass 2027, set up, Erie · 8 zones" })).toBeInTheDocument()
+    await expect(document.querySelector("[data-slot=booked-card-band]")).toBeNull()
+    const list = canvas.getByRole("region", { name: "Your visits" })
+    await expect(within(list).getByText("Preference: Early season, early October")).toBeInTheDocument()
+    await expect(within(list).getByText(/Tue, May 4 at 10:30 am/)).toBeInTheDocument()
     await expect(canvas.getByText("We'll schedule it about two weeks before and tell you the day.")).toBeInTheDocument()
     await expect(canvas.getByText("Visa ending 4242")).toBeInTheDocument()
   },
@@ -218,7 +232,7 @@ const bookedNovember = on(at("november", { step: "done", ...SAVED }), "November,
 export const NovemberBookedPhone = bookedNovember.phone
 export const NovemberBookedLaptop = bookedNovember.laptop
 
-/** The April purchase on a phone, clicked: the pass card with its access answer, a time for the turn-on, Late season for the blowout, contact, the card, review, a Change that returns to review, set up. Six steps. Hidden twin of the stories above. */
+/** The April purchase on a phone, clicked: the pass card with its access answer, a time for the turn-on, Late season for the blowout, contact, the card, review, a Change that returns to review, set up. Seven steps. Hidden twin of the stories above. */
 export const WholePassPathPhone: Story = { ...phone, name: "April, whole path, phone", args: { today: TODAY.april } }
 export const WholePassPathPhoneTest: Story = {
   ...phone,
@@ -232,6 +246,7 @@ export const WholePassPathPhoneTest: Story = {
     await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
     await userEvent.click(await c.findByRole("button", { name: /^Season Pass 2027/ }))
+    await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
     await next()
     await expect(await c.findByRole("heading", { name: "Spring turn-on" })).toBeInTheDocument()
@@ -244,17 +259,17 @@ export const WholePassPathPhoneTest: Story = {
     await userEvent.type(await c.findByLabelText("Last name"), "Dalton")
     await userEvent.type(await c.findByLabelText("Email"), "andrea@example.org")
     await userEvent.type(await c.findByLabelText("Phone"), "9705550188")
-    await userEvent.click(await c.findByRole("checkbox", { name: /I accept the/ }))
     await next()
     await expect(await c.findByText("Charged after each visit.")).toBeInTheDocument()
     await next("Save card")
-    await expect(await c.findByText("Preference: Late season")).toBeInTheDocument()
+    await expect(await c.findByText("Preference: Late season, late October")).toBeInTheDocument()
     // the only Change links are here; a Change comes back to this step when the customer continues
     await userEvent.click(await c.findByRole("button", { name: "Change fall blowout" }))
     await userEvent.click(await c.findByRole("button", { name: "Our recommended" }))
     await next()
-    await expect(await c.findByText("Preference: Our recommended")).toBeInTheDocument()
+    await expect(await c.findByText("Preference: Our recommended, mid October")).toBeInTheDocument()
     await next("Set up my Season Pass")
-    await expect(await c.findByRole("article", { name: /Fall blowout Preference: Our recommended/ })).toBeInTheDocument()
+    await expect(await c.findByRole("article", { name: /Season Pass 2027, set up/ })).toBeInTheDocument()
+    await expect(await c.findByText("Preference: Our recommended, mid October")).toBeInTheDocument()
   },
 }

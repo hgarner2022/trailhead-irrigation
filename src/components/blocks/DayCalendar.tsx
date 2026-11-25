@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 // times under the grid, earliest first; a time is never chosen for the customer. The chosen day and the chosen time settle in with one 160 ms scale (`settle`, base.css), once, and nothing pulses; under
 // prefers-reduced-motion they just are chosen. The month arrows replace "Show more days". A real grid for keyboard and screen readers (WAI-ARIA date picker grid): one day in the Tab order (roving tabindex),
 // arrows move by day and week, Page Up and Page Down by month, Home and End to the week's ends, Enter or Space picks; each day is a 44px button named with its weekday and date. No sentence about where
-// Ryan is on which day, and no "Best fit". Controlled; the screen holds the pick. With no day open it says so and offers a box for when would suit. Pure props, client component.
+// Ryan is on which day, and nothing marked but the soonest. Controlled; the screen holds the pick. With no day open it says so and offers a box for when would suit. Pure props, client component.
 
 export interface DayCalendarProps {
   offers: readonly DayTimeOffer[]

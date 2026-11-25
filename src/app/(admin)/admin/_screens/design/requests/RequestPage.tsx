@@ -17,7 +17,7 @@ import type { TimelineLine } from "@/lib/events/timeline"
 import { NOW, noteOk } from "../job-fixtures"
 import { ArchiveDialog, CreateJobDialog, type ChosenService, type CreateMode } from "./RequestDialogs"
 import { isQuoteFirst, type ServicePick } from "./request-catalogue"
-import { REQUEST_PILL, SOURCE_WORDS, cameIn, cameInOn, fullName, matchOf, matchWords, serviceWords, stateOf, type ArchiveReason, type Match, type RequestData } from "./request-model"
+import { REQUEST_PILL, SOURCE_WORDS, cameIn, cameInOn, fullName, matchNote, matchOf, matchWords, serviceWords, stateOf, type ArchiveReason, type Match, type RequestData } from "./request-model"
 
 // A request as a page of its own (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.2 to 4.5; Hannah's answers 2 and 3 of Nov 20 2026), on the
 // record page frame: the person's name with its status, the band (when it came in, what they asked for, where, which customer they match), the customer's
@@ -136,7 +136,7 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
     { label: "Came in", value: cameIn(r, now), sub: cameInOn(r.receivedAt), icon: Clock },
     { label: "Asked for", value: serviceWords(r), sub: SOURCE_WORDS[r.source], icon: ClipboardList },
     { label: "Where", value: r.street || "No address", sub: r.town ? `${r.town}, CO` : undefined, icon: MapPin },
-    { label: "Customer", value: customerValue, sub: match ? matchWords(match) : r.email ? "No customer has this email or phone" : undefined, icon: UserRound, ...(customerHref ? { href: customerHref } : {}) },
+    { label: "Customer", value: customerValue, sub: match ? [matchWords(match), matchNote(match)].filter(Boolean).join(". ") : r.email ? "No customer has this email or phone" : undefined, icon: UserRound, ...(customerHref ? { href: customerHref } : {}) },
   ]
 
   const archivedNote = r.archived ? `Archived as ${r.archived.reason}. No customer was added and nothing was sent.` : undefined
@@ -260,6 +260,11 @@ export function MatchPanel({ match, request }: { match: Match | null; request: R
       <p className="text-muted-foreground">
         {matchWords(match)}. {match.customer.street}.
       </p>
+      {matchNote(match) && (
+        <p data-slot="match-note" className="font-semibold text-foreground">
+          {matchNote(match)}.
+        </p>
+      )}
       <p className="text-muted-foreground">A match is a hint. The request waits until you make a job of it.</p>
     </div>
   )
