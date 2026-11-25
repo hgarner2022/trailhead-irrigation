@@ -5,6 +5,7 @@ import { AccessChoice, type Access } from "@/components/blocks/AccessChoice"
 import { ChoiceChips } from "@/components/blocks/ChoiceChips"
 import { FormRow } from "@/components/blocks/FormRow"
 import { InfoTip } from "@/components/blocks/InfoTip"
+import { OnFileMark } from "@/components/blocks/OnFileMark"
 import { PassUpsell } from "@/components/blocks/PassUpsell"
 import { PhotoPicker, type PickedPhoto } from "@/components/blocks/PhotoPicker"
 import { ZonePicker } from "@/components/blocks/ZonePicker"
@@ -93,18 +94,21 @@ export interface ServiceDetailsProps extends Shared {
   extras: Extras
   onExtras: (x: Extras) => void
   /** the Season Pass offer card: on a single turn-on or blowout, and on the pass the customer made of one; omitted elsewhere. `prices` are what each visit costs at their zones. */
+  /** which answers started from what we hold for the address, so they carry the On file mark and the customer only confirms them */
+  onFile?: { zones: boolean; access: boolean }
   upsell?: { on: boolean; onChange: (on: boolean) => void; prices: readonly { name: string; price: string }[] }
 }
 
 const LABEL = "font-display text-xl leading-tight text-navy"
 
 /** One quiet section: a short label (with its tooltip when the choice needs explaining) and the control under it. */
-function Section({ id, label, tip, children }: { id: string; label: string; tip?: string; children: React.ReactNode }) {
+function Section({ id, label, tip, mark, children }: { id: string; label: string; tip?: string; mark?: boolean; children: React.ReactNode }) {
   return (
     <section aria-labelledby={id}>
       <h2 id={id} className={cn(LABEL, "mb-3 flex items-center gap-1")}>
         {label}
         {tip && <InfoTip label={`About ${label.toLowerCase()}`}>{tip}</InfoTip>}
+        {mark && <OnFileMark className="ml-2 font-sans" />}
       </h2>
       {children}
     </section>
@@ -129,12 +133,12 @@ function NoteAndPhotos({ id, service, ...shared }: Shared & { id: string; servic
  * The Details step: what belongs to the chosen service and nothing else, one quiet question per section with generous space between them. Zones (when the price depends on them), the price (a pass:
  * each visit's price), the questions that belong to the service, whether we can reach the controller and shut-off without the customer (the one required answer), the note (optional, in its own label) and the photos as plain sections, and on a single turn-on or blowout the Season Pass offer card after them.
  */
-export function ServiceDetails({ service, plan = null, zones, onZones, access, onAccess, attempted, extras, onExtras, upsell, ...shared }: ServiceDetailsProps) {
+export function ServiceDetails({ service, plan = null, zones, onZones, access, onAccess, attempted, extras, onExtras, onFile, upsell, ...shared }: ServiceDetailsProps) {
   const id = useId()
   return (
     <div data-slot="service-details" className="space-y-10">
       {service.perZone && (
-        <Section id={`${id}-zones`} label="Zones" tip="Count the stations on your controller.">
+        <Section id={`${id}-zones`} label="Zones" tip="Count the stations on your controller." mark={onFile?.zones}>
           <ZonePicker value={zones} onChange={onZones} />
         </Section>
       )}
@@ -142,7 +146,10 @@ export function ServiceDetails({ service, plan = null, zones, onZones, access, o
         <Price service={service} zones={zones} plan={plan} />
       </Section>
       <ServiceQuestions service={service} extras={extras} onExtras={onExtras} />
-      <AccessChoice compact value={access} onChange={onAccess} error={attempted && access === null ? ACCESS_PROBLEM : undefined} />
+      <div>
+        {onFile?.access && <OnFileMark className="mb-2" />}
+        <AccessChoice compact value={access} onChange={onAccess} error={attempted && access === null ? ACCESS_PROBLEM : undefined} />
+      </div>
       <NoteAndPhotos id={id} service={service} {...shared} />
       {upsell && <PassUpsell on={upsell.on} onChange={upsell.onChange} prices={upsell.prices} />}
     </div>

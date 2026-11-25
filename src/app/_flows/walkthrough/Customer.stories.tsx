@@ -125,9 +125,8 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.type(await c.findByLabelText("Last name"), "Dalton")
     await userEvent.type(await c.findByLabelText("Email"), "andrea.dalton@example.com")
     await userEvent.type(await c.findByLabelText(/Mobile|Phone/), "9705550123")
-    await expect(await c.findByLabelText("Send me tips and offers from Trailhead by email")).not.toBeChecked()
-    // the terms are agreed by pressing Continue, so the only box is the marketing one
-    await userEvent.click(await c.findByRole("checkbox", { name: "Send me tips and offers from Trailhead by email" }))
+    // the terms are agreed by pressing Continue and the booking is the opt-in for tips and offers by email: there is no box on this step
+    await expect(c.queryByRole("checkbox")).toBeNull()
     await userEvent.click(await c.findByRole("radio", { name: /Text and email/ }))
     await next()
     // a card is asked in every booking, a repair too: Stripe's form, drawn, kept with Save card
@@ -139,8 +138,11 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await expect(await c.findByRole("article", { name: /booked/ })).toBeInTheDocument()
     await userEvent.click(await c.findByRole("link", { name: "your Trailhead account" }))
     await waitFor(() => expect(where(canvasElement)).toBe("account"))
-    // the box was ticked: marketing email is on, and the admin walkthrough reads it
-    await expect(JSON.parse(window.localStorage.getItem("trailhead-walkthrough-marketing") ?? "{}").email).toBe(true)
+    // the booking gave tips and offers by email, from the booking form, and the admin walkthrough reads it
+    const choice = JSON.parse(window.localStorage.getItem("trailhead-walkthrough-marketing") ?? "{}")
+    await expect(choice.email).toBe(true)
+    await expect(choice.emailSource).toBe("booking form")
+    await expect(choice.text).toBeUndefined()
   },
 }
 

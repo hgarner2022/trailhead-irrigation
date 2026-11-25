@@ -1,7 +1,12 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it } from "vitest"
+import { beforeAll, describe, expect, it, vi } from "vitest"
 import { InfoTip } from "./InfoTip"
+
+// jsdom has no ResizeObserver, which Radix's popper needs when the tooltip opens; the real one runs in Chromium.
+beforeAll(() => {
+  vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} })
+})
 
 describe("InfoTip", () => {
   it("is a named button, shows nothing until pressed, opens on a press and closes on Escape", async () => {

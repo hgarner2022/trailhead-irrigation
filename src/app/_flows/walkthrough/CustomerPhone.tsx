@@ -84,17 +84,18 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   const [placeholder, setPlaceholder] = useState<{ title: string; path: string } | null>(null)
   const [booked, setBooked] = useState<Booked | null>(null)
   const [channel, setChannel] = useState<ContactChannel>("text")
-  // Marketing is off until the customer says so: by the box in the booking, or the switches in Details. The admin walkthrough reads the same choice.
+  // Tips and offers by email start off for the run and are given by booking (no box), withdrawn in Details or by the unsubscribe link. The admin walkthrough reads the same choice.
   const [marketing, setMarketing] = useState<{ email: boolean; text: boolean }>(() => {
     writeChoice({})
     // a request sent from the booking form on an earlier run is forgotten with the rest
     clearSent()
     return { email: false, text: false }
   })
-  const choose = (kind: "email" | "text", on: boolean) => {
+  // Tips and offers by email: given by booking, withdrawn by the Details switch or the unsubscribe link, each written to the consent history with where it happened. Marketing texts do not exist.
+  const choose = (kind: "email", on: boolean, source: "booking form" | "account" | "unsubscribe link") => {
     setMarketing((m) => ({ ...m, [kind]: on }))
-    writeChoice({ ...readChoice(), [kind]: on })
-    setNotice(`Marketing ${kind === "email" ? "emails" : "texts"} ${on ? "on" : "off"}`)
+    writeChoice({ ...readChoice(), [kind]: on, emailSource: source })
+    if (source !== "booking form") setNotice(`Tips and offers by email ${on ? "on" : "off"}`)
   }
   const [bookRun, setBookRun] = useState(0)
   // a link to a live screen already open (Use a different email, on the sent note) starts it again
@@ -168,7 +169,7 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
             <DetailsScreen customer={andrea} />
             <div className="mx-auto max-w-3xl pb-10 container-padding-x">
               <ContactPreference value={channel} onChange={setChannel} name="details-preference" />
-              <MarketingSwitches email={marketing.email} text={marketing.text} onEmail={(on) => choose("email", on)} onText={(on) => choose("text", on)} />
+              <MarketingSwitches email={marketing.email} onEmail={(on) => choose("email", on, "account")} />
             </div>
           </>,
           "/account/details",
@@ -198,13 +199,13 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   let body: ReactNode
   switch (where) {
     case "book":
-      body = <BookingForm key={bookRun} onRequested={(r) => writeSent({ id: `rq-sent-${Date.now().toString(36)}`, at: new Date().toISOString(), first: r.firstName, last: r.lastName, phone: r.phone, email: r.email, contact: r.channel, street: r.street, town: r.town, serviceKey: r.serviceKey, serviceName: r.serviceName, words: r.words, photos: r.photos.map((p) => ({ name: p.name, src: p.src })) })} onBooked={(b) => (setBooked(b), b.marketing && (setMarketing((m) => ({ ...m, email: true })), writeChoice({ ...readChoice(), email: true })))} onOpenAccount={() => open("/account")} />
+      body = <BookingForm key={bookRun} onRequested={(r) => writeSent({ id: `rq-sent-${Date.now().toString(36)}`, at: new Date().toISOString(), first: r.firstName, last: r.lastName, phone: r.phone, email: r.email, contact: r.channel, street: r.street, town: r.town, serviceKey: r.serviceKey, serviceName: r.serviceName, words: r.words, photos: r.photos.map((p) => ({ name: p.name, src: p.src })) })} onBooked={(b) => (setBooked(b), b.marketing && choose("email", true, "booking form"))} onOpenAccount={() => open("/account")} />
       break
     case "quote":
       body = <QuoteWalk onOpenLink={open} />
       break
     case "texts":
-      body = <PhoneInbox texts={[...allMessages(facts, pref), ...(marketing.email ? [MARKETING_MAIL] : [])]} onLink={open} onUnsubscribe={() => choose("email", false)} />
+      body = <PhoneInbox texts={[...allMessages(facts, pref), ...(marketing.email ? [MARKETING_MAIL] : [])]} onLink={open} onUnsubscribe={() => choose("email", false, "unsubscribe link")} />
       break
     case "receipts": {
       const choice = WAYS.find((w) => w.way === way)!
