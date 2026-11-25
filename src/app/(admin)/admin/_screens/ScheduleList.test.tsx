@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
-import { fireEvent, render, screen, within } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
+import { pickDay, pickTime } from "@/components/blocks/day-calendar-kit"
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, Visit } from "@/lib/admin/types"
@@ -196,9 +197,8 @@ describe("VisitsScreen", () => {
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Move" }))
     const move = ask()
     expect(move.getByText("Moves the repair to Fri, Nov 20.")).toBeInTheDocument()
-    await userEvent.clear(move.getByLabelText("Day"))
-    await userEvent.type(move.getByLabelText("Day"), "2026-11-24")
-    await userEvent.selectOptions(move.getByLabelText("Time"), "09:00")
+    await pickDay(move, userEvent, "2026-11-24")
+    await pickTime(move, userEvent, "09:00")
     await userEvent.click(move.getByRole("button", { name: "Move and text the customer" }))
     expect(a.move).toHaveBeenCalledWith("a", "2026-11-24", "09:00", { notify: true })
     await userEvent.click(await screen.findByRole("button", { name: "Undo" }))
@@ -209,7 +209,7 @@ describe("VisitsScreen", () => {
     const a = actions({ move: vi.fn().mockResolvedValue({ ok: false, message: "Truck 1 is full of repair visits on 2026-11-24" }) })
     renderScreen(a, { defaultVisitId: "a" })
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Move" }))
-    fireEvent.change(ask().getByLabelText("Day"), { target: { value: "2026-11-25" } })
+    await pickDay(ask(), userEvent, "2026-11-25")
     await userEvent.click(ask().getByRole("button", { name: "Move and text the customer" }))
     expect(await screen.findByText("Truck 1 is full of repair visits on 2026-11-24")).toBeInTheDocument()
   })

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect, fn } from "storybook/test"
+import { expect, fn, within } from "storybook/test"
+import { pickDay } from "@/components/blocks/day-calendar-kit"
 import { savePassImage } from "@/lib/pass-card-image"
 import { typedPlace } from "@/lib/places"
 import { FIXTURE_HOME } from "@/lib/places/fixture"
@@ -9,8 +10,8 @@ import type { CheckoutFields } from "./checkout-state"
 
 // The step stories open on one step with the earlier answers prefilled;
 // Walkthrough answers every question from the first screen, including the
-// consent boxes, and lands on the pass card. The days step opens with three days for each visit and
-// recommendations preselected, so it needs nothing prefilled.
+// consent boxes, and lands on the pass card. The days step opens with a calendar for each visit and
+// the soonest open day preselected, so it needs nothing prefilled.
 const DAYS = choicesAfterOffer(fixtureOffers(2027, ["turn-on", "blowout"]), [])
 const answers: Partial<CheckoutFields> = {
   address: FIXTURE_HOME.label,
@@ -93,14 +94,13 @@ export const Inspection: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** Three open days for each visit, the first preselected, one line under them about changing it later. */
+/** One calendar for each visit with its open days, the soonest preselected and marked, one line under them about changing it later. */
 export const Days: Story = {
   args: { initialStep: 4, prefill: answers },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas }) => {
-    const radios = await canvas.findAllByRole("radio")
-    await expect(radios).toHaveLength(6)
-    await expect(radios[0]).toBeChecked()
+    await expect(await canvas.findAllByRole("grid")).toHaveLength(2)
+    await expect(canvas.getAllByRole("button", { name: /, soonest$/ })).toHaveLength(2)
     await expect(canvas.getByText("Change it later from your pass page.")).toBeInTheDocument()
   },
 }
@@ -235,9 +235,9 @@ export const WalkthroughTest: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: /Yes, add July/ }))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
-    const radios = await canvas.findAllByRole("radio")
-    await expect(radios[0]).toBeChecked()
-    await userEvent.click(radios[8]!)
+    await canvas.findAllByRole("grid")
+    await expect(canvas.getAllByRole("button", { name: /, soonest$/ })[0]).toHaveAttribute("aria-pressed", "true")
+    await pickDay(within(canvas.getByRole("region", { name: "Your fall blowout" })), userEvent, "2027-10-26")
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
     await userEvent.type(await canvas.findByLabelText("First name"), "Andrea")

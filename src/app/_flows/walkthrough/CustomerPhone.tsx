@@ -5,7 +5,7 @@ import { AccountNav } from "@/components/blocks/AccountNav"
 import { Button } from "@/components/ui/button"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
-import { fixtureDayTimes } from "@/lib/booking/day-time"
+import { fixtureCalendarDays } from "@/lib/booking/day-time"
 import { serviceFor } from "@/lib/services"
 import { andrea, TODAY } from "@/app/(account)/account/_screens/account-fixtures"
 import { DetailsScreen } from "@/app/(account)/account/_screens/DetailsScreen"
@@ -39,7 +39,7 @@ import { LiveScreen } from "./LiveScreens"
 // prototype says so in the strip. Nothing is sent.
 
 const pass = (snapshot.passes[0] as Pass) && ({ ...(snapshot.passes[0] as Pass), visits: (snapshot.passes[0] as Pass).visits.map((v) => ({ ...v, description: serviceFor(v.kind, (snapshot.passes[0] as Pass).zones)?.description })) } as Pass)
-const offers = { v1: fixtureDayTimes(60) }
+const offers = { v1: fixtureCalendarDays(60, "2027-04-15", "2027-05-14") }
 const receiptOf = {
   id: "pay_9",
   business: { name: "Trailhead Lawn & Irrigation LLC", phone: "(970) 692-7270" },

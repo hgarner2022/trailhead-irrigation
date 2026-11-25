@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { DayField } from "@/components/blocks/DayField"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { AdminData, ServiceItem } from "@/lib/admin/types"
@@ -10,11 +11,10 @@ import { serviceCost } from "@/lib/services"
 import { FIELD, LABEL, choiceReady, newCustomerFrom, type CustomerChoice } from "./CustomerPicker"
 import type { NewVisitInput, VisitActions } from "./visit-actions-types"
 import { FORM_STATUS, useRunner } from "./use-runner"
-import { TIME_CHOICES } from "./visit-panel-model"
 import { asksZones, defaultZones, zoneCountOf, type ServiceGroup } from "./new-job-model"
 
-// The service half of New job: the day up front (it may stay empty: the job waits on the Schedule's Unscheduled list and
-// nothing is sent), then the time, the minutes (the service's own), who, the price (the service's rule, editable) and the
+// The service half of New job: the day up front, on the one calendar (it may stay empty: the job waits on the Schedule's Unscheduled list and
+// nothing is sent; a chosen day offers its start times, "Any time" first), then the minutes (the service's own), who, the price (the service's rule, editable) and the
 // notes under "More details". Adding it makes the job and its first visit; with a day and a customer who can be texted,
 // the date goes out. The service is one entry; `service` is the band the zones box lands on, and its key is what is sent.
 
@@ -92,12 +92,7 @@ export function NewJobService({ data, today, choice, group, service, zones, onZo
 
   return (
     <>
-      <div>
-        <label htmlFor="nj-day" className={LABEL}>
-          Day (optional)
-        </label>
-        <Input id="nj-day" type="date" value={day} min={todayDay} onChange={(e) => setDay(e.target.value)} className="min-h-11" />
-      </div>
+      <DayField label="Day (optional)" value={day} start={time} onChange={(d, t) => (setDay(d), setTime(t))} from={todayDay} timed clearable />
 
       {banded && (
         <div>
@@ -111,19 +106,6 @@ export function NewJobService({ data, today, choice, group, service, zones, onZo
       <details className="rounded-lg border border-border p-3">
         <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">More details</summary>
         <div className="mt-2 grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="nj-time" className={LABEL}>
-              Time
-            </label>
-            <select id="nj-time" value={time} disabled={!day} onChange={(e) => setTime(e.target.value)} className={FIELD}>
-              <option value="">Any time</option>
-              {TIME_CHOICES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </div>
           <div>
             <label htmlFor="nj-minutes" className={LABEL}>
               Minutes

@@ -2,21 +2,22 @@
 
 import { useState } from "react"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
+import { DayCalendar } from "@/components/blocks/DayCalendar"
 import { FormRow } from "@/components/blocks/FormRow"
 import { SplitButton } from "@/components/blocks/SplitButton"
 import { useUndoToast } from "@/components/blocks/UndoToast"
 import { Input } from "@/components/ui/input"
+import { OFFICE_STARTS } from "@/lib/booking/day-time"
 import { withinCutoffOn } from "@/lib/portal/change-day"
 import type { Visit } from "@/lib/admin/types"
-import { FIELD } from "./CustomerPicker"
 import type { VisitActions } from "./visit-actions-types"
-import { TIME_CHOICES, dayLabel, dayOfVisit, moveSentence } from "./visit-panel-model"
+import { dayLabel, dayOfVisit, moveSentence } from "./visit-panel-model"
 
 // Move: the one dialog behind the visit panel's Move and a drop on the Schedule that would move a promised time. Its button is split
 // (docs/plans/2026-11-18-admin-holistic-design.md 5.2): "Move and text the customer" is primary and "Move without texting" sits under the
 // caret, off for a visit with a booked time, which always texts. One optional line from Ryan goes in the text. A property that must be home is
 // asked "Reply YES or pick another day" and the visit reads Waiting on customer. A move inside the customer's 24-hour window warns and goes
-// through (it is the office's call). Until the slots of step 7 it offers the day and the half-hour starts as before. A visit with no day
+// through (it is the office's call). The day and the time are the one calendar (`DayCalendar`, the office's mode: any day from today, "Any time" first among the half-hour starts), as everywhere. Until the slots of step 7 no day carries a dot. A visit with no day
 // yet is placed, not moved: one plain "Set the day" that texts the date, as it always did. Client component.
 
 const dayAfter = (day: string) => new Date(Date.parse(`${day}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10)
@@ -73,6 +74,7 @@ export function MoveDialog({ visit, today, actions, open, onOpenChange, target, 
   return (
     <ConfirmDialog
       slot="visit-move"
+      size="md"
       title={placed ? "Move" : "Schedule"}
       message={day ? moveSentence(visit, day, time, placed) : undefined}
       confirmLabel={placed ? undefined : "Schedule"}
@@ -95,21 +97,19 @@ export function MoveDialog({ visit, today, actions, open, onOpenChange, target, 
       }
     >
       {target?.personName && <p className="text-sm text-muted-foreground">{`With ${target.personName}.`}</p>}
-      <div className="grid grid-cols-2 gap-3">
-        <FormRow label="Day">
-          <Input type="date" value={day} min={today} onChange={(e) => setDay(e.target.value)} className="min-h-11" />
-        </FormRow>
-        <FormRow label="Time">
-          <select value={time} onChange={(e) => setTime(e.target.value)} className={FIELD}>
-            <option value="">Any time</option>
-            {TIME_CHOICES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </FormRow>
-      </div>
+      <DayCalendar
+        offers={[]}
+        free={{ from: today, timesFor: () => OFFICE_STARTS }}
+        anyTime
+        density="sheet"
+        headingLevel={3}
+        legend="Day"
+        current={placed ? current : null}
+        currentLabel="Current day"
+        value={{ day, start: time || null }}
+        // a visit's booked time stays with it when only the day changes
+        onChange={(next) => (setDay(next.day!), setTime(next.day !== day ? time : (next.start ?? "")))}
+      />
       {placed && (
         <FormRow label="A line for the text" hint="Optional. It goes after the new day.">
           <Input value={note} maxLength={NOTE_MAX} onChange={(e) => setNote(e.target.value)} placeholder="Rain on Tuesday" className="min-h-11" />

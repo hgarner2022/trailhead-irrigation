@@ -84,7 +84,7 @@ Two walkthroughs, nothing else at the top of the sidebar: **Start here: the admi
 1. **Book online** (`/booking`): service, address, day and exact time, contact (with the contact preference: text, email, both), confirm → the holographic PassCard-style confirmation.
 2. **The texts and emails that follow** (the `TextsStory` phone view): date set, two weeks out, day before with the exact time, on my way, receipt, invoice; each text's link opens the visit page inside the prototype.
 3. **Account Home** (`/account`): the next visit with Reschedule and Cancel (or Text Ryan inside 24 hours), an invoice to pay, the pass card, the latest visits.
-4. **Visits** timeline → **a visit page** → **Reschedule** (three days and "Show more days") and **Cancel** sheets with their done steps.
+4. **Visits** timeline → **a visit page** → **Reschedule** (the calendar, the visit's own day marked "Your day") and **Cancel** sheets with their done steps.
 5. **Pay an invoice** (`/pay/<id>`, Stripe's box as a drawn placeholder, never a real card field) → the receipt page.
 6. **Season Pass** page: the card, the season line, add July, skip a visit, Reserve next season → the renewal checkout.
 7. **Details**: contact preference, phone, yard notes, "Tell Ryan someone needs to be home".

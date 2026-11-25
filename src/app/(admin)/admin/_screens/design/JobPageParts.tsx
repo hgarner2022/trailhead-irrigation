@@ -13,7 +13,7 @@ import { propertyHref } from "./RecordChips"
 import { useToast } from "@/components/blocks/Toast"
 import { NotesAndHistory } from "@/components/blocks/NotesAndHistory"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
-import { FormRow } from "@/components/blocks/FormRow"
+import { DayField } from "@/components/blocks/DayField"
 import { SplitButton } from "@/components/blocks/SplitButton"
 import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
 import { collectConfirm, doneToast, footerConfirms, type ConfirmCopy, type ConfirmFacts } from "./confirm-copy"
@@ -241,7 +241,7 @@ export function Actions({ plan, facts, onDo, onMessage, intercept = [], collect,
     if ((a.label === "Schedule" || a.label === "Move") && !intercept.includes(a.label)) return { ...a, onClick: () => setScheduling(a.label as "Schedule" | "Move") }
     if (a.label === "Collect payment" && collect) return { ...a, onClick: () => setCollecting(true) }
     if (intercept.includes(a.label)) return { ...a, onClick: () => onDo?.(a.label) }
-    if (confirms[a.label]) return { ...a, onClick: () => (setDoneDay(confirms[a.label]!.doneOn?.[0] ?? ""), setAsking({ ...confirms[a.label]!, label: a.label })) }
+    if (confirms[a.label]) return { ...a, onClick: () => (setDoneDay(confirms[a.label]!.doneOn?.today ?? ""), setAsking({ ...confirms[a.label]!, label: a.label })) }
     return onDo ? { ...a, onClick: () => onDo(a.label) } : a
   }
   return (
@@ -271,9 +271,7 @@ export function Actions({ plan, facts, onDo, onMessage, intercept = [], collect,
         >
           {asking.body && <p className="whitespace-pre-wrap rounded-lg bg-stone p-3 text-sm">{asking.body}</p>}
           {asking.doneOn && (
-            <FormRow label="Done on">
-              <select value={doneDay} onChange={(e) => setDoneDay(e.target.value)} className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm">{asking.doneOn.map((d) => <option key={d}>{d}</option>)}</select>
-            </FormRow>
+            <DayField label="Done on" value={doneDay} onChange={(d) => setDoneDay(d || asking.doneOn!.today)} from={`${+asking.doneOn.today.slice(0, 4) - 1}${asking.doneOn.today.slice(4)}`} to={asking.doneOn.today} />
           )}
         </ConfirmDialog>
       )}
