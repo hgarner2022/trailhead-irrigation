@@ -86,7 +86,7 @@ export const PhoneSteps: StoryObj<typeof CustomerPhone> = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
     await expect(await c.findByRole("heading", { level: 1, name: "Address" })).toBeInTheDocument()
-    const order = [["texts", "texts"], ["account", "home"], ["visits", "visit"], ["pay", "pay"], ["receipts", null], ["pass", null], ["details", "details"]] as const
+    const order = [["texts", "texts"], ["account", "home"], ["visits", "visit"], ["pay", "invoice"], ["receipts", null], ["pass", null], ["details", "details"]] as const
     for (const [lit, shown] of order) {
       tell("next")
       await waitFor(() => expect(step(canvasElement)).toBe(lit))
@@ -171,7 +171,7 @@ export const PayPath: StoryObj<typeof CustomerPhone> = {
   },
 }
 
-/** The same invoice with a card on file: one tap, no card page, then Paid. */
+/** The Pay an invoice step opens on the invoice text; its link opens the pay page, and with a card on file it is one tap, no card page, then Paid. */
 export const PaySavedCardPath: StoryObj<typeof CustomerPhone> = {
   name: "Pay path, saved card",
   tags: ["!dev", "!autodocs"],
@@ -179,8 +179,11 @@ export const PaySavedCardPath: StoryObj<typeof CustomerPhone> = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
     await expect(await c.findByRole("heading", { level: 1, name: "Address" })).toBeInTheDocument()
+    // the card on file is a control of the presentation outside the phone; the step opens on the invoice message, whose one link opens the pay page
+    window.postMessage({ walk: "cmd", cmd: "payCard", card: "saved" }, "*")
     window.postMessage({ walk: "cmd", cmd: "go", step: "pay" }, "*")
-    await userEvent.click(await c.findByRole("button", { name: "Visa ending 4242" }))
+    await expect(await c.findByText(/Trailhead: your invoice for the repair is \$115/)).toBeInTheDocument()
+    await userEvent.click(await c.findByRole("button", { name: "trailheadirrigation.com/p/7k2m" }))
     await userEvent.click(await c.findByRole("button", { name: "Pay $115 with Visa ending 4242" }))
     await expect(await c.findByText(/your payment went through/, undefined, { timeout: 5000 })).toBeInTheDocument()
   },
