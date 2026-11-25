@@ -8,7 +8,7 @@ describe("ContactPreference", () => {
     const onChange = vi.fn()
     render(<ContactPreference value="text" onChange={onChange} />)
     expect(screen.getAllByRole("radio").map((r) => r.textContent)).toEqual(["Text", "Email", "Text and email"])
-    expect(screen.getByRole("radio", { name: "Text" })).toHaveAttribute("aria-checked", "true")
+    expect(screen.getByRole("radio", { name: "Text" })).toBeChecked()
     expect(screen.queryByText(/the day-before reminder and your receipt/)).toBeNull()
     await userEvent.click(screen.getByRole("button", { name: "About how we reach you" }))
     expect((await screen.findAllByText(/the day-before reminder and your receipt are sent this way/)).length).toBeGreaterThan(0)

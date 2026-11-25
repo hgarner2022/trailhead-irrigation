@@ -1,12 +1,13 @@
 "use client"
 
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react"
-import { Check, ChevronDown, Clock, Tag } from "lucide-react"
+import { Check, Clock, Tag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { ServiceEntry } from "@/lib/booking/services"
 import { cn } from "@/lib/utils"
 import { ServiceIcon, iconFor } from "./ServiceIcon"
-import { CHOOSE, CHOSEN, DETAILS, HIDE, REMOVE, metaLine, panelOf } from "./service-card-model"
+import { DetailsPill } from "./DetailsPill"
+import { CHOOSE, CHOSEN, REMOVE, metaLine, panelOf } from "./service-card-model"
 
 // One service card of the booking form's Service step (Hannah's final pass, Nov 25 2026; the review and its sources are in PR "Service step: final pass").
 // ONE interaction model: the header row opens and closes the card (an accordion header: a real button with aria-expanded, the whole row its target, a "Details" / "Hide" pill
@@ -114,10 +115,7 @@ export function ServiceCard({ entry, index = 0, open, selected, onToggle, onChoo
             {entry.name}
             {selected && <span className="sr-only">, selected</span>}
           </button>
-          <span data-slot="service-opener" aria-hidden className={cn("flex h-7 items-center gap-0.5 rounded-full pr-1.5 pl-3 text-xs font-semibold transition-colors", open ? "bg-navy text-white" : "bg-stone text-navy")}>
-            {open ? HIDE : DETAILS}
-            <ChevronDown className={cn("svc-chevron size-4", open && "rotate-180")} />
-          </span>
+          <DetailsPill open={open} />
           {meta && (
             <p id={`${id}-meta`} className="col-span-2 text-sm leading-5 whitespace-nowrap text-muted-foreground tabular-nums">
               {meta}

@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react"
 import { REQUEST_QUOTE, type ServiceEntry } from "@/lib/booking/services"
 import { cn } from "@/lib/utils"
 import { ServiceCard } from "./ServiceCard"
+import { optionClass } from "./option-styles"
 import { ServiceIcon } from "./ServiceIcon"
 
 // The list of service cards on the booking form's Service step (docs/plans/2026-11-19-booking-form-design.md). Each card is a ServiceCard: pressing its header opens it to read, one card at a time, and
@@ -59,7 +60,7 @@ function QuoteCard({ entry, name, checked, onChange }: { entry: ServiceEntry; na
     <li data-slot="service-entry" data-kind="quote">
       <label className="relative block">
         <input type="radio" name={name} checked={checked} onChange={onChange} data-autofocus={checked || undefined} className="peer sr-only" />
-        <span className={cn("flex min-h-16 cursor-pointer items-center rounded-lg border-2 px-4 py-3 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2", checked ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/50")}>
+        <span className={cn(optionClass({ selected: checked, focus: "peer" }), "flex min-h-16 items-center px-4 py-3")}>
           <span className="font-display text-2xl leading-none">{entry.name}</span>
         </span>
       </label>

@@ -60,6 +60,15 @@ h1, h2, h3 {
   .settle { animation: none; }
 }
 
+/* Every option the customer can choose (option-styles.ts) and every service card header answers a press the same way:
+   it gives a little, at once, and comes back. */
+.opt { transition: transform 100ms cubic-bezier(0.2, 0, 0, 1), color 160ms cubic-bezier(0.2, 0, 0, 1), background-color 160ms cubic-bezier(0.2, 0, 0, 1), border-color 160ms cubic-bezier(0.2, 0, 0, 1); }
+.opt:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  .opt { transition: none; }
+  .opt:active { transform: none; }
+}
+
 /* The check on a chosen service card draws in once (a stroke, 220 ms) and nothing else moves.
    Under prefers-reduced-motion it is simply drawn. */
 @keyframes draw-check {

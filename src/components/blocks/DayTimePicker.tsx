@@ -8,6 +8,7 @@ import { DAYS_FULL, NONE_FIT, clock12, type DayTimeOffer, type DayTimePick } fro
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { longDay } from "@/lib/portal/words"
 import { cn } from "@/lib/utils"
+import { optionClass } from "./option-styles"
 
 // The one day-and-time question (docs/plans/2026-11-18-scheduling-engine-design.md section 4.4): up to three day cards with the best one selected, "Show more days" for up to five,
 // then only the selected day's open start times as chips. The best time is marked "Best fit" and never selected, so Continue stays off until a time is tapped. The booking flow,
@@ -32,8 +33,8 @@ export interface DayTimePickerProps {
   className?: string
 }
 
-const CARD = "flex min-h-20 cursor-pointer flex-col justify-center rounded-lg border px-4 py-3 text-left transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2"
-const CHIP = "flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-2 py-2 text-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2"
+const CARD = "flex min-h-20 flex-col justify-center px-4 py-3 text-left"
+const CHIP = "flex min-h-11 min-w-0 flex-col items-center justify-center px-2 py-2 text-center"
 const LINK = "inline-flex min-h-11 cursor-pointer items-center font-semibold text-primary-deep underline underline-offset-2 hover:text-primary-dark"
 
 export function DayTimePicker({ offers, value, onChange, legend, length, shown = 3, note = "", onNote, timesShown = 6, className }: DayTimePickerProps) {
@@ -82,7 +83,7 @@ export function DayTimePicker({ offers, value, onChange, legend, length, shown =
                   onChange={() => onChange({ day: offer.day, start: checked ? value.start : null })}
                   className="peer sr-only"
                 />
-                <span data-slot="day-card" data-best={offer.best || undefined} className={cn(CARD, checked ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
+                <span data-slot="day-card" data-best={offer.best || undefined} className={cn(optionClass({ selected: checked, focus: "peer" }), CARD)}>
                   <span className="font-display text-2xl leading-none">{longDay(offer.day)}</span>
                   {offer.note && <span className={cn("mt-1.5 text-sm", checked ? "text-white/85" : "text-muted-foreground")}>{offer.note}</span>}
                 </span>
@@ -107,7 +108,7 @@ export function DayTimePicker({ offers, value, onChange, legend, length, shown =
               return (
                 <label key={t.start} className="relative block">
                   <input type="radio" name={`${id}-time`} checked={checked} onChange={() => onChange({ day: current.day, start: t.start })} className="peer sr-only" />
-                  <span data-slot="time-chip" data-best={t.best || undefined} className={cn(CHIP, checked ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
+                  <span data-slot="time-chip" data-best={t.best || undefined} className={cn(optionClass({ selected: checked, focus: "peer" }), CHIP)}>
                     <span className="text-base font-semibold tabular-nums">{clock12(t.start)}</span>
                     {t.best && <span className={cn("text-xs font-semibold", checked ? "text-white/85" : "text-primary-deep")}>Best fit</span>}
                   </span>
