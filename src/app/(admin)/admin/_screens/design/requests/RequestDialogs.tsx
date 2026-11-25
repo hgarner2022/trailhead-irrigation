@@ -5,7 +5,7 @@ import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { FormRow } from "@/components/blocks/FormRow"
 import { pickMissing, pickOf, pickedService, type ServicePick } from "./request-catalogue"
 import { ServicePicker } from "./ServicePicker"
-import { ARCHIVE_REASONS, fullName, type ArchiveReason, type Match, type RequestData } from "./request-model"
+import { ARCHIVE_REASONS, fullName, matchWords, type ArchiveReason, type Match, type RequestData } from "./request-model"
 
 // The two questions a request asks (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.4). Both are staff decisions and neither sends the person
 // anything, so neither has a "without notifying" caret. The dialog states the exact effect before the button does it.
@@ -67,7 +67,7 @@ export function CreateJobDialog({ request, match, mode, onClose, onCreate, initi
         {match ? (
           <FormRow label="Customer">
             <select value={asNew ? "new" : "match"} onChange={(e) => setAsNew(e.target.value === "new")} className={SELECT}>
-              <option value="match">{`Add to ${match.customer.name} (same ${match.by.join(" and ")})`}</option>
+              <option value="match">{`Add to ${match.customer.name} (${matchWords(match).toLowerCase()})`}</option>
               <option value="new">Add as a new customer instead</option>
             </select>
           </FormRow>

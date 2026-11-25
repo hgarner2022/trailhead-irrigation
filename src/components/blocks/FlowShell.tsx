@@ -24,6 +24,8 @@ export interface FlowShellProps {
   nextDisabled?: boolean
   /** why Continue is off: "Tap a start time to continue." */
   hint?: string
+  /** one quiet line directly above the button bar, such as the terms an action agrees to */
+  legal?: ReactNode
   busy?: boolean
   /** the last screen: no button pair, no progress bar, the question as a small eyebrow */
   done?: boolean
@@ -38,7 +40,7 @@ export interface FlowShellProps {
 
 const COLUMN = "mx-auto w-full max-w-[640px]"
 
-export function FlowShell({ question, step, total, children, notice, onBack, onNext, nextLabel = "Continue", nextDisabled, hint, busy, done, homeHref = "/", onClose, className }: FlowShellProps) {
+export function FlowShell({ question, step, total, children, notice, onBack, onNext, nextLabel = "Continue", nextDisabled, hint, legal, busy, done, homeHref = "/", onClose, className }: FlowShellProps) {
   const closeClass = "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-base font-medium text-navy hover:bg-card focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
   const close = (
     <>
@@ -84,6 +86,7 @@ export function FlowShell({ question, step, total, children, notice, onBack, onN
               data-slot="flow-actions"
               className="flex flex-wrap items-center gap-3 max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:-mx-4 max-sm:-mb-4 max-sm:border-t max-sm:border-border max-sm:bg-background max-sm:px-4 max-sm:pt-3 max-sm:pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:justify-between sm:border-t sm:border-border sm:pt-6"
             >
+              {legal}
               {hint && nextDisabled && (
                 <p id="flow-hint" className="basis-full text-sm text-muted-foreground">
                   {hint}

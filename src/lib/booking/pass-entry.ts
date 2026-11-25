@@ -14,7 +14,8 @@ export const visitMinutes = (kind: PassVisitKind): number => catalogueEntry(kind
 /** The Season Pass card for the date: each kind's next visit, this season's or next. */
 function passEntry(pass: ServiceEntry, today: string): ServiceEntry {
   const plan = passPlanFor(today)
-  const lines: PassVisitLine[] = plan.visits.map((v) => ({ kind: v.kind, name: catalogueEntry(v.kind).name, price: catalogueEntry(v.kind).price, mode: v.mode }))
+  // a visit that belongs to next season is named with its year ("Spring turn-on 2028"), as everywhere else
+  const lines: PassVisitLine[] = plan.visits.map((v) => ({ kind: v.kind, name: v.nextSeason ? `${catalogueEntry(v.kind).name} ${v.season}` : catalogueEntry(v.kind).name, price: catalogueEntry(v.kind).price, mode: v.mode }))
   return {
     ...pass,
     name: `Season Pass ${plan.season}`,

@@ -9,7 +9,7 @@ import { BookingForm, type BookingFormProps } from "./BookingForm"
 
 // The customer's booking form, one story per screen at 375 (Phone) and 1280 (Laptop), over fixtures; nothing is sent. Today is Wednesday, April 14, 2027. The order (Hannah, Nov 22 2026, third pass): the
 // address (the box is the type-ahead, the ZIP decides the area), then the service, whose card opens in place and holds the details, the day as a calendar with the soonest open day selected, then contact,
-// a card and a review: six counted steps (it was seven), four for a request for a quote. Every heading is a plain name. The words are in docs/plans/2026-11-19-booking-form-design.md, "Words (Nov 22 2026)".
+// a card and a review: seven counted steps, four for a request for a quote; the service step holds only the cards and Details holds what belongs to the chosen service. Every heading is a plain name. The words are in docs/plans/2026-11-19-booking-form-design.md, "Words (Nov 22 2026)".
 const phone = { globals: { viewport: { value: "phone", isRotated: false } } } as const
 const laptop = { globals: { viewport: { value: "laptop", isRotated: false } } } as const
 
@@ -22,6 +22,11 @@ const mismatch: Partial<CheckoutState> = { address: "9 Cottonwood Ln", place: ty
 const noCity: Partial<CheckoutState> = { address: "9 Cottonwood Ln", place: { id: "typed:9 cottonwood ln||", label: "9 Cottonwood Ln", line1: "9 Cottonwood Ln", town: "", state: "CO", zip: "" } }
 const details: Partial<CheckoutState> = { ...home, access: "yes", accessNote: "Gate code 4471, the controller is in the garage." }
 const full: Partial<CheckoutState> = { ...details, ...person }
+// 480 Briggs St, Erie is a property Trailhead already has (the stand-in `fixtureKnown`); its customer's email is andrea.dalton@example.com, which `person` carries.
+const known: Partial<CheckoutState> = { address: FIXTURE_PLACES[1]!.label, place: FIXTURE_PLACES[1]!, town: "Erie" }
+const detailsKnown: Partial<CheckoutState> = { ...known, access: "yes", accessNote: "Gate code 4471, the controller is in the garage." }
+const fullKnown: Partial<CheckoutState> = { ...detailsKnown, ...person }
+const fullKnownOtherEmail: Partial<CheckoutState> = { ...fullKnown, email: "andrea@work.example.com" }
 // April 19 is an open day and 10:30 one of its times.
 const picked = { visit: { day: "2027-04-19", start: "10:30" } }
 const photos = [
@@ -146,44 +151,79 @@ export const AddressNoCityPickTest: Story = {
   },
 }
 
-/** 2. Service: one card per service with its price and a chevron; the whole header is the button. Nothing is open until one is pressed. */
+/** 2. Service: only the service cards. Each is a photo, its name, one line of what it is, the price and the length and a chevron, the whole header the button. Nothing is open until one is pressed, and nothing about zones, prices or access is on this step. */
 const services = on({ initial: { step: "service", fields: home } }, "Service", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-expanded", "false")
+    await expect(canvas.getByRole("button", { name: /^Spring turn-on/ })).toHaveTextContent("From $145")
     await expect(canvas.queryByText(/Opens|Free consultation|What's included/)).toBeNull()
+    await expect(canvas.queryByText(/Zones|Can we reach|Count the stations|Add a note/)).toBeNull()
   },
 })
 export const ServicesPhone: Story = { ...services.phone, name: "Service, phone" }
 export const ServicesLaptop: Story = { ...services.laptop, name: "Service, laptop" }
-/** The repair card open: what is included, the price once, access, a note and photos, all inside the card. Continue is on once access is answered. */
-const repairOpen = on({ initial: { step: "service", service: "repair", fields: details, photos } }, "Service, repair open", {
+/** The repair card open: only what is included, as a list, with a check on the chosen card. Continue is on. */
+const repairOpen = on({ initial: { step: "service", service: "repair", fields: home } }, "Service, repair open", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-expanded", "true")
-    await expect(canvas.getByText("About $145")).toBeInTheDocument()
-    await expect(canvas.queryByText("Charged after the visit.")).toBeNull()
-    await expect(canvas.queryByText(/quoted separately|Larger repairs/)).toBeNull()
-    await expect(canvas.queryByText(/Upgrade to a Season Pass/)).toBeNull()
+    const panel = canvas.getByRole("region", { name: "Sprinkler repair" })
+    await expect(within(panel).getAllByRole("listitem").length).toBeGreaterThan(0)
+    await expect(canvas.queryByText(/About \$145|Charged after|Zones|Upgrade to a Season Pass/)).toBeNull()
+    await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
   },
 })
 export const ServiceRepairOpenPhone: Story = { ...repairOpen.phone, name: "Service, repair open, phone" }
 export const ServiceRepairOpenLaptop: Story = { ...repairOpen.laptop, name: "Service, repair open, laptop" }
-/** The spring turn-on open: zones as 6 or fewer, 7 to 12 and More than 12, the price by the catalogue's per-zone rule, and Upgrade to a Season Pass, off. */
-const turnOnOpen = on({ initial: { step: "service", service: "spring-turn-on", fields: { ...home, zones: 10 } } }, "Service, spring turn-on open", {
+/** The Season Pass card open, its brand treatment: the visits it holds, nothing else. */
+const passOpen = on({ initial: { step: "service", service: "season-pass", fields: home } }, "Service, Season Pass open")
+export const ServicePassOpenPhone: Story = { ...passOpen.phone, name: "Service, Season Pass open, phone" }
+export const ServicePassOpenLaptop: Story = { ...passOpen.laptop, name: "Service, Season Pass open, laptop" }
+
+/** 3. Details: what belongs to the chosen service and nothing else, one quiet section per question. A repair: the price, access, and the note and photos folded behind one row. */
+const detailsRepair = on({ initial: { step: "details", service: "repair", fields: home } }, "Details, repair", {
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("heading", { level: 1, name: "Details" })).toBeInTheDocument()
+    await expect(canvas.getByText("About $145")).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /Add a note or photos/ })).toHaveAttribute("aria-expanded", "false")
+    await expect(canvas.queryByLabelText("Note for the crew")).toBeNull()
+    await expect(canvas.queryByRole("button", { name: "Add photos" })).toBeNull()
+    await expect(canvas.queryByText(/Charged after/)).toBeNull()
+  },
+})
+export const DetailsRepairPhone: Story = { ...detailsRepair.phone, name: "Details, repair, phone" }
+export const DetailsRepairLaptop: Story = { ...detailsRepair.laptop, name: "Details, repair, laptop" }
+/** Access answered, a note and two photos: the folded row is open from the start because it holds something. */
+const detailsFilled = on({ initial: { step: "details", service: "repair", fields: details, photos } }, "Details, note and photos", {
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: /Add a note or photos/ })).toHaveAttribute("aria-expanded", "true")
+    await expect(canvas.getByLabelText("Note for the crew")).toHaveValue("Gate code 4471, the controller is in the garage.")
+  },
+})
+export const DetailsFilledPhone: Story = { ...detailsFilled.phone, name: "Details, note and photos, phone" }
+export const DetailsFilledLaptop: Story = { ...detailsFilled.laptop, name: "Details, note and photos, laptop" }
+/** The spring turn-on: zones as 6 or fewer, 7 to 12 and More than 12, the price by the catalogue's per-zone rule, and Upgrade to a Season Pass, off. Zones are explained once, in a tooltip. */
+const turnOnDetails = on({ initial: { step: "details", service: "spring-turn-on", fields: { ...home, zones: 10 } } }, "Details, spring turn-on", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "6 or fewer" })).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: "10 zones" })).toHaveAttribute("aria-pressed", "true")
     await expect(canvas.getByText("About $165")).toBeInTheDocument()
+    await expect(canvas.queryByText("Count the stations on your controller.")).toBeNull()
+    await expect(canvas.getByRole("button", { name: "About zones" })).toBeInTheDocument()
     await expect(canvas.getByRole("switch", { name: "Upgrade to a Season Pass" })).toHaveAttribute("aria-checked", "false")
   },
 })
-export const ServiceTurnOnOpenPhone: Story = { ...turnOnOpen.phone, name: "Service, spring turn-on open, phone" }
-export const ServiceTurnOnOpenLaptop: Story = { ...turnOnOpen.laptop, name: "Service, spring turn-on open, laptop" }
+export const DetailsTurnOnPhone: Story = { ...turnOnDetails.phone, name: "Details, spring turn-on, phone" }
+export const DetailsTurnOnLaptop: Story = { ...turnOnDetails.laptop, name: "Details, spring turn-on, laptop" }
+/** The Season Pass: the zones and, for each visit, what it costs. */
+const passDetails = on({ initial: { step: "details", service: "season-pass", fields: { ...home, zones: 10 } } }, "Details, Season Pass")
+export const DetailsPassPhone: Story = { ...passDetails.phone, name: "Details, Season Pass, phone" }
+export const DetailsPassLaptop: Story = { ...passDetails.laptop, name: "Details, Season Pass, laptop" }
 /** More than 12 opens a number box; above 12 the same per-zone price, no new band. */
-export const ServiceZonesManyTest: Story = {
+export const DetailsZonesManyTest: Story = {
   ...phone,
-  name: "Service, more than 12 zones (test)",
+  name: "Details, more than 12 zones (test)",
   tags: HIDDEN,
-  args: { initial: { step: "service", service: "spring-turn-on", fields: { ...home, zones: 8 } } },
+  args: { initial: { step: "details", service: "spring-turn-on", fields: { ...home, zones: 8 } } },
   play: async ({ canvas, userEvent }) => {
     await expect(canvas.getByText("About $145")).toBeInTheDocument()
     await userEvent.click(canvas.getByRole("button", { name: "More than 12" }))
@@ -197,43 +237,43 @@ export const ServiceZonesManyTest: Story = {
   },
 }
 /** The upsell: turning on Upgrade to a Season Pass moves the booking to the pass with the same answers; turning it off goes back to the single visit. */
-export const ServiceUpsellTest: Story = {
+export const DetailsUpsellTest: Story = {
   ...phone,
-  name: "Service, make it a Season Pass (test)",
+  name: "Details, upgrade to a Season Pass (test)",
   tags: HIDDEN,
-  args: { initial: { step: "service", service: "spring-turn-on", fields: { ...details, zones: 10 } } },
+  args: { initial: { step: "details", service: "spring-turn-on", fields: { ...details, zones: 10 } } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole("switch", { name: "Upgrade to a Season Pass" }))
-    await expect(await canvas.findByRole("button", { name: /^Season Pass 2027/ })).toHaveAttribute("aria-expanded", "true")
+    await expect(await canvas.findByText(/Spring turn-on/)).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: "10 zones" })).toHaveAttribute("aria-pressed", "true")
     await expect(canvas.getByRole("switch", { name: "Upgrade to a Season Pass" })).toHaveAttribute("aria-checked", "true")
     await userEvent.click(canvas.getByRole("switch", { name: "Upgrade to a Season Pass" }))
-    await expect(await canvas.findByRole("button", { name: /^Spring turn-on/ })).toHaveAttribute("aria-expanded", "true")
+    await expect(await canvas.findByText("About $165")).toBeInTheDocument()
   },
 }
 /** Continue pressed with the access question unanswered. */
-const accessMissing = on({ initial: { step: "service", service: "repair", fields: home, attempted: true } }, "Service, access not answered", {
+const accessMissing = on({ initial: { step: "details", service: "repair", fields: home, attempted: true } }, "Details, access not answered", {
   play: async ({ canvas }) => {
     await expect((await canvas.findAllByText("Tell us whether we can get to the system without you.")).length).toBe(2)
   },
 })
-export const ServiceAccessMissingPhone: Story = { ...accessMissing.phone, name: "Service, access not answered, phone" }
+export const DetailsAccessMissingPhone: Story = { ...accessMissing.phone, name: "Details, access not answered, phone" }
 /** The questions that belong to a service: the Rachio install asks the controller and Wi-Fi, water efficiency what to improve (and it is $145), the installation design visit the project, the area and photos. */
-const rachioOpen = on({ initial: { step: "service", service: "rachio-install", fields: { ...details, zones: 10 }, extras: { brand: "Hunter", wifi: "yes" } } }, "Service, Rachio install open")
-export const ServiceRachioPhone = rachioOpen.phone
-export const ServiceRachioLaptop = rachioOpen.laptop
-const efficiencyOpen = on({ initial: { step: "service", service: "water-efficiency", fields: details, extras: { goals: ["Dry spots", "A garden bed to put on drip"] } } }, "Service, water efficiency and drip open", {
+const rachioOpen = on({ initial: { step: "details", service: "rachio-install", fields: { ...details, zones: 10 }, extras: { brand: "Hunter", wifi: "yes" } } }, "Details, Rachio install")
+export const DetailsRachioPhone = rachioOpen.phone
+export const DetailsRachioLaptop = rachioOpen.laptop
+const efficiencyOpen = on({ initial: { step: "details", service: "water-efficiency", fields: details, extras: { goals: ["Dry spots", "A garden bed to put on drip"] } } }, "Details, water efficiency and drip", {
   play: async ({ canvas }) => {
     await expect(canvas.getByText("About $145")).toBeInTheDocument()
   },
 })
-export const ServiceEfficiencyPhone = efficiencyOpen.phone
-export const ServiceEfficiencyLaptop = efficiencyOpen.laptop
+export const DetailsEfficiencyPhone = efficiencyOpen.phone
+export const DetailsEfficiencyLaptop = efficiencyOpen.laptop
 // The installation is quote-only in the backend; with Settings set to Book a day it is a design visit with no price.
 const INSTALL_BOOKABLE = bookingCatalogue({ install: "bookable" })
-const installOpen = on({ catalogue: INSTALL_BOOKABLE, initial: { step: "service", service: "install", fields: details, extras: { installType: "new", area: "5,000" } } }, "Service, new system design visit open (set to Book a day)")
-export const ServiceInstallPhone = installOpen.phone
-export const ServiceInstallLaptop = installOpen.laptop
+const installOpen = on({ catalogue: INSTALL_BOOKABLE, initial: { step: "details", service: "install", fields: details, extras: { installType: "new", area: "5,000" }, photos } }, "Details, new system design visit (set to Book a day)")
+export const DetailsInstallPhone = installOpen.phone
+export const DetailsInstallLaptop = installOpen.laptop
 
 /** Settings' Online select drives the form: flip Sprinkler repair to Off and its card is gone; We quote moves it to the request path. */
 function SettingsHarness(props: Args) {
@@ -325,10 +365,16 @@ const dayFull = on({ initial: { step: "day", service: "repair", fields: details 
 export const DayNoOpenDayPhone: Story = { ...dayFull.phone, name: "Day, no open day, phone" }
 export const DayNoOpenDayLaptop: Story = { ...dayFull.laptop, name: "Day, no open day, laptop" }
 
-/** 4. Contact with how we reach you, after the day: four fields, text, email or both, the terms, and the separate unticked marketing box. */
+/** 4. Contact with how we reach you, after the day: four fields, text, email or both (explained once, in a tooltip), the unticked marketing box, and over the button bar one line: By continuing, you agree to the terms. There is no terms checkbox. */
 const contact = on({ initial: { step: "contact", service: "repair", fields: details, picks: picked } }, "Contact", {
   play: async ({ canvas }) => {
     await expect(canvas.queryByText(/Reply STOP|Message and data rates/)).toBeNull()
+    await expect(canvas.getByText(/By continuing, you agree to the/)).toBeInTheDocument()
+    await expect(canvas.getByRole("link", { name: /booking terms/ })).toHaveAttribute("href", "/terms#booking")
+    await expect(canvas.queryByRole("checkbox", { name: /I accept/ })).toBeNull()
+    await expect(canvas.getByRole("checkbox", { name: "Send me tips and offers from Trailhead by email" })).not.toBeChecked()
+    await expect(canvas.queryByText(/Every message both ways|We reach you by/)).toBeNull()
+    await expect(canvas.getByRole("button", { name: "About how we reach you" })).toBeInTheDocument()
   },
 })
 export const ContactPhone: Story = { ...contact.phone, name: "Contact, phone" }
@@ -339,7 +385,7 @@ export const ContactFilledPhone: Story = { ...contactFilled.phone, name: "Contac
 const contactMissing = on({ initial: { step: "contact", service: "repair", fields: { ...details, firstName: "Andrea", lastName: "Dalton", email: "andrea.dalton@example.org" }, picks: picked, attempted: true } }, "Contact, missing phone and terms", {
   play: async ({ canvas }) => {
     await expect((await canvas.findAllByText("Add your phone number.")).length).toBe(2)
-    await expect(canvas.getAllByText("Tick the box to accept the terms.")).toHaveLength(2)
+    await expect(canvas.queryByText(/Tick the box|Terms/)).toBeNull()
   },
 })
 export const ContactMissingPhonePhone: Story = { ...contactMissing.phone, name: "Contact, missing phone and terms, phone" }
@@ -349,98 +395,30 @@ const quoteContact = on({ initial: { step: "contact", quote: true, service: "lig
 export const QuotePathContactPhone: Story = { ...quoteContact.phone, name: "Request a quote, contact, phone" }
 export const QuotePathContactLaptop: Story = { ...quoteContact.laptop, name: "Request a quote, contact, laptop" }
 
-/** 4c. A repeat customer. The same offer for every visitor, "Booked with us before?"; it asks for the email, sends a six-digit code and takes it in the form. Nothing about her shows until the code is right. */
-const returningOffer = on({ initial: { step: "contact", service: "repair", fields: details, picks: picked } }, "Contact, booked before", {
+/** 4c. A repeat customer is recognised by the address alone (Hannah, Nov 23 2026): no sign-in, no code, and nothing personal shown back. The contact step asks as normal for a property we have. */
+const contactKnown = on({ initial: { step: "contact", service: "repair", fields: detailsKnown, picks: picked } }, "Contact, an address we have", {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Booked with us before?")).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: "Use saved details" })).toBeInTheDocument()
-    await expect(canvas.queryByText(/Andrea|Briggs|4242/)).toBeNull()
+    await expect(canvas.getByLabelText("First name")).toHaveValue("")
+    await expect(canvas.queryByText(/Andrea|Dalton|4242|Welcome back|Booked with us before|sign in|code/i)).toBeNull()
   },
 })
-export const ContactReturningPhone: Story = { ...returningOffer.phone, name: "Contact, booked before, phone" }
-export const ContactReturningLaptop: Story = { ...returningOffer.laptop, name: "Contact, booked before, laptop" }
-const returningSent = on({ initial: { step: "contact", service: "repair", fields: { ...details, email: "andrea.dalton@example.com" }, picks: picked, returning: "sent" } }, "Contact, code sent", {
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("We sent a code to a***@example.com.")).toBeInTheDocument()
-    await expect(canvas.queryByText(/Welcome back|Andrea Dalton/)).toBeNull()
-  },
-})
-export const ContactCodeSentPhone: Story = { ...returningSent.phone, name: "Contact, code sent, phone" }
-/** The code right: Welcome back, her details filled in and changeable, the card on file, and one line, Not you?. */
-const returningWelcome = on({ initial: { step: "contact", service: "repair", fields: { ...details, email: "andrea.dalton@example.com" }, picks: picked, returning: "sent" } }, "Contact, welcome back", {
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.type(await canvas.findByLabelText("Code"), "123456")
-    await userEvent.click(canvas.getByRole("button", { name: "Confirm" }))
-    await expect(await canvas.findByText("Welcome back, Andrea.")).toBeInTheDocument()
-    await expect(canvas.getByLabelText("First name")).toHaveValue("Andrea")
-    await expect(canvas.getByText("Visa ending 4242")).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: "Not you?" })).toBeInTheDocument()
-  },
-})
-export const ContactWelcomeBackPhone: Story = { ...returningWelcome.phone, name: "Contact, welcome back, phone" }
-export const ContactWelcomeBackLaptop: Story = { ...returningWelcome.laptop, name: "Contact, welcome back, laptop" }
-/** A wrong code says so and nothing else. */
-export const ContactWrongCodeTest: Story = {
+export const ContactAddressOnFilePhone: Story = { ...contactKnown.phone, name: "Contact, an address we have, phone" }
+export const ContactAddressOnFileLaptop: Story = { ...contactKnown.laptop, name: "Contact, an address we have, laptop" }
+/** Picking an address we have shows nothing about its customer, and the yard's zone count and controller fill in on the service step. */
+export const AddressOnFileTest: Story = {
   ...phone,
-  name: "Contact, wrong code (test)",
+  name: "Address we have, prefills the yard (test)",
   tags: HIDDEN,
-  args: { initial: { step: "contact", service: "repair", fields: { ...details, email: "andrea.dalton@example.com" }, picks: picked, returning: "sent" } },
   play: async ({ canvas, userEvent }) => {
-    await userEvent.type(await canvas.findByLabelText("Code"), "000000")
-    await userEvent.click(canvas.getByRole("button", { name: "Confirm" }))
-    await expect(await canvas.findByText("That code isn't right.")).toBeInTheDocument()
-    await expect(canvas.queryByText(/Welcome back/)).toBeNull()
+    await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "480 Br")
+    await userEvent.click(await canvas.findByRole("option", { name: /480 Briggs/ }))
+    await expect(canvas.queryByText(/Andrea|Dalton|4242|On file|Welcome back/)).toBeNull()
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await userEvent.click(await canvas.findByRole("button", { name: /^Spring turn-on/ }))
+    await expect(await canvas.findByRole("button", { name: "10 zones" })).toHaveAttribute("aria-pressed", "true")
+    await expect(canvas.queryByText(/Andrea|Dalton|4242/)).toBeNull()
   },
 }
-/** From the first line to the code: the email is asked for, the code is sent only when pressed. */
-export const ContactAskEmailTest: Story = {
-  ...phone,
-  name: "Contact, asks the email (test)",
-  tags: HIDDEN,
-  args: { initial: { step: "contact", service: "repair", fields: details, picks: picked } },
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole("button", { name: "Use saved details" }))
-    await userEvent.type(await canvas.findByLabelText("Email", { selector: "[name=returning-email]" }), "andrea.dalton@example.com")
-    await userEvent.click(canvas.getByRole("button", { name: "Send code" }))
-    await expect(await canvas.findByText("We sent a code to a***@example.com.")).toBeInTheDocument()
-  },
-}
-/** An email with nothing saved gets the same code step; only a right code shows the difference. */
-export const ContactUnknownEmailTest: Story = {
-  ...phone,
-  name: "Contact, email with nothing saved (test)",
-  tags: HIDDEN,
-  args: { initial: { step: "contact", service: "repair", fields: { ...details, email: "someone@example.com" }, picks: picked, returning: "sent" } },
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.type(await canvas.findByLabelText("Code"), "123456")
-    await userEvent.click(canvas.getByRole("button", { name: "Confirm" }))
-    await expect(await canvas.findByText("We have no saved details for that email.")).toBeInTheDocument()
-  },
-}
-/** Not you? empties what was filled in and the form carries on as a new customer. */
-export const ContactNotYouTest: Story = {
-  ...phone,
-  name: "Contact, not you (test)",
-  tags: HIDDEN,
-  args: { initial: { step: "contact", service: "repair", fields: { ...details, email: "andrea.dalton@example.com" }, picks: picked, returning: "sent" } },
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.type(await canvas.findByLabelText("Code"), "123456")
-    await userEvent.click(canvas.getByRole("button", { name: "Confirm" }))
-    await userEvent.click(await canvas.findByRole("button", { name: "Not you?" }))
-    await waitFor(() => expect(canvas.getByLabelText("First name")).toHaveValue(""))
-    await expect(canvas.getByLabelText("Email")).toHaveValue("")
-    await expect(canvas.queryByText(/Welcome back/)).toBeNull()
-  },
-}
-/** A signed-in customer needs no code: the booking opens at the contact step with her details in, her card on the card step and the welcome line on top. */
-const signedIn = on({ initial: { step: "contact", service: "repair", fields: { ...details, email: "andrea.dalton@example.com", firstName: "Andrea", lastName: "Dalton", phone: "(970) 555-0123" }, picks: picked, returning: "verified", card: "saved" } }, "Contact, signed in", {
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Welcome back, Andrea.")).toBeInTheDocument()
-    await expect(canvas.getByText("Visa ending 4242")).toBeInTheDocument()
-  },
-})
-export const ContactSignedInPhone: Story = { ...signedIn.phone, name: "Contact, signed in, phone" }
-export const ContactSignedInLaptop: Story = { ...signedIn.laptop, name: "Contact, signed in, laptop" }
 
 /** 5. The card, after contact: Stripe's setup form drawn (never a real card field), one line saying when it is charged, and for a one-off a "Not now". */
 const cardStep = on({ initial: { step: "card", service: "repair", fields: full, picks: picked } }, "Card", {
@@ -465,6 +443,79 @@ export const CardNotNowTest: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: "Not now" }))
     await expect(await canvas.findByRole("heading", { level: 1, name: "Review" })).toBeInTheDocument()
     await expect(canvas.getByText("No card")).toBeInTheDocument()
+  },
+}
+
+/** A repeat customer, same email: the card step offers "Use the card on file" with its brand and last four, and "Use a different card". Continue goes on with it. */
+const cardOnFile = on({ initial: { step: "card", service: "repair", fields: fullKnown, picks: picked } }, "Card, the card on file", {
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Use the card on file")).toBeInTheDocument()
+    await expect(canvas.getByText("Visa ending 4242")).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Use a different card" })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
+    await expect(canvas.queryByText(/Stripe/)).toBeNull()
+  },
+})
+export const CardOnFilePhone: Story = { ...cardOnFile.phone, name: "Card, the card on file, phone" }
+export const CardOnFileLaptop: Story = { ...cardOnFile.laptop, name: "Card, the card on file, laptop" }
+/** A repeat customer with another email: the address is on file but the card is not offered; the step asks for a card as for a new customer. */
+const cardOtherEmail = on({ initial: { step: "card", service: "repair", fields: fullKnownOtherEmail, picks: picked } }, "Card, the address is on file, another email", {
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByText(/Use the card on file|4242/)).toBeNull()
+    await expect(canvas.getByText("Card information")).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Save card" })).toBeEnabled()
+  },
+})
+export const CardOtherEmailPhone: Story = { ...cardOtherEmail.phone, name: "Card, the address is on file, another email, phone" }
+export const CardOtherEmailLaptop: Story = { ...cardOtherEmail.laptop, name: "Card, the address is on file, another email, laptop" }
+/** "Use a different card" puts the form back, and "Use the card on file" brings the card back. */
+export const CardDifferentCardTest: Story = {
+  ...phone,
+  name: "Card, a different card (test)",
+  tags: HIDDEN,
+  args: { initial: { step: "card", service: "repair", fields: fullKnown, picks: picked } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole("button", { name: "Use a different card" }))
+    await expect(await canvas.findByText("Card information")).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole("button", { name: "Use the card on file" }))
+    await expect(await canvas.findByText("Visa ending 4242")).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect(await canvas.findByRole("heading", { level: 1, name: "Review" })).toBeInTheDocument()
+    await expect(canvas.getByText("Visa ending 4242")).toBeInTheDocument()
+    await expect(canvas.getByText("On file")).toBeInTheDocument()
+  },
+}
+/** Review of a booking for an address we have: its Address row says On file and the card on file is named. A new address says New. */
+const confirmOnFile = on({ initial: { step: "confirm", service: "repair", fields: fullKnown, picks: picked, card: "file" } }, "Review, an address on file", {
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("On file")).toBeInTheDocument()
+    await expect(canvas.getByText("Visa ending 4242")).toBeInTheDocument()
+  },
+})
+export const ConfirmOnFilePhone: Story = { ...confirmOnFile.phone, name: "Review, an address on file, phone" }
+export const ConfirmOnFileLaptop: Story = { ...confirmOnFile.laptop, name: "Review, an address on file, laptop" }
+/** The address is on file and the email is another: it books as the same property; the card is a new one, and the office is told. */
+const confirmOtherEmail = on({ initial: { step: "confirm", service: "repair", fields: fullKnownOtherEmail, picks: picked, card: "saved" } }, "Review, an address on file, another email", {
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("On file")).toBeInTheDocument()
+    await expect(canvas.queryByText(/differs|Email differs/)).toBeNull()
+  },
+})
+export const ConfirmOtherEmailPhone: Story = { ...confirmOtherEmail.phone, name: "Review, an address on file, another email, phone" }
+/** Changing the email at Review so it is no longer the one on file takes the card on file away: the form asks for a card again. */
+export const ConfirmEmailChangedTest: Story = {
+  ...phone,
+  name: "Review, email changed after the card on file (test)",
+  tags: HIDDEN,
+  args: { initial: { step: "confirm", service: "repair", fields: fullKnown, picks: picked, card: "file" } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole("button", { name: "Change contact" }))
+    const email = await canvas.findByLabelText("Email")
+    await userEvent.clear(email)
+    await userEvent.type(email, "andrea@work.example.com")
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect(await canvas.findByRole("heading", { level: 1, name: "Card" })).toBeInTheDocument()
+    await expect(canvas.queryByText(/Use the card on file|4242/)).toBeNull()
   },
 }
 
@@ -510,7 +561,7 @@ const quoteDone = on({ initial: { step: "done", quote: true, service: "lights", 
 export const QuotePathDonePhone: Story = { ...quoteDone.phone, name: "Request sent, phone" }
 export const QuotePathDoneLaptop: Story = { ...quoteDone.laptop, name: "Request sent, laptop" }
 
-/** The whole path on a phone, clicked: address, repair opened with access and two sample photos, a time, contact with Text and email, the card, review, booked. Six steps. */
+/** The whole path on a phone, clicked: address, the repair card, Details with access and two sample photos, a time, contact with Text and email, the card, review, booked. Seven steps. */
 export const WholePathPhone: Story = { ...phone, name: "Whole path, phone" }
 export const WholePathPhoneTest: Story = {
   ...phone,
@@ -523,7 +574,9 @@ export const WholePathPhoneTest: Story = {
     await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
     await userEvent.click(await c.findByRole("button", { name: /^Sprinkler repair/ }))
+    await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
+    await userEvent.click(await c.findByRole("button", { name: /Add a note or photos/ }))
     await userEvent.click(await c.findByRole("button", { name: "Add 2 sample photos" }))
     await next()
     // the soonest day is already selected; only a time is tapped
@@ -535,7 +588,6 @@ export const WholePathPhoneTest: Story = {
     await userEvent.type(await c.findByLabelText("Email"), "andrea@example.org")
     await userEvent.type(await c.findByLabelText("Phone"), "9705550188")
     await userEvent.click(await c.findByRole("radio", { name: "Text and email" }))
-    await userEvent.click(await c.findByRole("checkbox", { name: /I accept the/ }))
     await expect(c.getByRole("checkbox", { name: "Send me tips and offers from Trailhead by email" })).not.toBeChecked()
     await next()
     await userEvent.click(await c.findByRole("button", { name: "Save card" }))
@@ -615,10 +667,13 @@ export const HistoryBehaviour: Story = {
     await userEvent.click((await canvas.findAllByRole("option"))[0]!)
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await userEvent.click(await canvas.findByRole("button", { name: /^Sprinkler repair/ }))
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await userEvent.click((await canvas.findAllByRole("radio", { name: /^Yes/ }))[0]!)
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await expect(await canvas.findByRole("heading", { level: 1, name: "Day" })).toBeInTheDocument()
-    // the browser's Back goes to the service, then the address, with the answers kept
+    // the browser's Back goes to Details, then the service, then the address, with the answers kept
+    window.history.back()
+    await expect(await canvas.findByRole("heading", { level: 1, name: "Details" })).toBeInTheDocument()
     window.history.back()
     await expect(await canvas.findByRole("heading", { level: 1, name: "Service" })).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-expanded", "true")

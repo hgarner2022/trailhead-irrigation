@@ -19,7 +19,7 @@ import { PayFlow } from "@/app/(checkout)/pay/[invoiceId]/_screens/PayFlow"
 import { reportFor } from "@/emails/fixtures"
 import PaidPage from "@/app/(checkout)/pay/[invoiceId]/paid/page"
 import { accountReducer, initialAccount } from "../account-flow"
-import { channelWords, ContactPreference, type ContactChannel } from "./ContactPreference"
+import { ContactPreference, type ContactChannel } from "./ContactPreference"
 import { classifyHref, STEPS, stepOf, type StepKey, type Target, type Where } from "./routes"
 
 import { allMessages, DEFAULT_FACTS, type TextFacts } from "./walk-texts"
@@ -168,7 +168,6 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
             <DetailsScreen customer={andrea} />
             <div className="mx-auto max-w-3xl pb-10 container-padding-x">
               <ContactPreference value={channel} onChange={setChannel} name="details-preference" />
-              <p className="mt-2 text-sm text-muted-foreground">{`We reach you by ${channelWords(channel)}.`}</p>
               <MarketingSwitches email={marketing.email} text={marketing.text} onEmail={(on) => choose("email", on)} onText={(on) => choose("text", on)} />
             </div>
           </>,
