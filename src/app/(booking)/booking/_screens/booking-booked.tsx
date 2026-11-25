@@ -28,14 +28,14 @@ const dayBefore = (iso: string) => {
 function Trail({ lines }: { lines: { key: string; lead: string; text: string }[] }) {
   return (
     <section data-slot="done-next" aria-labelledby="done-next-heading" className="mt-10">
-      <h2 id="done-next-heading" className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
+      <h2 id="done-next-heading" className="type-caption text-primary-dark">
         What happens next
       </h2>
       <ol className="mt-5 ml-1.5 border-l-2 border-navy/15">
         {lines.map((l) => (
           <li key={l.key} className="relative pb-6 pl-6 last:pb-0">
             <span aria-hidden className="absolute top-[0.55rem] -left-[0.4375rem] size-3 rounded-full border-2 border-background bg-primary" />
-            <p className="font-display text-2xl leading-none text-navy">{l.lead}</p>
+            <p className="type-option text-navy">{l.lead}</p>
             <p className="mt-1.5 text-base text-foreground">{l.text}</p>
           </li>
         ))}
@@ -98,7 +98,7 @@ export function BookingBooked({ service, where, channel, phone, email, pick, pho
     const sent = channel === "text" ? `We're texting your confirmation to ${phoneWords(phone)}.` : channel === "email" ? `We're emailing your confirmation to ${email}.` : `We're texting your confirmation to ${phoneWords(phone)} and emailing it to ${email}.`
     return (
       <div>
-        <h2 className="mb-5 font-display text-4xl leading-none text-navy">{`Your ${pass.name} is set up.`}</h2>
+        <h2 className="mb-5 type-title text-navy">{`Your ${pass.name} is set up.`}</h2>
         <BookedCard service={pass.name} detail={pass.detail} where={where} status="Set up" />
         <PassVisitsList lines={pass.lines} where={where} />
         {photoLine}
@@ -123,7 +123,7 @@ export function BookingBooked({ service, where, channel, phone, email, pick, pho
     const dest = channel === "email" ? email : channel === "text" ? phoneWords(phone) : `${phoneWords(phone)} and ${email}`
     return (
       <div>
-        <h2 className="font-display text-4xl leading-none text-navy">{QUOTE_DONE}</h2>
+        <h2 className="type-title text-navy">{QUOTE_DONE}</h2>
         <p className="mt-3 text-base text-foreground">{`${service} at ${where}.`}</p>
         {photoLine}
         <p data-slot="done-contact" className="mt-4 text-base text-foreground">
@@ -149,7 +149,7 @@ export function BookingBooked({ service, where, channel, phone, email, pick, pho
   const now = channel === "text" ? `We're texting your confirmation to ${phoneWords(phone)}.` : channel === "email" ? `We're emailing your confirmation to ${email}.` : `We're texting your confirmation to ${phoneWords(phone)} and emailing it to ${email}.`
   return (
     <div>
-      <h2 className="mb-5 font-display text-4xl leading-none text-navy">{`Your ${service.toLowerCase()} is booked.`}</h2>
+      <h2 className="mb-5 type-title text-navy">{`Your ${service.toLowerCase()} is booked.`}</h2>
       <BookedCard service={service} day={longDay(pick.day)} time={clock12(pick.start)} where={where} />
       {photoLine}
       {cardLine}

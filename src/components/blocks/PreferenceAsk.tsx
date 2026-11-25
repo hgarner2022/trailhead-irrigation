@@ -43,7 +43,7 @@ export function TimingDialog({ kind, value, onSave, label = "Change", asButton =
         {saved ? (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-navy">{`Saved: ${timingLine(kind, chosen)}.`}</DialogTitle>
+              <DialogTitle className="type-heading text-navy">{`Saved: ${timingLine(kind, chosen)}.`}</DialogTitle>
               <DialogDescription className="text-base">{TIMING_NEXT}</DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -55,7 +55,7 @@ export function TimingDialog({ kind, value, onSave, label = "Change", asButton =
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-navy">{timingQuestion(kind)}</DialogTitle>
+              <DialogTitle className="type-heading text-navy">{timingQuestion(kind)}</DialogTitle>
               <DialogDescription className="text-base">{TIMING_NEXT}</DialogDescription>
             </DialogHeader>
             <PreferencePicker kind={kind} value={chosen} onChange={setChosen} />

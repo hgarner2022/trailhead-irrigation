@@ -29,7 +29,7 @@ export function AccessChoice({ value, onChange, error, compact, className }: Acc
   const id = useId()
   return (
     <fieldset data-slot="access-choice" aria-describedby={error ? `${id}-error` : undefined} className={cn("min-w-0", className)}>
-      <legend className={cn("font-display leading-tight text-navy", compact ? "text-xl" : "text-2xl")}>{compact ? "Can we reach the controller and shut-off without you?" : "Can we reach the controller and the water shut-off without you?"}</legend>
+      <legend className={"type-heading text-navy"}>{compact ? "Can we reach the controller and shut-off without you?" : "Can we reach the controller and the water shut-off without you?"}</legend>
       <div className={cn("mt-3 grid gap-3 sm:grid-cols-2")}>
         {CHOICES.map((choice, i) => {
           const checked = value === choice.value
@@ -39,7 +39,7 @@ export function AccessChoice({ value, onChange, error, compact, className }: Acc
               <span
                 className={cn(optionClass({ selected: checked, error: Boolean(error), focus: "peer" }), "flex flex-col justify-center px-4 py-3 text-left", compact ? "min-h-14" : "min-h-20")}
               >
-                <span className="font-display text-2xl leading-none">{compact ? choice.short : choice.name}</span>
+                <span className="type-option">{compact ? choice.short : choice.name}</span>
                 {!compact && <span className={cn("mt-1.5 text-sm", optionDetailClass(checked))}>{choice.detail}</span>}
               </span>
             </label>

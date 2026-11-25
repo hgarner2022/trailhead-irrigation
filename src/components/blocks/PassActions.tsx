@@ -54,7 +54,7 @@ function AddInspectionDialog({ pass, voice, onAdd }: { pass: Pass; voice: "custo
         {done ? (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-navy">The July inspection is on {who} pass.</DialogTitle>
+              <DialogTitle className="type-heading text-navy">The July inspection is on {who} pass.</DialogTitle>
               <DialogDescription className="text-base">You pay after the visit, like the others. We email and text your day.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -66,7 +66,7 @@ function AddInspectionDialog({ pass, voice, onAdd }: { pass: Pass; voice: "custo
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-navy">Add the mid-season inspection?</DialogTitle>
+              <DialogTitle className="type-heading text-navy">Add the mid-season inspection?</DialogTitle>
               <DialogDescription className="text-base">In July we run every zone and look for coverage gaps, clogged nozzles and zones that run long. We adjust what we find. You pay after the visit, at the per-zone rate.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -120,7 +120,7 @@ function SkipVisitDialog({ pass, voice, onSkip }: { pass: Pass; voice: "customer
         {done ? (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-navy">{`${NAMES[done]} skipped.`}</DialogTitle>
+              <DialogTitle className="type-heading text-navy">{`${NAMES[done]} skipped.`}</DialogTitle>
               <DialogDescription className="text-base">{`Nothing is charged for it and ${your} other visits stay as they are.`}</DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -132,7 +132,7 @@ function SkipVisitDialog({ pass, voice, onSkip }: { pass: Pass; voice: "customer
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-navy">Skip which visit?</DialogTitle>
+              <DialogTitle className="type-heading text-navy">Skip which visit?</DialogTitle>
               <DialogDescription className="text-base">{`The skipped visit comes off the schedule and is not charged. ${voice === "customer" ? "Your" : "The"} pass stays.`}</DialogDescription>
             </DialogHeader>
             <div role="radiogroup" aria-label="Visit to skip" className="grid gap-2">

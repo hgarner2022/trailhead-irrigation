@@ -43,7 +43,7 @@ export function StripeCardPage({ bill, email, onPay, onBack, processing = false 
           <h1 id="stripe-pay-h" className="mt-4 text-base text-muted-foreground">
             Pay {BUSINESS.name}
           </h1>
-          <p className="mt-1 font-display text-5xl leading-none text-navy tabular-nums">{amount}</p>
+          <p className="mt-1 type-figure text-navy">{amount}</p>
           <p className="mt-3 text-base text-muted-foreground">{what}</p>
         </section>
         <section aria-label="Pay with card" className="flex flex-col gap-4">

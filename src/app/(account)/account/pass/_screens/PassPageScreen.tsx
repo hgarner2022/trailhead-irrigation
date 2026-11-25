@@ -51,7 +51,7 @@ function UpdateCardButton({ onUpdateCard, variant, className, label = "Update ca
 }
 
 function Title({ children }: { children: string }) {
-  return <h2 className="font-display text-2xl font-semibold leading-none text-navy">{children}</h2>
+  return <h2 className="type-heading text-navy">{children}</h2>
 }
 
 export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChangePreference, onAddInspection, onSkip, onUpdateCard, times, ask }: PassPageScreenProps) {
@@ -71,7 +71,7 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
           aria-labelledby="pass-headline-title"
           className={cn("rounded-lg border p-4 sm:p-6", headline.action === "update-card" ? "border-warning/40 bg-warning/10" : "border-border bg-card")}
         >
-          <h2 id="pass-headline-title" className="font-display text-3xl leading-tight text-navy">
+          <h2 id="pass-headline-title" className="type-heading text-navy">
             {headline.title}
           </h2>
           <p className="mt-2 text-base text-foreground">{headline.line}</p>

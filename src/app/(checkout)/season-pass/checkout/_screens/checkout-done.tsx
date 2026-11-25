@@ -28,14 +28,14 @@ export function DoneStep({ pass, email, chosen, onSaveImage, onDone }: { pass: P
     <div>
       <PassCard pass={pass} art="flat" priority />
       <section data-slot="done-next" aria-labelledby="done-next-heading" className="mt-10">
-        <h2 id="done-next-heading" className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
+        <h2 id="done-next-heading" className="type-caption text-primary-dark">
           What happens next
         </h2>
         <ol className="mt-5 ml-1.5 border-l-2 border-navy/15">
           {lines.map((line) => (
             <li key={line.key} className="relative pb-6 pl-6 last:pb-0">
               <span aria-hidden className="absolute top-[0.55rem] -left-[0.4375rem] size-3 rounded-full border-2 border-cream bg-primary" />
-              <p className="font-display text-2xl leading-none text-navy">{line.lead}</p>
+              <p className="type-option text-navy">{line.lead}</p>
               <p className="mt-1.5 text-base text-foreground">{line.text}</p>
               {line.note && (
                 <p data-slot="done-day-moved" className="mt-1.5 text-base text-foreground">

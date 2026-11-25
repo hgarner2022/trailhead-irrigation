@@ -20,7 +20,7 @@ export interface ZonePickerProps {
   className?: string
 }
 
-const CHIP = "flex min-h-11 min-w-11 items-center justify-center px-3 font-display text-xl tabular-nums"
+const CHIP = "flex min-h-11 min-w-11 items-center justify-center px-3 type-option tabular-nums"
 /** the one option style (option-styles.ts), at this block's size */
 const chip = (selected: boolean) => cn(optionClass({ selected }), CHIP)
 

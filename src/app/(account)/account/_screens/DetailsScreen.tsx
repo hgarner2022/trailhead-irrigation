@@ -26,7 +26,7 @@ const brandWord = (b: string | null) => (b ? `${b.charAt(0).toUpperCase()}${b.sl
 
 function Title({ id, children }: { id: string; children: string }) {
   return (
-    <h2 id={id} className="font-display text-2xl font-semibold leading-none text-navy">
+    <h2 id={id} className="type-heading text-navy">
       {children}
     </h2>
   )

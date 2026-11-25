@@ -120,7 +120,7 @@ export function AddressStep({ state, attempted, onType, onPick, set, places = fi
       )}
       {picked && showAccess && (
         <div data-slot="checkout-access" className="mt-8">
-          <p id="access-question" className="font-display text-2xl leading-tight text-navy">Can we reach the controller and the water shut-off without you?</p>
+          <p id="access-question" className="type-heading text-navy">Can we reach the controller and the water shut-off without you?</p>
           <div role="group" aria-labelledby="access-question" aria-describedby={accessMissing ? ACCESS_PROBLEM_ID : undefined} className="mt-4 grid gap-3 sm:grid-cols-2">
             {ACCESS.map((choice, i) => {
               const pressed = state.access === choice.value
@@ -134,7 +134,7 @@ export function AddressStep({ state, attempted, onType, onPick, set, places = fi
                   onClick={() => set("access", choice.value)}
                   className={cn(optionClass({ selected: pressed }), "flex min-h-20 flex-col items-start justify-center px-4 py-3 text-left")}
                 >
-                  <span className="font-display text-2xl leading-none">{choice.name}</span>
+                  <span className="type-option">{choice.name}</span>
                   <span className={cn("mt-1.5 text-sm", pressed ? "text-white/80" : "text-muted-foreground")}>{choice.detail}</span>
                 </button>
               )

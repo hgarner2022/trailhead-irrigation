@@ -134,7 +134,7 @@ export function AddressSearch({ value, picked, provider, onChange, onPick, onNoM
           onKeyDown={onKeyDown}
           onBlur={() => setOpen(false)}
           onFocus={() => setOpen(true)}
-          className={cn("h-14 rounded-lg bg-background px-4 text-lg shadow-sm", picked && "pr-12", problem && "border-destructive")}
+          className={cn("h-14 rounded-lg bg-background px-4 text-base shadow-sm", picked && "pr-12", problem && "border-destructive")}
         />
         {picked && !problem && <Check aria-hidden className="pointer-events-none absolute top-1/2 right-4 size-6 -translate-y-1/2 text-positive" />}
       </div>

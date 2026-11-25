@@ -23,7 +23,7 @@ export interface StepProps {
 }
 
 /** A tall input in the body size, so the one field on screen reads as the thing to do. */
-const FIELD = "h-14 rounded-lg bg-background px-4 text-lg shadow-sm"
+const FIELD = "h-14 rounded-lg bg-background px-4 text-base shadow-sm"
 const VISIT_SHORT = { "turn-on": "Turn-on", inspection: "Inspection", blowout: "Blowout" } as const
 const ZONE_OPTIONS = Array.from({ length: MAX_ZONES - MIN_ZONES + 1 }, (_, i) => MIN_ZONES + i)
 
@@ -66,7 +66,7 @@ export function ZonesStep({ state, set, summary }: StepProps & { summary?: React
               aria-label={`${upTo ? "Up to " : ""}${zones} zones`}
               data-autofocus={pressed || undefined}
               onClick={() => set("zones", zones)}
-              className={cn(optionClass({ selected: pressed }), "size-12 font-display text-xl tabular-nums")}
+              className={cn(optionClass({ selected: pressed }), "size-12 type-option tabular-nums")}
             >
               {zones}
             </button>
@@ -75,7 +75,7 @@ export function ZonesStep({ state, set, summary }: StepProps & { summary?: React
       </div>
       {summary ?? (
         <>
-      <p data-slot="checkout-price" className="mt-10 font-display text-5xl leading-none text-navy tabular-nums">
+      <p data-slot="checkout-price" className="mt-10 type-figure text-navy">
         {formatMoney(priceOnSale(state.zones, state.inspection, state.today))}
       </p>
       <p className="mt-2 text-base text-muted-foreground">per season, paid after each visit</p>

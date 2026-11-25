@@ -74,7 +74,7 @@ export function FlowShell({ question, step, total, children, notice, onBack, onN
             </div>
           )}
           {notice}
-          <h1 id="flow-heading" tabIndex={-1} className={cn("outline-none", done ? "text-xs font-semibold uppercase tracking-wide text-primary-dark" : "font-display text-4xl leading-[1.05] text-navy lg:text-5xl")}>
+          <h1 id="flow-heading" tabIndex={-1} className={cn("outline-none", done ? "type-caption text-primary-dark" : "type-title text-navy")}>
             {question}
           </h1>
           <div className={cn("flex-1", done ? "mt-4" : "mt-8 pb-8")}>{children}</div>

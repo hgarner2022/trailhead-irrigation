@@ -42,7 +42,7 @@ function QuoteRow({ onRequestQuote }: { onRequestQuote: () => void }) {
         <ServiceIcon key={play} name="quote" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-display text-[1.375rem] leading-[1.1] text-navy">{title}</span>
+        <span className="block type-option text-navy">{title}</span>
         {rest && <span className="mt-1 block text-sm leading-5 text-muted-foreground">{rest}</span>}
       </span>
       <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-full bg-stone text-navy">
@@ -59,7 +59,7 @@ function QuoteCard({ entry, name, checked, onChange }: { entry: ServiceEntry; na
       <label className="relative block">
         <input type="radio" name={name} checked={checked} onChange={onChange} data-autofocus={checked || undefined} className="peer sr-only" />
         <span className={cn(optionClass({ selected: checked, focus: "peer" }), "flex min-h-16 items-center px-4 py-3")}>
-          <span className="font-display text-2xl leading-none">{entry.name}</span>
+          <span className="type-option">{entry.name}</span>
         </span>
       </label>
     </li>

@@ -48,7 +48,7 @@ export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot, 
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <h1 className="font-display text-3xl font-semibold leading-none text-navy">{m.service}</h1>
+            <h1 className="type-title text-navy">{m.service}</h1>
             <StatusPill status={m.pill.status} label={m.pill.label} />
           </div>
           {m.label && <p className="text-sm font-semibold text-navy-light">{m.label}</p>}

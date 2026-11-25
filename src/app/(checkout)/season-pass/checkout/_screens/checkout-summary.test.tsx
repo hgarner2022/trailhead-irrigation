@@ -9,7 +9,7 @@ describe("OrderSummary", () => {
     render(<OrderSummary state={{ zones: 10, inspection: true, today: "2026-11-12" }} />)
     const summary = screen.getByRole("region", { name: "Your pass" })
     for (const visit of visitsOnSale(true, "2026-11-12")) {
-      const row = within(summary).getByText(visit.name).closest("li")!
+      const row = within(summary).getByText(visit.name).closest("[data-slot=price-line]")!
       expect(row).toHaveTextContent(formatMoney(visitPrice(visit, 10)))
     }
     expect(within(summary).getByText("Season total").parentElement).toHaveTextContent(formatMoney(priceOnSale(10, true, "2026-11-12")))

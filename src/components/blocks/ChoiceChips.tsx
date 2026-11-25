@@ -35,7 +35,7 @@ export function ChoiceChips(props: ChoiceChipsProps) {
   }
   return (
     <fieldset data-slot="choice-chips" aria-describedby={[hint ? `${id}-hint` : "", error ? `${id}-error` : ""].filter(Boolean).join(" ") || undefined} className={cn("min-w-0", className)}>
-      <legend className="font-display text-2xl leading-tight text-navy">{legend}</legend>
+      <legend className="type-heading text-navy">{legend}</legend>
       <div className="mt-3 flex flex-wrap gap-2">
         {options.map((o) => {
           const on = chosen(o.value)
