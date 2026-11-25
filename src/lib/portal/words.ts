@@ -4,6 +4,8 @@
 import { monthDay, monthName, monthShort, writtenDate } from "@/lib/admin/format"
 import { firstNameOf } from "@/lib/admin/people"
 import { PHONE_DISPLAY } from "@/lib/nav"
+import type { TimingPreference } from "@/lib/admin/types"
+import { waitingDay } from "./preference-words"
 
 export { firstNameOf }
 
@@ -73,11 +75,9 @@ export type VisitPill = { status: "scheduled" | "done" | "needs-a-day" | "cancel
 export interface PillFacts {
   status: string
   notDoneReason?: string | null
-  /** days are on offer, or there is nothing to pick from */
-  canPick?: boolean
 }
 
-/** What the customer reads on a visit: Booked, Done, Pick a day or Day coming soon, Needs a new day, or Canceled (a skipped visit reads Canceled too). */
+/** What the customer reads on a visit: Booked, Done, Not scheduled yet, Needs a new day, or Canceled (a skipped visit reads Canceled too). Never a prompt to pick a day: we schedule a visit with no day. */
 export function visitPill(v: PillFacts): VisitPill {
   // a booked visit whose day has passed and is not closed yet still reads Booked
   if (v.status === "scheduled" || v.status === "not-closed") return { status: "scheduled", label: "Booked" }
@@ -86,7 +86,7 @@ export function visitPill(v: PillFacts): VisitPill {
   // one customer word for skipped and canceled: a pass visit the customer (or Ryan) skipped is Canceled to them
   if (v.status === "skipped") return { status: "skipped", label: "Canceled" }
   if (v.notDoneReason) return { status: "needs-a-day", label: "Needs a new day" }
-  return { status: "needs-a-day", label: v.canPick ? "Pick a day" : "Day coming soon" }
+  return { status: "needs-a-day", label: "Not scheduled yet" }
 }
 
 export interface MoneyFacts {
@@ -127,8 +127,9 @@ export interface DayLineFacts extends VisitDayFacts {
   /** the exact start, "10:30 am"; null while the visit has a day and no time we have told */
   window: string | null
   personFirstName: string | null
-  /** days are on offer for a visit with no day */
-  canPick: boolean
+  kind?: string
+  /** the Season Pass timing wanted for a visit with no day yet */
+  preference?: TimingPreference | null
 }
 
 /**
@@ -146,8 +147,8 @@ export function dayParts(v: DayLineFacts, today: string, reachable = true): { he
   }
   const day = visitDayWords(v, today)
   if (!day) {
-    const heading = v.canPick ? "Pick a day" : "Day coming soon"
-    return { heading, detail: v.canPick ? null : "We'll text you when Ryan has one.", sentence: v.canPick ? "Pick a day." : "Day coming soon. We'll text you when Ryan has one." }
+    const waiting = waitingDay(v.kind ?? "", v.preference)
+    return { heading: waiting.heading, detail: waiting.detail, sentence: `${waiting.heading}. ${waiting.detail}` }
   }
   if (v.windowTold && !v.window) {
     // The day-before text went out but the visit has no start time (a one-off left at Any time): say who is coming that day, never promise a window again.

@@ -18,8 +18,8 @@ describe("openInvoices", () => {
 })
 
 describe("visitsToOffer", () => {
-  it("names the visits whose day the customer may pick or change online", () => {
-    expect(visitsToOffer(portalTimeline(andrea, [passJob, repairJob], TODAY).upcoming)).toEqual(["v1", "v2"])
+  it("names the booked visits whose day the customer may change online, never one with no day", () => {
+    expect(visitsToOffer(portalTimeline(andrea, [passJob, repairJob], TODAY).upcoming)).toEqual(["v1"])
     expect(visitsToOffer(portalTimeline(andrea, [{ ...passJob, visits: passJob.visits.map((v) => ({ ...v, reschedule: "text" as const })) }], TODAY).upcoming)).toEqual([])
   })
 })

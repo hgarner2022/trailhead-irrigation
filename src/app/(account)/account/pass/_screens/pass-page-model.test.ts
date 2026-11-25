@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
 import { aprilPass, januaryPass } from "../../_screens/pass-purchase-fixtures"
-import { bookedWhen, cardAction, cardLine, earlierSeasons, expiry, passHeadline, pickDayOptions, seasonCaption, seasonSummary, visitLineInfo, visitRows, visitStatus } from "./pass-page-model"
+import { bookedWhen, cardAction, cardLine, earlierSeasons, expiry, passHeadline, seasonCaption, seasonSummary, visitLineInfo, visitRows, visitStatus } from "./pass-page-model"
 
 // passes[0] is Andrea in Erie: turn-on done May 3, inspection in July, blowout preferred for mid October.
 // passes[2] has no visit yet, with the turn-on preferred earlier.
@@ -111,10 +111,11 @@ describe("earlier seasons", () => {
 
 describe("passHeadline", () => {
   const fresh = snapshot.passes[2] as Pass
-  it("reads the state top to bottom: card failed, cancelled, pick a day, next visit, reserved, done", () => {
+  it("reads the state top to bottom: card failed, cancelled, next visit, reserved, done (a visit with no day is never a prompt to pick one)", () => {
     expect(passHeadline({ ...pass, cardFailedAt: "2027-05-03T17:12:00Z" }, "2027-05-04")).toMatchObject({ action: "update-card", title: "Your card didn't go through." })
     expect(passHeadline({ ...pass, status: "cancelled", cardFailedAt: "2027-05-03T17:12:00Z" }, "2027-05-04").action).toBe("book")
-    expect(passHeadline(fresh, "2027-04-20", ["turn-on", "blowout"])).toMatchObject({ action: "pick-day", kind: "turn-on", title: "Pick your spring turn-on day." })
+    expect(passHeadline(fresh, "2027-04-20").action).toBeNull()
+    expect(passHeadline(fresh, "2027-04-20").title).not.toMatch(/pick/i)
     expect(passHeadline(fresh, "2026-11-12")).toMatchObject({ action: null, title: "Your 2027 season is reserved." })
     expect(passHeadline(pass, "2027-05-04")).toMatchObject({ action: null, title: "Spring turn-on done May 3. Next up: mid-season inspection, in July." })
     const booked: Pass = { ...fresh, visits: fresh.visits.map((v, i) => (i === 0 ? { ...v, scheduledAt: "2027-05-05T15:00:00Z" } : v)) }
@@ -122,14 +123,6 @@ describe("passHeadline", () => {
     const done: Pass = { ...pass, visits: pass.visits.map((v) => ({ ...v, completedAt: v.completedAt ?? "2027-10-05T16:40:00Z" })) }
     expect(passHeadline(done, "2027-10-20")).toMatchObject({ action: null, title: "Your 2027 season is done." })
     expect(passHeadline(done, "2027-11-02")).toMatchObject({ action: "reserve-next" })
-  })
-
-  it("offers three Tuesdays or Thursdays inside the preferred part of the window", () => {
-    const days = pickDayOptions({ ...fresh, turnOnPreference: "recommended" }, "turn-on")
-    expect(days).toHaveLength(3)
-    expect(days.every((d) => d.startsWith("2027-05-"))).toBe(true)
-    expect(days.every((d) => [2, 4].includes(new Date(`${d}T12:00:00Z`).getUTCDay()))).toBe(true)
-    expect(pickDayOptions({ ...fresh, blowoutPreference: "later" }, "blowout")[0] >= "2027-10-18").toBe(true)
   })
 })
 

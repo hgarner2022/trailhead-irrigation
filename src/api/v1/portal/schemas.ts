@@ -23,6 +23,7 @@ export const PortalVisit = z.object({
   money: z.object({ tone: z.enum(["paid", "unpaid", "invoice-sent", "past-due", "none"]), label: z.string(), paymentIds: z.array(Id) }).describe("The customer's word for the visit's money (Paid, $115 unpaid, Invoice sent, due Dec 1, Past due since Dec 1, or empty) and the payments that paid it."),
   mustBeHome: z.boolean().describe("The property says someone must be home."),
   notDoneReason: z.string().nullable().describe("Why the last try did not happen, until the visit has a day again."),
+  preference: z.enum(["earlier", "recommended", "later"]).nullable().describe("When in its window a Season Pass turn-on or blowout with no day yet is wanted; null for every other visit. A visit with no day is scheduled by us, never picked by the customer."),
   reschedule: z.enum(["yes", "text", "no"]).describe("yes: the customer may pick or change the day online; text: it is inside 24 hours (or a kind whose days are set with Ryan), so Text Ryan; no: nothing to do online."),
   cancel: z.enum(["yes", "text", "no"]).describe("yes: the customer may cancel online; text: inside 24 hours, so Text Ryan; no: nothing to cancel."),
   cancelsBy: z.string().nullable().describe('The last minute the customer may change it online: "Sunday, April 26, 11:59 pm"; null with no day.'),

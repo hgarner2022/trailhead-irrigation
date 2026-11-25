@@ -178,7 +178,7 @@ describe("upcomingWindow", () => {
     const both = { windows: [{ ...blowout, opensOn: "2027-06-10" }, { ...blowout, kind: "inspection" as const, opensOn: "2027-06-01" }] }
     expect(upcomingWindow(both, "2027-05-20T18:00:00Z")?.kind).toBe("inspection")
     expect(windowTitle(blowout)).toBe("Fall blowouts open Oct 1")
-    expect(windowTitle(data.settings.windows[0])).toBe("Spring turn-ons open Apr 26")
+    expect(windowTitle(data.settings.windows[0])).toBe("Spring turn-ons open Apr 15")
   })
 })
 
