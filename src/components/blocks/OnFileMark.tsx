@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils"
 
 export function OnFileMark({ className }: { className?: string }) {
   return (
-    <span data-slot="on-file-mark" className={cn("inline-flex items-center gap-1.5 rounded-full border border-border bg-cream px-2.5 py-0.5 text-sm font-semibold text-navy", className)}>
-      <svg aria-hidden viewBox="0 0 16 16" className="draw-check size-3.5 text-success" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+    <span data-slot="on-file-mark" className={cn("inline-flex items-center gap-1.5 rounded-full border border-border bg-cream py-0.5 pl-2 pr-2.5 text-sm font-semibold text-navy", className)}>
+      <svg aria-hidden viewBox="2.4 3.4 11.2 9.2" className="draw-check h-3 w-3.5 shrink-0 text-success" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3.5 8.5l3 3 6-7" />
       </svg>
       On file

@@ -29,8 +29,6 @@ export interface BookingContactProps {
   channel: ContactChannel
   onChannel: (c: ContactChannel) => void
   attempted: boolean
-  /** the name and phone were filled in from what we hold, once the typed email was the one on file: they settle in with one small scale */
-  filled?: boolean
 }
 
 /** The one line above the Back and Continue bar on the contact step of a booking: agreement is pressing Continue. Never a box, never an error. */
@@ -50,7 +48,7 @@ export function TermsLine() {
   )
 }
 
-export function BookingContact({ fields, set, channel, onChannel, attempted, filled = false }: BookingContactProps) {
+export function BookingContact({ fields, set, channel, onChannel, attempted }: BookingContactProps) {
   const id = useId()
   const [touched, setTouched] = useState<Set<string>>(() => new Set())
   return (
@@ -61,7 +59,7 @@ export function BookingContact({ fields, set, channel, onChannel, attempted, fil
           const shown = problem !== null && (attempted || touched.has(field.key))
           const slip = field.key === "email" && !shown ? emailSuggestion(fields.email) : null
           return (
-            <div key={field.key} className={cn(!field.half && "col-span-2", filled && field.key !== "email" && "settle")}>
+            <div key={field.key} className={cn(!field.half && "col-span-2")}>
               <FormRow label={field.label} error={shown ? (problem ?? undefined) : undefined}>
                 <Input
                   name={field.key}
