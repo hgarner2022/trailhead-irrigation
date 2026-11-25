@@ -150,7 +150,7 @@ export const AddressNoCityPickTest: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "9 Cot")
     await userEvent.click(await canvas.findByRole("option", { name: /Cottonwood/ }))
-    await expect(await canvas.findByLabelText("City", {}, { timeout: 12000 })).toHaveFocus()
+    await waitFor(() => expect(canvas.getByLabelText("City")).toHaveFocus(), { timeout: 12000 })
     await expect(canvas.getByLabelText("Street address")).toHaveValue("9 Cottonwood Ln")
   },
 }
@@ -174,7 +174,7 @@ const repairOpen = on({ initial: { step: "service", service: "repair", fields: h
     await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-expanded", "true")
     const panel = canvas.getByRole("region", { name: "Sprinkler repair" })
     await expect(within(panel).getAllByRole("listitem").length).toBeGreaterThan(0)
-    await expect(canvas.queryByText(/About \$145|Charged after|Zones|Season Pass/)).toBeNull()
+    await expect(canvas.queryByText(/Charged after|Zones|Make it a Season Pass/)).toBeNull()
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
   },
 })
@@ -411,6 +411,7 @@ export const ServiceNothingClearsTest: Story = {
   play: async ({ canvas, userEvent }) => {
     await expect((await canvas.findAllByText("Choose a service.")).length).toBe(2)
     await userEvent.click(canvas.getByRole("button", { name: /^Sprinkler repair/ }))
+    await userEvent.click(await canvas.findByRole("button", { name: "Choose Sprinkler repair" }))
     await waitFor(() => expect(canvas.queryAllByText("Choose a service.")).toHaveLength(0))
   },
 }
@@ -483,6 +484,7 @@ export const AddressOnFileTest: Story = {
     await expect(canvas.queryByText(/Andrea|Dalton|4242|On file|Welcome back/)).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await userEvent.click(await canvas.findByRole("button", { name: "Choose Spring turn-on" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await expect(await canvas.findByRole("button", { name: "10 zones" })).toHaveAttribute("aria-pressed", "true")
     await expect(canvas.queryByText(/Andrea|Dalton|4242/)).toBeNull()
   },

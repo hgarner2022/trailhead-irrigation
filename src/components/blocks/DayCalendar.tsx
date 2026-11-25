@@ -182,7 +182,7 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
               const checked = value.start === t.start
               return (
                 <label key={t.start} className="relative block">
-                  <input type="radio" name={`${id}-time`} checked={checked} aria-invalid={Boolean(error) || undefined} onChange={() => onChange({ day: current.day, start: t.start })} className="peer sr-only" />
+                  <input type="radio" name={`${id}-time`} checked={checked} onChange={() => onChange({ day: current.day, start: t.start })} className="peer sr-only" />
                   <span data-slot="time-chip" className={cn(CHIP, checked ? "settle border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
                     <span className="text-base font-semibold tabular-nums">{clock12(t.start)}</span>
                   </span>
