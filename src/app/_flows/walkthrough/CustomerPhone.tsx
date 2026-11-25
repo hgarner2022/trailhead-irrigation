@@ -237,7 +237,6 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
                 today={passDay === "april" ? "2027-04-14" : "2027-11-02"}
                 onAddInspection={() => setNotice("The July inspection is added to your pass. It is charged after the visit.")}
                 onSkip={() => setNotice("That visit is skipped. Your pass stays active.")}
-                onPickDay={async () => ({ ok: true as const })}
                 onCancel={async () => ({ ok: true as const })}
                 onChangePreference={() => setNotice("Saved. We will use that timing.")}
               />

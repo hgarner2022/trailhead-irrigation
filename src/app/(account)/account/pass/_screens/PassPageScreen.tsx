@@ -11,8 +11,7 @@ import { PassActions } from "@/components/blocks/PassActions"
 import { PassVisitRows } from "./PassVisitRows"
 import type { BookedTimes } from "@/lib/portal/booked-time"
 import type { TimingKind } from "@/lib/portal/preference-words"
-import { PickDayButtons, type PickDayButtonsProps } from "./PickDayButtons"
-import { canReserveNext, reserveNextHref, cardAction, chargeLine, earlierSeasons, passHeadline, pickDayOptions } from "./pass-page-model"
+import { canReserveNext, reserveNextHref, cardAction, chargeLine, earlierSeasons, passHeadline } from "./pass-page-model"
 
 // The Season Pass tab: the customer's plan, and only the plan (docs/plans/2026-11-19-customer-side-design.md, "Account structure (Nov 22 2026)"). The visits are the Visits tab's, with their money and
 // receipts; this page holds what the plan is. In order: whatever needs the customer now (a card that did not go through, a day to pick, next season to reserve; a banner while we are asking for a
@@ -34,11 +33,8 @@ export interface PassPageScreenProps {
   onAddInspection?: (passId: string) => void
   onSkip?: (passId: string, kind: Pass["visits"][number]["kind"]) => { ok: boolean; message?: string } | void | Promise<{ ok: boolean; message?: string } | void>
   /** the customer picked one of the offered days for a visit that has no day */
-  onPickDay?: (kind: "turn-on" | "blowout", dayIso: string) => ActionResult | Promise<ActionResult>
   /** the customer asked to update the card; the wiring sends them to Stripe's hosted page. Rendered as a form action. */
   onUpdateCard?: () => void | Promise<void>
-  /** the area days the scheduler offers, when the page has them; the prototype's stand-in days are used when absent */
-  pickDays?: Partial<Record<"turn-on" | "blowout", string[]>>
   /** the booked start of each visit by visit id ("10:30"), so the next visit reads its exact time */
   times?: BookedTimes
   /** the visit kind we are asking a timing for (the "Preference request" went out); absent when nothing is being asked */
@@ -58,12 +54,12 @@ function Title({ children }: { children: string }) {
   return <h2 className="font-display text-2xl font-semibold leading-none text-navy">{children}</h2>
 }
 
-export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChangePreference, onAddInspection, onSkip, onPickDay, onUpdateCard, pickDays, times, ask }: PassPageScreenProps) {
+export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChangePreference, onAddInspection, onSkip, onUpdateCard, times, ask }: PassPageScreenProps) {
   const cancelled = pass.status === "cancelled"
   const earlier = earlierSeasons(passes, pass)
-  const headline = passHeadline(pass, today, pickDays ? Object.keys(pickDays) : ["turn-on", "blowout"])
+  const headline = passHeadline(pass, today)
   // Only a state that needs the customer is a headline; a pass that is simply on its way is told by the card and its plan lines.
-  const needs = headline.action === "update-card" || headline.action === "pick-day" || headline.action === "reserve-next" || headline.action === "book"
+  const needs = headline.action === "update-card" || headline.action === "reserve-next" || headline.action === "book"
   return (
     <main data-slot="pass-page" data-status={pass.status} className="mx-auto max-w-3xl space-y-6 container-padding-x py-8">
       <h1 className="sr-only">Season Pass</h1>
@@ -79,11 +75,6 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
             {headline.title}
           </h2>
           <p className="mt-2 text-base text-foreground">{headline.line}</p>
-          {headline.action === "pick-day" && headline.kind && headline.kind !== "inspection" && (
-            <div className="mt-4">
-              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay as PickDayButtonsProps["onPick"]} />
-            </div>
-          )}
           {headline.action === "update-card" && <UpdateCardButton onUpdateCard={onUpdateCard} className="mt-4" />}
           {headline.action === "reserve-next" && (
             <Button asChild className="mt-4">

@@ -4,6 +4,7 @@
 // Pass and invoices; "job", "line", "stage" and "request" never appear. The words come only from `./words`.
 import type { PortalCustomerType, PortalJobType, PortalVisitType } from "@/api/v1/portal/schemas"
 import { monthDay } from "@/emails/format"
+import { waitingDay } from "./preference-words"
 import { timelineDay, upcomingMoney, visitDay, visitPill, type MoneyTone, type VisitPill } from "./words"
 
 export interface TimelineRow {
@@ -13,8 +14,10 @@ export interface TimelineRow {
   href: string
   /** the day the row sorts by: the day it was done, the day it was canceled, or its booked day; null while it has none */
   day: string | null
-  /** "Tue, Apr 28" ("Tue, Apr 28, 2027" in another year), or "Day coming soon" */
+  /** "Tue, Apr 28" ("Tue, Apr 28, 2027" in another year); for a visit with no day its preference in her words ("Our recommended, mid October") or "Not scheduled yet" */
   dayWords: string
+  /** the line under a visit with no day: "We'll schedule it about two weeks before and tell you the day."; null for any other row */
+  note: string | null
   /** "Spring turn-on" */
   service: string
   /** "Season Pass 2027" for a pass visit, else null */
@@ -49,20 +52,22 @@ const isUpcoming = (job: PortalJobType, v: PortalVisitType, today: string) =>
 function rowOf(job: PortalJobType, v: PortalVisitType, customer: Pick<PortalCustomerType, "card" | "properties">, today: string, upcoming: boolean): TimelineRow {
   const gone = GONE.includes(v.status)
   const day = gone ? v.canceledOn : visitDay(v)
+  const waiting = !gone && !day ? waitingDay(v.kind, v.preference) : null
   const money = v.money.tone !== "none" ? (v.money.tone === "paid" && v.price > 0 ? `$${v.price} · ${v.money.label}` : v.money.label) : upcoming ? upcomingMoney(v.price, Boolean(customer.card?.last4)) : ""
   return {
     id: v.id,
     jobId: job.id,
     href: `/account/visits/${v.id}`,
     day,
-    dayWords: gone && day ? `Canceled ${monthDay(day)}${day.slice(0, 4) === today.slice(0, 4) ? "" : `, ${day.slice(0, 4)}`}` : day ? timelineDay(day, today) : "Day coming soon",
+    dayWords: gone && day ? `Canceled ${monthDay(day)}${day.slice(0, 4) === today.slice(0, 4) ? "" : `, ${day.slice(0, 4)}`}` : day ? timelineDay(day, today) : (waiting?.heading ?? ""),
+    note: waiting?.detail ?? null,
     service: v.name,
     label: job.season !== null ? job.name : null,
     street: customer.properties.length > 1 ? job.address : null,
     who: v.windowTold ? v.personFirstName : null,
     money,
     tone: v.money.tone !== "none" ? v.money.tone : "none",
-    pill: visitPill({ status: v.status, notDoneReason: v.notDoneReason, canPick: v.reschedule === "yes" }),
+    pill: visitPill({ status: v.status, notDoneReason: v.notDoneReason }),
     receiptId: v.money.tone === "paid" ? (v.money.paymentIds.at(-1) ?? null) : null,
     visit: v,
     job,

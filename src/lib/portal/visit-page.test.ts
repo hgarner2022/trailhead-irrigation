@@ -41,10 +41,10 @@ describe("visitPageOf", () => {
     expect(page(passJobInsideCutoff, "v1")).toMatchObject({ reschedule: "text", cancel: "text", changeLine: null })
   })
 
-  it("with no card, the price is paid after the visit; a visit with no day says it is coming soon", () => {
+  it("with no card, the price is paid after the visit; a visit with no day never says to pick one", () => {
     expect(page(oneOffJob, "v6", dana).priceLine).toBe("$145, paid after the visit")
-    expect(page(passJob, "v2").dayLine).toBe("Pick a day.")
-    expect(page({ ...passJob, visits: passJob.visits.map((v) => (v.id === "v2" ? { ...v, reschedule: "no" as const } : v)) }, "v2").dayLine).toBe("Day coming soon. We'll text you when Ryan has one.")
+    expect(page(passJob, "v2").dayLine).toBe("Our recommended, mid October. We'll schedule it about two weeks before and tell you the day.")
+    expect(page({ ...passJob, visits: passJob.visits.map((v) => (v.id === "v2" ? { ...v, preference: null } : v)) }, "v2").dayLine).toBe("Not scheduled yet. We'll text you when Ryan has one.")
   })
 
   it("a done and paid visit: Done on its day, Paid, and its receipt in the customer's words", () => {

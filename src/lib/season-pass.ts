@@ -8,6 +8,8 @@
 // Per-visit prices must match /pricing and public/pricing.md. If a price
 // changes there, change it here.
 
+import { defaultWindows } from "@/lib/settings/defaults"
+
 export const SEASON_PASS_VISITS = [
   {
     key: "turn-on",
@@ -61,7 +63,7 @@ export function seasonPassPrice(zones: number, inspection = false): number {
 }
 
 /** The day each visit's window closes for the season (MM-DD); after November 1 the next season is on sale (wiring plan, decision 15). */
-export const WINDOW_CLOSES: Record<SeasonPassVisit["key"], string> = { "turn-on": "05-31", inspection: "07-31", blowout: "11-15" }
+export const WINDOW_CLOSES = Object.fromEntries(defaultWindows(2000).map((w) => [w.kind, w.closesOn.slice(5, 10)])) as Record<SeasonPassVisit["key"], string>
 const SEASON_ROLLS = "11-01"
 
 /**

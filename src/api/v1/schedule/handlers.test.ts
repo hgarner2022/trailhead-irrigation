@@ -58,9 +58,9 @@ describe("schedule.slots", () => {
     // One person per start, the one already working that day: the second truck has the same starts but is not listed beside him on May 5.
     expect(out.data.some((d) => d.day === "2027-05-05" && d.personId === "person_truck-2")).toBe(false)  })
   it("starts tomorrow by default, skips Saturdays for a person who does not work them, and rejects bad input", async () => {
-    // The service opens Apr 26 (its dates), so that is the first day offered from tomorrow's start; May 1 is a Saturday.
+    // The service opens Apr 15 (its dates) and the test's today is Apr 20, so tomorrow, Apr 21, is the first day offered; May 1 is a Saturday.
     const out = await callApi(ctxFor(db, readKey), scheduleSlots, { service: "turn-on-8", town: "Erie", days: 7 })
-    expect(out.data.map((d) => d.day).sort()[0]).toBe("2027-04-26")
+    expect(out.data.map((d) => d.day).sort()[0]).toBe("2027-04-21")
     const saturday = await callApi(ctxFor(db, readKey), scheduleSlots, { service: "turn-on-8", town: "Erie", from: "2027-05-01", days: 1 })
     expect(saturday.data.some((d) => d.personId === "person_truck-1")).toBe(false)
     expect(saturday.data.some((d) => d.personId === "person_truck-2")).toBe(true)
@@ -123,7 +123,7 @@ describe("schedule.offerDays", () => {
     expect(days).toHaveLength(3)
     expect(days.map((d) => d.day)).toEqual([...days.map((d) => d.day)].sort())
     for (const d of days) {
-      expect(d.day >= "2027-04-26" && d.day <= "2027-05-31").toBe(true)
+      expect(d.day >= "2027-04-15" && d.day <= "2027-05-31").toBe(true)
       expect(d.window).toMatch(/^\d+:\d{2} (am|pm)$/)
     }
     // soonest first: all three sit inside the first five working days that have room
