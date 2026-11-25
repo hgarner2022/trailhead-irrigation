@@ -25,10 +25,10 @@ describe("FlowShell", () => {
     await userEvent.click(screen.getByRole("button", { name: "Close the booking form" }))
     expect(onClose).toHaveBeenCalledOnce()
   })
-  it("turns Continue off with a hint, and has no Back on the first step or buttons when done", () => {
-    const { rerender } = render(<FlowShell question="Pick your day" step={1} total={6} nextDisabled hint="Tap a start time to continue.">body</FlowShell>)
-    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled()
-    expect(screen.getAllByText("Tap a start time to continue.").length).toBeGreaterThan(0)
+  it("never turns Continue off for a missing answer and shows no hint, has an optional legal line above the pair, no Back on the first step and no buttons when done", () => {
+    const { rerender } = render(<FlowShell question="Pick your day" step={1} total={6} legal={<p>By continuing, you agree.</p>}>body</FlowShell>)
+    expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled()
+    expect(screen.getByText("By continuing, you agree.")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull()
     rerender(<FlowShell question="Booked" step={6} total={6} done>body</FlowShell>)
     expect(screen.queryByRole("button")).toBeNull()

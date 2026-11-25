@@ -25,14 +25,14 @@ import { BookingContact, TermsLine } from "./booking-contact"
 import { CalendarGroups } from "./booking-day"
 import { QuoteDetails, ServiceDetails } from "./booking-details"
 import { dayGroups, heldPicksOf, heldPrefsOf, type OffersFor } from "./booking-groups"
-import { bookedPassOf } from "./booking-pass-model"
+import { bookedPassOf, upsellPrices } from "./booking-pass-model"
 import { PreferenceGroups, preferenceQuestion } from "./booking-preference"
 import { LeaveDialog } from "./booking-leave"
-import { StepProblems } from "./booking-problems"
+import { StepField, StepProblems } from "./booking-problems"
 import type { BookingFormProps } from "./booking-form-types"
 import { useKnownProperty } from "./use-known-property"
 import { useStepHistory } from "./use-step-history"
-import { ACTIONS, CONFIRM_BOOK, CONFIRM_PASS, DAY_HINT, NO_EXTRAS, QUESTIONS, QUOTE_QUESTIONS, SEND_REQUEST, SERVICE_HINT, areaState, callbackMode, canContinue, cardWords, hasEntries, happensWords, problemList, reviewRows, stepTotal, stepsFor, townOf, type CardChoice, type Extras, type FormStep } from "./booking-form-model"
+import { ACTIONS, CONFIRM_BOOK, CONFIRM_PASS, NO_EXTRAS, QUESTIONS, QUOTE_QUESTIONS, SEND_REQUEST, areaState, callbackMode, canContinue, cardWords, hasEntries, happensWords, problemList, reviewRows, stepTotal, stepsFor, townOf, type CardChoice, type Extras, type FormStep } from "./booking-form-model"
 
 // The customer's booking form (docs/plans/2026-11-19-booking-form-design.md), one question per screen on the FlowShell, every heading a plain name: Address, Service, Day, Contact, Card, Review. The address is the
 // type-ahead (the ZIP decides the area; a repeat customer is recognised by it alone, with no sign-in and nothing personal shown), then the service: one card per service that opens in place and holds what is
@@ -46,7 +46,7 @@ const PASS_KEY = "season-pass"
 const SINGLE_PASS = new Set(["spring-turn-on", "fall-blowout"])
 const defaultOffers: OffersFor = (_k, m, _t, from, until) => fixtureCalendarDays(m, from, until)
 
-export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initial = {}, offersFor = defaultOffers, known = fixtureKnown, places = fixturePlaces, onBooked, onRequested, onOpenAccount, onStep }: BookingFormProps) {
+export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initial = {}, offersFor = defaultOffers, known = fixtureKnown, places = fixturePlaces, prototype = false, onBooked, onRequested, onOpenAccount, onStep }: BookingFormProps) {
   const [fields, dispatch] = useCheckoutState({ today, ...initial.fields })
   const [quote, setQuote] = useState(initial.quote ?? false)
   const [serviceKey, setServiceKey] = useState<string | null>(initial.service ?? null)
@@ -126,8 +126,10 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
   // A Continue that could not pass puts focus on the first field that is wrong, or on the summary when no field can take it.
   useEffect(() => {
     if (presses === 0 || valid) return
+    // The first problem's own field takes focus and scrolls into view; the summary takes it when no field can.
     const surface = document.querySelector("[data-slot=flow-surface]")
-    ;(surface?.querySelector<HTMLElement>('[aria-invalid="true"]') ?? document.getElementById("step-problems"))?.focus()
+    const first = problemList(step, answers)[0]
+    ;((first && surface?.querySelector<HTMLElement>(first.field)) ?? document.getElementById("step-problems"))?.focus()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presses])
   useEffect(() => {
@@ -169,7 +171,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
     setAttempted(false)
     if (!history.back()) setStep(steps[Math.max(at - 1, 0)]!)
   }
-  // A service chosen on its card ("Choose this service", or the round check); the chosen one unchosen is null. Opening a card to read it chooses nothing. The answers that are about the visit start over, the ones about the yard stay.
+  // A service chosen on its card ("Choose this service" in the open card). Opening a card to read it chooses nothing. The answers that are about the visit start over, the ones about the yard stay.
   const choose = (key: string | null) => {
     if (key === serviceKey) return setServiceKey(null)
     setServiceKey(key)
@@ -198,7 +200,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
     go("quote-service")
   }
   const addPhotos = (p: PickedPhoto[]) => setPhotos((prev) => [...prev, ...p.filter((x) => !prev.some((y) => y.name === x.name))])
-  const upsell = (key: string) => (SINGLE_PASS.has(key) && lists.bookable.some((e) => e.key === PASS_KEY) ? { on: false, onChange: makePass } : key === PASS_KEY && upsellFrom ? { on: true, onChange: makePass } : undefined)
+  const upsell = (key: string) => (SINGLE_PASS.has(key) && lists.bookable.some((e) => e.key === PASS_KEY) ? { on: false, onChange: makePass, prices: upsellPrices(today, fields.zones) } : key === PASS_KEY && upsellFrom ? { on: true, onChange: makePass, prices: upsellPrices(today, fields.zones) } : undefined)
   // Enter moves on from a one-line field or a chosen card on any step; never from a button, a box, a textarea or the address list.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const el = e.target as HTMLInputElement
@@ -210,11 +212,10 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
   const bookedPass: BookedPass | undefined = service?.kind === "pass" && plan ? { ...bookedPassOf(service.name, plan, heldPicks, heldPrefs), detail: [town, `${fields.zones} zones`].filter(Boolean).join(" · ") } : undefined
   const confirmLabel = quote || callback ? SEND_REQUEST : service?.kind === "pass" ? CONFIRM_PASS : CONFIRM_BOOK
   const label = step === "confirm" ? confirmLabel : step === "contact" && quote ? SEND_REQUEST : step === "card" && (card === "saved" || (offered && !otherCard)) ? "Continue" : (ACTIONS[step] ?? "Continue")
-  // Continue is off only where the screen says why: a choice not yet made (service, a start time) or a dead end (an address we do not serve). Everywhere else it stays on and a press names what is missing.
+  // Continue is never off and no hint sits above it (Hannah, Nov 25 2026): a press with something missing names it at the top of the step, focuses its field and outlines it, and the message clears as the choice is made.
   const deadEnd = step === "address" && areaState(fields.place) === "outside"
-  const off = !valid && (deadEnd || step === "quote-service" || step === "day")
-  const hint = step === "day" ? DAY_HINT : step === "quote-service" ? SERVICE_HINT : undefined
-  const details = { note: fields.accessNote, onNote: (t: string) => set("accessNote", t), photos, onAddPhotos: addPhotos, onRemovePhoto: (n: string) => setPhotos((prev) => prev.filter((p) => p.name !== n)) }
+  const stepError = problems[0]?.message
+  const details = { note: fields.accessNote, onNote: (t: string) => set("accessNote", t), photos, onAddPhotos: addPhotos, onRemovePhoto: (n: string) => setPhotos((prev) => prev.filter((p) => p.name !== n)), prototype }
 
   let body: React.ReactNode
   switch (step) {
@@ -222,12 +223,12 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       body = (
         <>
           <p className="-mt-3 mb-6 text-base text-muted-foreground">Choose what you need.</p>
-          <ServicePicker entries={lists.bookable} value={serviceKey} onChange={choose} defaultOpen={initial.service} onRequestQuote={startQuote} />
+          <StepField error={stepError}><ServicePicker entries={lists.bookable} value={serviceKey} onChange={choose} defaultOpen={initial.service} onRequestQuote={startQuote} /></StepField>
         </>
       )
       break
     case "quote-service":
-      body = <ServicePicker entries={lists.quotable} value={serviceKey} onChange={choose} mode="quote" />
+      body = <StepField error={stepError}><ServicePicker entries={lists.quotable} value={serviceKey} onChange={choose} mode="quote" /></StepField>
       break
     case "address":
       body = (
@@ -249,13 +250,13 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       body = quote || !service ? <QuoteDetails {...details} /> : <ServiceDetails service={service} plan={service.kind === "pass" ? passPlanFor(today) : null} zones={fields.zones} onZones={(n) => set("zones", n)} access={fields.access} onAccess={(a) => set("access", a)} attempted={attempted} extras={extras} onExtras={setExtras} upsell={upsell(service.key)} {...details} />
       break
     case "day":
-      body = <CalendarGroups groups={groups} picks={heldPicks} onPick={(k, p) => setPicks((prev) => ({ ...prev, [k]: p }))} note={when} onNote={setWhen} />
+      body = <CalendarGroups error={stepError} groups={groups} picks={heldPicks} onPick={(k, p) => setPicks((prev) => ({ ...prev, [k]: p }))} note={when} onNote={setWhen} />
       break
     case "preference":
       body = plan && <PreferenceGroups visits={preferenceVisits(plan)} prefs={heldPrefs} onPref={(k, p) => setPrefs((prev) => ({ ...prev, [k]: p }))} />
       break
     case "card":
-      body = <BookingCard saved={card === "saved"} pass={service?.kind === "pass"} onSkip={skipCard} onFile={offered ?? undefined} other={otherCard} onOther={setOtherCard} />
+      body = <BookingCard saved={card === "saved"} pass={service?.kind === "pass"} onSkip={skipCard} onFile={offered ?? undefined} other={otherCard} onOther={setOtherCard} prototype={prototype} />
       break
     case "contact":
       body = (
@@ -280,7 +281,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
 
   return (
     <div onKeyDown={onKeyDown}>
-      <FlowShell question={heading} step={Math.min(at + 1, total)} total={total} notice={<StepProblems problems={problems} />} onBack={back} onNext={next} nextLabel={label} nextDisabled={off} hint={hint} legal={step === "contact" && !quote ? <TermsLine /> : undefined} done={done} onClose={dirty && !done ? () => setLeaving(true) : undefined}>
+      <FlowShell question={heading} step={Math.min(at + 1, total)} total={total} notice={<StepProblems problems={problems} />} onBack={back} onNext={next} nextLabel={label} legal={step === "contact" && !quote ? <TermsLine /> : undefined} done={done} onClose={dirty && !done ? () => setLeaving(true) : undefined}>
         {body}
       </FlowShell>
       <LeaveDialog open={leaving} onOpenChange={setLeaving} />

@@ -61,8 +61,8 @@ export const AprilServicesLaptop = servicesApril.laptop
 /** The pass's Details: the zones and what each visit costs at them; nothing is charged at sign-up. */
 const detailsApril = on(at("april", { step: "details" }), "April, details", {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("About $145")).toBeInTheDocument()
-    await expect(canvas.getByText("About $115")).toBeInTheDocument()
+    await expect(canvas.getByText("$145")).toBeInTheDocument()
+    await expect(canvas.getByText("$115")).toBeInTheDocument()
     await expect(canvas.queryByRole("switch")).toBeNull()
   },
 })
@@ -98,7 +98,7 @@ const dayApril = on(at("april", { step: "day" }), "April, day", {
     await expect(canvas.queryByRole("heading", { name: "Fall blowout" })).toBeNull()
     await expect(canvas.getByText("April 2027")).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: /Thursday, April 15, soonest/ })).toHaveAttribute("aria-pressed", "true")
-    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
   },
 })
 export const AprilDayPhone = dayApril.phone
@@ -176,8 +176,8 @@ const confirmApril = on(at("april", { step: "confirm", picks: picked, prefs: { b
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Preference: Early season, early October")).toBeInTheDocument()
     await expect(canvas.getByText(/Tuesday, May 4 at 10:30 am/)).toBeInTheDocument()
-    await expect(canvas.getByText("About $145")).toBeInTheDocument()
-    await expect(canvas.getByText("About $115")).toBeInTheDocument()
+    await expect(canvas.getByText("$145")).toBeInTheDocument()
+    await expect(canvas.getByText("$115")).toBeInTheDocument()
     await expect(canvas.getByText(/We schedule your visits every season/)).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: "Set up my Season Pass" })).toBeEnabled()
     await expect(canvas.getByText("Visa ending 4242")).toBeInTheDocument()
@@ -245,7 +245,8 @@ export const WholePassPathPhoneTest: Story = {
     await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
     await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
-    await userEvent.click(await c.findByRole("button", { name: "Choose Season Pass 2027" }))
+    await userEvent.click(await c.findByRole("button", { name: /^Season Pass 2027/ }))
+    await userEvent.click(await c.findByRole("button", { name: "Choose this service" }))
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
     await next()

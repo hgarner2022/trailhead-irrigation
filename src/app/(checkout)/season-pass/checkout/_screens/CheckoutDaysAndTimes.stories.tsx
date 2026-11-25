@@ -13,9 +13,8 @@ const blowout = fixtureDayTimes(30).map((o, i) => ({ ...o, day: ["2027-10-05", "
 
 function Step() {
   const [picks, setPicks] = useState<Record<string, DayTimePick>>({ "turn-on": { day: startDay(turnOn), start: null }, blowout: { day: startDay(blowout), start: null } })
-  const ready = Object.values(picks).every((p) => p.start !== null)
   return (
-    <FlowShell question="Pick your days and times" step={4} total={7} wide nextDisabled={!ready} hint="Tap a start time for each visit to continue.">
+    <FlowShell question="Pick your days and times" step={4} total={7} wide>
       <DayTimeGroups
         groups={[
           { key: "turn-on", heading: "Your spring turn-on", offers: turnOn, minutes: 60 },
@@ -36,7 +35,7 @@ type Story = StoryObj<typeof meta>
 export const DaysAndTimesLaptop: Story = {
   globals: { viewport: { value: "laptop", isRotated: false } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
     await expect(canvas.getByRole("heading", { level: 2, name: "Your fall blowout" })).toBeInTheDocument()
   },
 }

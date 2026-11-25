@@ -72,6 +72,8 @@ export interface BookingFormProps {
   offersFor?: OffersFor
   /** the property Trailhead already holds for a picked address, found by its normalized street and ZIP; the stand-in knows one, the live form asks the server. Nothing personal comes back from it. */
   known?: (place: PlaceSuggestion) => KnownProperty | null
+  /** Storybook only: prototype helpers (the note that the card form is drawn, "Add 2 sample photos"). Off in the customer screen. */
+  prototype?: boolean
   places?: PlaceProvider
   /** told once when a day is booked */
   onBooked?: (booked: Booked) => void

@@ -108,6 +108,9 @@ h1, h2, h3 {
 .svc-icon [data-rise] {
   animation: svc-rise var(--svc-draw) var(--svc-ease) var(--svc-delay, 0ms) both;
 }
+/* A press on a card: its icon answers with one short spring. */
+@keyframes svc-spring { 0% { transform: scale(0.94); } 55% { transform: scale(1.04); } 100% { transform: scale(1); } }
+.svc-spring { animation: svc-spring 240ms var(--svc-ease) both; }
 /* The card opens: the panel's row eases from 0fr to 1fr and its lines come in one after another. */
 .svc-panel {
   display: grid;
@@ -126,11 +129,31 @@ h1, h2, h3 {
   animation: svc-line var(--svc-base) var(--svc-ease) calc(60ms + var(--i, 0) * 30ms) both;
 }
 .svc-chevron { transition: transform var(--svc-base) var(--svc-ease); }
+/* A press anywhere on a card's header answers at once: the row gives a little (and takes a faint tint from its own classes). */
+.svc-head { transition: transform 100ms var(--svc-ease), background-color 100ms var(--svc-ease); }
+.svc-head:active { transform: scale(0.985); }
 .svc-card { transition: border-color var(--svc-fast) var(--svc-ease), background-color var(--svc-fast) var(--svc-ease), box-shadow var(--svc-fast) var(--svc-ease); }
 /* Chosen: the card settles once and the check on its icon draws in. */
 @keyframes svc-settle { 0% { transform: scale(1); } 45% { transform: scale(1.02); } 100% { transform: scale(1); } }
 .svc-settle { animation: svc-settle var(--svc-fast) var(--svc-ease) both; }
 .svc-check { animation: svc-pop var(--svc-fast) var(--svc-ease) both; }
+/* One soft ring leaves the check as it lands, once. */
+@keyframes svc-ring { from { transform: scale(1); opacity: 0.7; } to { transform: scale(2.4); opacity: 0; } }
+.svc-check::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid var(--color-primary);
+  opacity: 0;
+  animation: svc-ring 400ms var(--svc-ease) 120ms both;
+}
+.svc-check[data-leaving]::after { display: none; }
+/* Unchosen: the check undraws and the badge goes, once. */
+@keyframes svc-undraw { to { stroke-dashoffset: 1; } }
+@keyframes svc-out { to { transform: scale(0); opacity: 0; } }
+.svc-check[data-leaving] { animation: svc-out var(--svc-fast) var(--svc-ease) forwards; }
+.svc-check[data-leaving] path { stroke-dashoffset: 0; animation: svc-undraw var(--svc-fast) var(--svc-ease) forwards; }
 .svc-check path {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
@@ -143,7 +166,10 @@ h1, h2, h3 {
 .svc-quote:active .svc-arrow { transform: translateX(4px); }
 @media (prefers-reduced-motion: reduce) {
   .svc-icon [data-draw], .svc-check path { animation: none; stroke-dashoffset: 0; }
+  .svc-check[data-leaving], .svc-check[data-leaving] path { animation: none; opacity: 0; }
+  .svc-check::after { display: none; }
+  .svc-spring { animation: none; }
   .svc-icon [data-pop], .svc-icon [data-turn], .svc-icon [data-rise], .svc-settle, .svc-check, .svc-panel[data-open] [data-line] { animation: none; }
-  .svc-panel, .svc-panel[data-open], .svc-chevron, .svc-card, .svc-arrow, .svc-quote { transition: none; }
-  .svc-quote:active, .svc-quote:active .svc-arrow { transform: none; }
+  .svc-panel, .svc-panel[data-open], .svc-chevron, .svc-card, .svc-arrow, .svc-quote, .svc-head { transition: none; }
+  .svc-quote:active, .svc-quote:active .svc-arrow, .svc-head:active { transform: none; }
 }
