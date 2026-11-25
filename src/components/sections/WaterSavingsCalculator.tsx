@@ -343,7 +343,7 @@ function SelectField({
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full appearance-none bg-white text-foreground font-medium text-sm rounded-lg pl-4 pr-10 py-3 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+          className="w-full appearance-none bg-white text-foreground font-medium text-sm rounded-lg pl-4 pr-10 py-3 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>

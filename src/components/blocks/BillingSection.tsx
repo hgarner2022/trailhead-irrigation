@@ -49,7 +49,7 @@ export function BillingSection({ summary, rows, emptyLine = "Nothing to bill yet
             return (
               <li key={r.id} data-kind={r.kind}>
                 {r.kind === "invoice" && r.onOpen ? (
-                  <button type="button" onClick={r.onOpen} className={cn("flex w-full items-center rounded-sm text-left hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", RECORD_ROW)}>
+                  <button type="button" onClick={r.onOpen} className={cn("flex w-full items-center rounded-sm text-left hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", RECORD_ROW)}>
                     {inner}
                   </button>
                 ) : (

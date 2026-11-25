@@ -38,7 +38,7 @@ const ALERT: PillStatus[] = ["overdue", "failed", "charge-failed"]
 const row = (rows: readonly RecordFact[], label: string) => rows.find(([k]) => k === label)?.[1] as string | undefined
 
 export const EditLink = ({ label = "Edit" }: { label?: string }) => (
-  <button type="button" onClick={noop} className="min-h-11 rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+  <button type="button" onClick={noop} className="min-h-11 rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
     {label}
   </button>
 )
@@ -145,7 +145,7 @@ export function PastVisitsCard({ street, visits, total }: { street: string; visi
             ))}
           </ul>
           {total > 3 && (
-            <Link href="/admin/customers" className="mt-3 inline-flex min-h-11 items-center rounded-sm text-sm font-medium text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+            <Link href="/admin/customers" className="mt-3 inline-flex min-h-11 items-center rounded-sm text-sm font-medium text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               See all {total}
             </Link>
           )}

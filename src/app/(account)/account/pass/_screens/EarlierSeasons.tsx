@@ -32,7 +32,7 @@ export function EarlierSeasons({ passes }: EarlierSeasonsProps) {
           {passes.map((pass) => (
             <li key={pass.id}>
               <details className="group py-3">
-                <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   <span className="min-w-0 flex-1">
                     <span className="block text-base font-semibold text-foreground">{`${pass.season} season`}</span>
                     <span className="block text-sm text-muted-foreground">{seasonSummary(pass)}</span>

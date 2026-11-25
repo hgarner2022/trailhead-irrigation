@@ -84,7 +84,7 @@ function FilterChip<T extends RowData>({ table, filter, disabled }: { table: Gri
             type="button"
             data-active={active}
             disabled={disabled}
-            className="inline-flex h-full cursor-pointer items-center gap-1 rounded-lg px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-full cursor-pointer items-center gap-1 rounded-lg px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
           >
             {active ? `${filter.label}: ${summary}` : filter.label}
             <ChevronDown className="size-3.5" aria-hidden />
@@ -111,7 +111,7 @@ function FilterChip<T extends RowData>({ table, filter, disabled }: { table: Gri
           aria-label={`Clear ${filter.label} filter`}
           disabled={disabled}
           onClick={() => column?.setFilterValue(undefined)}
-          className="flex h-full cursor-pointer items-center pr-2 pl-1 hover:text-primary-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+          className="flex h-full cursor-pointer items-center pr-2 pl-1 hover:text-primary-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <X className="size-3.5" aria-hidden />
         </button>

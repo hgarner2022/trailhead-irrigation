@@ -39,7 +39,7 @@ export function TimeField({ id, label, value, onChange, from = "05:00", to = "21
           id={id}
           type="button"
           aria-label={`${label}, ${clock12(value)}`}
-          className={cn("flex min-h-11 w-32 cursor-pointer items-center gap-2 rounded-lg border border-input bg-background px-3 text-left text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 md:min-h-9 md:text-sm", className)}
+          className={cn("flex min-h-11 w-32 cursor-pointer items-center gap-2 rounded-lg border border-input bg-background px-3 text-left text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-9 md:text-sm", className)}
         >
           <Clock aria-hidden className="size-4 shrink-0 text-muted-foreground" />
           <span className="min-w-0 flex-1 truncate tabular-nums">{clock12(value)}</span>

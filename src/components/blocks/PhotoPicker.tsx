@@ -48,7 +48,7 @@ export function PhotoPicker({ photos, onAdd, onRemove, samples, max = 6, hint, c
             }}
             className="peer sr-only"
           />
-          <span className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-4 text-base font-medium text-foreground transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 hover:bg-stone">
+          <span className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-4 text-base font-medium text-foreground transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 hover:bg-stone">
             <Camera aria-hidden className="size-5 text-navy" />
             Add photos
           </span>
@@ -71,7 +71,7 @@ export function PhotoPicker({ photos, onAdd, onRemove, samples, max = 6, hint, c
                 type="button"
                 aria-label={`Remove ${p.name}`}
                 onClick={() => onRemove(p.name)}
-                className="absolute top-1 right-1 flex size-11 cursor-pointer items-center justify-center rounded-full bg-navy/80 text-white hover:bg-navy focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
+                className="absolute top-1 right-1 flex size-11 cursor-pointer items-center justify-center rounded-full bg-navy/80 text-white hover:bg-navy focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               >
                 <X aria-hidden className="size-5" />
               </button>

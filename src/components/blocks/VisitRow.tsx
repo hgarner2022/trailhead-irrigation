@@ -35,7 +35,7 @@ export function VisitRow({ href, dayWords, note, service, label, street, who, mo
   const gone = pill.status === "cancelled" || pill.status === "skipped"
   return (
     <li data-slot="visit-row" data-status={pill.status} className="flex items-start gap-4 py-4">
-      <Link href={href} className="min-w-0 flex-1 space-y-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+      <Link href={href} className="min-w-0 flex-1 space-y-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <p className={cn("text-base font-semibold", gone ? "text-muted-foreground line-through" : "text-foreground")}>{dayWords}</p>
         <p className="flex flex-wrap items-center gap-x-2 text-base text-foreground">
           <span>{[service, who].filter(Boolean).join(" · ")}</span>

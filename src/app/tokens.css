@@ -41,7 +41,7 @@
   --color-positive: #15803D;             /* readable green, about 5:1 on white; used as text */
   --color-positive-deep: #166534;        /* ink for text on the positive tint; 6.2:1 on bg-positive/10 */
   --color-input: #E7E5E4;                /* = border */
-  --color-ring: #D97706;                 /* = primary */
+  --color-ring: #B45309;                 /* = primary-dark: the one focus ring (`ring-ring`), 5.0:1 on white and 4.7:1 on cream, over the 3:1 WCAG 1.4.11 asks; the old ring-primary/50 was 1.75:1 */
 
   --color-sidebar: #2B3544;              /* navy rail */
   --color-sidebar-foreground: #FAFAF8;

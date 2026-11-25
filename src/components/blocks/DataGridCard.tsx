@@ -100,7 +100,7 @@ export function DataGridCards<T extends RowData>({ table, rows, slots, nameId, l
               type="button"
               data-slot="data-grid-card"
               onClick={() => onOpen?.(row.original)}
-              className="flex min-h-16 w-full cursor-pointer items-start justify-between gap-3 rounded-lg border border-border bg-background p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="flex min-h-16 w-full cursor-pointer items-start justify-between gap-3 rounded-lg border border-border bg-background p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span className="min-w-0 flex-1 space-y-1">
                 <span className="block truncate font-medium text-primary-dark">{cell(slots.title ?? nameId)}</span>

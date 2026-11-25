@@ -38,7 +38,7 @@ export function TodayVisitRow({ id, window, firstName, town, service, personName
       <button
         type="button"
         onClick={() => onOpen(id)}
-        className="flex min-h-14 w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-left hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50 sm:flex-nowrap"
+        className="flex min-h-14 w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-left hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:flex-nowrap"
       >
         {route !== undefined && (
           <span data-slot="route-number" className="w-5 shrink-0 text-sm font-semibold tabular-nums text-navy">

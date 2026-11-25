@@ -23,8 +23,8 @@ export interface RowActionsSpec {
   refund?: { amount: string; onRefund: () => void }
 }
 
-export const LINK = "inline-flex min-h-11 items-center gap-1 rounded-sm text-sm font-medium text-primary-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-const ICON_BUTTON = "inline-flex size-11 items-center justify-center rounded-sm text-primary-dark hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 md:size-9"
+export const LINK = "inline-flex min-h-11 items-center gap-1 rounded-sm text-sm font-medium text-primary-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+const ICON_BUTTON = "inline-flex size-11 items-center justify-center rounded-sm text-primary-dark hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:size-9"
 
 function IconLink({ href, label, external, children }: { href: string; label: string; external?: boolean; children: React.ReactNode }) {
   const link = external ? (

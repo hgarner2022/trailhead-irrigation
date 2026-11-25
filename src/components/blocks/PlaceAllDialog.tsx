@@ -41,7 +41,7 @@ export function PlaceAllDialog({ rows, open, onOpenChange, onConfirm }: PlaceAll
       onOpenChange={onOpenChange}
       onConfirm={async () => (onConfirm(), { ok: true })}
     >
-      <ul data-slot="place-all-rows" tabIndex={0} aria-label="Jobs to schedule" className="max-h-72 divide-y divide-border overflow-y-auto rounded-lg border border-border text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+      <ul data-slot="place-all-rows" tabIndex={0} aria-label="Jobs to schedule" className="max-h-72 divide-y divide-border overflow-y-auto rounded-lg border border-border text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         {rows.map((row) => (
           <li key={row.id} className="px-3 py-2">
             <span className="block truncate text-foreground">{`${row.who} · ${row.what}`}</span>

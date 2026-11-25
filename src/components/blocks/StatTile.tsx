@@ -84,7 +84,7 @@ export function StatTile({ label, value, delta, sparkline, href, className }: St
         href={href}
         data-slot="stat-tile"
         aria-label={sentence}
-        className={cn("group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", className)}
+        className={cn("group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", className)}
       >
         <Card className={cn(surface, "transition-colors group-hover:border-navy/30")}>{body}</Card>
       </Link>

@@ -31,7 +31,7 @@ import { REQUEST_PILL, SOURCE_WORDS, cameIn, cameInOn, fullName, matchNote, matc
 // archives the request). Nothing here reaches the customer. A result is a toast and the page changes, never a message in a section.
 // Pure props: `onSeen`, `onCreateJob`, `onJobCreated` and `onArchive` let a host keep state and take Ryan to the job or the quote.
 
-const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 const UNSCHEDULED = { status: "needs-a-day" as PillStatus, label: "Unscheduled" }
 const DRAFT = { status: "quote-draft" as PillStatus, label: "Draft" }
 const CHANNEL_WORDS = { text: "Text", email: "Email", both: "Text and email" }

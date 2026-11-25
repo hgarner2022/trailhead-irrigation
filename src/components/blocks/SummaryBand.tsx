@@ -41,7 +41,7 @@ export function SummaryBand({ items, className }: { items: readonly SummaryItem[
 const CELL = "relative flex min-w-0 flex-col items-start gap-2 bg-card px-4 py-4 sm:flex-row sm:gap-3 sm:px-5"
 /** the last cell of an odd band, on a phone, takes the whole row */
 const WIDE = "col-span-2 lg:col-span-1"
-const TARGET = "group text-left transition-colors hover:bg-row-hover focus-visible:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
+const TARGET = "group text-left transition-colors hover:bg-row-hover focus-visible:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
 
 function Cell({ item, wide }: { item: SummaryItem; wide?: boolean }) {
   const { icon: Icon, href, onClick } = item

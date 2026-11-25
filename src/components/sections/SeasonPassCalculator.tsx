@@ -53,7 +53,7 @@ export function SeasonPassCalculator({
             id="season-pass-zones"
             value={zones}
             onChange={(e) => setZones(Number(e.target.value))}
-            className="h-10 rounded-lg border border-border bg-background px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            className="h-10 rounded-lg border border-border bg-background px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {ZONE_OPTIONS.map((z) => (
               <option key={z} value={z}>

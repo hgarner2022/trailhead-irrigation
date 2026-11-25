@@ -23,7 +23,7 @@ import { QUOTE_PILL, ago, dayOf, money, type Channel, type QuoteRecord } from ".
 // dollar figure or a dash), the day it was sent with its age, the status pill and a Next action: Remind on a Sent quote (the quote's own reminder dialog, once a day), Open on the others.
 // The waiting ones come first. A click on the row or the quote chip opens the quote's page. On a phone the table is cards, the tiles two by two and the tabs a row that scrolls sideways. Pure props.
 
-const TEXT_BUTTON = "inline-flex min-h-11 items-center whitespace-nowrap rounded-sm px-2 text-sm font-medium text-primary-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:text-muted-foreground disabled:no-underline"
+const TEXT_BUTTON = "inline-flex min-h-11 items-center whitespace-nowrap rounded-sm px-2 text-sm font-medium text-primary-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:text-muted-foreground disabled:no-underline"
 const CARD: GridCardSlots = { title: "label", line: ["customerText", "serviceText"], state: "status", when: ["datesText"], money: "amount", actions: "next" }
 const TAB_WORDS: Record<QuoteTab, string> = { all: "All", draft: QUOTE_PILL.draft.label, sent: QUOTE_PILL.sent.label, approved: QUOTE_PILL.approved.label, declined: QUOTE_PILL.declined.label, replaced: QUOTE_PILL.replaced.label, archived: QUOTE_PILL.archived.label }
 const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`
