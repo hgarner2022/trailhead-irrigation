@@ -24,9 +24,11 @@ export interface BookingCardProps {
   /** the customer chose a different card, so the form shows even though one is on file */
   other?: boolean
   onOther?: (other: boolean) => void
+  /** Storybook only: the dashed note that says the card form is drawn. Never in the customer screen. */
+  prototype?: boolean
 }
 
-export function BookingCard({ saved, pass, onSkip, onFile, other = false, onOther }: BookingCardProps) {
+export function BookingCard({ saved, pass, onSkip, onFile, other = false, onOther, prototype = false }: BookingCardProps) {
   const useFile = Boolean(onFile) && !other
   return (
     <div data-slot="booking-card" className="space-y-6">
@@ -53,9 +55,11 @@ export function BookingCard({ saved, pass, onSkip, onFile, other = false, onOthe
               <div className={BOX}>CVC</div>
             </div>
           </div>
-          <p data-slot="card-drawn" className="rounded-md border border-dashed border-border bg-stone px-3 py-2 text-sm text-muted-foreground">
-            Stripe&apos;s card form is drawn here. No card is entered.
-          </p>
+          {prototype && (
+            <p data-slot="card-drawn" className="rounded-md border border-dashed border-border bg-stone px-3 py-2 text-sm text-muted-foreground">
+              Stripe&apos;s card form is drawn here. No card is entered.
+            </p>
+          )}
         </div>
       )}
       {onFile && onOther && (

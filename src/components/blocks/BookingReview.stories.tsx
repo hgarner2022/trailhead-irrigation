@@ -13,7 +13,7 @@ const meta = {
       { label: "Where", value: ["123 Trailhead Way", "Erie, CO 80516"], onChange: () => {} },
       { label: "When", value: "Tuesday, April 20 at 10:30 am", onChange: () => {} },
       { label: "You", value: ["Andrea Dalton", "(970) 555-0123", "andrea.dalton@example.com"], onChange: () => {} },
-      { label: "Price", value: "About $145, charged after the visit." },
+      { label: "Price", value: "$145, charged after the visit." },
     ],
     happens: "We'll text you a confirmation to (970) 555-0123 and email a receipt when it's done.",
   },
@@ -29,6 +29,6 @@ export const Default: Story = {
 }
 
 /** A row with nothing to change has no link. */
-export const Empty: Story = { args: { rows: [{ label: "Price", value: "About $145, charged after the visit." }] } }
+export const Empty: Story = { args: { rows: [{ label: "Price", value: "$145, charged after the visit." }] } }
 
 export const Phone: Story = { globals: { viewport: { value: "phone", isRotated: false } } }
