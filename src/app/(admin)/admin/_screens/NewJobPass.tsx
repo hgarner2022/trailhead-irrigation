@@ -2,14 +2,13 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { DayField } from "@/components/blocks/DayField"
 import { useUndoToast } from "@/components/blocks/UndoToast"
 import { MAX_ZONES, MIN_ZONES, visitPrice, visitsOnSale, type SeasonPassVisit } from "@/lib/season-pass"
 import type { AdminData } from "@/lib/admin/types"
 import { FIELD, LABEL, choiceReady, newCustomerFrom, type CustomerChoice } from "./CustomerPicker"
 import type { NewPassInput, VisitActions } from "./visit-actions-types"
 import { FORM_STATUS, useRunner } from "./use-runner"
-import { dayLabel } from "./visit-panel-model"
 
 // The pass half of New job (docs/plans/2026-11-16-office-sells-a-pass.md): zones and the July add-on with the prices under
 // them, a day per visit (blank is Unscheduled), how the money comes, the terms box, Sell pass. The pass is active when the
@@ -114,19 +113,11 @@ export function NewJobPass({ data, today, choice, actions, initial = {}, onDone 
 
       <fieldset>
         <legend className={LABEL}>Days</legend>
-        <div className="grid grid-cols-2 gap-3">
-          {onSale.map((v) => {
-            const day = days[v.key] ?? ""
-            return (
-              <div key={v.key} className={onSale.length === 3 && v.key === "blowout" ? "col-span-2" : ""}>
-                <label htmlFor={`nj-day-${v.key}`} className={LABEL}>
-                  {NAMES[v.key]}
-                </label>
-                <Input id={`nj-day-${v.key}`} type="date" value={day} min={todayDay} onChange={(e) => setDays({ ...days, [v.key]: e.target.value })} className="min-h-11" />
-                <p className="mt-1 text-sm text-muted-foreground">{day ? dayLabel(day) : "Unscheduled"}</p>
-              </div>
-            )
-          })}
+        {/* one under another: an opened calendar takes the whole width */}
+        <div className="space-y-3">
+          {onSale.map((v) => (
+            <DayField key={v.key} label={NAMES[v.key]} value={days[v.key] ?? ""} onChange={(d) => setDays({ ...days, [v.key]: d })} from={todayDay} clearable empty="Unscheduled" />
+          ))}
         </div>
         <p className="mt-1 text-sm text-muted-foreground">A day is given to a person like a move. A day that is not open moves to the next open one, and the confirmation says so.</p>
       </fieldset>

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect } from "storybook/test"
+import { expect, within } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, SettingsChange } from "@/lib/admin/types"
 import { AdminShell } from "@/components/blocks/AdminShell"
@@ -112,13 +112,12 @@ export const PhonePeopleOpens: Story = {
   },
 }
 
-/** A day that ends before it starts is named at once under the count, and Save is off. */
+/** A day that ends before it starts is named at once under the count, and Save is off. The hours are chosen on the one chip style, in a popover. */
 export const HoursProblem: Story = {
   globals: { viewport: { value: "laptop", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
-    const start = await canvas.findByLabelText("Tech Two day starts")
-    await userEvent.clear(start)
-    await userEvent.type(start, "18:00{Enter}")
+    await userEvent.click(await canvas.findByRole("button", { name: /^Tech Two day starts/ }))
+    await userEvent.click(await within(document.body).findByRole("radio", { name: "6:00 pm" }))
     await expect(await canvas.findByText("Tech Two: End must be after the start")).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: "Save" })).toBeDisabled()
   },

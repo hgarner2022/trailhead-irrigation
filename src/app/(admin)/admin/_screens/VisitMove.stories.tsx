@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, screen, userEvent, within } from "storybook/test"
 import type { Visit } from "@/lib/admin/types"
+import { pickTime } from "@/components/blocks/day-calendar-kit"
 import { MoveDialog } from "./VisitMove"
 
 // The Move dialog at 12:56 pm Mountain on Thursday, November 12, 2026 (docs/plans/2026-11-18-admin-holistic-design.md 5.2, scheduling-engine
@@ -52,7 +53,7 @@ export const BookedTime: Story = {
 export const ChosenTime: Story = {
   play: async () => {
     const dialog = await screen.findByRole("dialog")
-    await userEvent.selectOptions(within(dialog).getByLabelText("Time"), "09:00")
+    await pickTime(within(dialog), userEvent, "09:00")
     await expect(within(dialog).getByText("A chosen time is always told.")).toBeInTheDocument()
   },
 }

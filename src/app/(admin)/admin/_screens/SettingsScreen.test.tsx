@@ -1,8 +1,9 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
+import { pickMonthDay } from "@/components/blocks/day-calendar-kit"
 import { SERVICE_LIST } from "@/lib/services"
 import { SettingsScreen } from "./SettingsScreen"
 
@@ -81,8 +82,8 @@ describe("SettingsScreen people", () => {
     render(<SettingsScreen data={data} today={TODAY} />)
     const ryan = rowOf("Ryan Garner")
     expect(ryan.getByRole("checkbox", { name: "Ryan Garner takes visits" })).toBeChecked()
-    expect(ryan.getByLabelText("Ryan Garner day starts")).toHaveValue("09:00")
-    expect(ryan.getByLabelText("Ryan Garner day ends")).toHaveValue("17:00")
+    expect(ryan.getByRole("button", { name: "Ryan Garner day starts, 9:00 am" })).toBeInTheDocument()
+    expect(ryan.getByRole("button", { name: "Ryan Garner day ends, 5:00 pm" })).toBeInTheDocument()
     expect(ryan.getByText("Most per day, by kind")).toBeInTheDocument()
     expect(ryan.getByText(/0 means this person takes none of that kind/)).toBeInTheDocument()
     expect(screen.queryByLabelText(/season/i)).toBeNull()
@@ -129,15 +130,13 @@ describe("SettingsScreen fields", () => {
   it("sets the hours, and says live that the day ends before it starts and turns Save off until it is fixed", async () => {
     const user = userEvent.setup()
     render(<SettingsScreen data={data} today={TODAY} actions={{ save: vi.fn(), createKey: vi.fn(), revokeKey: vi.fn() }} />)
-    const start = screen.getByLabelText("Tech Two day starts")
-    const end = screen.getByLabelText("Tech Two day ends")
-    fireEvent.change(start, { target: { value: "17:30" } })
-    fireEvent.blur(start)
-    expect(start).toHaveValue("17:30")
+    await user.click(screen.getByRole("button", { name: /^Tech Two day starts/ }))
+    await user.click(screen.getByRole("radio", { name: "5:30 pm" }))
+    expect(screen.getByRole("button", { name: "Tech Two day starts, 5:30 pm" })).toBeInTheDocument()
     expect(screen.getByText("Tech Two: End must be after the start")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled()
-    fireEvent.change(end, { target: { value: "18:30" } })
-    fireEvent.blur(end)
+    await user.click(screen.getByRole("button", { name: /^Tech Two day ends/ }))
+    await user.click(screen.getByRole("radio", { name: "6:30 pm" }))
     expect(screen.queryByText(/End must be after the start/)).toBeNull()
     expect(screen.getByRole("button", { name: "Save" })).toBeEnabled()
     expect(pending().getAllByText(starts("Tech Two hours"))).toHaveLength(1)
@@ -286,7 +285,7 @@ describe("SettingsScreen with actions", () => {
     expect(screen.getByRole("button", { name: "Add person" })).toBeDisabled()
     expect(screen.getByRole("button", { name: "Remove Tech Two" })).toBeDisabled()
     expect(screen.getByRole("tab", { name: "People" })).toBeInTheDocument()
-    expect(screen.getByLabelText("Tech Two day ends")).toBeDisabled()
+    expect(screen.getByRole("button", { name: /^Tech Two day ends/ })).toBeDisabled()
     expect(screen.getByRole("checkbox", { name: "Tech Two takes visits" })).toBeDisabled()
     expect(screen.queryByRole("status")).toBeNull()
     expect(screen.getByText("You can read the settings. A manager changes them.")).toBeInTheDocument()
@@ -314,7 +313,7 @@ describe("SettingsScreen services", () => {
     expect(turnOn.getByRole("spinbutton", { name: "Spring turn-on & system check up to 12 zones minutes" })).toHaveValue(90)
     expect(turnOn.getByRole("spinbutton", { name: "Spring turn-on & system check up to 16 zones minutes" })).toHaveValue(120)
     expect(turnOn.getByRole("combobox", { name: "Spring turn-on & system check online" })).toHaveValue("book")
-    expect(turnOn.getByRole("combobox", { name: "Spring turn-on & system check bookable from month" })).toHaveValue("0")
+    expect(turnOn.getByRole("button", { name: "Spring turn-on & system check bookable from, Open" })).toBeInTheDocument()
     const repair = rowOf("Sprinkler repair visit")
     expect(repair.getByRole("spinbutton", { name: /price$/ })).toHaveValue(145)
     expect(repair.queryByRole("spinbutton", { name: /per extra zone$/ })).toBeNull()
@@ -347,16 +346,17 @@ describe("SettingsScreen services", () => {
     const save = vi.fn().mockResolvedValue({ ok: true, data: undefined })
     render(<SettingsScreen data={data} today={TODAY} actions={{ save, createKey: vi.fn(), revokeKey: vi.fn() }} />)
     const user = await open()
-    await user.selectOptions(screen.getByRole("combobox", { name: "Fall blowout & winterization bookable from month" }), "9")
-    await user.clear(screen.getByRole("spinbutton", { name: "Fall blowout & winterization bookable from day" }))
-    await user.type(screen.getByRole("spinbutton", { name: "Fall blowout & winterization bookable from day" }), "28{Enter}")
-    await user.selectOptions(screen.getByRole("combobox", { name: "Fall blowout & winterization bookable to month" }), "11")
+    await user.click(screen.getByRole("button", { name: "Fall blowout & winterization bookable from, Open" }))
+    await pickMonthDay(screen, user, "09-28")
+    await user.click(screen.getByRole("button", { name: "Fall blowout & winterization bookable to, Open" }))
+    await pickMonthDay(screen, user, "11-01")
     expect(rowOf("Fall blowout & winterization").getByText(/Sep 28 to Nov 1/)).toBeInTheDocument()
     expect(pending().getAllByText(starts("Fall blowout & winterization bookable from")).length).toBe(1)
     await user.click(screen.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(save).toHaveBeenCalled())
     expect((save.mock.calls[0]![1] as { key: string; bookableFrom: string; bookableTo: string }[]).find((s) => s.key === "blowout")).toMatchObject({ bookableFrom: "09-28", bookableTo: "11-01" })
-    await user.selectOptions(screen.getByRole("combobox", { name: "Fall blowout & winterization bookable to month" }), "0")
+    await user.click(screen.getByRole("button", { name: "Fall blowout & winterization bookable to, November 1" }))
+    await user.click(screen.getByRole("button", { name: "Clear the day" }))
     expect(rowOf("Fall blowout & winterization").getByText(/From Sep 28/)).toBeInTheDocument()
   })
 

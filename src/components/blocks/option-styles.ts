@@ -1,5 +1,5 @@
 // The ONE selected state of a small option on the customer's screens (Hannah, Nov 25 2026: "the same interaction patterns and things that we used before"). Before this file the same words were
-// retyped in seven blocks (ChoiceChips, ZoneChips, AccessChoice, TimingChoice, PreferencePicker, DayTimePicker and the calendar's time chips); this is that pattern, in one place, with nothing new in
+// retyped in seven blocks (ChoiceChips, ZoneChips, AccessChoice, TimingChoice, PreferencePicker, the day cards and the calendar's time chips); this is that pattern, in one place, with nothing new in
 // it but what was already on some of them: an option is a rounded-lg bordered box, navy on white; chosen it is filled navy with white text and settles once (`.settle`, the calendar's own motion);
 // it darkens its edge on hover, gives a little under a press (`.opt`), and shows the same focus ring. A chip, a row and a tile differ only in size, which each block adds. The calendar's time chip
 // (DayCalendar, owned by the calendar's designer) writes the same classes itself. A card that opens to hold content (ServiceCard) is the one larger form: a navy edge, a warm tint and a check,
