@@ -2,6 +2,7 @@
 
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
+import { optionClass } from "@/components/blocks/option-styles"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { formatMoney } from "@/lib/admin/metrics"
@@ -65,10 +66,7 @@ export function ZonesStep({ state, set, summary }: StepProps & { summary?: React
               aria-label={`${upTo ? "Up to " : ""}${zones} zones`}
               data-autofocus={pressed || undefined}
               onClick={() => set("zones", zones)}
-              className={cn(
-                "size-12 cursor-pointer rounded-lg border font-display text-xl tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
-                pressed ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40",
-              )}
+              className={cn(optionClass({ selected: pressed }), "size-12 font-display text-xl tabular-nums")}
             >
               {zones}
             </button>

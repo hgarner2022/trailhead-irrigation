@@ -135,7 +135,7 @@ export function ServiceCard({ entry, index = 0, open, selected, onToggle, onChoo
               <ul data-slot="service-included" className="space-y-2">
                 {items.map((item, i) => (
                   <li key={item.text} {...line(i + 1)} className="flex items-start gap-2 text-base leading-snug text-foreground">
-                    <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" strokeWidth={2.25} />
+                    <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-positive" strokeWidth={2.25} />
                     <span className="flex-1">{item.text}</span>
                     {item.price && <span className="shrink-0 font-semibold text-navy tabular-nums">{item.price}</span>}
                   </li>

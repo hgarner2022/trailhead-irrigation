@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { DIALOG_TITLE } from "./dialog-styles"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DAY_FAILED, longDay } from "@/lib/portal/words"
 import { DayCalendar } from "./DayCalendar"
@@ -77,19 +78,19 @@ export function RescheduleSheet({ service, address, currentDay, days, textHref, 
         {done ? (
           <div className="grid gap-4 p-6">
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-navy">{moving ? `Moved to ${done}.` : `You're set for ${done}.`}</DialogTitle>
+              <DialogTitle className={DIALOG_TITLE}>{moving ? `Moved to ${done}.` : `You're set for ${done}.`}</DialogTitle>
               <DialogDescription className="text-base">{timed ? "We texted you the new time." : moving ? "We texted you the new day." : "We texted you the day. We'll text you the time the day before."}</DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline">Done</Button>
+                <Button variant="outline" className="min-h-11">Done</Button>
               </DialogClose>
             </DialogFooter>
           </div>
         ) : (
           <>
             <DialogHeader className="px-6 pt-6 pb-4 pr-12">
-              <DialogTitle className="font-display text-2xl text-navy">{title}</DialogTitle>
+              <DialogTitle className={DIALOG_TITLE}>{title}</DialogTitle>
               <DialogDescription className="text-base">{`${service}, ${address}`}</DialogDescription>
             </DialogHeader>
             {calendar.length === 0 || (timed && !calendar.some((o) => o.times.length > 0)) ? (
@@ -125,13 +126,13 @@ export function RescheduleSheet({ service, address, currentDay, days, textHref, 
                     </p>
                   )}
                 </div>
-                <DialogFooter className="gap-2 border-t border-border px-6 py-4 sm:flex-col sm:space-x-0">
+                <DialogFooter className="gap-2 border-t border-border px-6 py-4">
+                  <DialogClose asChild>
+                    <Button variant="outline" className="min-h-11">{moving && currentDay ? `Keep ${longDay(currentDay)}` : "Not now"}</Button>
+                  </DialogClose>
                   <Button onClick={submit} disabled={busy || (timed ? !slot.start : !chosen)} className="min-h-11">
                     {timed ? (slot.day && slot.start ? `${moving ? "Move it to" : "Book"} ${dayAtTime(slot.day, slot.start)}` : "Tap a time") : chosen ? (moving ? `Move it to ${longDayShort(chosen)}` : `Book ${longDayShort(chosen)}`) : "Pick a day"}
                   </Button>
-                  <DialogClose asChild>
-                    <Button variant="ghost">{moving && currentDay ? `Keep ${longDay(currentDay)}` : "Not now"}</Button>
-                  </DialogClose>
                 </DialogFooter>
               </>
             )}
