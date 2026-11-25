@@ -16,7 +16,8 @@ export function bestTimesFor(i: BestInput): BestTimes {
   const state = { visits: i.state.visits.filter((b) => b.id !== i.excludeId), timeOff: i.state.timeOff }
   const found = openingsFor({ state, people: i.people, town: i.town, minutes: i.minutes, today: i.today })
   const top = [...found.openings].sort((a, b) => a.score - b.score)[0]?.id
-  const rows: Opening[] = found.openings.map((r) => (r.id === top ? r : { ...r, nextTo: undefined }))
+  // three are offered (the engine design), the best three by score
+  const rows: Opening[] = [...found.openings].sort((a, b) => a.score - b.score).slice(0, 3).map((r) => (r.id === top ? r : { ...r, nextTo: undefined }))
   const nameOf = (id: string) => i.people.find((p) => p.id === id)?.name ?? id
   const idOf = (name: string) => i.people.find((p) => p.name === name)?.id ?? name
   return {

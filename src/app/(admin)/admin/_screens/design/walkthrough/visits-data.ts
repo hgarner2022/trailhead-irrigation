@@ -66,8 +66,11 @@ export function buildWalkWorld(): ProtoWorld {
   const meta: Record<string, Meta> = {}
   for (const row of allRows()) {
     if (row.stage === "cancelled") continue
+    // a job the Jobs grid dates to an earlier year is not on this year's calendar, whatever the catalogue page says (its page reads "Today, Wed Nov 18" for every done and paid job)
+    const old = Number(row.season) > 0 && Number(row.season) < Number(WALK_SCHEDULE_TODAY.slice(0, 4))
     const view = jobView(row.id)
     meta[row.id] = metaOf(row)
+    if (old) continue
     if (view.kind === "page" && view.data.when.length) {
       const get = (k: string) => view.data.when.find((f) => f[0] === k)?.[1]
       const dayText = String(get("Day") ?? "")

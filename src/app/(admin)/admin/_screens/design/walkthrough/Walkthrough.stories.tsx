@@ -428,3 +428,86 @@ export const HomeRequestRowsTest: Story = {
     await expect(c.queryByRole("button", { name: "Kevin Marsh" })).toBeNull()
   },
 }
+
+// ------------------------------------------------------------------------------------------------------------------ the Schedule (Nov 25 2026)
+// The Schedule is the Schedule prototype over a calendar read from the job pages (today is Wed, Nov 18): a visit opens its job page, Schedule and Move there list the best
+// times, a drag says "Moved to ..." with Notify the customer and Undo, New job lists the best times under its Day, and Settings > People holds Time off.
+
+/** Starts on the Schedule, this week. Press a visit to land on its job page; press Schedule on a job with no day (open Unscheduled) or Move on a job page to see the best times. */
+export const ScheduleWeek: Story = { name: "Schedule", globals: laptop, args: { start: { screen: "schedule" } } }
+export const ScheduleWeekPhone: Story = { name: "Schedule, phone", globals: phone, args: { start: { screen: "schedule" } } }
+
+/** A visit opens its job page and Move lists the best times; confirming moves it on the calendar and the way back keeps the week. */
+export const ScheduleVisitToJobPageTest: Story = {
+  name: "Schedule, visit to job page and Move (test)",
+  globals: laptop,
+  tags: HIDDEN,
+  args: { start: { screen: "schedule" } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await userEvent.click((await c.findAllByRole("button", { name: /^Aspen Dr, Repair/ }))[0]!)
+    await waitFor(() => expect(route(canvasElement)).toBe("job:g-sam"))
+    await userEvent.click(await c.findByRole("button", { name: "More" }))
+    await userEvent.click(await body.findByRole("menuitem", { name: "Move" }))
+    const dialog = await body.findByRole("dialog", { name: "Move the job" })
+    const list = await within(dialog).findByRole("radiogroup", { name: "Openings" })
+    await userEvent.click((await within(list).findAllByRole("radio"))[0]!)
+    await userEvent.click(await within(dialog).findByRole("button", { name: /Move and notify the customer/ }))
+    await expect(await body.findByText(/^Moved to /)).toBeInTheDocument()
+    await userEvent.click(await c.findByRole("link", { name: "Schedule" }))
+    await waitFor(() => expect(route(canvasElement)).toBe("schedule"))
+    await expect((await c.findAllByRole("button", { name: /^Aspen Dr, Repair/ })).length).toBe(1)
+  },
+}
+
+/** A job with no day: its Unscheduled row says Suggested: day, time, person, and Schedule opens the dialog on that row. */
+export const ScheduleUnscheduledRowTest: Story = {
+  name: "Schedule, Unscheduled row (test)",
+  globals: laptop,
+  tags: HIDDEN,
+  args: { start: { screen: "schedule" } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    await userEvent.click(await c.findByRole("button", { name: /^Unscheduled \(\d+\)$/ }))
+    await expect(await c.findAllByText(/^Suggested: /)).not.toHaveLength(0)
+    await userEvent.click(await c.findByRole("button", { name: "Schedule Andrea Dalton" }))
+    const dialog = await body.findByRole("dialog", { name: "Schedule the job" })
+    await expect(await within(await within(dialog).findByRole("radiogroup", { name: "Openings" })).findAllByRole("radio", { checked: true })).toHaveLength(1)
+  },
+}
+
+/** New job on the Schedule is the real sheet; with a customer and a priced service the best times are listed under the Day and a row fills the Day. */
+export const ScheduleNewJobBestTimes: Story = { name: "Schedule, New job with best times", globals: laptop, args: { start: { screen: "schedule" }, startSheet: { customer: "andrea" } } }
+export const ScheduleNewJobBestTimesTest: Story = {
+  name: "Schedule, New job with best times (test)",
+  globals: laptop,
+  tags: HIDDEN,
+  args: { start: { screen: "schedule" }, startSheet: { customer: "andrea" } },
+  play: async () => {
+    const body = within(document.body)
+    await userEvent.selectOptions(await body.findByLabelText("What are we doing?"), "repair")
+    const list = await body.findByRole("radiogroup", { name: "Openings" })
+    await userEvent.click((await within(list).findAllByRole("radio"))[0]!)
+    await expect(within(list).getAllByRole("radio", { checked: true })).toHaveLength(1)
+  },
+}
+
+/** Settings opens on People; each person has Time off with Remove and Add time off, which draws on the Schedule as a band. */
+export const SettingsPeopleTimeOff: Story = { name: "Settings, People with time off", globals: laptop, args: { start: { screen: "settings" } } }
+export const SettingsPeopleTimeOffTest: Story = {
+  name: "Settings, People with time off (test)",
+  globals: laptop,
+  tags: HIDDEN,
+  args: { start: { screen: "settings" } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    await expect(await c.findByText("Fri, Nov 20, 12 to 2 pm")).toBeInTheDocument()
+    await userEvent.click((await c.findAllByRole("button", { name: /^Add time off for / }))[0]!)
+    const dialog = await within(document.body).findByRole("dialog", { name: "Time off" })
+    await expect(within(dialog).queryByText("Person")).toBeNull()
+    await userEvent.click(await within(dialog).findByRole("button", { name: "Add time off" }))
+    await expect((await c.findAllByText(/, all day$/)).length).toBeGreaterThan(1)
+  },
+}

@@ -40,7 +40,7 @@ function TimeOffRow({ person, t }: { person: Person; t: PeopleTimeOff }) {
   const [open, setOpen] = useState(false)
   const mine = t.list.filter((o) => o.personId === person.id).sort((a, b) => a.day.localeCompare(b.day) || (a.start ?? 0) - (b.start ?? 0))
   return (
-    <FormRow label="Time off" inline htmlFor={`${person.id}-time-off-add`} hint="Days off and hours blocked. The Schedule draws them and offers nothing in them.">
+    <FormRow className="lg:col-span-2" label="Time off" inline htmlFor={`${person.id}-time-off-add`} hint="Days off and hours blocked. The Schedule draws them and offers nothing in them.">
       <div className="flex flex-col items-start gap-1">
         {mine.length === 0 && <p className="py-2 text-sm text-muted-foreground">None</p>}
         <ul className="w-full divide-y divide-border">
@@ -53,7 +53,7 @@ function TimeOffRow({ person, t }: { person: Person; t: PeopleTimeOff }) {
             </li>
           ))}
         </ul>
-        <Button id={`${person.id}-time-off-add`} type="button" variant="outline" className="min-h-11" onClick={() => setOpen(true)}>
+        <Button id={`${person.id}-time-off-add`} type="button" variant="outline" className="min-h-11" aria-label={`Add time off for ${person.name}`} onClick={() => setOpen(true)}>
           <Plus className="size-4" aria-hidden />
           Add time off
         </Button>

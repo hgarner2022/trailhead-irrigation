@@ -1,4 +1,4 @@
-import { CHOOSE, LOOK, TRY } from "./schedule-start-here"
+import { CHANGED, CHOOSE, LOOK, TRY } from "./schedule-start-here"
 
 // The Docs page "Start here: Scheduler (Nov 25)": written for the owner, not for a developer. What to look at (each a link to its story), what to try, and the three
 // things she is asked to choose. Links open in the Storybook window (`target="_top"`), not inside the docs frame.
@@ -11,7 +11,7 @@ export function ScheduleStartHere() {
     <div className="mx-auto max-w-3xl space-y-8 px-6 py-8 text-base leading-7 text-foreground">
       <header>
         <h1 className="font-display text-3xl font-semibold text-navy">Start here: Scheduler (Nov 25)</h1>
-        <p className="mt-2">This is the new Schedule, drawn over made-up visits so you can try it. Nothing is saved and nothing is sent to anyone.</p>
+        <p className="mt-2">Open the clickable walkthrough and press Schedule in the left column. It is the new Schedule over the walkthrough's own jobs. Nothing is saved and nothing is sent to anyone.</p>
       </header>
       <section aria-labelledby="look">
         <h2 id="look" className="font-display text-2xl font-semibold text-navy">What to look at</h2>
@@ -27,15 +27,23 @@ export function ScheduleStartHere() {
       </section>
       <section aria-labelledby="try">
         <h2 id="try" className="font-display text-2xl font-semibold text-navy">What you can try</h2>
-        <p className="mt-1 text-muted-foreground">Open the Week story first, then:</p>
+        <p className="mt-1 text-muted-foreground">In the clickable walkthrough:</p>
         <ul className="mt-3 list-disc space-y-1 pl-6">
           {TRY.map((t) => (
             <li key={t}>{t}</li>
           ))}
         </ul>
       </section>
+      <section aria-labelledby="changed">
+        <h2 id="changed" className="font-display text-2xl font-semibold text-navy">What changed since your review this morning</h2>
+        <ul className="mt-3 list-disc space-y-1 pl-6">
+          {CHANGED.map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ul>
+      </section>
       <section aria-labelledby="choose">
-        <h2 id="choose" className="font-display text-2xl font-semibold text-navy">Three things to choose</h2>
+        <h2 id="choose" className="font-display text-2xl font-semibold text-navy">Things to choose</h2>
         <ol className="mt-3 list-decimal space-y-2 pl-6">
           {CHOOSE.map((c) => (
             <li key={c.label}>
