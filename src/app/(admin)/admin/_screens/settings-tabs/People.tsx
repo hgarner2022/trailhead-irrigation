@@ -1,11 +1,14 @@
 "use client"
 
+import { useState } from "react"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { FormRow } from "@/components/blocks/FormRow"
 import { SettingsList } from "@/components/blocks/SettingsList"
 import { TimeField } from "@/components/blocks/TimeField"
+import { TimeOffDialog, type TimeOffValue } from "@/components/blocks/TimeOffDialog"
+import type { TimeOff } from "@/components/blocks/time-grid-model"
 import { WEEKDAYS } from "@/lib/admin/calendar"
 import { ROLES, ROLE_WORDS, hoursOf } from "@/lib/admin/people"
 import type { CapacityKind, Person, PersonRole, Weekday } from "@/lib/admin/types"
@@ -24,7 +27,52 @@ const PER_DAY: CapacityKind[] = ["turn-on", "inspection", "blowout", "repair"]
 /** The native select, styled like `Input`. */
 const FIELD = "min-h-11 w-full rounded-lg border border-input bg-background px-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 md:min-h-9"
 
-function PersonFacts({ person, apply }: { person: Person; apply: Apply }) {
+/** Time off per person (the prototype's Settings, People; the live admin does not pass it yet): the list, one words line per block, and what Add and Remove do. */
+export interface PeopleTimeOff {
+  list: readonly TimeOff[]
+  words: (o: TimeOff) => string
+  today: string
+  onAdd: (v: TimeOffValue) => void
+  onRemove: (id: string) => void
+}
+
+function TimeOffRow({ person, t }: { person: Person; t: PeopleTimeOff }) {
+  const [open, setOpen] = useState(false)
+  const mine = t.list.filter((o) => o.personId === person.id).sort((a, b) => a.day.localeCompare(b.day) || (a.start ?? 0) - (b.start ?? 0))
+  return (
+    <FormRow label="Time off" inline htmlFor={`${person.id}-time-off-add`} hint="Days off and hours blocked. The Schedule draws them and offers nothing in them.">
+      <div className="flex flex-col items-start gap-1">
+        {mine.length === 0 && <p className="py-2 text-sm text-muted-foreground">None</p>}
+        <ul className="w-full divide-y divide-border">
+          {mine.map((o) => (
+            <li key={o.id} className="flex min-h-11 items-center justify-between gap-2 text-sm">
+              <span>{t.words(o)}</span>
+              <Button type="button" variant="ghost" size="sm" className="min-h-11" aria-label={`Remove time off ${t.words(o)} for ${person.name}`} onClick={() => t.onRemove(o.id)}>
+                Remove
+              </Button>
+            </li>
+          ))}
+        </ul>
+        <Button id={`${person.id}-time-off-add`} type="button" variant="outline" className="min-h-11" onClick={() => setOpen(true)}>
+          <Plus className="size-4" aria-hidden />
+          Add time off
+        </Button>
+        {open && (
+          <TimeOffDialog
+            open
+            hidePerson
+            onOpenChange={setOpen}
+            people={[{ id: person.id, name: person.name }]}
+            initial={{ personId: person.id, allDay: true, from: t.today, to: t.today, startTime: "12:00", endTime: "14:00", note: "" }}
+            onSave={t.onAdd}
+          />
+        )}
+      </div>
+    </FormRow>
+  )
+}
+
+function PersonFacts({ person, apply, timeOff }: { person: Person; apply: Apply; timeOff?: PeopleTimeOff }) {
   const { name } = person
   const hours = hoursOf(person)
   return (
@@ -62,13 +110,14 @@ function PersonFacts({ person, apply }: { person: Person; apply: Apply }) {
           ))}
         </div>
       </FormRow>
-      <FormRow label="Hours" inline htmlFor={`${person.id}-hours-start`} hint="The weekly rule. A day off or a dentist visit is Block time on the Schedule.">
+      <FormRow label="Hours" inline htmlFor={`${person.id}-hours-start`} hint={timeOff ? "The weekly rule. A day off or a dentist visit goes under Time off." : "The weekly rule. A day off or a dentist visit is Block time on the Schedule."}>
         <div className="flex items-center gap-2">
           <TimeField id={`${person.id}-hours-start`} label={`${name} day starts`} value={hours.start} onChange={(v) => apply((s, a) => setHours(s, person.id, "hoursStart", v, a))} />
           <span className="text-sm text-muted-foreground">to</span>
           <TimeField label={`${name} day ends`} value={hours.end} onChange={(v) => apply((s, a) => setHours(s, person.id, "hoursEnd", v, a))} />
         </div>
       </FormRow>
+      {timeOff && <TimeOffRow person={person} t={timeOff} />}
       <FormRow label="Most per day, by kind" inline htmlFor={`${person.id}-most-turn-on`} hint="The most of each kind in one day. 0 means this person takes none of that kind.">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {PER_DAY.map((kind) => (
@@ -104,7 +153,7 @@ function PersonFacts({ person, apply }: { person: Person; apply: Apply }) {
   )
 }
 
-export function People({ state, apply }: { state: SettingsState; apply: Apply }) {
+export function People({ state, apply, timeOff }: { state: SettingsState; apply: Apply; timeOff?: PeopleTimeOff }) {
   const { people } = state.settings
   return (
     <SettingsList
@@ -131,7 +180,7 @@ export function People({ state, apply }: { state: SettingsState; apply: Apply })
             onConfirm={() => apply((s, a) => removePerson(s, person.id, a))}
           />
         ),
-        children: <PersonFacts person={person} apply={apply} />,
+        children: <PersonFacts person={person} apply={apply} timeOff={timeOff} />,
       }))}
     />
   )

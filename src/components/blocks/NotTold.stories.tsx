@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, fn } from "storybook/test"
 import { NotTold } from "./NotTold"
 
-// The mark for a visit whose customer has not been told, and the one-line notice in its panel. 1280 and 375.
+// The mark for a visit whose customer has not been notified, and the one-line notice in its panel. 1280 and 375.
 const LAPTOP = { viewport: { value: "laptop", isRotated: false } }
 const PHONE = { viewport: { value: "phone", isRotated: false } }
 
@@ -20,23 +20,23 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   args: { variant: "notice" },
   play: async ({ canvas, args, userEvent }) => {
-    await expect(canvas.getByText("Customer not told")).toBeInTheDocument()
-    await userEvent.click(canvas.getByRole("button", { name: "Notify" }))
+    await expect(canvas.getByText("Customer not notified")).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole("button", { name: "Notify the customer" }))
     await expect(args.onNotify).toHaveBeenCalled()
   },
 }
 export const Phone: Story = { args: { variant: "notice" }, globals: PHONE }
 
-/** No notice: the visit's customer was told, so nothing is drawn. */
+/** No notice: the visit's customer was notified, so nothing is drawn. */
 export const Empty: Story = {
-  render: () => <p className="text-sm text-muted-foreground">Nothing is drawn for a visit whose customer was told.</p>,
+  render: () => <p className="text-sm text-muted-foreground">Nothing is drawn for a visit whose customer was notified.</p>,
 }
 
 /** The bell on a block or a row, named for a screen reader. */
 export const Mark: Story = {
   args: { variant: "mark" },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("img", { name: "Customer not told" })).toBeInTheDocument()
+    await expect(canvas.getByRole("img", { name: "Customer not notified" })).toBeInTheDocument()
   },
 }
 

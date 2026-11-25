@@ -32,7 +32,7 @@ export const Empty: Story = { name: "Empty week", args: { columns: WEEK_EMPTY, b
 export const DayTwoPeople: Story = { name: "Day, two people", args: { columns: DAY_COLUMNS, showPersonNames: true } }
 export const OverlapAndConflict: Story = { name: "Overlap and conflict", args: { columns: dayColumns(["2026-11-26"]), blocks: CONFLICT_BLOCKS, anytime: [], timeOff: [], showPersonNames: true } }
 export const NotToldAndWaiting: Story = { name: "Not told and waiting",
-  args: { columns: dayColumns(["2026-11-24", "2026-11-25"]), notToldMark: () => <span className="block size-2.5 rounded-full bg-warning" title="Customer not told" /> },
+  args: { columns: dayColumns(["2026-11-24", "2026-11-25"]), notToldMark: () => <span className="block size-2.5 rounded-full bg-warning" title="Customer not notified" /> },
 }
 export const TimeOff: Story = { name: "Time off", args: { columns: dayColumns(["2026-11-25", "2026-11-26"]), showPersonNames: true } }
 export const PlannedMoves: Story = { name: "Planned moves", args: { planned: PLANNED } }

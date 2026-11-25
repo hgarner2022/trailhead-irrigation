@@ -4,12 +4,17 @@ import { useState } from "react"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { SplitButton } from "@/components/blocks/SplitButton"
 import type { ConfirmFacts } from "./confirm-copy"
+import type { BestTimes } from "@/components/blocks/best-times"
+import { useBestTimesContext } from "./best-times-context"
 import { SchedulePicker, type Pick } from "./SchedulePicker"
 
 // The one Schedule and Move dialog (Hannah, Nov 19 2026), for the job page, a Season Pass trip and the clickable flows: the day cards, the
 // person or people, the start time and the crew options (a text that it is assigned, one line of instructions), with
 // "Schedule and notify the customer" as the confirm and "without notifying" under the caret. `onConfirm` gets the pick and whether the
 // customer is to be told. Pure props, client state.
+
+const dayLabel = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })
+const clockLabel = (hhmm: string) => `${Number(hhmm.slice(0, 2)) % 12 || 12}:${hhmm.slice(3, 5)} ${Number(hhmm.slice(0, 2)) < 12 ? "am" : "pm"}`
 
 export interface ScheduleResult extends Pick {
   /** the customer is texted or emailed the day and time */
@@ -27,10 +32,19 @@ export interface ScheduleDialogProps {
   onConfirm: (r: ScheduleResult) => void
   initialPeople?: string[]
   initialCrewText?: boolean
+  /** minutes the visit takes, for the open start times (the reviewed dialog assumes 60) */
+  minutes?: number
+  /** the ranked best times above the calendar; the walkthrough supplies them through context, a screen through this prop. Absent, the dialog is the reviewed one */
+  best?: BestTimes
 }
 
-export function ScheduleDialog({ verb, first, channel = "text", address, service, signedIn = "Ryan Garner", onClose, onConfirm, initialPeople = ["Ryan Garner"], initialCrewText = false }: ScheduleDialogProps) {
-  const [pick, setPick] = useState<Pick>({ day: "Tue, Nov 24", time: "Any time", person: initialPeople[0]!, people: initialPeople, crewText: initialCrewText && initialPeople.some((p) => p !== signedIn), instructions: "" })
+export function ScheduleDialog({ verb, first, channel = "text", address, service, signedIn = "Ryan Garner", onClose, onConfirm: confirmed, initialPeople = ["Ryan Garner"], initialCrewText = false, minutes, best: bestProp }: ScheduleDialogProps) {
+  const ctx = useBestTimesContext()
+  const best = bestProp ?? ctx?.best
+  const onConfirm = (r: ScheduleResult) => (ctx && !bestProp ? ctx.record(r, verb) : undefined, confirmed(r))
+  const start = best ? [...best.rows, ...(best.forced ?? [])].find((r) => r.id === best.initialPickId) ?? [...best.rows].sort((a, b) => a.score - b.score)[0] : undefined
+  const people0 = best && start ? [start.personName] : initialPeople
+  const [pick, setPick] = useState<Pick>({ dayIso: start?.day, day: start ? dayLabel(start.day) : "Tue, Nov 24", time: best?.initialPickId && start ? clockLabel(start.start) : "Any time", person: people0[0]!, people: people0, crewText: initialCrewText && people0.some((p) => p !== signedIn), instructions: "" })
   return (
     <ConfirmDialog
       open
@@ -43,7 +57,7 @@ export function ScheduleDialog({ verb, first, channel = "text", address, service
         <SplitButton label={`${verb} and notify the customer`} onClick={() => confirm("text")} disabled={pending} menuLabel={`More ways to ${verb.toLowerCase()}`} menu={[{ label: `${verb} without notifying`, disabled: pick.time !== "Any time", onSelect: () => confirm("quiet") }]} />
       )}
     >
-      <SchedulePicker firstName={first} channel={channel} signedIn={signedIn} address={address} service={service} initialPeople={initialPeople} initialCrewText={initialCrewText} onChange={setPick} />
+      <SchedulePicker firstName={first} channel={channel} signedIn={signedIn} address={address} service={service} minutes={minutes} initialPeople={initialPeople} initialCrewText={initialCrewText} onChange={setPick} best={best} />
     </ConfirmDialog>
   )
 }

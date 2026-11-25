@@ -49,7 +49,7 @@ export interface TimeBlockProps {
 
 export function blockLabel(b: GridBlock, conflict?: string): string {
   const when = b.start === null ? "Any time" : rangeWords(b.start, b.minutes)
-  return [b.title, b.service, b.town, when, b.done && "done", b.waiting && "waiting on customer", b.notTold && "customer not told", b.planned && "proposed", conflict].filter(Boolean).join(", ")
+  return [b.title, b.service, b.town, when, b.done && "done", b.waiting && "waiting on customer", b.notTold && "customer not notified", b.planned && "proposed", conflict].filter(Boolean).join(", ")
 }
 
 export function TimeBlock({ block: b, personIndex = 0, initials, variant = "block", selected, hovered, conflict, dragging, notToldMark, style, className, rootRef, handleRef, touch, compact, onSelect, onHover, onAction, onResizeStart }: TimeBlockProps) {

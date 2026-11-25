@@ -72,7 +72,7 @@ export function MonthGrid({ month, days, people, today, selectedDay, notToldMark
               const off = d?.offIds ?? []
               const label = [
                 `${weekdayName(day)}, ${Number(day.slice(8))}`, isToday && "today", stops ? `${stopsWords(stops)}${d?.towns.length ? ` in ${townsLine(d.towns)}` : ""}` : "no stops",
-                d?.allOff ? "everyone off" : off.length ? `${off.map(nameOf).join(" and ")} off` : false, d?.notTold && "a move the customer has not been told about",
+                d?.allOff ? "everyone off" : off.length ? `${off.map(nameOf).join(" and ")} off` : false, d?.notTold && "a move the customer has not been notified about",
               ].filter(Boolean).join(", ")
               return (
                 <div key={day} role="gridcell" aria-selected={selectedDay === day} className="relative bg-background">
@@ -108,7 +108,7 @@ export function MonthGrid({ month, days, people, today, selectedDay, notToldMark
       </div>
       <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-navy-light">
         {people.map((p, i) => <span key={p.id} className="inline-flex items-center gap-1.5"><span aria-hidden className={cn("size-2 rounded-full", personStyle(i).dot)} />{p.name}</span>)}
-        <span className="inline-flex items-center gap-1.5"><span aria-hidden className="size-2 rounded-full bg-warning" />A move not told</span>
+        <span className="inline-flex items-center gap-1.5"><span aria-hidden className="size-2 rounded-full bg-warning" />A move not notified</span>
       </p>
     </div>
   )

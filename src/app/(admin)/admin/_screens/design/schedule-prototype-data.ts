@@ -2,13 +2,11 @@ import { TOWN_CENTRES } from "@/components/blocks/day-map-helpers"
 import { addDays } from "@/lib/admin/calendar"
 import type { Town, VisitKind } from "@/lib/admin/types"
 import { NOW, PEOPLE as BASE_PEOPLE, RYAN, TECH, TODAY, WEEK_ANYTIME, WEEK_BLOCKS, WEEK_OFF, WEEK_START } from "@/components/blocks/scheduler-calendar-fixtures"
-import type { PlanMove } from "@/components/blocks/scheduler-panels-types"
 import type { GridBlock } from "@/components/blocks/time-grid-model"
-import { whenWords, type Meta, type ProtoJob, type ProtoState, type Target } from "./schedule-prototype-model"
+import type { Meta, ProtoJob, ProtoState } from "./schedule-prototype-model"
 
 // The Schedule prototype's fixtures: the week of Monday, Nov 23 2026 from the calendar blocks' own fixtures, a customer behind every visit (first names and
-// streets only; a made-up phone or email, and one customer with neither), four jobs with no day, three visits whose customer has not been told, and one draft plan
-// from Jev. Points are near each town's centre, spread by the visit's id so the map has something to draw and a visit never moves on a re-render.
+// streets only; a made-up phone or email, and one customer with neither), four jobs with no day and three visits whose customer has not been notified. Points are near each town's centre, spread by the visit's id so the map has something to draw and a visit never moves on a re-render.
 
 export { NOW, RYAN, TECH, TODAY, WEEK_START }
 /** Tech Two also works Saturdays here, so the week shows a sixth day; Ryan does not. */
@@ -52,13 +50,13 @@ export const JOBS: ProtoJob[] = [
 ]
 
 /** The state a story starts from: the whole week, three visits not told, four jobs with no day. */
-export function initialState(over: Partial<Pick<ProtoState, "timeOff" | "visits" | "unscheduled">> = {}): ProtoState {
+export function initialState(over: Partial<Pick<ProtoState, "timeOff" | "visits" | "unscheduled" | "meta">> = {}): ProtoState {
   const all: GridBlock[] = [...WEEK_BLOCKS, SATURDAY, ...WEEK_ANYTIME].map((b) => (SEED_NOT_TOLD[b.id] ? { ...b, notTold: true } : b))
   const visits = over.visits ?? all
-  const meta: Record<string, Meta> = {}
-  visits.forEach((b, i) => (meta[b.id] = metaOf(b, i)))
-  const was = Object.fromEntries(Object.entries(SEED_NOT_TOLD).filter(([id]) => visits.some((b) => b.id === id)))
-  return { visits, was, unscheduled: over.unscheduled ?? JOBS, meta, timeOff: over.timeOff ?? WEEK_OFF, toast: null, seq: 0 }
+  const meta: Record<string, Meta> = over.meta ?? {}
+  if (!over.meta) visits.forEach((b, i) => (meta[b.id] = metaOf(b, i)))
+  const was = over.meta ? {} : Object.fromEntries(Object.entries(SEED_NOT_TOLD).filter(([id]) => visits.some((b) => b.id === id)))
+  return { visits, was, unscheduled: over.unscheduled ?? JOBS, meta, timeOff: over.timeOff ?? WEEK_OFF, toast: null, seq: 0, notify: [] }
 }
 
 // The New job sheet's customers: picking one fills the address.
@@ -80,33 +78,4 @@ export const lengthWords = LENGTH
 export function townOf(address: string): Town | null {
   const t = (Object.keys(TOWN_CENTRES) as Town[]).find((x) => address.toLowerCase().includes(x.toLowerCase()))
   return t ?? null
-}
-
-// Jev's draft: each move names a visit, where it goes and why. The words come from the visits themselves, so a plan never disagrees with the grid.
-interface Draft { id: string; visitId: string; to: Target; reason: string; kind: PlanMove["kind"] }
-const D = (n: number) => addDays(WEEK_START, n)
-export const PLAN_DRAFT: Draft[] = [
-  { id: "m-1", visitId: "v7", to: { day: D(3), personId: RYAN, start: 10 * 60 + 30 }, reason: "Erie stops are together on Thursday.", kind: "move" },
-  { id: "m-2", visitId: "v9", to: { day: D(3), personId: RYAN, start: 12 * 60 + 30 }, reason: "Same street as Dry Creek Rd.", kind: "move" },
-  { id: "m-3", visitId: "v24", to: { day: D(2), personId: TECH, start: 13 * 60 }, reason: "Saves 12 minutes of driving.", kind: "move" },
-  { id: "m-4", visitId: "v21", to: { day: D(2), personId: RYAN, start: 11 * 60 + 30 }, reason: "Customer picked Thu. Needs your call.", kind: "customer-picked" },
-  { id: "m-5", visitId: "v13", to: { day: D(0), personId: TECH, start: 13 * 60 }, reason: "Changed since", kind: "stale" },
-]
-export const PLAN_SAVED_MINUTES = 38
-
-/** The plan's rows, worded from the visits as they stand now. */
-export function planMoves(visits: readonly GridBlock[], draft: readonly Draft[] = PLAN_DRAFT): PlanMove[] {
-  return draft.flatMap((d) => {
-    const v = visits.find((b) => b.id === d.visitId)
-    return v ? [{ id: d.id, visit: v.title, from: whenWords(v).replace(/, [^,]*$/, ""), to: whenWords(d.to), reason: d.reason, kind: d.kind }] : []
-  })
-}
-
-/** The dotted blocks of the plan, each at its new place with the old place under it. Stale moves are not drawn. */
-export function planBlocks(visits: readonly GridBlock[], draft: readonly Draft[] = PLAN_DRAFT): GridBlock[] {
-  return draft.flatMap((d) => {
-    const v = visits.find((b) => b.id === d.visitId)
-    if (!v || d.kind === "stale") return []
-    return [{ ...v, id: `plan-${d.id}`, day: d.to.day, personId: d.to.personId, start: d.to.start, notTold: false, planned: { day: v.day, personId: v.personId, start: v.start } }]
-  })
 }

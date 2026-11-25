@@ -8,7 +8,7 @@ import { columnsFor, monthDays } from "./schedule-prototype-view"
 import type { Proto } from "./use-schedule-prototype"
 
 // What sits under the toolbar: the clock for Week and Day (the Unscheduled rows and the grid share one drag provider, made by the screen), the month for Month, a line for List.
-// A dotted block is a Jev move or the chosen Find a time row.
+// A time off band goes to Settings, People.
 
 export function ScheduleProtoCalendar({ p }: { p: Proto }) {
   const { state, view, day } = p
@@ -26,7 +26,6 @@ export function ScheduleProtoCalendar({ p }: { p: Proto }) {
         onMonthChange={(m) => p.setDay(`${m}-01`)}
       />
     )
-  const planned = [...p.jev.planned, ...(p.newJob.ghost ? [p.newJob.ghost] : [])]
   return (
     <TimeGrid
       key={view}
@@ -38,17 +37,15 @@ export function ScheduleProtoCalendar({ p }: { p: Proto }) {
       timeOff={state.timeOff}
       now={p.now}
       selectedId={p.selectedId}
-      hoverId={p.hoverId ?? p.jev.hoverId ?? undefined}
-      planned={planned}
+      hoverId={p.hoverId ?? undefined}
       showPersonNames={view === "day"}
       notToldMark={(b) => (b.notTold ? <NotTold /> : null)}
-      onSelect={p.setSelectedId}
+      onSelect={p.onSelect}
       onHover={p.setHoverId}
       onMove={p.onMove}
       onResize={p.onResize}
       onDropExternal={p.onDropExternal}
-      onTimeOffDrag={p.onTimeOffDrag}
-      onTimeOffClick={p.onTimeOffClick}
+      onTimeOffClick={p.onOpenSettings ? () => p.onOpenSettings?.() : undefined}
       onAction={p.onAction}
       onToday={() => p.setDay(p.today)}
     />

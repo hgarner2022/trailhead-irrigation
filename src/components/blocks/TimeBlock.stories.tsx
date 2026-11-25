@@ -43,7 +43,7 @@ export const States: Story = {
       {frame(B, { selected: true })}
       {frame(B, { hovered: true })}
       {frame(B, { conflict: "Ryan has Dry Creek Rd at 3:00 pm." })}
-      {frame({ ...B, notTold: true }, { notToldMark: <Bell aria-label="Customer not told" className="size-3.5 text-warning-ink" /> })}
+      {frame({ ...B, notTold: true }, { notToldMark: <Bell aria-label="Customer not notified" className="size-3.5 text-warning-ink" /> })}
       {frame({ ...B, waiting: true })}
       {frame({ ...B, done: true })}
       {frame({ ...B, planned: { day: "2026-11-23", personId: "p", start: 600 } })}

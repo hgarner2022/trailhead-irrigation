@@ -23,20 +23,20 @@ const meta = {
   component: UnscheduledPanel,
   parameters: { layout: "fullscreen" },
   globals: LAPTOP,
-  args: { open: true, onOpenChange: () => {}, jobs: UNSCHEDULED, notTold: NOT_TOLD, onFindATime: fn(), onHover: fn(), onNotify: fn(), onDontTell: fn(), onNotifyAll: fn() },
+  args: { open: true, onOpenChange: () => {}, jobs: UNSCHEDULED, notTold: NOT_TOLD, onSchedule: fn(), onHover: fn(), onNotify: fn(), onDontTell: fn(), onNotifyAll: fn() },
   render: (args) => <Docked {...args} />,
 } satisfies Meta<typeof UnscheduledPanel>
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Four jobs, oldest first, each with Find a time. */
+/** Four jobs, oldest first, each with Schedule. */
 export const Default: Story = {
   play: async ({ canvas, args, userEvent }) => {
     await expect(await canvas.findByRole("heading", { name: "Unscheduled (4)" })).toBeInTheDocument()
     const rows = canvas.getAllByRole("listitem").filter((li) => li.getAttribute("data-slot") === "unscheduled-row")
     await expect(rows[0]).toHaveTextContent("Andrea Reyes")
-    await userEvent.click(canvas.getByRole("button", { name: "Find a time for Andrea Reyes" }))
-    await expect(args.onFindATime).toHaveBeenCalled()
+    await userEvent.click(canvas.getByRole("button", { name: "Schedule Andrea Reyes" }))
+    await expect(args.onSchedule).toHaveBeenCalled()
   },
 }
 export const Phone: Story = { globals: PHONE }
@@ -58,9 +58,9 @@ export const RowLitFromOutsidePhone: Story = { ...RowLitFromOutside, globals: PH
 export const DraggableRows: Story = { args: { dragProps: (id) => ({ "aria-roledescription": "draggable", id: `drag-${id}` }) } }
 export const DraggableRowsPhone: Story = { ...DraggableRows, globals: PHONE }
 
-/** The second tab: moved visits whose customer has not been told, each with Notify and Don't tell, and Notify all in the footer. */
-export const NotToldTab: Story = { args: { defaultTab: "not-told" } }
+/** The second tab: moved visits whose customer has not been notified, each with Notify the customer and Don't notify, and Notify all in the footer. */
+export const NotToldTab: Story = { args: { defaultTab: "not-notified" } }
 export const NotToldTabPhone: Story = { ...NotToldTab, globals: PHONE }
 
-export const NotToldEmpty: Story = { args: { defaultTab: "not-told", notTold: [] } }
+export const NotToldEmpty: Story = { args: { defaultTab: "not-notified", notTold: [] } }
 export const NotToldEmptyPhone: Story = { ...NotToldEmpty, globals: PHONE }

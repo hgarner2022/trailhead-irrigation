@@ -16,9 +16,11 @@ export interface UnscheduledJob {
   addedOn: string
   lat?: number
   lng?: number
+  /** the one quiet line of the best day and time, "Suggested: Thu, Nov 26, 9:00 am, Ryan Garner"; the row's Schedule button opens the Schedule dialog on it */
+  suggestion?: string
 }
 
-/** A visit that moved and whose customer has not been told. */
+/** A visit that moved and whose customer has not been notified. */
 export interface NotToldVisit {
   id: string
   customer: string

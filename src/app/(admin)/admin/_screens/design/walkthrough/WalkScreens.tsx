@@ -28,14 +28,17 @@ import { NewJob } from "../../NewJob"
 import { EMPTY_PERSON, type CustomerChoice } from "../../CustomerPicker"
 import { NewJobContext } from "./new-job-context"
 import { ReportsScreen } from "../../ReportsScreen"
-import { ScheduleScreen } from "../../ScheduleScreen"
-import { SettingsScreen } from "../../SettingsScreen"
+import { WalkSettings } from "./WalkSettings"
 import { makeNewJobActions, WALK_DATA, WALK_TODAY } from "./walk-new-job"
 import { Placeholder } from "./Placeholder"
 import { HomeRequestRows, RequestRoute, RequestsRoute } from "./WalkRequests"
 import { ApprovedJobRoute, QuoteRoute, QuotesRoute } from "./WalkQuotes"
 import { ReceiptRoute } from "./receipts"
 import { type Route } from "./routes"
+import { WalkBestTimes, WalkSchedule } from "./WalkSchedule"
+import { bestTimesFor } from "../schedule-best-times"
+import { WALK_PEOPLE } from "./visits-data"
+import { WALK_SCHEDULE_WORLD, walkSchedule } from "./walk-schedule"
 
 // The screens of the walkthrough, each one of the design pages over the walkthrough's data (docs/plans/2026-11-19-prototype-walkthrough-spec.md,
 // section 2). Records open through the links the pages already draw; the two grids pass the router to their `onOpen`. No page component is edited.
@@ -44,7 +47,7 @@ import { type Route } from "./routes"
 const jobsColumns: GridColumnDef<GridJob>[] = jobGridColumns.map((c) =>
   "id" in c && c.id === "property" ? { ...c, cell: ({ row }) => (row.original.property ? <RecordChip kind="property" name={row.original.property} href={`${recordHref.customer(customerIdOf(row.original.name))}#property-h`} className="text-sm font-medium md:min-h-8" /> : null) } : c,
 )
-// Home, Schedule, Reports and Settings are the live screens over the repo's own fixture (the catalogue stories use the same); they are not re-keyed to this world's customers.
+// Home, Reports and Settings are the live screens over the repo's own fixture (the catalogue stories use the same); they are not re-keyed to this world's customers. The Schedule is the Schedule prototype over this world's own calendar (`WalkSchedule`).
 const LIVE = snapshot as AdminData
 const LIVE_TODAY = "2026-11-12T19:56:30Z"
 const money = (n: number) => `$${n.toLocaleString("en-US")}`
@@ -79,6 +82,9 @@ export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen:
   )
 }
 
+/** The best times the New job sheet lists under its Day: over the Schedule's calendar as it stands, for the customer's town and the service's minutes. */
+const bestTimes = (town: Parameters<typeof bestTimesFor>[0]["town"], minutes: number) => bestTimesFor({ state: walkSchedule().getSnapshot(), people: WALK_PEOPLE, today: WALK_SCHEDULE_WORLD.today, town, minutes })
+
 /** The real New job sheet (`_screens/NewJob.tsx`) over the walkthrough's customers and catalogue; Add job makes a row and opens its page. */
 export function NewJobSheet({ sheet, onClose, onCreated, onMade, onActiveAgain, onNewQuote }: { sheet: { customer?: string; key: number } | null; onClose: () => void; onCreated: (jobId: string) => void; onMade: () => void; onActiveAgain?: (name: string) => void; onNewQuote: (o: { customer: CustomerChoice; serviceName: string }) => void }) {
   const actions = useMemo(() => makeNewJobActions(onMade, onActiveAgain), [onMade, onActiveAgain])
@@ -87,7 +93,7 @@ export function NewJobSheet({ sheet, onClose, onCreated, onMade, onActiveAgain, 
   const initial = sheet.customer ? { customer: { chosen: sheet.customer, isNew: false, person: EMPTY_PERSON, query: "", email: "" } } : undefined
   return (
     <>
-      <NewJob key={sheet.key} data={WALK_DATA} today={WALK_TODAY} open onOpenChange={(o) => !o && onClose()} actions={actions} initial={initial} quotes onNewQuote={onNewQuote} onCreated={(made) => onCreated(made.jobId)} />
+      <NewJob key={sheet.key} data={WALK_DATA} today={WALK_TODAY} open onOpenChange={(o) => !o && onClose()} actions={actions} initial={initial} quotes onNewQuote={onNewQuote} onCreated={(made) => onCreated(made.jobId)} bestTimes={bestTimes} />
       <NewJobContext focusWhat={Boolean(sheet.customer)} />
     </>
   )
@@ -138,7 +144,8 @@ export function CustomersList({ onOpen }: { onOpen: (id: string) => void }) {
 function StaticJob({ id }: { id: string }) {
   const toast = useToast()
   const v = jobView(id)
-  if (v.kind === "page") return <JobPage job={v.data} onDo={(label) => toast(`${label}: this job is the catalogue state. The clickable one is Andrea Dalton's repair.`)} />
+  // Schedule and Move are the one dialog: the calendar and the confirmation speak for it, the page itself stays the catalogue state
+  if (v.kind === "page") return <JobPage job={v.data} onDo={(label) => (label === "Schedule" || label === "Move" ? undefined : toast(`${label}: this job is the catalogue state. The clickable one is Andrea Dalton's repair.`))} />
   return null
 }
 
@@ -149,7 +156,15 @@ const NotFound = ({ what }: { what: string }) => (
 )
 
 /** One route, rendered. Keyed by the caller so a record's state resets when another opens. */
-export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, onOpenRequest, onNew, onNewQuote, onJobCreated }: { route: Route; rows: GridJob[]; onBack: () => void; onOpenJob: (id: string) => void; onOpenCustomer: (id: string) => void; onOpenRequest: (id: string) => void; onNew: () => void; onNewQuote: () => void; onJobCreated?: (id: string, message: string, mode: "job" | "quote") => void }) {
+export function RouteScreen({ route, ...rest }: RouteScreenProps) {
+  // a job's Schedule and Move dialog lists the best times over the Schedule's calendar
+  if (route.screen === "job" && route.id) return <WalkBestTimes jobId={route.id}><RouteScreenBody route={route} {...rest} /></WalkBestTimes>
+  return <RouteScreenBody route={route} {...rest} />
+}
+
+export interface RouteScreenProps { route: Route; rows: GridJob[]; onBack: () => void; onOpenJob: (id: string, visit?: string) => void; onOpenSettings?: () => void; onOpenCustomer: (id: string) => void; onOpenRequest: (id: string) => void; onNew: () => void; onNewQuote: () => void; onJobCreated?: (id: string, message: string, mode: "job" | "quote") => void }
+
+function RouteScreenBody({ route, rows, onBack, onOpenJob, onOpenCustomer, onOpenRequest, onNew, onNewQuote, onJobCreated, onOpenSettings }: RouteScreenProps) {
   switch (route.screen) {
     case "requests":
       return <RequestsRoute filter={route.filter === "new" ? "new" : undefined} onOpen={onOpenRequest} />
@@ -169,7 +184,7 @@ export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, on
       const v = jobView(route.id ?? "")
       if (v.kind === "quote-job") return <ApprovedJobRoute id={route.id ?? ""} />
       if (v.kind === "flow") return <JobFlow embedded invoice={{ id: "inv-42", number: "INV-2026-0042" }} />
-      if (v.kind === "trips") return <JobPagePass data={v.data} customer={v.customer} />
+      if (v.kind === "trips") return <JobPagePass data={v.data} customer={v.customer} defaultOpen={route.visit} />
       if (v.kind === "page") return <StaticJob id={route.id!} />
       return <NotFound what="That job" />
     }
@@ -187,10 +202,10 @@ export function RouteScreen({ route, rows, onBack, onOpenJob, onOpenCustomer, on
     case "home":
       return <HomeScreen data={LIVE} today={LIVE_TODAY} needsActionLead={<HomeRequestRows />} />
     case "schedule":
-      return <ScheduleScreen data={LIVE} today={LIVE_TODAY} defaultDay={route.id} />
+      return <WalkSchedule day={route.id} onOpenJob={(jobId, visitId) => onOpenJob(jobId, jobId === visitId ? undefined : visitId)} onNewJob={onNew} onOpenSettings={() => onOpenSettings?.()} />
     case "reports":
       return <ReportsScreen data={LIVE} today={LIVE_TODAY} />
     case "settings":
-      return <SettingsScreen data={LIVE} today={LIVE_TODAY} />
+      return <WalkSettings />
   }
 }

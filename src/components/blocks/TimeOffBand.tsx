@@ -12,7 +12,7 @@ export interface TimeOffBandProps {
   personIndex?: number
   /** the whole day: the band fills its parent and the label sits at the top */
   wholeDay?: boolean
-  /** pressing the label opens the time off to edit it; the band itself stays out of the way of a drag */
+  /** pressing the label goes to Settings, People, where time off is set; the band itself stays out of the way of a drag */
   onOpen?: () => void
   touch?: boolean
   /** top and height in px for the hours form */
@@ -35,7 +35,7 @@ export function TimeOffBand({ label, personIndex = 0, wholeDay, onOpen, touch, s
           type="button"
           data-slot="time-off-open"
           onClick={onOpen}
-          aria-label={`Edit time off: ${label}`}
+          aria-label={`Time off, change it in Settings: ${label}`}
           className={cn("pointer-events-auto m-0.5 inline-flex max-w-full cursor-pointer items-center truncate rounded bg-background/90 px-1 text-xs font-medium text-navy underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy", touch ? "min-h-11" : "min-h-6")}
         >
           <span className="truncate">{label}</span>

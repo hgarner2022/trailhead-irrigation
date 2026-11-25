@@ -2,16 +2,12 @@
 
 import { CalendarKeysHelp } from "@/components/blocks/CalendarKeysHelp"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
-import { NotifyDialog } from "@/components/blocks/NotifyDialog"
-import { TimeOffDialog } from "@/components/blocks/TimeOffDialog"
-import { moveMessage } from "./schedule-prototype-model"
-import { ScheduleProtoMove } from "./ScheduleProtoMove"
+import { firstNameOf } from "@/lib/admin/people"
+import { ScheduleDialog } from "./ScheduleDialog"
 import type { Proto } from "./use-schedule-prototype"
 
-// The dialogs the Schedule prototype opens, one at a time: Notify (one customer, or many after a plan), "Move anyway?" listing what the place breaks, Time off (add or edit with Remove),
-// Move, and the shortcuts list. Nothing here sends: Send and Don't tell only clear the "not told" mark.
-
-const MANY = "Trailhead: your {service} moved to {day} at {time}."
+// The dialogs the Schedule prototype opens, one at a time: the one Schedule dialog (Move for a visit on the calendar, Schedule for a job with no day, the best times inside), "Move the
+// visit" listing what a drop or a keyboard move breaks, and the shortcuts list. Send a message (Notify the customer) is `ScheduleOverlays`, which also holds the moved confirmation, so it works from a job page too.
 
 export function ScheduleProtoDialogs({ p }: { p: Proto }) {
   const d = p.dialog
@@ -19,34 +15,36 @@ export function ScheduleProtoDialogs({ p }: { p: Proto }) {
   const { state } = p
   return (
     <>
-      {d?.kind === "notify" && d.ids.length === 1 && (() => {
-        const v = state.visits.find((b) => b.id === d.ids[0])
-        const m = v ? state.meta[v.id] : undefined
-        return v && m ? (
-          <NotifyDialog key={v.id} open onOpenChange={close("notify")} body={moveMessage(v)} recipient={{ customer: m.customer, phone: m.phone, email: m.email }} onSend={() => p.told(d.ids)} onDontTell={() => p.told(d.ids)} />
-        ) : null
+      {d?.kind === "schedule" && (() => {
+        const visit = d.job ? undefined : state.visits.find((b) => b.id === d.id)
+        const job = d.job ? state.unscheduled.find((j) => j.id === d.id) : undefined
+        const meta = state.meta[d.id]
+        const who = visit ?? job
+        if (!who || !meta) return null
+        const town = visit ? visit.town : job!.town
+        const minutes = visit ? visit.minutes : job!.minutes
+        const service = visit ? visit.service : job!.service
+        const best = p.bestFor(town, minutes, visit?.id, d.pickId)
+        return (
+          <ScheduleDialog
+            key={d.id}
+            verb={d.job ? "Schedule" : "Move"}
+            first={firstNameOf(meta.customer) ?? meta.customer}
+            service={service}
+            address={visit ? `${visit.title}, ${visit.town}` : `${job!.street}, ${job!.town}`}
+            minutes={minutes}
+            best={best}
+            onClose={() => p.setDialog(null)}
+            onConfirm={(r) => p.schedule(d, r)}
+          />
+        )
       })()}
-      {d?.kind === "notify" && d.ids.length > 1 && (
-        <NotifyDialog
-          key="many"
-          open
-          onOpenChange={close("notify")}
-          body={MANY}
-          recipients={d.ids.flatMap((id) => {
-            const v = state.visits.find((b) => b.id === id)
-            const m = state.meta[id]
-            return v && m ? [{ id, customer: m.customer, town: v.town, phone: m.phone, email: m.email }] : []
-          })}
-          onSend={(r) => p.told(r.ids)}
-          onDontTell={() => p.told(d.ids)}
-        />
-      )}
       {d?.kind === "confirm" && (
         <ConfirmDialog
-          title="Move anyway?"
+          title="Move the visit"
           open
           onOpenChange={close("confirm")}
-          confirmLabel="Move anyway"
+          confirmLabel="Move the visit"
           slot="move-anyway-dialog"
           onConfirm={async () => {
             p.dispatch(d.action)
@@ -60,23 +58,6 @@ export function ScheduleProtoDialogs({ p }: { p: Proto }) {
           </ul>
         </ConfirmDialog>
       )}
-      {d?.kind === "time-off" && (
-        <TimeOffDialog
-          key={d.id ?? "new"}
-          open
-          onOpenChange={close("time-off")}
-          people={p.people}
-          initial={d.value}
-          mode={d.mode}
-          visitsInside={p.visitsInside(d.value)}
-          onSave={(v) => p.saveTimeOff(v, d.id)}
-          onRemove={d.id ? () => p.dispatch({ type: "time-off-remove", id: d.id! }) : undefined}
-        />
-      )}
-      {d?.kind === "move" && (() => {
-        const v = state.visits.find((b) => b.id === d.id)
-        return v ? <ScheduleProtoMove key={v.id} p={p} visit={v} /> : null
-      })()}
       <CalendarKeysHelp open={p.keys.helpOpen} onOpenChange={p.keys.setHelpOpen} />
     </>
   )

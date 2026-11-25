@@ -13,6 +13,8 @@ import { pickOf, type ServicePick } from "../requests/request-catalogue"
 import type { CustomerChoice } from "../../CustomerPicker"
 import { MessageView, ReceiptToast, newestPayment, paidFrom, useReceiptToast, type Paid } from "./receipts"
 import { navigate, parseHref, routeTitle, type Route } from "./routes"
+import { ScheduleOverlays } from "../ScheduleOverlays"
+import { resetWalkSchedule, walkSchedule } from "./walk-schedule"
 import { newCount } from "../requests/request-model"
 import { requestStore, useRequests } from "../requests/request-store"
 import { waitingCount } from "../quotes/quote-list-model"
@@ -97,7 +99,7 @@ const KIND_ORDER = ["quote", "invoice", "job", "customer"]
 export function Walkthrough({ start = START, startStack, startSearch = false, startSheet }: { start?: Route; startStack?: Route[]; startSearch?: boolean; startSheet?: { customer?: string } }) {
   useInvoicesInNav()
   // A clean start every time it opens: the requests Ryan answered, the quotes sent and the jobs made in an earlier story are forgotten, so a story opens as it was drawn
-  useState(() => (requestStore.reset(), walkQuotes.reset(), resetExtras(), null))
+  useState(() => (requestStore.reset(), walkQuotes.reset(), resetExtras(), resetWalkSchedule(), null))
   const [stack, setStack] = useState<Route[]>(startStack ?? [start])
   const [epoch, setEpoch] = useState(0)
   const [sheet, setSheet] = useState<{ customer?: string; key: number } | null>(startSheet ? { customer: startSheet.customer, key: 1 } : null)
@@ -129,7 +131,7 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
     if (parsed.newJob) {
       const who = parsed.id ? resolveRoute({ screen: "customer", id: parsed.id }).id : undefined
       setSheet({ customer: who, key: Date.now() })
-      setStack((s) => (s[s.length - 1]!.screen === "jobs" ? s : [START]))
+      setStack((s) => (["jobs", "schedule"].includes(s[s.length - 1]!.screen) ? s : [START]))
       return
     }
     setSheet(null)
@@ -208,6 +210,7 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
     setSheet(null)
     setQuoteSheet(null)
     resetExtras()
+    resetWalkSchedule()
     requestStore.reset()
     walkQuotes.reset()
     setMade((n) => n + 1)
@@ -222,11 +225,12 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
         <ToastBridge toastRef={toastRef} later={laterToast} />
         <Strip stack={stack} onJump={jump} onStartOver={startOver} />
         <div key={`${epoch}-${top.screen}-${top.id ?? ""}`}>
-          <RouteScreen route={top} rows={rows} onBack={() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))} onOpenJob={(id) => go({ screen: "job", id })} onOpenCustomer={(id) => go({ screen: "customer", id })} onOpenRequest={(id) => go({ screen: "request", id })} onNew={() => go({ screen: "jobs", newJob: true })} onNewQuote={() => go({ screen: "quotes", newQuote: true })} onJobCreated={(id, message, mode) => ((laterToast.current = message), go({ screen: mode === "quote" ? "quote" : "job", id }))} />
+          <RouteScreen route={top} rows={rows} onBack={() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))} onOpenJob={(id, visit) => go(visit ? { screen: "job", id, visit } : { screen: "job", id })} onOpenSettings={() => go({ screen: "settings" })} onOpenCustomer={(id) => go({ screen: "customer", id })} onOpenRequest={(id) => go({ screen: "request", id })} onNew={() => go({ screen: "jobs", newJob: true })} onNewQuote={() => go({ screen: "quotes", newQuote: true })} onJobCreated={(id, message, mode) => ((laterToast.current = message), go({ screen: mode === "quote" ? "quote" : "job", id }))} />
         </div>
         <NewJobSheet sheet={sheet} onClose={() => setSheet(null)} onMade={() => setMade((n) => n + 1)} onCreated={(id) => go({ screen: "job", id })} onActiveAgain={onActiveAgain} onNewQuote={({ customer, serviceName }) => (setSheet(null), setQuoteSheet({ choice: customer, pick: pickOf(serviceName), key: Date.now() }))} />
         <NewQuoteHost sheet={quoteSheet} onClose={() => setQuoteSheet(null)} onCreated={(id) => (setQuoteSheet(null), go({ screen: "quote", id }))} />
       </AdminShell>
+      <ScheduleOverlays store={walkSchedule()} />
       {receiptToast.toast && <ReceiptToast text={receiptToast.toast.text} onView={() => (openReceipt(receiptToast.toast!.paid), receiptToast.clear())} />}
       {message && <MessageView channel={message.channel} paid={message.paid} onClose={() => setMessage(null)} />}
     </div>

@@ -4,17 +4,17 @@ import { describe, expect, it, vi } from "vitest"
 import { NotTold } from "./NotTold"
 
 describe("NotTold", () => {
-  it("the mark is a bell named Customer not told", () => {
+  it("the mark is a bell named Customer not notified", () => {
     render(<NotTold />)
-    expect(screen.getByRole("img", { name: "Customer not told" })).toBeInTheDocument()
+    expect(screen.getByRole("img", { name: "Customer not notified" })).toBeInTheDocument()
   })
-  it("the notice says Customer not told with Notify and Don't tell", async () => {
+  it("the notice says Customer not notified with Notify the customer and Don't notify", async () => {
     const onNotify = vi.fn()
     const onDontTell = vi.fn()
     render(<NotTold variant="notice" onNotify={onNotify} onDontTell={onDontTell} />)
-    expect(screen.getByText("Customer not told")).toBeInTheDocument()
-    await userEvent.click(screen.getByRole("button", { name: "Notify" }))
-    await userEvent.click(screen.getByRole("button", { name: "Don't tell" }))
+    expect(screen.getByText("Customer not notified")).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Notify the customer" }))
+    await userEvent.click(screen.getByRole("button", { name: "Don't notify" }))
     expect(onNotify).toHaveBeenCalledOnce()
     expect(onDontTell).toHaveBeenCalledOnce()
   })

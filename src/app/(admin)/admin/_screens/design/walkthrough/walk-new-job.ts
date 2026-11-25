@@ -7,6 +7,7 @@ import { newCustomerFrom, type CustomerChoice } from "../../CustomerPicker"
 import { customerIdOf, markActiveAgain, registerJob } from "./jobs-data"
 import { registerWorldCustomer, WORLD_CUSTOMERS } from "./world-customers"
 import { customerPage } from "./data"
+import { WALK_PEOPLE } from "./visits-data"
 
 // What the real New job sheet (`_screens/NewJob.tsx`) needs, as fixtures: the walkthrough's three customers for the type-ahead, the site's service
 // catalogue, the people for Who, and two server actions stubbed to make a row in the prototype's Jobs grid. A new job is Unscheduled (or Scheduled
@@ -32,7 +33,7 @@ for (const [id, w] of Object.entries(WORLD_CUSTOMERS)) {
 }
 
 /** The sheet's data: the repo's fixture (settings, people, services) with this world's customers. */
-export const WALK_DATA: AdminData = { ...visitsData, clients: WALK_CLIENTS }
+export const WALK_DATA: AdminData = { ...visitsData, clients: WALK_CLIENTS, settings: { ...visitsData.settings, people: WALK_PEOPLE } }
 
 const DAY = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })
 let seq = 0

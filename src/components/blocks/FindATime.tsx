@@ -38,6 +38,8 @@ export interface FindATimeProps {
   noneBefore?: string
   /** the Find a time button; the block draws it off before an address */
   onFind?: () => void
+  /** inside the Schedule dialog: the list is just its sort control and its rows, no button and no title (the section is named for a screen reader only) */
+  bare?: boolean
   className?: string
 }
 
@@ -79,7 +81,7 @@ function Row({ row, picked, recommended, forced, index, focusable, onPick, onKey
   )
 }
 
-export function FindATime({ state, openings = [], forced = [], sort, onSort, selectedId, onPick, estimated, forcedTicked = false, onForcedTicked, noneBefore, onFind, className }: FindATimeProps) {
+export function FindATime({ state, openings = [], forced = [], sort, onSort, selectedId, onPick, estimated, forcedTicked = false, onForcedTicked, noneBefore, onFind, bare = false, className }: FindATimeProps) {
   const [showAll, setShowAll] = useState(false)
   const refs = useRef<(HTMLButtonElement | null)[]>([])
   const ranked = sortOpenings(openings, sort)
@@ -96,12 +98,14 @@ export function FindATime({ state, openings = [], forced = [], sort, onSort, sel
   }
   const tabIndex = Math.max(0, visible.findIndex((r) => r.id === selectedId))
   return (
-    <section data-slot="find-a-time" data-state={state} aria-label="Find a time" className={cn("flex flex-col gap-3", className)}>
+    <section data-slot="find-a-time" data-state={state} aria-label={bare ? "Best times" : "Find a time"} className={cn("flex flex-col gap-3", className)}>
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="outline" className="min-h-11" disabled={state === "no-address" || state === "searching"} onClick={onFind}>
-          <Search className="size-4" aria-hidden />
-          Find a time
-        </Button>
+        {!bare && (
+          <Button type="button" variant="outline" className="min-h-11" disabled={state === "no-address" || state === "searching"} onClick={onFind}>
+            <Search className="size-4" aria-hidden />
+            Find a time
+          </Button>
+        )}
         {state === "results" && (
           <div className="max-w-full overflow-x-auto">
             <SegmentedControl label="Sort" options={SORTS} value={sort} onChange={(v) => onSort(v as OpeningSort)} />

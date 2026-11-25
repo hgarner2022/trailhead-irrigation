@@ -9,8 +9,9 @@ import { cn } from "@/lib/utils"
 import { rangeWords, shift, type View } from "./schedule-prototype-view"
 import type { Proto } from "./use-schedule-prototype"
 
-// The Schedule prototype's header (docs/plans/2026-11-25-scheduler-design.md, 7.1): the title and range, Ask Jev and Time off beside the one filled button, New job; under it
-// previous, Today and next, Week | Day | Month | List, and at the right "N not told", Unscheduled and Map. Pure view over the hook.
+// The Schedule prototype's header (docs/plans/2026-11-25-scheduler-design.md, 7.1, with the reconciliation of Nov 25): the title and range and the one filled button, New job (the
+// shell's New job sheet, with the best times); on a phone a More menu with the day, week or month arrows and the shortcuts; under it previous, Today and next, Week | Day | Month | List,
+// and at the right "N customers not notified", Unscheduled and Map. Time off is set in Settings, People. Pure view over the hook.
 
 const VIEWS = [
   { value: "week", label: "Week" },
@@ -31,12 +32,6 @@ export function ScheduleProtoHeader({ p }: { p: Proto }) {
         context={rangeWords(view, day)}
         actions={
           <>
-            <Button type="button" variant="outline" className="hidden min-h-11 md:inline-flex" disabled={p.jev.status === "drafting"} onClick={p.jev.ask}>
-              Ask Jev
-            </Button>
-            <Button type="button" variant="outline" className="hidden min-h-11 md:inline-flex" onClick={() => p.openTimeOff()}>
-              Time off
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button type="button" variant="outline" aria-label="More actions" className="min-h-11 md:hidden">
@@ -45,8 +40,6 @@ export function ScheduleProtoHeader({ p }: { p: Proto }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-48">
-                <DropdownMenuItem className="min-h-11" onSelect={() => p.openTimeOff()}>Time off</DropdownMenuItem>
-                <DropdownMenuItem className="min-h-11" disabled={p.jev.status === "drafting"} onSelect={p.jev.ask}>Ask Jev</DropdownMenuItem>
                 <DropdownMenuItem className="min-h-11" onSelect={() => p.setDay(shift(view, day, -1))}>{`Previous ${UNIT[view]}`}</DropdownMenuItem>
                 <DropdownMenuItem className="min-h-11" onSelect={() => p.setDay(shift(view, day, 1))}>{`Next ${UNIT[view]}`}</DropdownMenuItem>
                 <DropdownMenuItem className="min-h-11" onSelect={() => p.keys.setHelpOpen(true)}>Keyboard shortcuts</DropdownMenuItem>
@@ -55,7 +48,7 @@ export function ScheduleProtoHeader({ p }: { p: Proto }) {
           </>
         }
         primary={
-          <Button type="button" className="min-h-11" onClick={() => p.newJob.start(null)}>
+          <Button type="button" className="min-h-11" onClick={p.onNewJob}>
             New job
           </Button>
         }
@@ -74,9 +67,9 @@ export function ScheduleProtoHeader({ p }: { p: Proto }) {
         </div>
         <SegmentedControl label="Schedule view" options={VIEWS} value={view} onChange={(v) => p.setView(v as View)} />
         <div className="flex flex-wrap items-center gap-2 md:ml-auto">
-          {p.notToldCount > 0 && (
-            <Button type="button" variant="ghost" className="min-h-11 text-warning-ink hover:bg-warning/14 hover:text-warning-ink" onClick={p.openNotTold}>
-              {`${p.notToldCount} not told`}
+          {p.notNotifiedCount > 0 && (
+            <Button type="button" variant="ghost" className="min-h-11 text-warning-ink hover:bg-warning/14 hover:text-warning-ink" onClick={p.openNotNotified}>
+              {`${p.notNotifiedCount} ${p.notNotifiedCount === 1 ? "customer" : "customers"} not notified`}
             </Button>
           )}
           <Button type="button" variant="outline" className={toggle(p.panels.unscheduled)} aria-pressed={p.panels.unscheduled} onClick={() => p.togglePanel("unscheduled")}>

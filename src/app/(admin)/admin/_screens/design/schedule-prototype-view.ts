@@ -2,7 +2,7 @@ import { addDays, weekdayOf, WEEKDAYS, worksOn } from "@/lib/admin/calendar"
 import { dayFill, fillWords } from "@/lib/admin/day-fill"
 import type { Person, Visit } from "@/lib/admin/types"
 import { monthOf, shiftMonth, type MonthDay } from "@/components/blocks/month-grid-model"
-import { dayColumns, monthFixture, WEEK_START } from "@/components/blocks/scheduler-calendar-fixtures"
+import { dayColumns } from "@/components/blocks/scheduler-calendar-fixtures"
 import type { GridBlock, TimeOff } from "@/components/blocks/time-grid-model"
 import type { GridColumn } from "@/components/blocks/time-grid-types"
 import { dayShort } from "@/components/blocks/find-a-time-model"
@@ -65,14 +65,11 @@ export function columnsFor(view: View, day: string, people: readonly Person[], b
   return dayColumns(days).map((c) => ({ ...c, today: c.day === today, caption: fillWords(dayFill(visitsOf(blocks, meta, c.day), c.day, [...people], TIME_ZONE)) }))
 }
 
-/** The month's cells: the days that hold visits are read from the state, the other weeks keep the fixture's pattern. */
+/** The month's cells, read from the state alone: a day with a visit or a time off has a cell with its count and towns; the days with neither are empty. */
 export function monthDays(blocks: readonly GridBlock[], timeOff: readonly TimeOff[], people: readonly Person[]): MonthDay[] {
-  const base = new Map(monthFixture().map((d) => [d.day, d]))
-  const week = new Set(Array.from({ length: 7 }, (_, i) => addDays(WEEK_START, i)))
-  const days = new Set([...base.keys(), ...blocks.map((b) => b.day)])
+  const days = new Set([...blocks.map((b) => b.day), ...timeOff.map((o) => o.day)])
   return [...days].sort().map((day) => {
     const mine = blocks.filter((b) => b.day === day)
-    if (!week.has(day) && mine.length === 0) return base.get(day)!
     const counts = new Map<GridBlock["town"], number>()
     for (const b of mine) counts.set(b.town, (counts.get(b.town) ?? 0) + 1)
     const off = timeOff.filter((o) => o.day === day)

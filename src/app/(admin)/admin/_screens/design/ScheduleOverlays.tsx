@@ -1,0 +1,45 @@
+"use client"
+
+import { firstNameOf } from "@/lib/admin/people"
+import { ScheduleToast } from "@/components/blocks/ScheduleToast"
+import { MessageDialog } from "./MessageDialog"
+import { moveMessage } from "./schedule-prototype-model"
+import { useWorldState, type WorldStore } from "./schedule-world-store"
+
+// What follows any move or placement, wherever the person is (the Schedule, or a job page whose Schedule or Move was just confirmed): the confirmation ("Moved to Thu, Nov 26,
+// 9:00 am" with Notify the customer and Undo) and, when Notify the customer is pressed, the one Send a message dialog prefilled with the move's words. Notify all goes through the
+// customers one at a time. Nothing is sent: Send only clears the "not notified" mark. Reads the store the screen and the walkthrough share.
+
+const OPENER = "Trailhead: "
+
+export function ScheduleOverlays({ store, toastSeconds = 10 }: { store: WorldStore; toastSeconds?: number }) {
+  const state = useWorldState(store)
+  const toast = state.toast
+  const headId = state.notify[0]
+  const head = headId ? state.visits.find((b) => b.id === headId) : undefined
+  const meta = head ? state.meta[head.id] : undefined
+  return (
+    <>
+      {toast && (
+        <ScheduleToast
+          key={toast.key}
+          message={toast.message}
+          notified={toast.notified}
+          seconds={toastSeconds}
+          onNotify={() => store.dispatch({ type: "ask-notify", ids: toast.ids })}
+          onUndo={() => store.dispatch({ type: "undo" })}
+          onClose={() => store.dispatch({ type: "dismiss-toast" })}
+        />
+      )}
+      {head && meta && (
+        <MessageDialog
+          key={head.id}
+          facts={{ first: firstNameOf(meta.customer) ?? meta.customer, customer: meta.customer, service: head.service.toLowerCase(), amount: "", dueOn: "", phone: meta.phone ?? "no phone on file", email: meta.email, address: head.title, channel: meta.phone ? "text" : "email" }}
+          initialBody={moveMessage(head).slice(OPENER.length)}
+          onClose={() => store.dispatch({ type: "notify-close" })}
+          onSend={() => store.dispatch({ type: "notify-next", sent: true })}
+        />
+      )}
+    </>
+  )
+}

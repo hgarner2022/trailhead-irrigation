@@ -9,8 +9,7 @@ import { ConfirmDialog } from "./ConfirmDialog"
 import { FormRow } from "./FormRow"
 import { NOTE_MAX, TIME_CHOICES, timeOffProblems, type TimeOffValue } from "./time-off-model"
 
-// Time off for a person (docs/plans/2026-11-25-scheduler-design.md, 7.9): whole days or blocked hours. Opened from a day header's menu, from the clock (a drag across empty hours fills the span) and from
-// People; on a phone from the day's overflow menu with the same boxes. Nothing is offered or booked into it. Visits already inside the span are listed ("2 visits are inside this time. They stay where they
+// Time off for a person (docs/plans/2026-11-25-scheduler-design.md, 7.9): whole days or blocked hours. Opened from a person's row in Settings, People (the Person field is not drawn); the Schedule only draws the band. Nothing is offered or booked into it. Visits already inside the span are listed ("2 visits are inside this time. They stay where they
 // are.") and never moved by saving. In edit mode there is Remove. A ConfirmDialog with its own footer because Remove is a third answer. Pure props: the screen owns what Save does. Client component.
 
 export type { TimeOffValue } from "./time-off-model"
@@ -29,19 +28,21 @@ export interface TimeOffDialogProps {
   onRemove?: () => void | Promise<void>
   /** opens the Move dialog for the visits inside; the button is drawn only when this is given */
   onMoveThem?: () => void
+  /** the person is fixed (opened from that person's row in Settings, People): the Person field is not drawn */
+  hidePerson?: boolean
 }
 
 const SELECT = "min-h-11 w-full rounded-lg border border-border bg-background px-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 md:text-sm"
 
-export function TimeOffDialog({ open, onOpenChange, people, initial, mode = "add", visitsInside = [], onSave, onRemove, onMoveThem }: TimeOffDialogProps) {
+export function TimeOffDialog({ open, onOpenChange, people, initial, mode = "add", visitsInside = [], onSave, onRemove, onMoveThem, hidePerson }: TimeOffDialogProps) {
   return (
     <ConfirmDialog title="Time off" open={open} onOpenChange={onOpenChange} actions="none" size="md" slot="time-off-dialog">
-      <Form people={people} initial={initial} mode={mode} visitsInside={visitsInside} onSave={onSave} onRemove={onRemove} onMoveThem={onMoveThem} onDone={() => onOpenChange(false)} />
+      <Form hidePerson={hidePerson} people={people} initial={initial} mode={mode} visitsInside={visitsInside} onSave={onSave} onRemove={onRemove} onMoveThem={onMoveThem} onDone={() => onOpenChange(false)} />
     </ConfirmDialog>
   )
 }
 
-function Form({ people, initial, mode, visitsInside, onSave, onRemove, onMoveThem, onDone }: Pick<TimeOffDialogProps, "people" | "initial" | "visitsInside" | "onSave" | "onRemove" | "onMoveThem"> & { mode: "add" | "edit"; onDone: () => void }) {
+function Form({ people, initial, mode, visitsInside, onSave, onRemove, onMoveThem, onDone, hidePerson }: Pick<TimeOffDialogProps, "people" | "initial" | "visitsInside" | "onSave" | "onRemove" | "onMoveThem" | "hidePerson"> & { mode: "add" | "edit"; onDone: () => void }) {
   const uid = useId()
   const [v, setV] = useState(initial)
   const [tried, setTried] = useState(false)
@@ -58,7 +59,7 @@ function Form({ people, initial, mode, visitsInside, onSave, onRemove, onMoveThe
   return (
     <>
       <div className="flex flex-col gap-4">
-        <FormRow label="Person">
+        {!hidePerson && <FormRow label="Person">
           <select value={v.personId} onChange={(e) => set("personId", e.target.value)} disabled={people.length < 2} className={SELECT}>
             {people.map((p) => (
               <option key={p.id} value={p.id}>
@@ -66,7 +67,7 @@ function Form({ people, initial, mode, visitsInside, onSave, onRemove, onMoveThe
               </option>
             ))}
           </select>
-        </FormRow>
+        </FormRow>}
         <FormRow label="All day">
           <Switch.Root
             checked={v.allDay}
