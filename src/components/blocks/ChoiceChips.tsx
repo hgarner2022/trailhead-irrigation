@@ -2,6 +2,7 @@
 
 import { useId } from "react"
 import { cn } from "@/lib/utils"
+import { optionClass } from "./option-styles"
 
 // A short question answered by tapping a chip: one of a few (radios: "Is there Wi-Fi at the controller?") or any of a few (checkboxes: "What do you want to improve?"). The booking form's
 // service-specific details use it, so every choice of this size looks and behaves the same: native inputs (arrow keys and Space work), a 44px chip, the legend above, an optional hint under
@@ -41,7 +42,7 @@ export function ChoiceChips(props: ChoiceChipsProps) {
           return (
             <label key={o.value} className="relative block">
               <input type={many ? "checkbox" : "radio"} name={`${id}-choice`} value={o.value} checked={on} onChange={() => toggle(o.value)} className="peer sr-only" />
-              <span className={cn("flex min-h-11 cursor-pointer items-center rounded-lg border px-4 text-base transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2", on ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>{o.label}</span>
+              <span className={cn(optionClass({ selected: on, focus: "peer" }), "flex min-h-11 items-center px-4 text-base")}>{o.label}</span>
             </label>
           )
         })}

@@ -1,5 +1,5 @@
-import { ChevronDown } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { DetailsPill } from "@/components/blocks/DetailsPill"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { visitPaid } from "@/lib/admin/jobs"
 import type { Pass } from "@/lib/admin/types"
@@ -32,13 +32,13 @@ export function EarlierSeasons({ passes }: EarlierSeasonsProps) {
           {passes.map((pass) => (
             <li key={pass.id}>
               <details className="group py-3">
-                <summary className="flex cursor-pointer list-none items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
                   <span className="min-w-0 flex-1">
                     <span className="block text-base font-semibold text-foreground">{`${pass.season} season`}</span>
                     <span className="block text-sm text-muted-foreground">{seasonSummary(pass)}</span>
                   </span>
                   <StatusPill status={pass.status} label={pass.status === "active" ? "Done" : undefined} />
-                  <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
+                  <DetailsPill />
                 </summary>
                 <ul className="mt-2 divide-y divide-border pl-1">
                   {pass.visits.map((visit) => {

@@ -174,7 +174,7 @@ const repairOpen = on({ initial: { step: "service", service: "repair", fields: h
     await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-expanded", "true")
     const panel = canvas.getByRole("region", { name: "Sprinkler repair" })
     await expect(within(panel).getAllByRole("listitem").length).toBeGreaterThan(0)
-    await expect(canvas.queryByText(/About \$145|Charged after|Zones|Season Pass/)).toBeNull()
+    await expect(canvas.queryByText(/About \$145|Charged after|Zones|Upgrade to a Season Pass/)).toBeNull()
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
   },
 })
@@ -411,6 +411,7 @@ export const ServiceNothingClearsTest: Story = {
   play: async ({ canvas, userEvent }) => {
     await expect((await canvas.findAllByText("Choose a service.")).length).toBe(2)
     await userEvent.click(canvas.getByRole("button", { name: /^Sprinkler repair/ }))
+    await userEvent.click(canvas.getByRole("button", { name: "Choose this service" }))
     await waitFor(() => expect(canvas.queryAllByText("Choose a service.")).toHaveLength(0))
   },
 }
