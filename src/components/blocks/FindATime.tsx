@@ -40,6 +40,8 @@ export interface FindATimeProps {
   onFind?: () => void
   /** inside the Schedule dialog: the list is just its sort control and its rows, no button and no title (the section is named for a screen reader only) */
   bare?: boolean
+  /** one day's openings: the rows that break a rule are listed greyed with their words, and the sort is left out */
+  oneDay?: boolean
   className?: string
 }
 
@@ -75,18 +77,18 @@ function Row({ row, picked, recommended, forced, index, focusable, onPick, onKey
         </span>
         {row.conflict ? <span className="text-sm">{row.conflict}</span> : row.nextTo ? <span className="text-sm text-muted-foreground">{row.nextTo}</span> : null}
       </span>
-      <span className={cn("shrink-0 tabular-nums", forced ? "" : "text-foreground")}>{`adds ${row.addedMinutes} min`}</span>
+      {!forced && <span className="shrink-0 tabular-nums text-foreground">{`adds ${row.addedMinutes} min driving`}</span>}
       {picked && <Check className="hidden size-4 shrink-0 text-navy sm:block" aria-hidden />}
     </button>
   )
 }
 
-export function FindATime({ state, openings = [], forced = [], sort, onSort, selectedId, onPick, estimated, forcedTicked = false, onForcedTicked, noneBefore, onFind, bare = false, className }: FindATimeProps) {
+export function FindATime({ state, openings = [], forced = [], sort, onSort, selectedId, onPick, estimated, forcedTicked = false, onForcedTicked, noneBefore, onFind, bare = false, oneDay = false, className }: FindATimeProps) {
   const [showAll, setShowAll] = useState(false)
   const refs = useRef<(HTMLButtonElement | null)[]>([])
   const ranked = sortOpenings(openings, sort)
   const star = recommendedId(openings)
-  const visible = [...ranked, ...(showAll ? forced : [])]
+  const visible = [...ranked, ...(showAll || oneDay ? forced : [])]
   const chosen = visible.find((r) => r.id === selectedId) ?? null
   const move = (event: KeyboardEvent<HTMLButtonElement>, from: number) => {
     const step = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : event.key === "ArrowUp" || event.key === "ArrowLeft" ? -1 : 0
@@ -98,7 +100,7 @@ export function FindATime({ state, openings = [], forced = [], sort, onSort, sel
   }
   const tabIndex = Math.max(0, visible.findIndex((r) => r.id === selectedId))
   return (
-    <section data-slot="find-a-time" data-state={state} aria-label={bare ? "Best times" : "Find a time"} className={cn("flex flex-col gap-3", className)}>
+    <section data-slot="find-a-time" data-state={state} aria-label={oneDay ? "Times that day" : bare ? "Best times" : "Find a time"} className={cn("flex flex-col gap-3", className)}>
       <div className="flex flex-wrap items-center gap-3">
         {!bare && (
           <Button type="button" variant="outline" className="min-h-11" disabled={state === "no-address" || state === "searching"} onClick={onFind}>
@@ -106,7 +108,7 @@ export function FindATime({ state, openings = [], forced = [], sort, onSort, sel
             Find a time
           </Button>
         )}
-        {state === "results" && (
+        {state === "results" && !oneDay && (
           <div className="max-w-full overflow-x-auto">
             <SegmentedControl label="Sort" options={SORTS} value={sort} onChange={(v) => onSort(v as OpeningSort)} />
           </div>
@@ -131,7 +133,7 @@ export function FindATime({ state, openings = [], forced = [], sort, onSort, sel
 
       {state === "results" && (
         <>
-          <div role="radiogroup" aria-label="Openings" className="flex flex-col gap-2">
+          <div role="radiogroup" aria-label={oneDay ? "Openings that day" : "Openings"} className="flex flex-col gap-2">
             {visible.map((row, i) => (
               <Row
                 key={row.id}
@@ -159,7 +161,7 @@ export function FindATime({ state, openings = [], forced = [], sort, onSort, sel
               </span>
             </div>
           )}
-          {forced.length > 0 && (
+          {forced.length > 0 && !oneDay && (
             <Button type="button" variant="ghost" className="min-h-11 self-start px-2 text-primary-deep" aria-expanded={showAll} onClick={() => setShowAll((s) => !s)}>
               {showAll ? "Show fewer times" : `Show all times (${forced.length} more)`}
             </Button>

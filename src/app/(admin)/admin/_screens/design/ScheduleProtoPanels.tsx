@@ -44,6 +44,7 @@ export function ScheduleProtoPanels({ p }: { p: Proto }) {
         }
         onNotify={(v) => p.notify([v.id])}
         onDontTell={(v) => p.dontNotify([v.id])}
+        onScheduleAll={() => p.setDialog({ kind: "schedule-all" })}
         onNotifyAll={() => p.notify(state.visits.filter((b) => b.notTold).map((b) => b.id))}
       />
       <MapPanel

@@ -125,7 +125,11 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
       <AnotherDay best={best} open={Boolean(best && (best.rows.length === 0 || (best.currentDay && !best.rows.some((r) => r.day === best.currentDay))))}>
       <DayCalendar offers={(best ? [...new Set(best.rows.map((r) => r.day))] : DAYS.map((d) => d.iso)).map((iso) => ({ day: iso, times: [] }))} timed={false} free={{ from: best?.today ?? TODAY_ISO }} density="sheet" headingLevel={3} legend="Day" value={{ day: dayIso, start: null }} onChange={(next) => next.day && pickDay(next.day)} />
 
-      <PersonAndTimes names={names} day={day} people={people} setPeople={(ps) => (setPeople(ps), setPickedId(null), setAt("any"), emit(day, ps, "any"))} stops={stops} starts={starts} at={at} minutes={minutes} pick={(t) => (setPickedId(null), setAt(t), emit(day, people, t))} />
+      {best?.dayRows ? (
+        <DayTimes best={best} day={dayIso} pickedId={pickedId} at={at} onPick={pickRow} onAny={() => (setPickedId(null), setAt("any"), emit(day, people, "any"))} />
+      ) : (
+        <PersonAndTimes names={names} day={day} people={people} setPeople={(ps) => (setPeople(ps), setPickedId(null), setAt("any"), emit(day, ps, "any"))} stops={stops} starts={starts} at={at} minutes={minutes} pick={(t) => (setPickedId(null), setAt(t), emit(day, people, t))} />
+      )}
       </AnotherDay>
       {best?.problems && (() => {
         const problems = best.problems({ day: dayIso, person: people[0]!, start: at === "any" ? null : at })
@@ -162,6 +166,17 @@ function AnotherDay({ best, open, children }: { best?: BestTimes; open: boolean;
       <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm font-medium text-foreground">Another day</summary>
       <div className="flex flex-col gap-4 px-3 pb-3">{children}</div>
     </details>
+  )
+}
+
+/** One chosen day inside "Another day": that day's openings ranked the way the best times are (least added driving first), a time that breaks a rule greyed with its sentence, and Any time. */
+function DayTimes({ best, day, pickedId, at, onPick, onAny }: { best: BestTimes; day: string; pickedId: string | null; at: number | "any"; onPick: (r: Opening) => void; onAny: () => void }) {
+  const { rows, forced } = best.dayRows!(day)
+  return (
+    <div data-slot="day-times" className="flex flex-col gap-2">
+      <FindATime bare oneDay state={rows.length || forced.length ? "results" : "none"} openings={rows} forced={forced} sort="recommended" onSort={() => undefined} selectedId={pickedId} onPick={onPick} />
+      <TimeChips legend="Start time" hideLegend density="sheet" anyTime options={[]} value={at === "any" ? null : hhmm(at)} onChange={() => onAny()} />
+    </div>
   )
 }
 

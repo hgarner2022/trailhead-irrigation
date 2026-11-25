@@ -86,6 +86,7 @@ export function TimeGridPhone(props: TimeGridProps) {
             blocks={timed.filter((b) => b.personId === p.id)}
             timeOff={timeOff.filter((o) => o.day === column.day && o.personId === p.id)}
             conflicts={conflicts}
+            drives={props.drives}
             nowMinutes={props.now?.day === column.day ? props.now.minutes : undefined}
             selectedId={selectedId}
             hoverId={hoverId}

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { SegmentedControl } from "@/components/blocks/SegmentedControl"
+import { firstNameOf } from "@/lib/admin/people"
 import { cn } from "@/lib/utils"
 import { rangeWords, shift, type View } from "./schedule-prototype-view"
 import type { Proto } from "./use-schedule-prototype"
@@ -73,6 +74,21 @@ export function ScheduleProtoHeader({ p }: { p: Proto }) {
               <span aria-hidden className="md:hidden">{`${p.notNotifiedCount} not notified`}</span>
               <span aria-hidden className="hidden md:inline">{`${p.notNotifiedCount} ${p.notNotifiedCount === 1 ? "customer" : "customers"} not notified`}</span>
             </Button>
+          )}
+          {p.orderable.length === 1 && (
+            <Button type="button" variant="outline" className="min-h-11" onClick={() => p.setDialog({ kind: "order", personId: p.orderable[0]!.id })}>
+              Order the day
+            </Button>
+          )}
+          {p.orderable.length > 1 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" className="min-h-11">Order the day</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-40">
+                {p.orderable.map((x) => <DropdownMenuItem key={x.id} className="min-h-11" onSelect={() => p.setDialog({ kind: "order", personId: x.id })}>{firstNameOf(x.name)}</DropdownMenuItem>)}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           <Button type="button" variant="outline" className={toggle(p.panels.unscheduled)} aria-pressed={p.panels.unscheduled} onClick={() => p.togglePanel("unscheduled")}>
             {`Unscheduled (${p.state.unscheduled.length})`}

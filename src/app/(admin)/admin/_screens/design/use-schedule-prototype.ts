@@ -24,6 +24,10 @@ export type Dialog =
   | { kind: "confirm"; action: Action; problems: string[] }
   /** the one Schedule dialog: for a visit on the calendar (Move) or a job with no day (Schedule, from a row, with the row's suggestion picked) */
   | { kind: "schedule"; id: string; job: boolean; pickId?: string }
+  /** Order the day for one person's day (Day view) */
+  | { kind: "order"; personId: string }
+  /** Schedule all: the preview of where each job with no day would go */
+  | { kind: "schedule-all" }
 
 export interface ProtoInitial {
   view?: View
@@ -72,7 +76,7 @@ export function useScheduleProto(init: ProtoInitial = {}) {
   const keys = useCalendarKeys({ onView: setView, onToday: () => setDay(today), onNext: () => setDay((d) => shift(view, d, 1)), onPrev: () => setDay((d) => shift(view, d, -1)) })
 
   // a place that breaks a rule asks first; one that breaks none goes through
-  const commit = useCallback((action: Action, place: { id: string; day: string; personId: string; start: number | null; minutes: number }) => {
+  const commit = useCallback((action: Action, place: Parameters<typeof placementProblems>[2]) => {
     const problems = placementProblems(state, people, place)
     if (problems.length) setDialog({ kind: "confirm", action, problems })
     else dispatch(action)
@@ -87,7 +91,7 @@ export function useScheduleProto(init: ProtoInitial = {}) {
   }
   const onDropExternal = (d: ExternalDrop) => {
     const job = state.unscheduled.find((j) => j.id === d.id)
-    if (job) commit({ type: "place", jobId: job.id, to: { day: d.day, personId: d.personId, start: d.start } }, { id: job.id, day: d.day, personId: d.personId, start: d.start, minutes: job.minutes })
+    if (job) commit({ type: "place", jobId: job.id, to: { day: d.day, personId: d.personId, start: d.start } }, { id: job.id, day: d.day, personId: d.personId, start: d.start, minutes: job.minutes, town: job.town, kind: job.kind, point: typeof job.lat === "number" && typeof job.lng === "number" ? { lat: job.lat, lng: job.lng } : null })
   }
   /** a block's menu: Move and Set a time are the one Schedule dialog */
   const onAction = (id: string, a: BlockAction) => { if (a === "move") setDialog({ kind: "schedule", id, job: false }) }
@@ -121,7 +125,11 @@ export function useScheduleProto(init: ProtoInitial = {}) {
     dispatch(d.job ? { type: "place", jobId: d.id, to, notified: r.notify } : { type: "move", id: d.id, to, notified: r.notify })
   }
 
+  /** the people whose day in view has an Any time stop to order (Day view only) */
+  const orderable = useMemo(() => (view === "day" ? people.filter((p) => state.visits.some((b) => b.day === day && b.personId === p.id && b.start === null && !b.done)) : []), [view, people, state.visits, day])
+
   return {
+    orderable,
     state, store, dispatch, people, wide, view, setView, day, setDay, panels, setPanel, togglePanel, tab, openNotNotified, hoverId, setHoverId, selectedId, setSelectedId, dialog, setDialog,
     keys, openDay, notify, dontNotify, now: world.now, today, toastSeconds: init.toastSeconds ?? 10, jobs, bestFor, schedule,
     commit, move, onMove, onResize, onDropExternal, onAction, onSelect, onNewJob: init.onNewJob, onOpenSettings: init.onOpenSettings,

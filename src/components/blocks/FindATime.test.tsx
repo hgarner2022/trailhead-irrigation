@@ -23,9 +23,22 @@ describe("FindATime", () => {
     expect(rows()).toHaveLength(5)
     expect(rows()[0]).toHaveTextContent("Wed, Dec 2")
     expect(rows()[0]).toHaveTextContent("1:00 to 2:00 pm")
-    expect(rows()[0]).toHaveTextContent("adds 3 min")
+    expect(rows()[0]).toHaveTextContent("adds 3 min driving")
     expect(rows()[0]).toHaveTextContent("Next to a Longmont visit")
     expect(screen.getAllByText("Recommended").filter((el) => el.tagName === "SPAN" && el.className.includes("rounded-full"))).toHaveLength(1)
+  })
+  it("says what the added minutes are of, and a forced row has none", () => {
+    render(<FindATime {...base} oneDay />)
+    expect(rows()[0]).toHaveTextContent("adds 3 min driving")
+    const forced = rows().filter((r) => r.hasAttribute("data-forced"))
+    expect(forced.length).toBeGreaterThan(0)
+    expect(forced[0]).not.toHaveTextContent("adds")
+  })
+  it("for one chosen day lists the greyed rows at once, with no sort and no Show all", () => {
+    render(<FindATime {...base} oneDay />)
+    expect(screen.queryByRole("radio", { name: "Least driving" })).toBeNull()
+    expect(screen.queryByRole("button", { name: /Show all times/ })).toBeNull()
+    expect(screen.getByRole("radiogroup", { name: "Openings that day" })).toBeInTheDocument()
   })
   it("sorts by the control, and tells the screen", async () => {
     const onSort = vi.fn()

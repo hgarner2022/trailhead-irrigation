@@ -44,6 +44,17 @@ describe("driving", () => {
   })
 })
 
+describe("a drop that adds driving", () => {
+  it("warns with the minutes at 15 or more, in the words of the drop dialog, and says nothing under that", () => {
+    const c: Calendar = { people: PEOPLE, visits: [at("Erie", "a", { start: 10 * 60 })], meta: { a: pt("Erie") }, timeOff: [] }
+    const far = placeProblems(c, { id: "x", day: "2026-12-01", personId: RYAN, start: 8 * 60, minutes: 60, town: "Longmont", kind: "repair", point: pt("Longmont") })
+    expect(far).toEqual([expect.stringMatching(/^Adds \d+ min of driving\.$/)])
+    expect(Number(/\d+/.exec(far[0]!)![0])).toBeGreaterThanOrEqual(15)
+    expect(placeProblems(c, { id: "x", day: "2026-12-01", personId: RYAN, start: 8 * 60, minutes: 60, town: "Erie", kind: "repair", point: pt("Erie") })).toEqual([])
+    expect(placeProblems(c, { id: "x", day: "2026-12-01", personId: RYAN, start: 8 * 60, minutes: 60, town: "Longmont", kind: "repair", point: pt("Longmont"), driving: false })).toEqual([])
+  })
+})
+
 describe("a full day", () => {
   it("is at or over a Most per day, never a day off", () => {
     const four = ["a", "b", "c", "d"].map((id, n) => at("Erie", id, { start: (8 + n) * 60, minutes: 30, kind: "repair" }))

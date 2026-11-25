@@ -40,6 +40,8 @@ export interface TimeBlockProps {
   touch?: boolean
   /** a narrow column (the Week): no avatar, the start time alone */
   compact?: boolean
+  /** an Any time chip's place in the order the day is driven: 1, 2, 3 */
+  order?: number
   onSelect?: (id: string) => void
   onHover?: (id: string | null) => void
   onAction?: (id: string, action: BlockAction) => void
@@ -52,7 +54,7 @@ export function blockLabel(b: GridBlock, conflict?: string): string {
   return [b.title, b.service, b.town, when, b.done && "done", b.waiting && "waiting on customer", b.notTold && "customer not notified", b.planned && "proposed", conflict].filter(Boolean).join(", ")
 }
 
-export function TimeBlock({ block: b, personIndex = 0, initials, variant = "block", selected, hovered, conflict, dragging, notToldMark, style, className, rootRef, handleRef, touch, compact, onSelect, onHover, onAction, onResizeStart }: TimeBlockProps) {
+export function TimeBlock({ block: b, personIndex = 0, initials, variant = "block", selected, hovered, conflict, dragging, notToldMark, style, className, rootRef, handleRef, touch, compact, order, onSelect, onHover, onAction, onResizeStart }: TimeBlockProps) {
   const s = personStyle(personIndex)
   const chip = variant === "chip"
   const detail = detailFor(b.minutes)
@@ -72,7 +74,6 @@ export function TimeBlock({ block: b, personIndex = 0, initials, variant = "bloc
       className={cn(
         "group relative min-w-0 overflow-hidden rounded-lg border-l-4 text-left text-navy transition-shadow motion-safe:transition-transform",
         b.done ? "border-l-muted bg-stone text-navy-light" : cn(s.tint, s.bar),
-        b.notTold && "border-dashed",
         b.planned && "border border-dotted border-navy/60 bg-background",
         chip ? (touch ? "min-h-11" : "min-h-7") : "shadow-sm",
         (hovered || undefined) && "z-10 -translate-y-px shadow-md",
@@ -87,13 +88,14 @@ export function TimeBlock({ block: b, personIndex = 0, initials, variant = "bloc
         ref={handleRef}
         type="button"
         data-slot="time-block-button"
-        aria-label={blockLabel(b, conflict)}
+        aria-label={`${order !== undefined ? `Stop ${order}, ` : ""}${blockLabel(b, conflict)}`}
         aria-pressed={selected || undefined}
         onClick={() => onSelect?.(b.id)}
         className={cn("absolute inset-0 z-0 flex w-full cursor-pointer flex-col text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy", chip || detail === "line" ? "justify-center px-1.5" : "px-1.5 py-1", touch && "text-sm", notToldMark && !touch && "pr-6")}
       >
         {chip ? (
           <span className={cn("block truncate pr-5 text-xs font-semibold", touch && (notToldMark ? "pr-[4.5rem] text-sm" : "pr-11 text-sm"))}>
+            {order !== undefined && <span aria-hidden className="mr-1.5 inline-flex size-4 items-center justify-center rounded-full bg-card text-[10px] font-semibold tabular-nums ring-1 ring-navy/20">{order}</span>}
             {b.title}
             <span className="font-normal text-navy-light">{`, ${b.service.toLowerCase()}, ${hoursWords(b.minutes)}`}</span>
           </span>
@@ -108,7 +110,7 @@ export function TimeBlock({ block: b, personIndex = 0, initials, variant = "bloc
               {initials && !compact && <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-card text-[10px] font-semibold leading-none text-navy ring-1 ring-navy/20">{initials}</span>}
               <span className="truncate text-xs font-semibold leading-tight">{b.title}</span>
             </span>
-            <span className="mt-0.5 block truncate text-xs tabular-nums text-navy-light">{compact && b.start !== null ? clockWords(b.start) : time}</span>
+            <span className="mt-0.5 block truncate text-xs tabular-nums text-navy-light">{`${compact && b.start !== null ? clockWords(b.start) : time}${detail === "two" ? `, ${b.town}` : ""}`}</span>
             {detail === "full" && <span className="block truncate text-xs text-navy-light">{`${b.service}, ${b.town}`}</span>}
           </span>
         )}

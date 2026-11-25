@@ -29,6 +29,8 @@ export interface TimeGridColumnProps {
   timeOff: readonly TimeOff[]
   /** where a proposal came from, drawn as a dotted outline */
   oldPlaces?: readonly GridBlock[]
+  /** the minutes of driving to a block from the stop before it, by block id: a quiet line in the gap between two timed stops, where there is room */
+  drives?: ReadonlyMap<string, number>
   conflicts: ReadonlyMap<string, string>
   preview?: Preview | null
   nowMinutes?: number
@@ -56,6 +58,23 @@ export interface TimeGridColumnProps {
 function DragBlock({ block, children }: { block: GridBlock; children: (p: { rootRef: (el: HTMLDivElement | null) => void; handleRef: (el: HTMLButtonElement | null) => void; dragging: boolean }) => ReactNode }) {
   const { ref, handleRef, isDragSource } = useDraggable({ id: block.id, data: { kind: "block" }, disabled: block.done })
   return <>{children({ rootRef: ref, handleRef, dragging: isDragSource })}</>
+}
+
+/** The gaps between two consecutive timed stops that are tall enough to carry "12 min drive": where it fits, never across an overlap. */
+function driveGaps(blocks: readonly GridBlock[], drives: ReadonlyMap<string, number>, range: HourRange, hourPx: number): { id: string; minutes: number; top: number; height: number }[] {
+  const timed = blocks.filter((b): b is GridBlock & { start: number } => b.start !== null && !b.planned).sort((a, b) => a.start - b.start)
+  const out: { id: string; minutes: number; top: number; height: number }[] = []
+  for (let i = 1; i < timed.length; i++) {
+    const prev = timed[i - 1]!
+    const cur = timed[i]!
+    const minutes = drives.get(cur.id)
+    const from = prev.start + prev.minutes
+    const height = minutesToPx(cur.start - from, hourPx)
+    if (!minutes || cur.start <= from || height < 14) continue
+    if (timed.some((o) => o !== prev && o !== cur && o.start < cur.start && o.start + o.minutes > from)) continue
+    out.push({ id: cur.id, minutes, top: minutesToPx(from - range.start * 60, hourPx), height })
+  }
+  return out
 }
 
 export function TimeGridColumn(p: TimeGridColumnProps) {
@@ -141,6 +160,12 @@ export function TimeGridColumn(p: TimeGridColumnProps) {
 
       {p.oldPlaces?.map((o) => o.planned && o.planned.start !== null && (
         <div key={`old-${o.id}`} aria-hidden data-slot="planned-from" className="absolute inset-x-1 z-[1] rounded-lg border border-dashed border-navy/40" style={{ top: minutesToPx(o.planned.start - top0, hourPx), height: minutesToPx(o.minutes, hourPx) }} />
+      ))}
+
+      {p.drives && driveGaps(blocks, p.drives, range, hourPx).map((g) => (
+        <div key={`drive-${g.id}`} aria-hidden data-slot="drive-line" className="pointer-events-none absolute inset-x-2 z-[1] flex items-center justify-center border-l border-dashed border-navy/30 text-[11px] leading-none text-navy-light" style={{ top: g.top, height: g.height }}>
+          <span className="truncate px-1">{`${g.minutes} min drive`}</span>
+        </div>
       ))}
 
       {packLanes(blocks, range, hourPx).map(({ block: b, top, height: h, lane, lanes }) => {

@@ -1,12 +1,13 @@
 import { addDays, weekdayOf, WEEKDAYS, worksOn } from "@/lib/admin/calendar"
-import { dayFill, fillWords } from "@/lib/admin/day-fill"
+import { dayFill, fillWords, hoursWords, townsWords } from "@/lib/admin/day-fill"
 import type { Person, Visit } from "@/lib/admin/types"
 import { monthOf, shiftMonth, type MonthDay } from "@/components/blocks/month-grid-model"
 import { dayColumns } from "@/components/blocks/scheduler-calendar-fixtures"
 import type { GridBlock, TimeOff } from "@/components/blocks/time-grid-model"
-import type { GridColumn } from "@/components/blocks/time-grid-types"
+import type { ColumnStat, GridColumn } from "@/components/blocks/time-grid-types"
 import { dayShort } from "@/components/blocks/find-a-time-model"
 import type { Meta } from "./schedule-prototype-model"
+import { drivingWords, personDay, type Calendar } from "./schedule-engine"
 
 // What the Schedule prototype draws, derived from its state: the days of a week, the columns, the words over them, the map's stops, the month's cells.
 // Pure; the screen holds the view and the day, this reads them.
@@ -54,15 +55,22 @@ export function visitsOf(blocks: readonly GridBlock[], meta: Record<string, Meta
   })
 }
 
-/** The columns over the clock: a Week's days with their counts, or a Day's one column with its fill ("4 stops, 5 h open"). */
-export function columnsFor(view: View, day: string, people: readonly Person[], blocks: readonly GridBlock[], meta: Record<string, Meta>, today: string): GridColumn[] {
-  if (view === "day") {
-    const fill = fillWords(dayFill(visitsOf(blocks, meta, day), day, [...people], TIME_ZONE))
-    return dayColumns([day]).map((c) => ({ ...c, today: day === today, count: undefined, caption: fill }))
+/** The columns over the clock: a Week's days or a Day's one, each with its stops, the towns in it, and every person's own open time and driving ("3 h open", "Full", "38 min driving"). */
+export function columnsFor(view: View, day: string, people: readonly Person[], blocks: readonly GridBlock[], meta: Record<string, Meta>, today: string, timeOff: readonly TimeOff[] = []): GridColumn[] {
+  const cal: Calendar = { people, visits: blocks, meta, timeOff }
+  const head = (d: string): Pick<GridColumn, "caption" | "towns" | "stats"> => {
+    const fill = dayFill(visitsOf(blocks, meta, d), d, [...people], TIME_ZONE)
+    const days = people.filter((p) => worksOn(p, d)).map((p) => personDay(cal, p, d))
+    const stats: Record<string, ColumnStat> = {}
+    for (const pd of days) stats[pd.personId] = { open: pd.full ? "Full" : `${hoursWords(pd.openMinutes)} open`, driving: pd.driving > 0 ? drivingWords(pd.driving, hoursWords) : undefined }
+    // "5 stops" over everyone; "full" only when every person who works the day is
+    const stops = `${fill.stops} ${fill.stops === 1 ? "stop" : "stops"}`
+    const caption = fill.stops === 0 ? fillWords(fill) : days.length && days.every((x) => x.full) ? `${stops}, full` : stops
+    return { caption, towns: townsWords(fill) || undefined, stats }
   }
+  if (view === "day") return dayColumns([day]).map((c) => ({ ...c, today: day === today, count: undefined, ...head(day) }))
   const days = weekDaysShown(mondayOf(day), people, blocks)
-  // each day reads as the live day header does ("5 stops, 3 h open", `fillWords`), not as "5 visits"
-  return dayColumns(days).map((c) => ({ ...c, today: c.day === today, caption: fillWords(dayFill(visitsOf(blocks, meta, c.day), c.day, [...people], TIME_ZONE)) }))
+  return dayColumns(days).map((c) => ({ ...c, today: c.day === today, ...head(c.day) }))
 }
 
 /** The month's cells, read from the state alone: a day with a visit or a time off has a cell with its count and towns; the days with neither are empty. */

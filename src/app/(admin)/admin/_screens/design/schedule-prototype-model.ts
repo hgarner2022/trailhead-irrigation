@@ -40,6 +40,10 @@ export type Action =
   | { type: "place"; jobId: string; to: Target; notified?: boolean }
   | { type: "add"; visit: GridBlock; meta: Meta }
   | { type: "add-unscheduled"; job: ProtoJob }
+  /** Order the day: the Any time stops of one person's day take the times the order gave them; nothing was promised to them, so nothing is told */
+  | { type: "order-day"; moves: { id: string; start: number }[]; message: string }
+  /** Schedule all: every job placed at once, one toast, one Undo */
+  | { type: "place-all"; places: { jobId: string; to: Target }[]; notified: boolean }
   /** a visit that came from outside the calendar (New job with a day): it joins as it is, no toast */
   | { type: "seed-visit"; visit: GridBlock; meta: Meta }
   | { type: "undo" }
@@ -109,6 +113,24 @@ export function reduce(s: ProtoState, a: Action): ProtoState {
     }
     case "add": {
       return { ...s, visits: [...s.visits, { ...a.visit, notTold: true }], meta: { ...s.meta, [a.visit.id]: a.meta }, seq: s.seq + 1, toast: stamp(s, `Scheduled for ${onWords(a.visit)}`, [a.visit.id]) }
+    }
+    case "order-day": {
+      if (!a.moves.length) return s
+      const at = new Map(a.moves.map((m) => [m.id, m.start]))
+      return { ...s, visits: s.visits.map((b) => (at.has(b.id) ? { ...b, start: at.get(b.id)! } : b)), seq: s.seq + 1, toast: stamp(s, a.message, a.moves.map((m) => m.id), true) }
+    }
+    case "place-all": {
+      const jobs = a.places.flatMap((p) => { const job = s.unscheduled.find((j) => j.id === p.jobId); return job ? [{ job, to: p.to }] : [] })
+      if (!jobs.length) return s
+      const ids = new Set(jobs.map((x) => x.job.id))
+      return {
+        ...s,
+        visits: [...s.visits, ...jobs.map(({ job, to }) => ({ ...visitOfJob(job, to), notTold: !a.notified }))],
+        unscheduled: s.unscheduled.filter((j) => !ids.has(j.id)),
+        meta: { ...s.meta, ...Object.fromEntries(jobs.map(({ job }) => [job.id, metaOfJob(job)])) },
+        seq: s.seq + 1,
+        toast: stamp(s, `Scheduled ${jobs.length} ${jobs.length === 1 ? "job" : "jobs"}`, jobs.map((x) => x.job.id), a.notified),
+      }
     }
     case "seed-visit":
       return { ...s, visits: [...s.visits.filter((b) => b.id !== a.visit.id), a.visit], meta: { ...s.meta, [a.visit.id]: a.meta }, unscheduled: s.unscheduled.filter((j) => j.id !== a.visit.id) }

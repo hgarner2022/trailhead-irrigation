@@ -39,6 +39,8 @@ export interface UnscheduledPanelProps {
   onNotify?: (visit: NotToldVisit) => void
   onDontTell?: (visit: NotToldVisit) => void
   onNotifyAll?: () => void
+  /** Schedule all N: the host opens its preview */
+  onScheduleAll?: () => void
   className?: string
 }
 
@@ -50,13 +52,15 @@ const words = (job: UnscheduledJob) => (
   </span>
 )
 
+/** The list keeps the one order, oldest first, until it is long enough to need another. */
+const SORT_FROM = 6
 const SORTS = [
   { value: "oldest", label: "Oldest" },
   { value: "newest", label: "Newest" },
   { value: "name", label: "Name" },
 ] as const
 
-export function UnscheduledPanel({ open, onOpenChange, jobs, notTold = [], defaultTab = "unscheduled", defaultSort = "oldest", onSortChange, onSchedule, onHover, hoverId, dragProps, dragWrap, onNotify, onDontTell, onNotifyAll, className }: UnscheduledPanelProps) {
+export function UnscheduledPanel({ open, onOpenChange, jobs, notTold = [], defaultTab = "unscheduled", defaultSort = "oldest", onSortChange, onSchedule, onHover, hoverId, dragProps, dragWrap, onNotify, onDontTell, onNotifyAll, onScheduleAll, className }: UnscheduledPanelProps) {
   const [tab, setTab] = useState(defaultTab)
   const [sort, setSort] = useState<UnscheduledSort>(defaultSort)
   const rows = sortJobs(jobs, sort)
@@ -65,13 +69,17 @@ export function UnscheduledPanel({ open, onOpenChange, jobs, notTold = [], defau
     <Button type="button" variant="outline" className="min-h-11" onClick={onNotifyAll}>
       Notify all
     </Button>
+  ) : tab === "unscheduled" && jobs.length > 1 && onScheduleAll ? (
+    <Button type="button" variant="outline" className="min-h-11" onClick={onScheduleAll}>
+      {`Schedule all ${jobs.length}`}
+    </Button>
   ) : undefined
   return (
-    <SidePanel variant="docked" open={open} onOpenChange={onOpenChange} title={`Unscheduled (${jobs.length})`} footer={footer} className={className}>
+    <SidePanel variant="docked" open={open} onOpenChange={onOpenChange} title={tab === "not-notified" ? `Not notified (${notTold.length})` : `Unscheduled (${jobs.length})`} footer={footer} className={className}>
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="gap-3">
         <TabsList className="group-data-[orientation=horizontal]/tabs:h-11 w-full">
           <TabsTrigger value="unscheduled" className="min-h-9">Unscheduled</TabsTrigger>
-          <TabsTrigger value="not-notified" className="min-h-9">{`Not notified ${notTold.length}`}</TabsTrigger>
+          <TabsTrigger value="not-notified" className="min-h-9">Not notified</TabsTrigger>
         </TabsList>
 
         <TabsContent value="unscheduled" className="flex flex-col gap-3">
@@ -79,15 +87,17 @@ export function UnscheduledPanel({ open, onOpenChange, jobs, notTold = [], defau
             <EmptyState title="Every job has a day." line="A job with no day waits here until you schedule it." className="py-8" />
           ) : (
             <>
-              <SegmentedControl
-                label="Sort"
-                options={SORTS}
-                value={sort}
-                onChange={(v) => {
-                  setSort(v as UnscheduledSort)
-                  onSortChange?.(v as UnscheduledSort)
-                }}
-              />
+              {jobs.length > SORT_FROM && (
+                <SegmentedControl
+                  label="Sort"
+                  options={SORTS}
+                  value={sort}
+                  onChange={(v) => {
+                    setSort(v as UnscheduledSort)
+                    onSortChange?.(v as UnscheduledSort)
+                  }}
+                />
+              )}
               <ol data-slot="unscheduled-list" className="divide-y divide-border">
                 {rows.map((job) => (
                   <li

@@ -170,6 +170,17 @@ describe("the view", () => {
     expect(columnsFor("week", "2026-11-25", PEOPLE, s.visits, s.meta, "2026-11-25").map((c) => c.day)).toEqual(["2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27", "2026-11-28"])
     expect(columnsFor("day", "2026-11-25", PEOPLE, s.visits, s.meta, "2026-11-25")[0]?.caption).toMatch(/^\d stops/)
   })
+  it("a head carries each person's open time and driving, the towns, and a day nobody has room for reads full", () => {
+    const s = start()
+    const head = columnsFor("day", "2026-11-24", PEOPLE, s.visits, s.meta, "2026-11-25", s.timeOff)[0]!
+    expect(head.caption).toMatch(/^\d+ stops?$/)
+    expect(head.towns).toMatch(/\w+ \d/)
+    expect(head.stats?.[RYAN]?.open).toMatch(/ open$|^Full$/)
+    const crowded = s.visits.filter((b) => b.day === "2026-11-24").map((b) => ({ ...b, minutes: 9 * 60 }))
+    const full = columnsFor("day", "2026-11-24", PEOPLE, crowded, s.meta, "2026-11-25", [])[0]!
+    expect(full.stats?.[RYAN]?.open).toBe("Full")
+    expect(full.caption).toMatch(/, full$/)
+  })
   it("the Month reads the moved visit's new day", () => {
     const s = reduce(start(), { type: "move", id: "v4", to: { day: "2026-11-27", personId: RYAN, start: 8 * 60 } })
     const tue = (st: ProtoState) => monthDays(st.visits, st.timeOff, PEOPLE).find((d) => d.day === "2026-11-24")!.stops

@@ -14,7 +14,14 @@ export interface GridColumn {
   count?: string
   /** a line under the label, such as the day's fill ("5 stops, 3 h open"); Day view */
   caption?: string
+  /** "Erie 3, Lafayette 2": the towns in the day, under the caption */
+  towns?: string
+  /** each person's own open time and driving for the day, by person id, shown under their name */
+  stats?: Record<string, ColumnStat>
 }
+
+/** One person's day in the head: "3 h open" or "Full", and "38 min driving". */
+export interface ColumnStat { open?: string; driving?: string }
 
 export interface MoveEvent extends Target {
   id: string
@@ -42,6 +49,8 @@ export interface TimeGridProps {
   hoverId?: string
   /** proposals: each block sits at its new place with a dotted edge, and `planned` holds the place it comes from */
   planned?: readonly GridBlock[]
+  /** the minutes of driving to a block from the stop before it, by block id; a quiet line is drawn in the gap between two timed stops */
+  drives?: ReadonlyMap<string, number>
   /** show each person's name over their column (Day) instead of their initials (Week) */
   showPersonNames?: boolean
   /** the mark for a customer not told; the other agent's bell goes here */

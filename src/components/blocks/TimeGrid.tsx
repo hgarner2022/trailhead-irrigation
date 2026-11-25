@@ -164,6 +164,7 @@ function TimeGridDesktop(props: TimeGridProps) {
                   working={worksOn(p, c.day)}
                   blocks={[...timed, ...planned].filter((b) => b.day === c.day && b.personId === p.id)}
                   timeOff={timeOff.filter((o) => o.day === c.day && o.personId === p.id)}
+                  drives={props.drives}
                   oldPlaces={planned.filter((b) => b.planned?.day === c.day && b.planned.personId === p.id)}
                   conflicts={conflicts}
                   preview={preview}

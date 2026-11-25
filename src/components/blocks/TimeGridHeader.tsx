@@ -13,7 +13,7 @@ import type { GridColumn } from "./time-grid-types"
 
 export const GUTTER = "w-14 shrink-0"
 
-export function DayHead({ column, people, colourOf, names, action }: { column: GridColumn; people: readonly Person[]; colourOf: (id: string) => number; names?: boolean; action?: ReactNode }) {
+export function DayHead({ column, people, colourOf, action }: { column: GridColumn; people: readonly Person[]; colourOf: (id: string) => number; /** no longer chooses between a name and initials: the first name is always shown */ names?: boolean; action?: ReactNode }) {
   return (
     <div data-slot="day-head" className="flex min-w-0 flex-col items-stretch gap-1 px-1 py-1.5">
       <div className="flex min-w-0 items-center justify-center gap-1.5">
@@ -25,13 +25,21 @@ export function DayHead({ column, people, colourOf, names, action }: { column: G
         {action}
       </div>
       {column.caption && <span className="truncate text-center text-xs text-navy-light">{column.caption}</span>}
+      {column.towns && <span className="truncate text-center text-xs text-navy-light">{column.towns}</span>}
       <div className="flex">
-        {people.map((p) => (
-          <span key={p.id} className="flex min-w-0 flex-1 items-center justify-center gap-1 text-xs font-medium text-navy" title={p.name}>
-            <span aria-hidden className={cn("size-2 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
-            {names ? <span className="truncate">{firstNameOf(p.name)}</span> : <><span aria-hidden>{p.initials}</span><span className="sr-only">{p.name}</span></>}
-          </span>
-        ))}
+        {people.map((p) => {
+          const stat = column.stats?.[p.id]
+          return (
+            <span key={p.id} className="flex min-w-0 flex-1 flex-col items-center gap-0.5 px-0.5 text-xs">
+              <span className="flex min-w-0 max-w-full items-center gap-1 font-medium text-navy">
+                <span aria-hidden className={cn("size-2 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
+                <span className="truncate">{firstNameOf(p.name)}</span>
+              </span>
+              {stat?.open && <span className={cn("max-w-full text-center leading-tight", stat.open === "Full" ? "font-medium text-warning-ink" : "text-navy-light")}>{stat.open}</span>}
+              {stat?.driving && <span className="max-w-full text-center leading-tight text-navy-light">{stat.driving}</span>}
+            </span>
+          )
+        })}
       </div>
     </div>
   )
