@@ -48,7 +48,7 @@ export function ScheduleProtoHeader({ p }: { p: Proto }) {
           </>
         }
         primary={
-          <Button type="button" className="min-h-11" onClick={p.onNewJob}>
+          <Button type="button" className="min-h-11" onClick={() => p.onNewJob?.(view === "day" ? day : undefined)}>
             New job
           </Button>
         }

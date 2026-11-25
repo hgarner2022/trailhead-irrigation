@@ -50,11 +50,14 @@ export interface RecordHostProps {
   customerActions?: CustomersActions
   /** the record open on first render: what the page read from the address, or the catalog's default (it has no address) */
   initial?: RecordRef
+  /** a visit opens somewhere else (the prototype's job page) instead of the panel */
+  onOpenVisit?: (visitId: string) => void
   children: ReactNode
 }
 
-export function RecordHost({ data, today, readOnly, canCollect, visitActions, jobActions, customerActions, initial, children }: RecordHostProps) {
-  const host = useRecordInAddress(initial)
+export function RecordHost({ data, today, readOnly, canCollect, visitActions, jobActions, customerActions, initial, onOpenVisit, children }: RecordHostProps) {
+  const inAddress = useRecordInAddress(initial)
+  const host = useMemo<OpenRecord>(() => (onOpenVisit ? { ...inAddress, open: (key, id) => (key === "visit" ? onOpenVisit(id) : inAddress.open(key, id)) } : inAddress), [inAddress, onOpenVisit])
   const { record, from, open, close } = host
   // The last record stays mounted while its panel closes, so the sheet slides out with its content.
   const [last, setLast] = useState(record)

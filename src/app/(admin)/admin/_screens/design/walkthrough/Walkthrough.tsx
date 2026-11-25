@@ -15,6 +15,7 @@ import { MessageView, ReceiptToast, newestPayment, paidFrom, useReceiptToast, ty
 import { navigate, parseHref, routeTitle, type Route } from "./routes"
 import { ScheduleOverlays } from "../ScheduleOverlays"
 import { resetWalkSchedule, walkSchedule } from "./walk-schedule"
+import { useWorldState } from "../schedule-world-store"
 import { newCount } from "../requests/request-model"
 import { requestStore, useRequests } from "../requests/request-store"
 import { waitingCount } from "../quotes/quote-list-model"
@@ -102,7 +103,7 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
   useState(() => (requestStore.reset(), walkQuotes.reset(), resetExtras(), resetWalkSchedule(), null))
   const [stack, setStack] = useState<Route[]>(startStack ?? [start])
   const [epoch, setEpoch] = useState(0)
-  const [sheet, setSheet] = useState<{ customer?: string; key: number } | null>(startSheet ? { customer: startSheet.customer, key: 1 } : null)
+  const [sheet, setSheet] = useState<{ customer?: string; day?: string; key: number } | null>(startSheet ? { customer: startSheet.customer, key: 1 } : null)
   const [quoteSheet, setQuoteSheet] = useState<{ customer?: string; choice?: CustomerChoice; pick?: ServicePick; key: number } | null>(null)
   const [made, setMade] = useState(0)
   const [message, setMessage] = useState<{ channel: "text" | "email"; paid: Paid } | null>(null)
@@ -110,9 +111,11 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
   // Requests: the fixtures, what Ryan did to them and what the customer walkthrough sent; the rail's badge counts the New ones
   const requests = useRequests()
   const quoteWorld = useQuoteWorld()
+  // a move on the Schedule changes the Jobs grid's Next and Who, the customer page and the job page: they read the one calendar
+  const calendar = useWorldState(walkSchedule())
   // the grid's rows: the world's, then the jobs made here (and the jobs a request became)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const rows = useMemo(() => allRows(), [made, requests, quoteWorld])
+  const rows = useMemo(() => allRows(), [made, requests, quoteWorld, calendar.visits, calendar.unscheduled])
   const toastRef = useRef<(m: string) => void>(() => undefined)
   const laterToast = useRef<string | null>(null)
   // New work for an archived customer brings them back; the toast shows on the job's page that opens next
@@ -225,7 +228,7 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
         <ToastBridge toastRef={toastRef} later={laterToast} />
         <Strip stack={stack} onJump={jump} onStartOver={startOver} />
         <div key={`${epoch}-${top.screen}-${top.id ?? ""}`}>
-          <RouteScreen route={top} rows={rows} onBack={() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))} onOpenJob={(id, visit) => go(visit ? { screen: "job", id, visit } : { screen: "job", id })} onOpenSettings={() => go({ screen: "settings" })} onOpenCustomer={(id) => go({ screen: "customer", id })} onOpenRequest={(id) => go({ screen: "request", id })} onNew={() => go({ screen: "jobs", newJob: true })} onNewQuote={() => go({ screen: "quotes", newQuote: true })} onJobCreated={(id, message, mode) => ((laterToast.current = message), go({ screen: mode === "quote" ? "quote" : "job", id }))} />
+          <RouteScreen route={top} rows={rows} onBack={() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))} onOpenJob={(id, visit) => go(visit ? { screen: "job", id, visit } : { screen: "job", id })} onOpenSettings={() => go({ screen: "settings" })} onOpenCustomer={(id) => go({ screen: "customer", id })} onOpenRequest={(id) => go({ screen: "request", id })} onNew={(day) => (go({ screen: "jobs", newJob: true }), day && setSheet((s) => (s ? { ...s, day } : s)))} onNewQuote={() => go({ screen: "quotes", newQuote: true })} onJobCreated={(id, message, mode) => ((laterToast.current = message), go({ screen: mode === "quote" ? "quote" : "job", id }))} />
         </div>
         <NewJobSheet sheet={sheet} onClose={() => setSheet(null)} onMade={() => setMade((n) => n + 1)} onCreated={(id) => go({ screen: "job", id })} onActiveAgain={onActiveAgain} onNewQuote={({ customer, serviceName }) => (setSheet(null), setQuoteSheet({ choice: customer, pick: pickOf(serviceName), key: Date.now() }))} />
         <NewQuoteHost sheet={quoteSheet} onClose={() => setQuoteSheet(null)} onCreated={(id) => (setQuoteSheet(null), go({ screen: "quote", id }))} />

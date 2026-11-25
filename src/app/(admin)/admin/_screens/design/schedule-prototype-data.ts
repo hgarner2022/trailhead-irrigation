@@ -21,7 +21,7 @@ const hash = (id: string) => [...id].reduce((n, c) => (n * 31 + c.charCodeAt(0))
 export function pointNear(town: Town, id: string): { lat: number; lng: number } {
   const [lng, lat] = TOWN_CENTRES[town]
   const h = hash(id)
-  return { lat: Number((lat + ((h % 41) - 20) / 2000).toFixed(5)), lng: Number((lng + (((h >> 3) % 41) - 20) / 2000).toFixed(5)) }
+  return { lat: Number((lat + ((h % 41) - 20) / 1000).toFixed(5)), lng: Number((lng + (((h >> 3) % 41) - 20) / 1000).toFixed(5)) }
 }
 
 const NO_CONTACT = new Set(["v5"])

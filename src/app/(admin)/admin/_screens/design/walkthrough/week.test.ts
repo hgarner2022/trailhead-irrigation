@@ -43,7 +43,7 @@ describe("the best times", () => {
   const state = initialState({ visits: world.visits, meta: world.meta, unscheduled: world.unscheduled, timeOff: world.timeOff })
   const i = { state, people: world.people, today: world.today }
   it("take their minutes from the neighbours, so they are not all the same", () => {
-    const best = bestTimesFor({ ...i, town: "Erie", minutes: 60 })
+    const best = bestTimesFor({ ...i, town: "Erie", minutes: 60, point: { lat: 40.05, lng: -105.05 } })
     expect(new Set(best.rows.map((r) => r.addedMinutes)).size).toBeGreaterThan(1)
   })
   it("sort correctly under each of the three sorts", () => {

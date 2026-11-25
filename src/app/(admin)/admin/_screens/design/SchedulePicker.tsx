@@ -132,6 +132,8 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
         return problems.length ? <ul data-slot="place-problems" className="list-disc space-y-1 pl-5 text-foreground">{problems.map((x) => <li key={x}>{x}</li>)}</ul> : null
       })()}
 
+      {best?.notes?.(dayIso).map((x) => <p key={x} data-slot="place-note" className="text-muted-foreground">{x}</p>)}
+
       <div data-slot="crew-options" className="flex flex-col gap-3">
         {others.length > 0 && (
           <div className="flex flex-col gap-1">

@@ -7,13 +7,19 @@ import { BestTimesContext, type BestTimesContextValue } from "../best-times-cont
 import { useWorldState } from "../schedule-world-store"
 import { personIdOf } from "../use-schedule-prototype"
 import { startFromWords } from "./visits-data"
+import { pointNear } from "../schedule-prototype-data"
+import { datesOf } from "./walk-settings"
+import { heldFromRow } from "./visits-data"
+import { rowOf } from "./jobs-data"
+
+const pointOf = (state: { meta: Record<string, { lat: number; lng: number }> }, id: string) => (state.meta[id] ? { lat: state.meta[id]!.lat, lng: state.meta[id]!.lng } : null)
 import { WALK_SCHEDULE_WORLD, rememberView, rememberedView, syncWalkSchedule, walkSchedule } from "./walk-schedule"
 
 // The walkthrough's Schedule step (docs/plans/2026-11-25-scheduler-reconciliation.md, Part C step 2): the Schedule prototype over the walkthrough's calendar, which is read from the job
 // pages. A click on a visit opens that job's page; New job is the shell's sheet; a time off band goes to Settings, People. It opens as it was left (view, day, panels) because the
 // calendar lives in one store for the session. `WalkBestTimes` hands the best times to the Schedule and Move dialog of any job page.
 
-export function WalkSchedule({ day, onOpenJob, onNewJob, onOpenSettings }: { day?: string; onOpenJob: (jobId: string, visitId: string) => void; onNewJob: () => void; onOpenSettings: () => void }) {
+export function WalkSchedule({ day, onOpenJob, onNewJob, onOpenSettings }: { day?: string; onOpenJob: (jobId: string, visitId: string) => void; onNewJob: (day?: string) => void; onOpenSettings: () => void }) {
   const [start] = useState(() => (syncWalkSchedule(), rememberedView()))
   return (
     <SchedulePrototype

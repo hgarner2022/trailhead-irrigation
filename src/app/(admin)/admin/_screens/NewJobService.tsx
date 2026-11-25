@@ -49,7 +49,7 @@ interface Props {
   onNewQuote?: () => void
   onDone: (made: { id: string; jobId: string }) => void
   /** the ranked best times for this customer's town and the service's minutes, listed under the day (no title: its sort control and its rows); picking a row fills the Day, the time and Who. Absent, nothing is listed */
-  bestTimes?: (town: Town, minutes: number) => BestTimes | null
+  bestTimes?: (town: Town, minutes: number, kind?: string) => BestTimes | null
 }
 
 export function NewJobService({ data, today, choice, group, service, zones, onZones, actions, initialDay, quotes, onNewQuote, onDone, bestTimes }: Props) {
@@ -77,7 +77,7 @@ export function NewJobService({ data, today, choice, group, service, zones, onZo
   const [sort, setSort] = useState<OpeningSort>("recommended")
   const [pickedId, setPickedId] = useState<string | null>(null)
   const town = ready && !choice.isNew ? data.clients.find((c) => c.id === choice.chosen)?.town : undefined
-  const best = useMemo(() => (bestTimes && town && !quoteFirst ? bestTimes(town, Number(shownMinutes) || service.slotMinutes) : null), [bestTimes, town, quoteFirst, shownMinutes, service.slotMinutes])
+  const best = useMemo(() => (bestTimes && town && !quoteFirst ? bestTimes(town, Number(shownMinutes) || service.slotMinutes, service.kind) : null), [bestTimes, town, quoteFirst, shownMinutes, service.slotMinutes])
   // the recommended row is the one preselected, the same opening the Unscheduled row suggests and the Schedule dialog marks
   const preselected = useRef<unknown>(null)
   useEffect(() => {

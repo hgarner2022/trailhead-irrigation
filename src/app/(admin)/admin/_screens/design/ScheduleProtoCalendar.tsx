@@ -46,6 +46,7 @@ export function ScheduleProtoCalendar({ p }: { p: Proto }) {
       onResize={p.onResize}
       onDropExternal={p.onDropExternal}
       onTimeOffClick={p.onOpenSettings ? () => p.onOpenSettings?.() : undefined}
+      onCreateAt={p.onNewJob ? (at) => p.onNewJob?.(at.day) : undefined}
       onAction={p.onAction}
       onToday={() => p.setDay(p.today)}
     />

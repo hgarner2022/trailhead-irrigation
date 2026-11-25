@@ -52,7 +52,7 @@ export interface NewJobProps {
   /** opened from a day on the Schedule (yyyy-mm-dd): the sheet says "Tuesday, Nov 24" at the top and the day is set */
   day?: string
   /** the best times for the chosen customer's town and the service's minutes, listed under the day; the live admin does not pass it yet (the walkthrough does) */
-  bestTimes?: (town: Town, minutes: number) => BestTimes | null
+  bestTimes?: (town: Town, minutes: number, kind?: string) => BestTimes | null
 }
 
 /** "Tuesday, Nov 24" from "2026-11-24". */

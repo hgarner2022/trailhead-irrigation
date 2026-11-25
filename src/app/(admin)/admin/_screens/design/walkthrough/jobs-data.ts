@@ -8,6 +8,23 @@ import { walkQuotes } from "../quotes/quote-store"
 import { clearWorldCustomers, worldCustomer } from "./world-customers"
 import { WEEK_TODAY, WEEK_VISITS, weekDayShort, weekFacts, weekNext, weekVisitOf } from "./week-visits"
 
+// The Schedule's calendar is the one place a visit's day, time and person live in the walkthrough: while it is open (`bindLive`, called by walk-schedule.ts once its store exists) the Jobs grid's
+// Next and Who, the customer page's next visit and the job page's Day, Time and Who are read from it, so a move on the Schedule changes all four. Without it (a test, a story with no calendar)
+// the rows are the world's own.
+export interface LiveVisit { day: string | null; personName: string; start: number | null; done: boolean }
+let live: ((id: string) => LiveVisit | undefined) | null = null
+export const bindLive = (read: ((id: string) => LiveVisit | undefined) | null) => void (live = read)
+export const liveOf = (id: string): LiveVisit | undefined => live?.(id)
+
+/** A row as the calendar has it: Unscheduled with no person, or its day (Today, or "Tue, Nov 24") and who has it, with the stage that day gives; done and canceled rows stay as they are. */
+function withLive(r: GridJob): GridJob {
+  const v = live?.(r.id)
+  if (!v || r.stage === "done" || r.stage === "cancelled" || v.done) return r
+  if (v.day === null) return { ...r, next: "Unscheduled", who: NOONE }
+  const stage: GridStatus = r.stage === "unscheduled" || r.stage === "scheduled" || r.stage === "today" || r.stage === "late" ? (v.day === WEEK_TODAY ? "today" : v.day < WEEK_TODAY ? "late" : "scheduled") : r.stage
+  return { ...r, stage, next: v.day === WEEK_TODAY ? "Today" : weekDayShort(v.day), who: v.personName }
+}
+
 // The walkthrough's jobs (see data.ts for the world): the Jobs grid's rows and the page each one opens.
 
 // Andrea, Marcus and Dale are the three with full histories; Priya, Hal, Ivy and Gus are the four of the customer-status design (New, Active by a job
@@ -75,7 +92,7 @@ const EXTRA: GridJob[] = []
 /** The rows of the grid: the world's, then the jobs made here. A job made from an approved quote reads its stage, total and billing from the quote store, and a quote approved here adds its job (Nov 22 2026: nothing else in the quote store is a job). */
 export const allRows = (): GridJob[] => {
   const { jobs } = walkQuotes.getSnapshot()
-  const rows = [...GRID_ROWS, ...EXTRA].map((r) => (jobs[r.id] ? jobGridRow(jobs[r.id]!, r) : r))
+  const rows = [...GRID_ROWS, ...EXTRA].map((r) => withLive(jobs[r.id] ? jobGridRow(jobs[r.id]!, r) : r))
   const known = new Set(rows.map((r) => r.id))
   return [...rows, ...Object.values(jobs).filter((j) => !known.has(j.jobId)).map((j) => jobGridRow(j))]
 }
@@ -140,6 +157,14 @@ function dalePass(next: boolean): MultiTripData {
 /** A job in the week reads its Day, Time and Who (and Waiting on customer) from its visit record, and the day and time the fixture words repeat in its messages and history. */
 function withWeek(id: string, data: JobPageData): JobPageData {
   const w = weekVisitOf(id)
+  const now = liveOf(id)
+  // a visit on the calendar reads its Day, Time and Who from it, wherever it was moved to
+  if (now && now.day && !now.done) {
+    const clock = (m: number) => `${Math.floor(m / 60) % 12 || 12}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "am" : "pm"}`
+    const dayWords = now.day === WEEK_TODAY ? `Today, ${weekDayShort(now.day).replace(",", "")}` : weekDayShort(now.day)
+    const time = now.start === null ? "Any time" : clock(now.start)
+    return { ...data, when: [["Day", dayWords], ["Time", time], ["Who", now.personName]], pills: w?.waiting ? [{ status: "scheduled" }, { status: "waiting" }] : data.pills }
+  }
   if (!w) return data
   const f = weekFacts(w)
   const swap = (t: string) => t.replace("Tue, Nov 24", weekDayShort(w.day)).replace("Wed, Nov 18 at 9:00 am", w.start === null ? weekDayShort(w.day) : `${weekDayShort(w.day)} at ${f.time.replace("Done at ", "")}`)

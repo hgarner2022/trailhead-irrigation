@@ -118,7 +118,8 @@ describe("time off", () => {
 describe("what a place breaks", () => {
   const s = start()
   const problems = (p: { day: string; personId: string; start: number | null; minutes: number }) => placementProblems(s, PEOPLE, { id: "v4", ...p })
-  it("is empty for a free place", () => expect(problems({ day: "2026-11-24", personId: RYAN, start: 8 * 60 + 15, minutes: 60 })).toEqual([]))
+  it("is empty for a free place", () => expect(problems({ day: "2026-11-24", personId: RYAN, start: 8 * 60, minutes: 60 })).toEqual([]))
+  it("names the room to drive between two visits", () => expect(problems({ day: "2026-11-24", personId: RYAN, start: 8 * 60 + 15, minutes: 60 })).toEqual([expect.stringMatching(/^Ryan needs \d+ minutes to drive to Dry Creek Rd\.$/)]))
   it("names an overlap", () => expect(problems({ day: "2026-11-24", personId: RYAN, start: 9 * 60 + 30, minutes: 60 })).toEqual(["Ryan has Dry Creek Rd at 9:15 am."]))
   it("names time off, whole day and hours", () => {
     expect(problems({ day: "2026-11-25", personId: RYAN, start: 12 * 60 + 30, minutes: 60 })).toEqual(["Ryan is off 12 to 2 pm."])
@@ -135,13 +136,13 @@ describe("what a place breaks", () => {
 })
 
 describe("Find a time", () => {
-  const found = openingsFor({ state: start(), people: PEOPLE, town: "Erie", minutes: 60, today: "2026-11-25" })
+  const found = openingsFor({ state: start(), people: PEOPLE, town: "Erie", minutes: 60, today: "2026-11-25", point: { lat: 40.05, lng: -105.05 } })
   it("offers at most five clear openings, none of which breaks a rule", () => {
     expect(found.openings.length).toBeGreaterThan(0)
     expect(found.openings.length).toBeLessThanOrEqual(5)
     for (const o of found.openings) {
       const [h, m] = o.start.split(":").map(Number)
-      expect(placementProblems(start(), PEOPLE, { id: "new", day: o.day, personId: o.personId, start: h! * 60 + m!, minutes: 60 })).toEqual([])
+      expect(placementProblems(start(), PEOPLE, { id: "new", day: o.day, personId: o.personId, start: h! * 60 + m!, minutes: 60, driving: false })).toEqual([])
     }
   })
   it("never offers Tech Two on his day off, and starts from tomorrow", () => {

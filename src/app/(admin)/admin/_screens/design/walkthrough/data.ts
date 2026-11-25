@@ -13,7 +13,7 @@ import { recordHref } from "@/components/blocks/record-preview-model"
 import { walkQuotes } from "../quotes/quote-store"
 import { buildWorldCustomer, quoteRowsFor } from "./customer-build"
 import { worldCustomerIds } from "./world-customers"
-
+import { WEEK_TODAY } from "./week-visits"
 export * from "./jobs-data"
 
 // One consistent world for the walkthrough (docs/plans/2026-11-19-prototype-walkthrough-spec.md, section 2), built from the design fixtures and
@@ -129,7 +129,7 @@ export function customerRows(): CustomerListRow[] {
     const p = customerPage(id)
     if (!p) return []
     const open = p.jobs.find((j) => j.open)
-    return [{ id, name: p.name, street: p.address.join(", ").replace(", CO", ""), next: open ? (open.day ? (open.day.iso === "2026-11-20" ? "Today" : dayWords(open.day.iso)) : "Unscheduled") : "None", unpaid: Number((p.unpaid ?? "$0").replace(/\D/g, "")), pass: "" }]
+    return [{ id, name: p.name, street: p.address.join(", ").replace(", CO", ""), next: open ? (open.day ? (open.day.iso === WEEK_TODAY ? "Today" : dayWords(open.day.iso)) : "Unscheduled") : "None", unpaid: Number((p.unpaid ?? "$0").replace(/\D/g, "")), pass: "" }]
   })
   return [...CUSTOMER_ROWS, ...others]
 }

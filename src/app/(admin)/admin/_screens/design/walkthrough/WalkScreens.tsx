@@ -38,7 +38,9 @@ import { type Route } from "./routes"
 import { WalkBestTimes, WalkSchedule } from "./WalkSchedule"
 import { bestTimesFor } from "../schedule-best-times"
 import { WALK_PEOPLE } from "./visits-data"
+import { HOME_NOW, homeData } from "./walk-home"
 import { WALK_SCHEDULE_WORLD, walkSchedule } from "./walk-schedule"
+import { useWorldState } from "../schedule-world-store"
 
 // The screens of the walkthrough, each one of the design pages over the walkthrough's data (docs/plans/2026-11-19-prototype-walkthrough-spec.md,
 // section 2). Records open through the links the pages already draw; the two grids pass the router to their `onOpen`. No page component is edited.
@@ -86,14 +88,14 @@ export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen:
 const bestTimes = (town: Parameters<typeof bestTimesFor>[0]["town"], minutes: number) => bestTimesFor({ state: walkSchedule().getSnapshot(), people: WALK_PEOPLE, today: WALK_SCHEDULE_WORLD.today, town, minutes })
 
 /** The real New job sheet (`_screens/NewJob.tsx`) over the walkthrough's customers and catalogue; Add job makes a row and opens its page. */
-export function NewJobSheet({ sheet, onClose, onCreated, onMade, onActiveAgain, onNewQuote }: { sheet: { customer?: string; key: number } | null; onClose: () => void; onCreated: (jobId: string) => void; onMade: () => void; onActiveAgain?: (name: string) => void; onNewQuote: (o: { customer: CustomerChoice; serviceName: string }) => void }) {
+export function NewJobSheet({ sheet, onClose, onCreated, onMade, onActiveAgain, onNewQuote }: { sheet: { customer?: string; day?: string; key: number } | null; onClose: () => void; onCreated: (jobId: string) => void; onMade: () => void; onActiveAgain?: (name: string) => void; onNewQuote: (o: { customer: CustomerChoice; serviceName: string }) => void }) {
   const actions = useMemo(() => makeNewJobActions(onMade, onActiveAgain), [onMade, onActiveAgain])
   if (!sheet) return null
   // Started from a customer: the customer is already chosen (with Change), as if picked from the list. Opened empty from the Jobs grid, the header or search.
   const initial = sheet.customer ? { customer: { chosen: sheet.customer, isNew: false, person: EMPTY_PERSON, query: "", email: "" } } : undefined
   return (
     <>
-      <NewJob key={sheet.key} data={WALK_DATA} today={WALK_TODAY} open onOpenChange={(o) => !o && onClose()} actions={actions} initial={initial} quotes onNewQuote={onNewQuote} onCreated={(made) => onCreated(made.jobId)} bestTimes={bestTimes} />
+      <NewJob key={sheet.key} data={WALK_DATA} today={WALK_TODAY} day={sheet.day} open onOpenChange={(o) => !o && onClose()} actions={actions} initial={initial} quotes onNewQuote={onNewQuote} onCreated={(made) => onCreated(made.jobId)} bestTimes={bestTimes} />
       <NewJobContext focusWhat={Boolean(sheet.customer)} />
     </>
   )
@@ -141,6 +143,13 @@ export function CustomersList({ onOpen }: { onOpen: (id: string) => void }) {
   )
 }
 
+/** Home over the Schedule's own calendar: today's stops are the Schedule's, and a stop opens the job page as a block of the Schedule does. */
+function WalkHome({ onOpenJob }: { onOpenJob: (id: string, visit?: string) => void }) {
+  const state = useWorldState(walkSchedule())
+  const data = useMemo(() => homeData(state), [state])
+  return <HomeScreen data={data} today={HOME_NOW} needsActionLead={<HomeRequestRows />} onOpenVisit={(id) => onOpenJob(id)} />
+}
+
 function StaticJob({ id }: { id: string }) {
   const toast = useToast()
   const v = jobView(id)
@@ -157,12 +166,14 @@ const NotFound = ({ what }: { what: string }) => (
 
 /** One route, rendered. Keyed by the caller so a record's state resets when another opens. */
 export function RouteScreen({ route, ...rest }: RouteScreenProps) {
+  // the page is drawn from the one calendar, so it is drawn again when a visit moves
+  useWorldState(walkSchedule())
   // a job's Schedule and Move dialog lists the best times over the Schedule's calendar
   if (route.screen === "job" && route.id) return <WalkBestTimes jobId={route.id}><RouteScreenBody route={route} {...rest} /></WalkBestTimes>
   return <RouteScreenBody route={route} {...rest} />
 }
 
-export interface RouteScreenProps { route: Route; rows: GridJob[]; onBack: () => void; onOpenJob: (id: string, visit?: string) => void; onOpenSettings?: () => void; onOpenCustomer: (id: string) => void; onOpenRequest: (id: string) => void; onNew: () => void; onNewQuote: () => void; onJobCreated?: (id: string, message: string, mode: "job" | "quote") => void }
+export interface RouteScreenProps { route: Route; rows: GridJob[]; onBack: () => void; onOpenJob: (id: string, visit?: string) => void; onOpenSettings?: () => void; onOpenCustomer: (id: string) => void; onOpenRequest: (id: string) => void; onNew: (day?: string) => void; onNewQuote: () => void; onJobCreated?: (id: string, message: string, mode: "job" | "quote") => void }
 
 function RouteScreenBody({ route, rows, onBack, onOpenJob, onOpenCustomer, onOpenRequest, onNew, onNewQuote, onJobCreated, onOpenSettings }: RouteScreenProps) {
   switch (route.screen) {
@@ -175,7 +186,7 @@ function RouteScreenBody({ route, rows, onBack, onOpenJob, onOpenCustomer, onOpe
     case "quote":
       return <QuoteRoute id={route.id ?? ""} />
     case "jobs":
-      return <WalkJobsGrid rows={rows} onOpen={onOpenJob} onNew={onNew} />
+      return <WalkJobsGrid rows={rows} onOpen={onOpenJob} onNew={() => onNew()} />
     case "customers":
       return <CustomersList onOpen={onOpenCustomer} />
     case "invoices":
@@ -200,7 +211,7 @@ function RouteScreenBody({ route, rows, onBack, onOpenJob, onOpenCustomer, onOpe
     case "receipt":
       return <ReceiptRoute id={route.id ?? "card"} onBack={onBack} />
     case "home":
-      return <HomeScreen data={LIVE} today={LIVE_TODAY} needsActionLead={<HomeRequestRows />} />
+      return <WalkHome onOpenJob={onOpenJob} />
     case "schedule":
       return <WalkSchedule day={route.id} onOpenJob={(jobId, visitId) => onOpenJob(jobId, jobId === visitId ? undefined : visitId)} onNewJob={onNew} onOpenSettings={() => onOpenSettings?.()} />
     case "reports":

@@ -41,7 +41,7 @@ export interface ProtoInitial {
   /** a block was pressed: open that job's page with the visit in focus */
   onOpenJob?: (jobId: string, visitId: string) => void
   /** the header's New job */
-  onNewJob?: () => void
+  onNewJob?: (day?: string) => void
   /** a time off band was pressed: Settings, People */
   onOpenSettings?: () => void
   /** the view, day and panels as they change, so a screen that unmounts (a job page opened from a block) can open again as it was left */
@@ -102,7 +102,7 @@ export function useScheduleProto(init: ProtoInitial = {}) {
   const dontNotify = (ids: string[]) => dispatch({ type: "told", ids })
 
   /** the best times for a job with no day or a visit being moved, over the calendar as it stands */
-  const bestFor = useCallback((town: Parameters<typeof bestTimesFor>[0]["town"], minutes: number, excludeId?: string, initialPickId?: string, currentDay?: string) => bestTimesFor({ state, people, today, town, minutes, excludeId, initialPickId, currentDay }), [state, people, today])
+  const bestFor = useCallback((s: Omit<Parameters<typeof bestTimesFor>[0], "state" | "people" | "today">) => bestTimesFor({ state, people, today, ...s }), [state, people, today])
 
   /** the Unscheduled rows with their one suggested line */
   const jobs: (UnscheduledJob & { pickId?: string })[] = useMemo(

@@ -1,8 +1,8 @@
-import { addDays, worksOn } from "@/lib/admin/calendar"
-import { firstNameOf, hoursOf } from "@/lib/admin/people"
-import type { Person } from "@/lib/admin/types"
+import { addDays } from "@/lib/admin/calendar"
+import type { Person, Town } from "@/lib/admin/types"
 import { dayShort } from "@/components/blocks/find-a-time-model"
 import type { NotToldVisit, UnscheduledJob } from "@/components/blocks/scheduler-panels-types"
+import { placeProblems } from "./schedule-engine"
 import { clockToMinutes, clockWords, hoursSpan, rangeWords, type GridBlock, type TimeOff } from "@/components/blocks/time-grid-model"
 
 // The Schedule prototype's state and every change to it, pure (docs/plans/2026-11-25-scheduler-design.md, 7.8 to 7.11). A move by any route (a drag, a
@@ -40,6 +40,8 @@ export type Action =
   | { type: "place"; jobId: string; to: Target; notified?: boolean }
   | { type: "add"; visit: GridBlock; meta: Meta }
   | { type: "add-unscheduled"; job: ProtoJob }
+  /** a visit that came from outside the calendar (New job with a day): it joins as it is, no toast */
+  | { type: "seed-visit"; visit: GridBlock; meta: Meta }
   | { type: "undo" }
   | { type: "dismiss-toast" }
   | { type: "told"; ids: string[] }
@@ -108,6 +110,8 @@ export function reduce(s: ProtoState, a: Action): ProtoState {
     case "add": {
       return { ...s, visits: [...s.visits, { ...a.visit, notTold: true }], meta: { ...s.meta, [a.visit.id]: a.meta }, seq: s.seq + 1, toast: stamp(s, `Scheduled for ${onWords(a.visit)}`, [a.visit.id]) }
     }
+    case "seed-visit":
+      return { ...s, visits: [...s.visits.filter((b) => b.id !== a.visit.id), a.visit], meta: { ...s.meta, [a.visit.id]: a.meta }, unscheduled: s.unscheduled.filter((j) => j.id !== a.visit.id) }
     case "add-unscheduled":
       return { ...s, unscheduled: [...s.unscheduled, a.job], toast: null }
     case "undo":
@@ -168,32 +172,10 @@ export const jobsOf = (s: Pick<ProtoState, "unscheduled">): UnscheduledJob[] => 
 
 // What a place breaks, in plain words. A drop on any of these asks "Move anyway?"; an empty list moves at once.
 
-export interface PlaceInput { id: string; day: string; personId: string; start: number | null; minutes: number }
+export interface PlaceInput { driving?: boolean; id: string; day: string; personId: string; start: number | null; minutes: number; town?: Town; kind?: string; point?: { lat: number; lng: number } | null }
 
-export function placementProblems(s: Pick<ProtoState, "visits" | "timeOff">, people: readonly Person[], p: PlaceInput): string[] {
-  const person = people.find((x) => x.id === p.personId)
-  if (!person) return []
-  const who = firstNameOf(person.name) ?? "They"
-  if (!worksOn(person, p.day)) return [`${who} does not work that day.`]
-  const out: string[] = []
-  if (p.start === null) return out
-  const end = p.start + p.minutes
-  const hours = hoursOf(person)
-  const hs = clockToMinutes(hours.start) ?? 540
-  const he = clockToMinutes(hours.end) ?? 1020
-  if (p.start < hs) out.push(`${who} starts at ${clockWords(hs)}.`)
-  if (end > he) out.push(`${who} works until ${clockWords(he)}.`)
-  for (const b of s.visits) {
-    if (b.id === p.id || b.day !== p.day || b.personId !== p.personId || b.start === null || b.planned) continue
-    if (p.start < b.start + b.minutes && b.start < end) out.push(`${who} has ${b.title} at ${clockWords(b.start)}.`)
-  }
-  for (const o of s.timeOff) {
-    if (o.day !== p.day || o.personId !== p.personId) continue
-    const whole = o.start === null || o.end === null
-    if (whole || (p.start < o.end! && o.start! < end)) out.push(`${who} is off ${whole ? "all day" : hoursSpan(o.start!, o.end!)}.`)
-  }
-  return out
-}
+/** What a place breaks: the one rule of `schedule-engine.ts` (hours, a visit or time off in the way, the room to drive, a full day, added driving). */
+export const placementProblems = (s: Pick<ProtoState, "visits" | "timeOff"> & Partial<Pick<ProtoState, "meta">>, people: readonly Person[], p: PlaceInput): string[] => placeProblems({ people, visits: s.visits, meta: s.meta ?? {}, timeOff: s.timeOff }, p)
 
 /** The size of a block's day for the side panel: "Wed, Nov 25, 9:00 to 11:00 am". */
 export const visitWhen = (b: Pick<GridBlock, "day" | "start" | "minutes">): string => (b.start === null ? `${dayShort(b.day)}, Any time` : `${dayShort(b.day)}, ${rangeWords(b.start, b.minutes)}`)
