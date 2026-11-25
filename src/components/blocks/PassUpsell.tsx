@@ -52,7 +52,7 @@ export function PassUpsell({ on, onChange, prices, className }: PassUpsellProps)
           <ul className="mt-3 space-y-2">
             {UPSELL_LINES.map((line) => (
               <li key={line} className="flex items-start gap-2.5 text-base leading-snug text-foreground">
-                <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />
+                <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-positive" />
                 {line}
               </li>
             ))}

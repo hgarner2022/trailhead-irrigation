@@ -23,7 +23,7 @@ export default function PaidPage() {
           <Button asChild variant="outline" size="lg" className="w-full">
             <Link href="/account/visits">View the receipt</Link>
           </Button>
-          <Button asChild variant="ghost" size="lg" className="w-full">
+          <Button asChild variant="link" size="lg" className="w-full font-semibold text-primary-deep underline underline-offset-2">
             <Link href="/account">Open your Trailhead account</Link>
           </Button>
         </CardContent>

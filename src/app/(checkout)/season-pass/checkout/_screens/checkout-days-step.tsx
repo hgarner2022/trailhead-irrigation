@@ -2,6 +2,7 @@
 
 import { useId } from "react"
 import { cn } from "@/lib/utils"
+import { optionClass } from "@/components/blocks/option-styles"
 import { visitsOnSale } from "@/lib/season-pass"
 import { DAY_HEADINGS, dayWords, withChoice, type DayKind, type Offers } from "./checkout-days"
 import { RenewalExtras } from "./checkout-renewal"
@@ -12,7 +13,7 @@ import type { StepProps } from "./checkout-steps"
 // the first preselected. Each visit is a native radio group, so the arrow keys, Tab and Space work without any code
 // here, and Enter moves on like every other step. Under the cards, one line: it can be changed later.
 
-const CARD = "flex min-h-20 cursor-pointer flex-col justify-center rounded-lg border px-4 py-3 text-left transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2"
+const CARD = "flex min-h-20 flex-col justify-center px-4 py-3 text-left"
 
 export function DaysStep({ state, offers: loaded, set, renewal, attempted = false }: StepProps & { offers: Offers | null; renewal?: RenewalPrefill; attempted?: boolean }) {
   const id = useId()
@@ -48,7 +49,7 @@ export function DaysStep({ state, offers: loaded, set, renewal, attempted = fals
                         onChange={() => set("days", withChoice(state.days, offer, kind))}
                         className="peer sr-only"
                       />
-                      <span data-slot="day-card" className={cn(CARD, checked ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
+                      <span data-slot="day-card" className={cn(optionClass({ selected: checked, focus: "peer" }), CARD)}>
                         <span className="font-display text-2xl leading-none">{dayWords(offer.day)}</span>
                         {i === 0 && <span className="sr-only">, the earliest</span>}
                       </span>
