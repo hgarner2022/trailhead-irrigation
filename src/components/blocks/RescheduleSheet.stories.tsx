@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, fn, userEvent, within } from "storybook/test"
-import { fixtureDayTimes } from "@/lib/booking/day-time"
+import { fixtureCalendarDays } from "@/lib/booking/day-time"
 import { RescheduleSheet } from "./RescheduleSheet"
 
 const days = ["2027-04-29", "2027-04-30", "2027-05-05", "2027-05-07", "2027-05-12"]
@@ -22,7 +22,7 @@ const open = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
 }
 
 export const ClosedPhone: Story = { ...phone }
-/** Five open days, the first preselected. */
+/** The calendar, days only: the soonest day is selected and marked, the visit's own day is marked Your day. */
 export const OpenPhone: Story = { ...phone, play: open }
 export const OpenLaptop: Story = { ...laptop, play: open }
 /** A visit with no day yet: Pick a day, Book. */
@@ -49,8 +49,8 @@ export const MovedPhone: Story = {
   },
 }
 
-// With slots the sheet is the booking flow's day-and-time picker: the best day selected, its times, her own time offered again, a button that names the day and time.
-const offers = fixtureDayTimes(60)
+// With slots the sheet is the booking flow's day-and-time calendar: the soonest day selected, its times, her own time offered again, a button that names the day and time.
+const offers = fixtureCalendarDays(60, "2027-04-15", "2027-05-14")
 const onPickTime = fn(async (_pick: { day: string; start: string }): Promise<{ ok: boolean; message?: string }> => ({ ok: true }))
 const timed = { offers, onPickTime, currentStart: "10:30" }
 export const TimedOpenPhone: Story = { ...phone, args: timed, play: open }
@@ -61,7 +61,7 @@ export const TimedMovedPhone: Story = {
   args: timed,
   play: async (ctx) => {
     await open(ctx)
-    await userEvent.click(within(document.body).getByRole("radio", { name: /11:00 am/ }))
+    await userEvent.click(within(document.body).getAllByRole("radio")[1]!)
     await userEvent.click(within(document.body).getByRole("button", { name: /^Move it to/ }))
     await expect(await within(document.body).findByText("We texted you the new time.")).toBeInTheDocument()
   },

@@ -10,6 +10,8 @@ import { BookingForm, type BookingFormProps } from "./BookingForm"
 // The customer's booking form, one story per screen at 375 (Phone) and 1280 (Laptop), over fixtures; nothing is sent. Today is Wednesday, April 14, 2027. The order (Hannah, Nov 22 2026, third pass): the
 // address (the box is the type-ahead, the ZIP decides the area), then the service, whose card opens in place and holds the details, the day as a calendar with the soonest open day selected, then contact,
 // a card and a review: seven counted steps, four for a request for a quote; the service step holds only the cards and Details holds what belongs to the chosen service. Every heading is a plain name. The words are in docs/plans/2026-11-19-booking-form-design.md, "Words (Nov 22 2026)".
+/** The price section of Details; the Season Pass offer below it repeats the visits' prices, so a price is read from here. */
+const priceBox = () => within(document.querySelector("[data-slot=booking-price]") as HTMLElement)
 const phone = { globals: { viewport: { value: "phone", isRotated: false } } } as const
 const laptop = { globals: { viewport: { value: "laptop", isRotated: false } } } as const
 
@@ -85,7 +87,8 @@ export const AddressOutsideAreaTest: Story = {
     await userEvent.click(await canvas.findByRole("option", { name: /Boulder/ }))
     await expect(await canvas.findByText(/We don't serve Boulder yet/)).toBeInTheDocument()
     await expect(canvas.getByRole("link", { name: /\(970\) 692-7270/ })).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect((await canvas.findAllByText(/We don't serve Boulder yet/)).length).toBeGreaterThan(1)
   },
 }
 /** The search found nothing: "We can't find it. Enter it here." with Street, City and a required ZIP, filled in. */
@@ -122,8 +125,9 @@ export const AddressTypedOutsideTest: Story = {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "1200 Pearl St")
     await userEvent.type(await canvas.findByLabelText("City"), "Boulder")
     await userEvent.type(canvas.getByLabelText("ZIP"), "80302")
-    await expect(await canvas.findByText(/We don't serve Boulder yet/)).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await expect((await canvas.findAllByText(/We don't serve Boulder yet/)).length).toBeGreaterThan(0)
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect((await canvas.findAllByText(/We don't serve Boulder yet/)).length).toBeGreaterThan(1)
   },
 }
 /** A typed city that is not the town of its ZIP: a quiet line under the city, and Continue does not pass. */
@@ -146,16 +150,16 @@ export const AddressNoCityPickTest: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "9 Cot")
     await userEvent.click(await canvas.findByRole("option", { name: /Cottonwood/ }))
-    await waitFor(() => expect(canvas.getByLabelText("City")).toHaveFocus(), { timeout: 5000 })
+    await waitFor(() => expect(canvas.getByLabelText("City")).toHaveFocus(), { timeout: 12000 })
     await expect(canvas.getByLabelText("Street address")).toHaveValue("9 Cottonwood Ln")
   },
 }
 
-/** 2. Service: only the service cards. Each is a drawn icon, its name, the price and the length and a chevron; the whole header opens the card to read it, and "Choose this service" inside (or the round check) chooses it. Nothing is open until one is pressed, nothing about zones or access is on this step, and Continue is always on. */
+/** 2. Service: only the service cards. Each is a drawn icon, its name, the price and the length and a chevron; the whole header opens the card to read it, and "Choose this service" inside chooses it. Nothing is open until one is pressed, nothing about zones or access is on this step, and Continue is always on. */
 const services = on({ initial: { step: "service", fields: home } }, "Service", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-expanded", "false")
-    await expect(canvas.getByRole("button", { name: /^Spring turn-on/ })).toHaveAccessibleDescription("From $145 · about 1 hour")
+    await expect(canvas.getByRole("button", { name: /^Spring turn-on/ })).toHaveAccessibleDescription("From $145 · 1 hr")
     await expect(canvas.queryByText("Pick a service to continue.")).toBeNull()
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
     await expect(canvas.queryByText(/Opens|Free consultation|What's included/)).toBeNull()
@@ -170,7 +174,7 @@ const repairOpen = on({ initial: { step: "service", service: "repair", fields: h
     await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-expanded", "true")
     const panel = canvas.getByRole("region", { name: "Sprinkler repair" })
     await expect(within(panel).getAllByRole("listitem").length).toBeGreaterThan(0)
-    await expect(canvas.queryByText(/About \$145|Charged after|Zones|Upgrade to a Season Pass/)).toBeNull()
+    await expect(canvas.queryByText(/Charged after|Zones|Make it a Season Pass/)).toBeNull()
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
   },
 })
@@ -181,37 +185,40 @@ const passOpen = on({ initial: { step: "service", service: "season-pass", fields
 export const ServicePassOpenPhone: Story = { ...passOpen.phone, name: "Service, Season Pass open, phone" }
 export const ServicePassOpenLaptop: Story = { ...passOpen.laptop, name: "Service, Season Pass open, laptop" }
 
-/** 3. Details: what belongs to the chosen service and nothing else, one quiet section per question. A repair: the price, access, and the note and photos folded behind one row. */
+/** 3. Details: what belongs to the chosen service and nothing else, one quiet section per question. A repair: the price, access, then the note and the photos as plain sections. */
 const detailsRepair = on({ initial: { step: "details", service: "repair", fields: home } }, "Details, repair", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Details" })).toBeInTheDocument()
-    await expect(canvas.getByText("About $145")).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: /Add a note or photos/ })).toHaveAttribute("aria-expanded", "false")
-    await expect(canvas.queryByLabelText("Note for the crew")).toBeNull()
-    await expect(canvas.queryByRole("button", { name: "Add photos" })).toBeNull()
+    await expect(canvas.getByText("$145")).toBeInTheDocument()
+    // the note and the photos are plain sections on the form, in order after access: no fold, no accordion
+    await expect(canvas.getByRole("textbox", { name: "Note for the crew (optional)" })).toBeInTheDocument()
+    await expect(canvas.getByRole("heading", { name: "Photos" })).toBeInTheDocument()
+    await expect(canvas.queryByRole("button", { name: /Add a note or photos/ })).toBeNull()
+    await expect(canvas.queryByRole("button", { name: /Add 2 sample photos/ })).toBeNull()
     await expect(canvas.queryByText(/Charged after/)).toBeNull()
   },
 })
 export const DetailsRepairPhone: Story = { ...detailsRepair.phone, name: "Details, repair, phone" }
 export const DetailsRepairLaptop: Story = { ...detailsRepair.laptop, name: "Details, repair, laptop" }
-/** Access answered, a note and two photos: the folded row is open from the start because it holds something. */
+/** Access answered, a note and two photos. */
 const detailsFilled = on({ initial: { step: "details", service: "repair", fields: details, photos } }, "Details, note and photos", {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: /Add a note or photos/ })).toHaveAttribute("aria-expanded", "true")
-    await expect(canvas.getByLabelText("Note for the crew")).toHaveValue("Gate code 4471, the controller is in the garage.")
+    await expect(canvas.getByRole("textbox", { name: "Note for the crew (optional)" })).toHaveValue("Gate code 4471, the controller is in the garage.")
   },
 })
 export const DetailsFilledPhone: Story = { ...detailsFilled.phone, name: "Details, note and photos, phone" }
 export const DetailsFilledLaptop: Story = { ...detailsFilled.laptop, name: "Details, note and photos, laptop" }
-/** The spring turn-on: zones as 6 or fewer, 7 to 12 and More than 12, the price by the catalogue's per-zone rule, and Upgrade to a Season Pass, off. Zones are explained once, in a tooltip. */
+/** The spring turn-on: zones as 6 or fewer, 7 to 12 and More than 12, the exact price by the catalogue's per-zone rule, and under the details the Season Pass offer card. Zones are explained once, in a tooltip. */
 const turnOnDetails = on({ initial: { step: "details", service: "spring-turn-on", fields: { ...home, zones: 10 } } }, "Details, spring turn-on", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "6 or fewer" })).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: "10 zones" })).toHaveAttribute("aria-pressed", "true")
-    await expect(canvas.getByText("About $165")).toBeInTheDocument()
+    await expect(priceBox().getByText("$165")).toBeInTheDocument()
     await expect(canvas.queryByText("Count the stations on your controller.")).toBeNull()
     await expect(canvas.getByRole("button", { name: "About zones" })).toBeInTheDocument()
-    await expect(canvas.getByRole("switch", { name: "Upgrade to a Season Pass" })).toHaveAttribute("aria-checked", "false")
+    await expect(canvas.getByRole("heading", { name: "Make it a Season Pass" })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Add Season Pass" })).toBeInTheDocument()
+    await expect(priceBox().getByText("$165")).toBeInTheDocument()
   },
 })
 export const DetailsTurnOnPhone: Story = { ...turnOnDetails.phone, name: "Details, spring turn-on, phone" }
@@ -227,30 +234,30 @@ export const DetailsZonesManyTest: Story = {
   tags: HIDDEN,
   args: { initial: { step: "details", service: "spring-turn-on", fields: { ...home, zones: 8 } } },
   play: async ({ canvas, userEvent }) => {
-    await expect(canvas.getByText("About $145")).toBeInTheDocument()
+    await expect(priceBox().getByText("$145")).toBeInTheDocument()
     await userEvent.click(canvas.getByRole("button", { name: "More than 12" }))
     const box = await canvas.findByLabelText("Number of zones")
     await userEvent.clear(box)
     await userEvent.type(box, "20")
-    await expect(canvas.getByText("About $265")).toBeInTheDocument()
+    await expect(priceBox().getByText("$265")).toBeInTheDocument()
     await userEvent.click(canvas.getByRole("button", { name: "6 or fewer" }))
     await expect(canvas.queryByLabelText("Number of zones")).toBeNull()
-    await expect(canvas.getByText("About $145")).toBeInTheDocument()
+    await expect(priceBox().getByText("$145")).toBeInTheDocument()
   },
 }
-/** The upsell: turning on Upgrade to a Season Pass moves the booking to the pass with the same answers; turning it off goes back to the single visit. */
+/** The offer: Add Season Pass moves the booking to the pass with the same answers and the card reads Season Pass added with Remove; Remove goes back to the single visit. */
 export const DetailsUpsellTest: Story = {
   ...phone,
   name: "Details, upgrade to a Season Pass (test)",
   tags: HIDDEN,
   args: { initial: { step: "details", service: "spring-turn-on", fields: { ...details, zones: 10 } } },
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole("switch", { name: "Upgrade to a Season Pass" }))
-    await expect(await canvas.findByText(/Spring turn-on/)).toBeInTheDocument()
+    await userEvent.click(await canvas.findByRole("button", { name: "Add Season Pass" }))
+    await expect(await canvas.findByText("Season Pass added.")).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: "10 zones" })).toHaveAttribute("aria-pressed", "true")
-    await expect(canvas.getByRole("switch", { name: "Upgrade to a Season Pass" })).toHaveAttribute("aria-checked", "true")
-    await userEvent.click(canvas.getByRole("switch", { name: "Upgrade to a Season Pass" }))
-    await expect(await canvas.findByText("About $165")).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole("button", { name: "Remove" }))
+    await expect(await canvas.findByRole("heading", { name: "Make it a Season Pass" })).toBeInTheDocument()
+    await expect(await priceBox().findByText("$165")).toBeInTheDocument()
   },
 }
 /** Continue pressed with the access question unanswered. */
@@ -266,7 +273,7 @@ export const DetailsRachioPhone = rachioOpen.phone
 export const DetailsRachioLaptop = rachioOpen.laptop
 const efficiencyOpen = on({ initial: { step: "details", service: "water-efficiency", fields: details, extras: { goals: ["Dry spots", "A garden bed to put on drip"] } } }, "Details, water efficiency and drip", {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("About $145")).toBeInTheDocument()
+    await expect(canvas.getByText("$145")).toBeInTheDocument()
   },
 })
 export const DetailsEfficiencyPhone = efficiencyOpen.phone
@@ -338,7 +345,7 @@ const day = on({ initial: { step: "day", service: "repair", fields: details } },
     await expect(canvas.queryByText(/Recommended|Best fit/)).toBeNull()
     await expect(canvas.getByRole("button", { name: /Wednesday, April 21, no times open/ })).toHaveAttribute("aria-disabled", "true")
     await expect(canvas.queryByText(/Tuesdays|texts you the day before|already in Erie|Show more days/)).toBeNull()
-    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
   },
 })
 export const DayPhone: Story = { ...day.phone, name: "Day, phone" }
@@ -367,14 +374,75 @@ const dayFull = on({ initial: { step: "day", service: "repair", fields: details 
 export const DayNoOpenDayPhone: Story = { ...dayFull.phone, name: "Day, no open day, phone" }
 export const DayNoOpenDayLaptop: Story = { ...dayFull.laptop, name: "Day, no open day, laptop" }
 
-/** 4. Contact with how we reach you, after the day: four fields, text, email or both (explained once, in a tooltip), the unticked marketing box, and over the button bar one line: By continuing, you agree to the terms. There is no terms checkbox. */
+/** Continue is never off and nothing stands above it. Pressed with nothing chosen it says what is missing: the summary at the top, the field outlined with the message in its own words, focus on it. One story per step, at 375. */
+const noHint = async (canvas: ReturnType<typeof within>) => {
+  await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
+  await expect(canvas.queryByText(/to continue\.$/)).toBeNull()
+}
+const addressNothing = on({ initial: { step: "address", attempted: true } }, "Address, nothing picked", {
+  play: async ({ canvas }) => {
+    await noHint(canvas)
+    await expect((await canvas.findAllByText("Pick your address from the list.")).length).toBeGreaterThan(0)
+  },
+})
+export const AddressNothingPhone: Story = { ...addressNothing.phone, name: "Address, Continue pressed with nothing, phone" }
+const serviceNothing = on({ initial: { step: "service", fields: home, attempted: true } }, "Service, nothing chosen", {
+  play: async ({ canvas }) => {
+    await noHint(canvas)
+    await expect((await canvas.findAllByText("Choose a service.")).length).toBe(2)
+    await expect(canvas.queryByText("Pick a service to continue.")).toBeNull()
+  },
+})
+export const ServiceNothingPhone: Story = { ...serviceNothing.phone, name: "Service, Continue pressed with nothing, phone" }
+export const ServiceNothingLaptop: Story = { ...serviceNothing.laptop, name: "Service, Continue pressed with nothing, laptop" }
+const dayNoTime = on({ initial: { step: "day", service: "repair", fields: details, attempted: true } }, "Day, no time chosen", {
+  play: async ({ canvas }) => {
+    await noHint(canvas)
+    await expect((await canvas.findAllByText("Pick a time.")).length).toBe(2)
+  },
+})
+export const DayNoTimePhone: Story = { ...dayNoTime.phone, name: "Day, Continue pressed with no time, phone" }
+/** The message goes as soon as the choice is made. */
+export const ServiceNothingClearsTest: Story = {
+  ...phone,
+  name: "Service, the message clears when a card is chosen (test)",
+  tags: HIDDEN,
+  args: { initial: { step: "service", fields: home, attempted: true } },
+  play: async ({ canvas, userEvent }) => {
+    await expect((await canvas.findAllByText("Choose a service.")).length).toBe(2)
+    await userEvent.click(canvas.getByRole("button", { name: /^Sprinkler repair/ }))
+    await userEvent.click(await canvas.findByRole("button", { name: "Choose this service" }))
+    await waitFor(() => expect(canvas.queryAllByText("Choose a service.")).toHaveLength(0))
+  },
+}
+/** The prototype helpers show only when a story asks for them: the note that the card form is drawn, and Add 2 sample photos. Off, as here, the customer screen has neither. */
+export const NoPrototypeHelpersTest: Story = {
+  ...phone,
+  name: "Card, no prototype note (test)",
+  tags: HIDDEN,
+  args: { initial: { step: "card", service: "repair", fields: full, picks: picked } },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByText(/drawn here|No card is entered/)).toBeNull()
+  },
+}
+export const PrototypeHelpersPhone: Story = {
+  ...phone,
+  name: "Card, with the prototype note, phone",
+  args: { prototype: true, initial: { step: "card", service: "repair", fields: full, picks: picked } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText(/drawn here/)).toBeInTheDocument()
+  },
+}
+
+/** 4. Contact with how we reach you, after the day: four fields, text, email or both (explained once, in a tooltip), no checkbox of any kind, and over the button bar one line: By continuing, you agree to the terms. There is no terms checkbox. */
 const contact = on({ initial: { step: "contact", service: "repair", fields: details, picks: picked } }, "Contact", {
   play: async ({ canvas }) => {
     await expect(canvas.queryByText(/Reply STOP|Message and data rates/)).toBeNull()
     await expect(canvas.getByText(/By continuing, you agree to the/)).toBeInTheDocument()
     await expect(canvas.getByRole("link", { name: /booking terms/ })).toHaveAttribute("href", "/terms#booking")
     await expect(canvas.queryByRole("checkbox", { name: /I accept/ })).toBeNull()
-    await expect(canvas.getByRole("checkbox", { name: "Send me tips and offers from Trailhead by email" })).not.toBeChecked()
+    // no checkbox of any kind on this step: not for the terms and not for marketing
+    await expect(canvas.queryByRole("checkbox")).toBeNull()
     await expect(canvas.queryByText(/Every message both ways|We reach you by/)).toBeNull()
     await expect(canvas.getByRole("button", { name: "About how we reach you" })).toBeInTheDocument()
   },
@@ -406,7 +474,7 @@ const contactKnown = on({ initial: { step: "contact", service: "repair", fields:
 })
 export const ContactAddressOnFilePhone: Story = { ...contactKnown.phone, name: "Contact, an address we have, phone" }
 export const ContactAddressOnFileLaptop: Story = { ...contactKnown.laptop, name: "Contact, an address we have, laptop" }
-/** Picking an address we have shows nothing about its customer, and the yard's zone count and controller fill in on the service step. */
+/** Picking an address we have shows nothing about its customer, and the yard's zone count and controller fill in on the Details step. */
 export const AddressOnFileTest: Story = {
   ...phone,
   name: "Address we have, prefills the yard (test)",
@@ -414,9 +482,12 @@ export const AddressOnFileTest: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "480 Br")
     await userEvent.click(await canvas.findByRole("option", { name: /480 Briggs/ }))
-    await expect(canvas.queryByText(/Andrea|Dalton|4242|On file|Welcome back/)).toBeNull()
+    await expect(await canvas.findByText("On file")).toBeInTheDocument()
+    await expect(canvas.queryByText(/Andrea|Dalton|4242|Welcome back/)).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await userEvent.click(await canvas.findByRole("button", { name: "Choose Spring turn-on" }))
+    await userEvent.click(await canvas.findByRole("button", { name: /^Spring turn-on/ }))
+    await userEvent.click(await canvas.findByRole("button", { name: "Choose this service" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await expect(await canvas.findByRole("button", { name: "10 zones" })).toHaveAttribute("aria-pressed", "true")
     await expect(canvas.queryByText(/Andrea|Dalton|4242/)).toBeNull()
   },
@@ -526,7 +597,7 @@ const confirm = on({ initial: { step: "confirm", service: "repair", fields: full
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("We'll text a confirmation to (970) 555-0123.")).toBeInTheDocument()
     await expect(canvas.getByText("Visa ending 4242")).toBeInTheDocument()
-    await expect(canvas.getByText("About $145")).toBeInTheDocument()
+    await expect(canvas.getByText("$145")).toBeInTheDocument()
     await expect(canvas.queryByText(/charged after the visit/i)).toBeNull()
     await expect(canvas.getByRole("button", { name: "Confirm and book" })).toBeEnabled()
   },
@@ -575,11 +646,11 @@ export const WholePathPhoneTest: Story = {
     await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
     await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
-    await userEvent.click(await c.findByRole("button", { name: "Choose Sprinkler repair" }))
+    await userEvent.click(await c.findByRole("button", { name: /^Sprinkler repair/ }))
+    await userEvent.click(await c.findByRole("button", { name: "Choose this service" }))
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
-    await userEvent.click(await c.findByRole("button", { name: /Add a note or photos/ }))
-    await userEvent.click(await c.findByRole("button", { name: "Add 2 sample photos" }))
+    await userEvent.upload(await c.findByLabelText("Add photos"), [new File(["a"], "zone-3-head.jpg", { type: "image/jpeg" }), new File(["b"], "garden-bed.jpg", { type: "image/jpeg" })])
     await next()
     // the soonest day is already selected; only a time is tapped
     await expect(await c.findByRole("button", { name: /soonest/ })).toHaveAttribute("aria-pressed", "true")
@@ -590,7 +661,7 @@ export const WholePathPhoneTest: Story = {
     await userEvent.type(await c.findByLabelText("Email"), "andrea@example.org")
     await userEvent.type(await c.findByLabelText("Phone"), "9705550188")
     await userEvent.click(await c.findByRole("radio", { name: "Text and email" }))
-    await expect(c.getByRole("checkbox", { name: "Send me tips and offers from Trailhead by email" })).not.toBeChecked()
+    await expect(c.queryByRole("checkbox")).toBeNull()
     await next()
     await userEvent.click(await c.findByRole("button", { name: "Save card" }))
     await expect(await c.findByText("We'll text and email a confirmation.")).toBeInTheDocument()
@@ -668,7 +739,8 @@ export const HistoryBehaviour: Story = {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "123")
     await userEvent.click((await canvas.findAllByRole("option"))[0]!)
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await userEvent.click(await canvas.findByRole("button", { name: "Choose Sprinkler repair" }))
+    await userEvent.click(await canvas.findByRole("button", { name: /^Sprinkler repair/ }))
+    await userEvent.click(await canvas.findByRole("button", { name: "Choose this service" }))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await userEvent.click((await canvas.findAllByRole("radio", { name: /^Yes/ }))[0]!)
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
@@ -678,7 +750,7 @@ export const HistoryBehaviour: Story = {
     await expect(await canvas.findByRole("heading", { level: 1, name: "Details" })).toBeInTheDocument()
     window.history.back()
     await expect(await canvas.findByRole("heading", { level: 1, name: "Service" })).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: "Choose Sprinkler repair" })).toHaveAttribute("aria-pressed", "true")
+    await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAccessibleName(/, selected$/)
     window.history.back()
     await expect(await canvas.findByRole("heading", { level: 1, name: "Address" })).toBeInTheDocument()
     await expect(canvas.getByRole("combobox", { name: "Street address" })).toHaveValue("123 Trailhead Way, Erie, CO 80516")

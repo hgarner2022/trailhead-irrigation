@@ -122,6 +122,6 @@ describe("what the screen shows while the text waits", () => {
 describe("plainRefusal", () => {
   it("takes the word visit and the ISO dates out of the API's words", () => {
     expect(plainRefusal("Ryan Garner is full of turn-on visits on 2027-04-26")).toBe("Ryan Garner is full of turn-on jobs on April 26")
-    expect(plainRefusal("A turn-on visit must land between 2027-04-26 and 2027-05-31")).toBe("A turn-on job must land between April 26 and May 31")
+    expect(plainRefusal("A turn-on visit must land between 2027-04-15 and 2027-05-31")).toBe("A turn-on job must land between April 15 and May 31")
   })
 })

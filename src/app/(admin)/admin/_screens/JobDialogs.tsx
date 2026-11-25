@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
+import { DayField } from "@/components/blocks/DayField"
 import { FormRow } from "@/components/blocks/FormRow"
-import { Input } from "@/components/ui/input"
 import { SERVICE_LIST } from "@/lib/services"
 import { OFFICE_KINDS } from "@/lib/admin/visit-defaults"
 import type { AdminData, ServiceItem } from "@/lib/admin/types"
@@ -62,9 +62,7 @@ export function NewVisitDialog({ jobId, data, today, open, onOpenChange, actions
           ))}
         </select>
       </FormRow>
-      <FormRow label="Day, or leave it for later">
-        <Input type="date" value={day} min={today.slice(0, 10)} onChange={(e) => setDay(e.target.value)} className="min-h-11" />
-      </FormRow>
+      <DayField label="Day, or leave it for later" value={day} onChange={(d) => setDay(d)} from={today.slice(0, 10)} clearable />
     </ConfirmDialog>
   )
 }

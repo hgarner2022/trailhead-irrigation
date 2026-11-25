@@ -4,6 +4,9 @@ import { CustomerDocs } from "./CustomerDocs"
 import { CustomerPhone } from "./CustomerPhone"
 import { CustomerWalkthrough } from "./CustomerWalkthrough"
 
+// Two photos a person would choose from their camera roll: the form has no sample button in the customer screen, so the tests use the real file input.
+const PHOTOS = [new File(["a"], "zone-3-head.jpg", { type: "image/jpeg" }), new File(["b"], "garden-bed.jpg", { type: "image/jpeg" })]
+
 // The customer walkthrough, the customer side (Hannah, Nov 19 2026): booking, the messages, the account, paying, the Season Pass and Details in one clickable
 // prototype, starting on a phone. Nothing is sent; Start over resets it.
 
@@ -110,11 +113,11 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
     // the card opens in place and picks the service; Details asks access and takes two photos behind one row; then the soonest day is already chosen and only an exact start time (never a window) is tapped, and only then who we reach
-    await userEvent.click(await c.findByRole("button", { name: "Choose Sprinkler repair" }))
+    await userEvent.click(await c.findByRole("button", { name: /^Sprinkler repair/ }))
+    await userEvent.click(await c.findByRole("button", { name: "Choose this service" }))
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
-    await userEvent.click(await c.findByRole("button", { name: /Add a note or photos/ }))
-    await userEvent.click(await c.findByRole("button", { name: "Add 2 sample photos" }))
+    await userEvent.upload(await c.findByLabelText("Add photos"), PHOTOS)
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /\d:\d\d [ap]m/ }))[0]!)
     await next()
@@ -122,9 +125,8 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.type(await c.findByLabelText("Last name"), "Dalton")
     await userEvent.type(await c.findByLabelText("Email"), "andrea.dalton@example.com")
     await userEvent.type(await c.findByLabelText(/Mobile|Phone/), "9705550123")
-    await expect(await c.findByLabelText("Send me tips and offers from Trailhead by email")).not.toBeChecked()
-    // the terms are agreed by pressing Continue, so the only box is the marketing one
-    await userEvent.click(await c.findByRole("checkbox", { name: "Send me tips and offers from Trailhead by email" }))
+    // the terms are agreed by pressing Continue and the booking is the opt-in for tips and offers by email: there is no box on this step
+    await expect(c.queryByRole("checkbox")).toBeNull()
     await userEvent.click(await c.findByRole("radio", { name: /Text and email/ }))
     await next()
     // a card is asked in every booking, a repair too: Stripe's form, drawn, kept with Save card
@@ -136,8 +138,11 @@ export const BookingPath: StoryObj<typeof CustomerPhone> = {
     await expect(await c.findByRole("article", { name: /booked/ })).toBeInTheDocument()
     await userEvent.click(await c.findByRole("link", { name: "your Trailhead account" }))
     await waitFor(() => expect(where(canvasElement)).toBe("account"))
-    // the box was ticked: marketing email is on, and the admin walkthrough reads it
-    await expect(JSON.parse(window.localStorage.getItem("trailhead-walkthrough-marketing") ?? "{}").email).toBe(true)
+    // the booking gave tips and offers by email, from the booking form, and the admin walkthrough reads it
+    const choice = JSON.parse(window.localStorage.getItem("trailhead-walkthrough-marketing") ?? "{}")
+    await expect(choice.email).toBe(true)
+    await expect(choice.emailSource).toBe("booking form")
+    await expect(choice.text).toBeUndefined()
   },
 }
 
@@ -197,7 +202,7 @@ export const RequestPath: StoryObj<typeof CustomerPhone> = {
     await userEvent.click(await c.findByRole("radio", { name: /Christmas lights/ }))
     await next()
     await userEvent.type(await c.findByLabelText("What do you need?"), "The roofline and two trees.")
-    await userEvent.click(await c.findByRole("button", { name: "Add 2 sample photos" }))
+    await userEvent.upload(await c.findByLabelText("Add photos"), PHOTOS)
     await next()
     await userEvent.type(await c.findByLabelText("First name"), "Rosa")
     await userEvent.type(await c.findByLabelText("Last name"), "Delgado")

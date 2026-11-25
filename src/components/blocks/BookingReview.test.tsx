@@ -10,7 +10,7 @@ describe("BookingReview", () => {
       <BookingReview
         rows={[
           { label: "Where", value: ["123 Trailhead Way", "Erie, CO 80516"], onChange },
-          { label: "Price", value: "About $145, charged after the visit." },
+          { label: "Price", value: "$145, charged after the visit." },
         ]}
         happens="We'll text you a confirmation to (970) 555-0123 and email a receipt when it's done."
       />,

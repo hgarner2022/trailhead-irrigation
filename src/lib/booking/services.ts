@@ -107,6 +107,13 @@ export function lengthWords(minutes: number): string {
   return `About ${h} hour${h === 1 ? "" : "s"}${m ? ` ${m} minutes` : ""}`
 }
 
+/** The same length written short, for one-line meta: "1 hr", "1 hr 30 min", "30 min". */
+export function shortLength(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return [h ? `${h} hr` : "", m ? `${m} min` : ""].filter(Boolean).join(" ")
+}
+
 /** What a visit includes as separate lines, for the open card's list: the catalogue's own sentences, each without its full stop. */
 export const includedList = (included?: string): string[] => (included ? included.split(/(?<=\.)\s+/).map((s) => s.replace(/\.$/, "").trim()).filter(Boolean) : [])
 

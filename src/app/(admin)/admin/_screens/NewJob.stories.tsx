@@ -82,13 +82,13 @@ export const SeasonPass: Story = {
 }
 export const SeasonPassPhone: Story = { args: { customerId: "c-dana", initial: { choice: "season-pass" } }, globals: phone }
 
-/** Typed through: a new customer with her email, ten zones with the July inspection (three prices, three day boxes), one day picked, card link, terms read. */
+/** Typed through: a new customer with her email, ten zones with the July inspection (three prices, three day fields), one day picked, card link, terms read. */
 export const SeasonPassFilledIn: Story = {
   args: { initial: filled },
   globals: wide,
   play: async () => {
     await expect(await screen.findByText("Spring turn-on $165 · July inspection $165 · Fall blowout $135 · invoiced after each visit")).toBeInTheDocument()
-    await expect(await screen.findByText("Tue, May 4")).toBeInTheDocument()
+    await expect(await screen.findByRole("button", { name: "Spring turn-on, Tuesday, May 4" })).toBeInTheDocument()
     await expect(await screen.findByRole("button", { name: "Sell pass" })).toBeEnabled()
   },
 }

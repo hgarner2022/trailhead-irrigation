@@ -2,7 +2,7 @@ import { useState } from "react"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
-import { fixtureCalendarDays, type DayTimePick } from "@/lib/booking/day-time"
+import { OFFICE_STARTS, fixtureCalendarDays, type DayTimePick } from "@/lib/booking/day-time"
 import { DayCalendar } from "./DayCalendar"
 
 const offers = fixtureCalendarDays(120, "2027-04-15")
@@ -73,5 +73,45 @@ describe("DayCalendar", () => {
     expect(screen.getByRole("status")).toHaveTextContent("These days are full. We'll call you to find one.")
     expect(screen.getByRole("link", { name: /\(970\) 692-7270/ })).toBeInTheDocument()
     expect(screen.queryByRole("grid")).toBeNull()
+  })
+
+  it("asks only for a day with timed off: every offer is open, no times show, and Your day is marked even when it is not offered", async () => {
+    const days = offers.map((o) => ({ ...o, times: [] }))
+    const picks: DayTimePick[] = []
+    render(<DayCalendar offers={days} value={{ day: "2027-04-15", start: null }} onChange={(p) => picks.push(p)} legend="Pick your day" timed={false} current="2027-04-14" />)
+    expect(screen.queryByRole("radio")).toBeNull()
+    const yours = screen.getByRole("button", { name: "Wednesday, April 14, your day, not open" })
+    expect(yours).toHaveAttribute("data-current", "true")
+    expect(screen.getByText("Your day")).toBeInTheDocument()
+    await userEvent.click(yours)
+    expect(picks).toEqual([])
+    await userEvent.click(screen.getByRole("button", { name: "Monday, April 19" }))
+    expect(picks).toEqual([{ day: "2027-04-19", start: null }])
+    // a day that was in the full list stays pressable though it had no times
+    expect(screen.getByRole("button", { name: "Wednesday, April 21" })).not.toHaveAttribute("aria-disabled")
+  })
+  it("marks the day the visit has now alongside the open days and the soonest", () => {
+    render(<DayCalendar offers={offers} value={{ day: "2027-04-19", start: null }} onChange={() => {}} legend="Pick your day" current="2027-04-19" />)
+    expect(screen.getByRole("button", { name: "Monday, April 19, your day" })).toHaveAttribute("data-current", "true")
+    expect(screen.getByText("Your day")).toBeInTheDocument()
+  })
+  it("in the office's mode any day from the first day may be chosen, Any time is first and held, and a Saturday offers the office's starts", async () => {
+    const picks: DayTimePick[] = []
+    function Office() {
+      const [pick, setPick] = useState<DayTimePick>({ day: "2027-04-17", start: null })
+      return <DayCalendar offers={[]} value={pick} onChange={(p) => (picks.push(p), setPick(p))} legend="Day" free={{ from: "2027-04-15", timesFor: () => OFFICE_STARTS }} anyTime />
+    }
+    render(<Office />)
+    expect(screen.queryByRole("status")).toBeNull()
+    expect(screen.queryByText("Soonest")).toBeNull()
+    expect(screen.getByRole("button", { name: "Saturday, April 17" })).toHaveAttribute("aria-pressed", "true")
+    const times = screen.getAllByRole("radio")
+    expect(times).toHaveLength(OFFICE_STARTS.length + 1)
+    expect(times[0]).toBeChecked()
+    expect(screen.getByRole("button", { name: "Wednesday, April 14, not available" })).toHaveAttribute("aria-disabled", "true")
+    await userEvent.click(screen.getByRole("radio", { name: "9:00 am" }))
+    expect(picks.at(-1)).toEqual({ day: "2027-04-17", start: "09:00" })
+    await userEvent.click(screen.getByRole("radio", { name: "Any time" }))
+    expect(picks.at(-1)).toEqual({ day: "2027-04-17", start: null })
   })
 })

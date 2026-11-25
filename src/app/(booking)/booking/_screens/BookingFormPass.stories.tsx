@@ -6,7 +6,7 @@ import { BookingForm, type BookingFormProps } from "./BookingForm"
 
 // The Season Pass path of the booking form, over fixtures at 375 (Phone) and 1280 (Laptop); nothing is sent. The pass can be bought whenever, and it holds each kind's next visit (docs/plans/2026-11-20-season-pass-booking-research.md,
 // Hannah's decisions of Nov 20 to 22 2026): a visit whose window is open now or opens within a month (April for the spring turn-on, September and October for the blowout) is booked with an exact day and time on a calendar;
-// every other visit takes Our recommended, Early season or Late season by name and is scheduled about two weeks before. No opening day is shown anywhere: the windows are the scheduler's settings (turn-on May 1 to 31,
+// every other visit takes Our recommended, Early season or Late season by name and is scheduled about two weeks before. No opening day is shown anywhere: the windows are the scheduler's settings (turn-on April 15 to May 31,
 // blowout October 1 to November 15) and the dates are not confirmed. The pass is a SETUP, not an order: each visit shows what it costs and the card says when it is charged. One purchase per story: January (two preferences),
 // April (the turn-on now, the blowout a preference), July (the blowout and next spring's turn-on, both preferences), October (the blowout now, next spring's turn-on a preference), November 20 (next season).
 const phone = { globals: { viewport: { value: "phone", isRotated: false } } } as const
@@ -61,8 +61,8 @@ export const AprilServicesLaptop = servicesApril.laptop
 /** The pass's Details: the zones and what each visit costs at them; nothing is charged at sign-up. */
 const detailsApril = on(at("april", { step: "details" }), "April, details", {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("About $145")).toBeInTheDocument()
-    await expect(canvas.getByText("About $115")).toBeInTheDocument()
+    await expect(canvas.getByText("$145")).toBeInTheDocument()
+    await expect(canvas.getByText("$115")).toBeInTheDocument()
     await expect(canvas.queryByRole("switch")).toBeNull()
   },
 })
@@ -91,14 +91,14 @@ const servicesNovember = on(at("november", { step: "service" }), "November, serv
 export const NovemberServicesPhone = servicesNovember.phone
 export const NovemberServicesLaptop = servicesNovember.laptop
 
-/** 2. April, the turn-on now: a calendar day and an exact time for the visit that is open (the blowout is not asked a day). It starts in May, so the calendar opens on May. */
+/** 2. April, the turn-on now: a calendar day and an exact time for the visit that is open (the blowout is not asked a day). Today is April 14 and the window opens April 15, so the calendar opens on April with that day the soonest. */
 const dayApril = on(at("april", { step: "day" }), "April, day", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Spring turn-on" })).toBeInTheDocument()
     await expect(canvas.queryByRole("heading", { name: "Fall blowout" })).toBeNull()
-    await expect(canvas.getByText("May 2027")).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: /Monday, May 3, soonest/ })).toHaveAttribute("aria-pressed", "true")
-    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await expect(canvas.getByText("April 2027")).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /Thursday, April 15, soonest/ })).toHaveAttribute("aria-pressed", "true")
+    await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
   },
 })
 export const AprilDayPhone = dayApril.phone
@@ -118,13 +118,13 @@ export const OctoberDayLaptop = dayOctober.laptop
 const prefApril = on(at("april", { step: "preference", picks: picked }), "April, preference", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Fall blowout" })).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: "Our recommended" })).toHaveAttribute("aria-pressed", "true")
-    await expect(canvas.getByRole("button", { name: "Early season" })).toHaveAttribute("aria-pressed", "false")
-    await expect(canvas.getByRole("button", { name: "Late season" })).toHaveAttribute("aria-pressed", "false")
+    await expect(canvas.getByRole("button", { name: /^Our recommended/ })).toHaveAttribute("aria-pressed", "true")
+    await expect(canvas.getByRole("button", { name: /^Early season/ })).toHaveAttribute("aria-pressed", "false")
+    await expect(canvas.getByRole("button", { name: /^Late season/ })).toHaveAttribute("aria-pressed", "false")
     await expect(canvas.getByText("We'll schedule it about two weeks before and tell you the day.")).toBeInTheDocument()
-    await expect(canvas.getByText("Early October")).toBeInTheDocument()
-    await expect(canvas.getByText("Mid October")).toBeInTheDocument()
-    await expect(canvas.getByText("Late October")).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /Early October$/ })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /Mid October$/ })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /Late October$/ })).toBeInTheDocument()
     await expect(canvas.queryByText(/freeze/)).toBeNull()
   },
 })
@@ -176,8 +176,8 @@ const confirmApril = on(at("april", { step: "confirm", picks: picked, prefs: { b
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Preference: Early season, early October")).toBeInTheDocument()
     await expect(canvas.getByText(/Tuesday, May 4 at 10:30 am/)).toBeInTheDocument()
-    await expect(canvas.getByText("About $145")).toBeInTheDocument()
-    await expect(canvas.getByText("About $115")).toBeInTheDocument()
+    await expect(canvas.getByText("$145")).toBeInTheDocument()
+    await expect(canvas.getByText("$115")).toBeInTheDocument()
     await expect(canvas.getByText(/We schedule your visits every season/)).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: "Set up my Season Pass" })).toBeEnabled()
     await expect(canvas.getByText("Visa ending 4242")).toBeInTheDocument()
@@ -245,7 +245,8 @@ export const WholePassPathPhoneTest: Story = {
     await userEvent.type(await c.findByRole("combobox", { name: "Street address" }), "123")
     await userEvent.click((await c.findAllByRole("option"))[0]!)
     await next()
-    await userEvent.click(await c.findByRole("button", { name: "Choose Season Pass 2027" }))
+    await userEvent.click(await c.findByRole("button", { name: /^Season Pass 2027/ }))
+    await userEvent.click(await c.findByRole("button", { name: "Choose this service" }))
     await next()
     await userEvent.click((await c.findAllByRole("radio", { name: /^Yes/ }))[0]!)
     await next()
@@ -253,7 +254,7 @@ export const WholePassPathPhoneTest: Story = {
     await userEvent.click((await c.findAllByRole("radio", { name: /\d:\d\d [ap]m/ }))[0]!)
     await next()
     await expect(await c.findByRole("heading", { level: 1, name: "Fall blowout" })).toBeInTheDocument()
-    await userEvent.click(await c.findByRole("button", { name: "Late season" }))
+    await userEvent.click(await c.findByRole("button", { name: /^Late season/ }))
     await next()
     await userEvent.type(await c.findByLabelText("First name"), "Andrea")
     await userEvent.type(await c.findByLabelText("Last name"), "Dalton")
@@ -265,7 +266,7 @@ export const WholePassPathPhoneTest: Story = {
     await expect(await c.findByText("Preference: Late season, late October")).toBeInTheDocument()
     // the only Change links are here; a Change comes back to this step when the customer continues
     await userEvent.click(await c.findByRole("button", { name: "Change fall blowout" }))
-    await userEvent.click(await c.findByRole("button", { name: "Our recommended" }))
+    await userEvent.click(await c.findByRole("button", { name: /^Our recommended/ }))
     await next()
     await expect(await c.findByText("Preference: Our recommended, mid October")).toBeInTheDocument()
     await next("Set up my Season Pass")

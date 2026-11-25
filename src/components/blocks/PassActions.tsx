@@ -6,6 +6,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import type { Pass, PassVisit, TimingPreference } from "@/lib/admin/types"
 import { preferenceOf, writtenDate } from "@/lib/admin/format"
 import { cn } from "@/lib/utils"
+import { optionClass } from "./option-styles"
 import { PreferenceDialog } from "./PreferenceDialog"
 
 // The things that can be done to a live pass, the same for the customer on
@@ -144,10 +145,7 @@ function SkipVisitDialog({ pass, voice, onSkip }: { pass: Pass; voice: "customer
                     role="radio"
                     aria-checked={pressed}
                     onClick={() => setChosen(visit.kind)}
-                    className={cn(
-                      "flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-                      pressed ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40",
-                    )}
+                    className={cn(optionClass({ selected: pressed }), "flex items-center justify-between px-4 py-3 text-left")}
                   >
                     <span className="font-medium">{NAMES[visit.kind]}</span>
                     <span className={cn("text-sm", pressed ? "text-white/80" : "text-muted-foreground")}>{visit.scheduledAt ? writtenDate(visit.scheduledAt) : visit.window}</span>

@@ -4,7 +4,7 @@ import { PassEmptyScreen } from "./_screens/PassEmptyScreen"
 import { ctxFromAccount } from "@/lib/admin/api-ctx"
 import { requireCustomer } from "@/lib/auth/guard"
 import { loadPassPage } from "@/lib/pass/server/pass-page"
-import { addInspection, cancelPass, changePreference, pickDay, skipVisit, startCardUpdate } from "./actions"
+import { addInspection, cancelPass, changePreference, skipVisit, startCardUpdate } from "./actions"
 import { PassPageScreen } from "./_screens/PassPageScreen"
 
 export const metadata: Metadata = { title: "Your Season Pass" }
@@ -15,19 +15,17 @@ export const dynamic = "force-dynamic"
 export default async function PassPage() {
   const principal = await requireCustomer()
   // An admin who opens this page holds no pass of their own; `passes.list` would show them everyone's.
-  const data = principal.type === "customer" ? await loadPassPage(await ctxFromAccount()) : null
+  const data = principal.type === "customer" ? await loadPassPage(await ctxFromAccount(), { pickDays: false }) : null
   if (!data) return <PassEmptyScreen />
-  const { pass, passes, today, pickDays } = data
+  const { pass, passes, today } = data
   return (
     <PassPageScreen
       pass={pass}
       passes={passes}
       today={today}
-      pickDays={pickDays}
       onCancel={cancelPass.bind(null, pass.id)}
       onUpdateCard={startCardUpdate.bind(null, pass.id)}
       onChangePreference={changePreference.bind(null, pass.id)}
-      onPickDay={pickDay.bind(null, pass.id)}
       onAddInspection={addInspection}
       onSkip={skipVisit}
     />

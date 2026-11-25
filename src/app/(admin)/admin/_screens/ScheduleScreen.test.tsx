@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import { weekOf } from "@/lib/admin/calendar"
+import { longDay } from "@/lib/portal/words"
 import { ScheduleScreen } from "./ScheduleScreen"
 import { VISITS_TODAY, visitsData } from "./visits-fixture"
 import { visitRows } from "./visits-model"
@@ -31,6 +32,13 @@ const cell = (person: string, day: string) => document.querySelector<HTMLElement
 const percy = (el: HTMLElement) => within(el).getByRole("button", { name: /Percy/ })
 
 async function pick(user: ReturnType<typeof userEvent.setup>, trigger: string, option: string) {
+  // the person is a select; the day is the one calendar in a popover (the option is "Fri 13": the weekday and the day of the month)
+  if (trigger === "Move to day") {
+    await user.click(screen.getByRole("button", { name: new RegExp(`^${trigger}`) }))
+    const [, weekday, day] = /^(\w+) (\d+)$/.exec(option)!
+    await user.click(await screen.findByRole("button", { name: new RegExp(`^${weekday}\\w*, November ${day}(,|$)`) }))
+    return
+  }
   await user.click(screen.getByRole("combobox", { name: trigger }))
   await user.click(await screen.findByRole("option", { name: option }))
 }
@@ -241,12 +249,12 @@ describe("ScheduleScreen's Unscheduled list", () => {
   })
 
   it("shows a refused Place's sentence under that row only, in the API's words", async () => {
-    const onMove = vi.fn().mockResolvedValue({ ok: false, message: "A turn-on visit must land between 2027-04-26 and 2027-05-31" })
+    const onMove = vi.fn().mockResolvedValue({ ok: false, message: "A turn-on visit must land between 2027-04-15 and 2027-05-31" })
     render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} textDelaySeconds={0} />)
     const name = within(rows()[0]).getByRole("button", { name: /^Schedule / }).getAttribute("aria-label")!
     await userEvent.click(within(rows()[0]).getByRole("button", { name: /^Schedule / }))
     const problem = await within(document.querySelector<HTMLElement>('[data-slot="to-schedule-tray"]')!).findByRole("alert", {}, { timeout: 5000 })
-    expect(problem).toHaveTextContent("A turn-on job must land between April 26 and May 31")
+    expect(problem).toHaveTextContent("A turn-on job must land between April 15 and May 31")
     // It sits under the row of the job that was refused.
     expect(problem.closest("li")).toContainElement(screen.getByRole("button", { name }))
     // Nowhere else: the status line is empty, and the other rows carry nothing.
@@ -334,7 +342,7 @@ describe("ScheduleScreen views and New job from a day", () => {
     const sheet = within(await screen.findByRole("dialog"))
     expect(sheet.getByText(new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" }))).toBeInTheDocument()
     await userEvent.selectOptions(sheet.getByLabelText("What are we doing?"), "repair")
-    expect(sheet.getByLabelText("Day (optional)")).toHaveValue(day)
+    expect(sheet.getByRole("button", { name: `Day (optional), ${longDay(day)} at any time` })).toBeInTheDocument()
   })
 
   it("each week column has New job with its own day filled in, and a tech gets none", async () => {
@@ -430,7 +438,7 @@ describe("ScheduleScreen drag of a promised time", () => {
     expect(within(section("person_truck-1")).getByText("Percy", { exact: false })).toBeInTheDocument()
     const dialog = within(await screen.findByRole("dialog"))
     expect(dialog.getByText("With Tech Two.")).toBeInTheDocument()
-    expect(dialog.getByLabelText("Day")).toHaveValue("2026-11-12")
+    expect(dialog.getByRole("button", { name: /^Thursday, November 12/, pressed: true })).toBeInTheDocument()
     await userEvent.click(dialog.getByRole("button", { name: "More ways to move" }))
     expect(await screen.findByRole("menuitem", { name: "Move without texting" })).toHaveAttribute("aria-disabled", "true")
     await userEvent.keyboard("{Escape}")

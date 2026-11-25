@@ -81,6 +81,8 @@ export function changeFor(f: ChangeFacts, now: Date): { reschedule: ChangeState;
     if (f.scheduledOn < mountainDayOf(now)) return NONE
     if (withinCutoff(f, now)) return { reschedule: "text", cancel: "text" }
   }
+  // A visit with no day is scheduled by us ("about two weeks before"), never picked by the customer: only a scheduled visit can be moved online.
+  if (f.status === "unscheduled") return { reschedule: "no", cancel: "yes" }
   return { reschedule: f.hasWindow ? "yes" : "text", cancel: "yes" }
 }
 

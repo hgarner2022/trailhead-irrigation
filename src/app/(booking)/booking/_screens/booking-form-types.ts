@@ -22,7 +22,7 @@ export interface Booked {
   phone: string
   channel: ContactChannel
   photos: number
-  /** ticked "Send me tips and offers from Trailhead by email" */
+  /** the booking is the opt-in for tips and offers by email (Hannah, Nov 25 2026: "we get this by booking"); always true here, and recorded in `consent` */
   marketing: boolean
   /** "Visa ending 4242" or "No card" */
   card: string
@@ -30,8 +30,8 @@ export interface Booked {
   onFile: boolean
   /** the address is on file but the email typed is not the one on file: it still books, as the same property, and the office is told ("Email differs from the one on file") */
   emailDiffers: boolean
-  /** agreement to the booking terms and the Trailhead terms of service, recorded when Continue was pressed on the contact step: the version, the time and where it was given (the consent source "booking") */
-  terms: { version: string; acceptedAt: string; source: "booking" }
+  /** what pressing Continue on the contact step gave, recorded then and appended to the customer's consent history: agreement to the booking terms and the Trailhead terms of service (version and time), tips and offers by email as given, marketing texts never. Source "booking" (shown as "booking form"). */
+  consent: { termsVersion: string; at: string; source: "booking"; marketingEmail: true; marketingText: false }
 }
 
 /** What a request for a quote holds when "Send to Ryan" is pressed: the person's own words, photos and address (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.3). It becomes a request in the admin, held outside Customers until Ryan accepts it. */
@@ -72,6 +72,8 @@ export interface BookingFormProps {
   offersFor?: OffersFor
   /** the property Trailhead already holds for a picked address, found by its normalized street and ZIP; the stand-in knows one, the live form asks the server. Nothing personal comes back from it. */
   known?: (place: PlaceSuggestion) => KnownProperty | null
+  /** Storybook only: prototype helpers (the note that the card form is drawn, "Add 2 sample photos"). Off in the customer screen. */
+  prototype?: boolean
   places?: PlaceProvider
   /** told once when a day is booked */
   onBooked?: (booked: Booked) => void

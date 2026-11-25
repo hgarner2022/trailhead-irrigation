@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { DIALOG_DESTRUCTIVE, DIALOG_TITLE } from "./dialog-styles"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { ADD_IT_BACK, CANCEL_CHANGED_MIND, CANCELED_DONE } from "@/lib/portal/words"
@@ -61,7 +62,7 @@ export function CancelVisitSheet({ service, dayWords, consequence, textHref, onC
         {done ? (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-navy">{CANCELED_DONE}</DialogTitle>
+              <DialogTitle className={DIALOG_TITLE}>{CANCELED_DONE}</DialogTitle>
               <DialogDescription className="text-base">
                 {`${CANCEL_CHANGED_MIND} `}
                 <a href={textHref} className="font-semibold text-primary-deep underline underline-offset-2">
@@ -72,14 +73,14 @@ export function CancelVisitSheet({ service, dayWords, consequence, textHref, onC
             </DialogHeader>
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline">Done</Button>
+                <Button variant="outline" className="min-h-11">Done</Button>
               </DialogClose>
             </DialogFooter>
           </>
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-navy">{`Cancel your ${service.toLowerCase()}?`}</DialogTitle>
+              <DialogTitle className={DIALOG_TITLE}>{`Cancel your ${service.toLowerCase()}?`}</DialogTitle>
               <DialogDescription className="text-base">{dayWords}</DialogDescription>
             </DialogHeader>
             <p className="text-base text-foreground">{consequence}</p>
@@ -92,13 +93,13 @@ export function CancelVisitSheet({ service, dayWords, consequence, textHref, onC
                 {`${error} Try again, or text Ryan.`}
               </p>
             )}
-            <DialogFooter className="gap-2 sm:flex-col sm:space-x-0">
-              <Button onClick={confirm} disabled={busy} className="bg-destructive text-white hover:bg-destructive/90">
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline" className="min-h-11">Keep my visit</Button>
+              </DialogClose>
+              <Button onClick={confirm} disabled={busy} className={DIALOG_DESTRUCTIVE}>
                 Cancel visit
               </Button>
-              <DialogClose asChild>
-                <Button variant="ghost">Keep my visit</Button>
-              </DialogClose>
             </DialogFooter>
           </>
         )}

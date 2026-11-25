@@ -3,9 +3,7 @@
 import { useId, useState } from "react"
 import { ContactPreference, type ContactChannel } from "@/components/blocks/ContactPreference"
 import { FormRow } from "@/components/blocks/FormRow"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { emailSuggestion } from "@/lib/email-check"
 import { cn } from "@/lib/utils"
 import type { CheckoutFields } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
@@ -31,6 +29,8 @@ export interface BookingContactProps {
   channel: ContactChannel
   onChannel: (c: ContactChannel) => void
   attempted: boolean
+  /** the name and phone were filled in from what we hold, once the typed email was the one on file: they settle in with one small scale */
+  filled?: boolean
 }
 
 /** The one line above the Back and Continue bar on the contact step of a booking: agreement is pressing Continue. Never a box, never an error. */
@@ -50,7 +50,7 @@ export function TermsLine() {
   )
 }
 
-export function BookingContact({ fields, set, channel, onChannel, attempted }: BookingContactProps) {
+export function BookingContact({ fields, set, channel, onChannel, attempted, filled = false }: BookingContactProps) {
   const id = useId()
   const [touched, setTouched] = useState<Set<string>>(() => new Set())
   return (
@@ -61,7 +61,7 @@ export function BookingContact({ fields, set, channel, onChannel, attempted }: B
           const shown = problem !== null && (attempted || touched.has(field.key))
           const slip = field.key === "email" && !shown ? emailSuggestion(fields.email) : null
           return (
-            <div key={field.key} className={cn(!field.half && "col-span-2")}>
+            <div key={field.key} className={cn(!field.half && "col-span-2", filled && field.key !== "email" && "settle")}>
               <FormRow label={field.label} error={shown ? (problem ?? undefined) : undefined}>
                 <Input
                   name={field.key}
@@ -89,14 +89,6 @@ export function BookingContact({ fields, set, channel, onChannel, attempted }: B
         })}
       </div>
       <ContactPreference value={channel} onChange={onChannel} name={`${id}-preference`} />
-      <div data-slot="booking-marketing" className="flex items-start gap-3 border-t border-border pt-6">
-        <Checkbox id={`${id}-marketing`} name="marketingEmail" checked={fields.marketingEmail} onCheckedChange={(c) => set("marketingEmail", c === true)} className="mt-1 size-5" />
-        <div>
-          <Label htmlFor={`${id}-marketing`} className="inline text-base font-normal leading-snug text-foreground">
-            Send me tips and offers from Trailhead by email
-          </Label>
-        </div>
-      </div>
     </div>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
+import { optionClass } from "@/components/blocks/option-styles"
 import { Textarea } from "@/components/ui/textarea"
 import { AddressSearch } from "@/components/blocks/AddressSearch"
 import { SERVICE_ZIPS, isTypedPlace, needsDetails, serviceability, type PlaceProvider, type PlaceSuggestion } from "@/lib/places"
@@ -131,10 +132,7 @@ export function AddressStep({ state, attempted, onType, onPick, set, places = fi
                   data-slot="access-choice"
                   data-invalid={(accessMissing && i === 0) || undefined}
                   onClick={() => set("access", choice.value)}
-                  className={cn(
-                    "flex min-h-20 cursor-pointer flex-col items-start justify-center rounded-lg border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
-                    pressed ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40",
-                  )}
+                  className={cn(optionClass({ selected: pressed }), "flex min-h-20 flex-col items-start justify-center px-4 py-3 text-left")}
                 >
                   <span className="font-display text-2xl leading-none">{choice.name}</span>
                   <span className={cn("mt-1.5 text-sm", pressed ? "text-white/80" : "text-muted-foreground")}>{choice.detail}</span>

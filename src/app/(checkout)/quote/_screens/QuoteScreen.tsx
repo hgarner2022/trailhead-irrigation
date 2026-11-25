@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { CheckCircle2, MessageSquareText, Phone } from "lucide-react"
+import { Check, MessageSquareText, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { BUSINESS } from "@/emails/format"
@@ -104,7 +104,7 @@ function Approved({ quote, depositPaid, cardSaved, onAddCard }: Pick<QuoteScreen
       <Lines quote={quote} />
       <Total quote={quote} deposit={false} />
       <p data-slot="quote-approved" className="mt-6 flex items-center gap-2 text-base font-medium text-positive-deep">
-        <CheckCircle2 className="size-5 shrink-0 text-positive" aria-hidden />
+        <Check className="size-5 shrink-0 text-positive" aria-hidden />
         Approved
       </p>
       {depositPaid && quote.deposit ? (
@@ -125,7 +125,7 @@ function Approved({ quote, depositPaid, cardSaved, onAddCard }: Pick<QuoteScreen
           </Button>
         </div>
       )}
-      <Button asChild variant="ghost" size="lg" className="mt-2 w-full">
+      <Button asChild variant="link" size="lg" className="mt-2 w-full font-semibold text-primary-deep underline underline-offset-2">
         <a href="/account">Open your Trailhead account</a>
       </Button>
     </>

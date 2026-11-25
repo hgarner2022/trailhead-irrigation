@@ -32,13 +32,12 @@ export const Default: Story = {
 /** The first step: no Back. */
 export const Empty: Story = { args: { step: 1, question: "What can we do for you?" } }
 
-/** Continue is off, and the hint says what is missing. */
-export const ContinueOff: Story = {
-  args: { question: "Pick your day", hint: "Tap a start time to continue.", nextDisabled: true },
+/** Continue is never off for a missing answer and nothing stands above it (Hannah, Nov 25 2026); only the optional legal line can. */
+export const WithLegal: Story = {
+  args: { question: "Contact", legal: <p className="basis-full text-sm text-muted-foreground">By continuing, you agree to the booking terms.</p> },
 }
 
 export const Phone: Story = {
-  args: { hint: "Tap a start time to continue.", nextDisabled: true },
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 

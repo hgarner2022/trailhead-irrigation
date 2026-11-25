@@ -2,6 +2,7 @@
 
 import { MAX_ZONES, MIN_ZONES } from "@/lib/season-pass"
 import { cn } from "@/lib/utils"
+import { optionClass } from "./option-styles"
 
 // How many zones the system has (the booking form's service details, the Season Pass checkout's zones step): one chip per count from six up, "Up to 6" the first. The count decides the price
 // and the visit's length, so the form shows the price right under it. A row of 48px buttons that wraps, each pressed state read aloud. Controlled; pure props, client component.
@@ -27,10 +28,7 @@ export function ZoneChips({ value, onChange, min = MIN_ZONES, max = MAX_ZONES, c
             aria-pressed={pressed}
             aria-label={`${zones === min ? "Up to " : ""}${zones} zones`}
             onClick={() => onChange(zones)}
-            className={cn(
-              "size-12 cursor-pointer rounded-lg border font-display text-xl tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
-              pressed ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40",
-            )}
+            className={cn(optionClass({ selected: pressed }), "size-12 font-display text-xl tabular-nums")}
           >
             {zones}
           </button>

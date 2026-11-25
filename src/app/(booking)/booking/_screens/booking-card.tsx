@@ -24,15 +24,20 @@ export interface BookingCardProps {
   /** the customer chose a different card, so the form shows even though one is on file */
   other?: boolean
   onOther?: (other: boolean) => void
+  /** Storybook only: the dashed note that says the card form is drawn. Never in the customer screen. */
+  prototype?: boolean
 }
 
-export function BookingCard({ saved, pass, onSkip, onFile, other = false, onOther }: BookingCardProps) {
+/** A text action beside the form ("Use a different card", "Not now"): the button set's `link` variant, underlined, 44px tall. */
+const TEXT_ACTION = "h-auto min-h-11 px-0 text-base font-semibold text-primary-deep underline underline-offset-2"
+
+export function BookingCard({ saved, pass, onSkip, onFile, other = false, onOther, prototype = false }: BookingCardProps) {
   const useFile = Boolean(onFile) && !other
   return (
     <div data-slot="booking-card" className="space-y-6">
       {useFile ? (
         <p data-slot="card-on-file" className="flex items-center gap-3 rounded-lg border-2 border-navy bg-background px-4 py-4 text-lg text-foreground">
-          <Check aria-hidden className="size-5 shrink-0 text-success" />
+          <Check aria-hidden className="size-5 shrink-0 text-positive" />
           <span>
             <span className="block text-sm text-muted-foreground">{CARD_ON_FILE_WORDS.use}</span>
             {onFile}
@@ -40,7 +45,7 @@ export function BookingCard({ saved, pass, onSkip, onFile, other = false, onOthe
         </p>
       ) : saved ? (
         <p data-slot="card-saved" className="flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-4 text-lg text-foreground">
-          <Check aria-hidden className="size-5 shrink-0 text-success" />
+          <Check aria-hidden className="size-5 shrink-0 text-positive" />
           {CARD_SAVED}
         </p>
       ) : (
@@ -53,13 +58,15 @@ export function BookingCard({ saved, pass, onSkip, onFile, other = false, onOthe
               <div className={BOX}>CVC</div>
             </div>
           </div>
-          <p data-slot="card-drawn" className="rounded-md border border-dashed border-border bg-stone px-3 py-2 text-sm text-muted-foreground">
-            Stripe&apos;s card form is drawn here. No card is entered.
-          </p>
+          {prototype && (
+            <p data-slot="card-drawn" className="rounded-md border border-dashed border-border bg-stone px-3 py-2 text-sm text-muted-foreground">
+              Stripe&apos;s card form is drawn here. No card is entered.
+            </p>
+          )}
         </div>
       )}
       {onFile && onOther && (
-        <Button type="button" variant="ghost" onClick={() => onOther(!other)} className="h-auto min-h-11 px-0 text-base font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent">
+        <Button type="button" variant="link" onClick={() => onOther(!other)} className={TEXT_ACTION}>
           {other ? CARD_ON_FILE_WORDS.use : CARD_ON_FILE_WORDS.other}
         </Button>
       )}
@@ -67,7 +74,7 @@ export function BookingCard({ saved, pass, onSkip, onFile, other = false, onOthe
         {cardCharged(pass)}
       </p>
       {!pass && !saved && !useFile && (
-        <Button type="button" variant="ghost" onClick={onSkip} className="h-auto min-h-11 px-0 text-base font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent">
+        <Button type="button" variant="link" onClick={onSkip} className={TEXT_ACTION}>
           Not now
         </Button>
       )}
