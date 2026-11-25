@@ -109,12 +109,12 @@ h1, h2, h3 {
      to 600ms only for large areas; exits shorter than entrances), NN/g "Executing UX Animations: Duration and Motion
      Characteristics" (100 to 500ms, ease-out or ease-in-out, never linear), Apple HIG Motion (brief, in answer to
      the person's action, off under Reduce Motion). */
-  --motion-card-step: 100ms;
-  --motion-card-fill: 280ms;
-  --motion-card-open: 400ms;
-  --motion-card-close: 260ms;
-  --motion-card-line: 260ms;
-  --motion-card-stagger: 40ms;
+  --motion-card-step: 160ms;
+  --motion-card-fill: 450ms;
+  --motion-card-open: 650ms;
+  --motion-card-close: 400ms;
+  --motion-card-line: 420ms;
+  --motion-card-stagger: 60ms;
   --motion-card-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
