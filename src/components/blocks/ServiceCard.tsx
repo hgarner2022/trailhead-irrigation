@@ -70,7 +70,7 @@ export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCar
       data-slot="service-entry"
       data-kind={entry.kind}
       data-selected={selected || undefined}
-      className={cn("svc-card scroll-mt-4 scroll-mb-28 overflow-hidden rounded-lg border bg-background sm:scroll-mb-6", optionFocusWithin, selected ? "border-navy ring-1 ring-navy" : cn("border-border shadow-sm hover:border-navy/40 hover:shadow-md", pass && "border-t-2 border-t-primary"))}
+      className={cn("svc-card scroll-mt-4 scroll-mb-28 overflow-hidden rounded-lg border bg-background sm:scroll-mb-6", optionFocusWithin, selected ? "border-navy" : cn("border-border shadow-sm hover:border-navy/40 hover:shadow-md", pass && "border-t-2 border-t-primary"))}
     >
       <button
         type="button"
@@ -93,9 +93,9 @@ export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCar
           <span className="block type-option text-balance">{entry.name}</span>
           {meta && <span className={cn("svc-fade mt-1 block text-sm leading-5 whitespace-nowrap tabular-nums", optionDetailClass(selected))}>{meta}</span>}
         </span>
-        <span data-slot="service-ring" aria-hidden className={cn("svc-fade flex size-6 shrink-0 items-center justify-center rounded-full border-2", selected ? "border-white" : "border-navy/30")}>
-          {selected && <span data-slot="service-dot" className="svc-dot size-2.5 rounded-full bg-white" />}
-        </span>
+        {!selected && (
+          <span data-slot="service-ring" aria-hidden className="svc-fade flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-navy/30" />
+        )}
       </button>
       <div ref={panel} id={`${id}-panel`} role="region" aria-label={entry.name} aria-hidden={!selected} inert={!selected} data-slot="service-panel" data-open={selected || undefined} className="svc-panel">
         <div>

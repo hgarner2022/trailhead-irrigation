@@ -60,9 +60,9 @@ suite("ServicePicker", () => {
     expect(within(region).getByText("About 2 hours")).toBeInTheDocument()
     expect(within(region).getByText("$145")).toBeInTheDocument()
     expect(within(region).queryByRole("button")).toBeNull()
-    // exactly one dot, inside the chosen card's ring, and never a tick badge; only the chosen card is open
-    expect(document.querySelectorAll("[data-slot=service-dot]")).toHaveLength(1)
-    expect(repair.querySelector("[data-slot=service-ring] [data-slot=service-dot]")).not.toBeNull()
+    // the chosen card carries no mark at all (the navy header and the open detail say it): no ring, no dot, no badge; only the chosen card is open
+    expect(document.querySelectorAll("[data-slot=service-dot]")).toHaveLength(0)
+    expect(repair.querySelector("[data-slot=service-ring]")).toBeNull()
     expect(repair.querySelector("svg[data-slot=tick], [data-slot=service-check]")).toBeNull()
     // what is included is marked by the one thin tick, in ink: never green or orange
     rerender(<ServicePicker entries={SERVICES} value="spring-turn-on" onChange={onChange} />)
