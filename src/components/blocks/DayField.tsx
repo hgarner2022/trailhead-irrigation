@@ -53,7 +53,7 @@ export function DayField({ label, value, start = "", onChange, from, to, timed =
           aria-controls={panel}
           aria-label={`${label}, ${words}`}
           onClick={() => setOpen(!open)}
-          className="flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg border border-input bg-background px-3 text-left text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 md:text-sm"
+          className="flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg border border-input bg-background px-3 text-left text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
         >
           <CalendarDays aria-hidden className="size-4 shrink-0 text-muted-foreground" />
           <span className={cn("min-w-0 flex-1 truncate", !value && "text-muted-foreground")}>{words}</span>
@@ -126,7 +126,7 @@ export function DayPopoverField({ id, label, value, onChange, from, to, yearless
           id={id}
           type="button"
           aria-label={`${label}, ${words}`}
-          className={cn("flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg border border-input bg-background px-3 text-left text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 md:min-h-9 md:text-sm", className)}
+          className={cn("flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg border border-input bg-background px-3 text-left text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-9 md:text-sm", className)}
         >
           <CalendarDays aria-hidden className="size-4 shrink-0 text-muted-foreground" />
           <span className={cn("min-w-0 flex-1 truncate", !value && "text-muted-foreground")}>{words}</span>

@@ -63,7 +63,7 @@ export function ReminderDialog({ who, invoice, onClose, onSend }: ReminderDialog
               <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{email.split("\n").slice(0, FIRST_LINES).join("\n")}</p>
             </div>
           )}
-          <Link href="/admin/settings?tab=messages" className="inline-flex min-h-11 items-center self-start rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+          <Link href="/admin/settings?tab=messages" className="inline-flex min-h-11 items-center self-start rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             Edit the wording in Settings
           </Link>
         </div>

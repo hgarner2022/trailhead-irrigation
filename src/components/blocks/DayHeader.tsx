@@ -35,7 +35,7 @@ export function DayHeader({ label, day, today, fill, towns, onNewJob, className 
             aria-label={`New job on ${label}`}
             title="New job"
             onClick={() => onNewJob(day)}
-            className="-my-1.5 flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-cream hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            className="-my-1.5 flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-cream hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Plus className="size-4" aria-hidden />
           </button>

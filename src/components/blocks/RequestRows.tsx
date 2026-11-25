@@ -35,7 +35,7 @@ export interface RequestRowsProps {
   className?: string
 }
 
-const LINK = "-mx-2 flex min-h-11 min-w-0 flex-1 items-start gap-3 rounded-lg px-2 py-1 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+const LINK = "-mx-2 flex min-h-11 min-w-0 flex-1 items-start gap-3 rounded-lg px-2 py-1 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 
 function Body({ icon: Icon, tone, name, message, sub, since }: { icon: LucideIcon; tone: string; name: string; message: string; sub: string; since: string }) {
   return (

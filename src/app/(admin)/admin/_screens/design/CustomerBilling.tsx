@@ -15,7 +15,7 @@ import type { CustomerBillingData } from "./customer-fixtures"
 // Open in Stripe leaves the app), then "Invoices and payments" (a paid invoice and its payment are one row) and "Payments" for the ones with no
 // invoice. Refund is under More on a payment row. Nothing here shows a result: an action's result is a toast and the table gains a row. Pure props.
 
-const LINK = "inline-flex min-h-11 items-center gap-1 rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+const LINK = "inline-flex min-h-11 items-center gap-1 rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 
 export interface CustomerBillingProps {
   billing: CustomerBillingData

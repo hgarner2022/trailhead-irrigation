@@ -83,7 +83,7 @@ export function RecordPreview({ data, onOpen, className }: RecordPreviewProps) {
           ))}
         </dl>
       )}
-      <Link href={data.href} onClick={open} className="mt-2 flex min-h-11 items-center rounded-sm text-sm font-semibold text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+      <Link href={data.href} onClick={open} className="mt-2 flex min-h-11 items-center rounded-sm text-sm font-semibold text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         {data.openLabel}
       </Link>
     </section>

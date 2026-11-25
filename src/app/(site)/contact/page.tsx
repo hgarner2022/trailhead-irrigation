@@ -133,7 +133,7 @@ export default function ContactPage() {
                     <select
                       id="service"
                       name="service"
-                      className="h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                      className="h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       required
                     >
                       <option value="">Select a service...</option>

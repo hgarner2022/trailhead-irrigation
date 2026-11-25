@@ -130,7 +130,7 @@ function PersonAndTimes({ day, people, setPeople, stops, starts, at, minutes, pi
           {PEOPLE.map((p) => {
             const on = people.includes(p)
             return (
-              <button key={p} type="button" role="checkbox" aria-checked={on} onClick={() => setPeople(on ? (people.length > 1 ? people.filter((x) => x !== p) : people) : [...people, p])} className={cn("min-h-11 rounded-full border px-3 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", on ? "border-primary bg-primary/10" : "border-input text-muted-foreground")}>
+              <button key={p} type="button" role="checkbox" aria-checked={on} onClick={() => setPeople(on ? (people.length > 1 ? people.filter((x) => x !== p) : people) : [...people, p])} className={cn("min-h-11 rounded-full border px-3 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", on ? "border-primary bg-primary/10" : "border-input text-muted-foreground")}>
                 {p}
               </button>
             )

@@ -49,7 +49,7 @@ export function TripRow({ title, detail, pills, money, moneyTone, actions = [], 
   return (
     <li data-slot="trip-row" data-open={onToggle ? Boolean(open) : undefined} className={cn("flex flex-col py-2", className)}>
       {onToggle ? (
-        <button type="button" aria-expanded={Boolean(open)} onClick={onToggle} className={cn("flex w-full items-start rounded-sm text-left hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", RECORD_ROW)}>
+        <button type="button" aria-expanded={Boolean(open)} onClick={onToggle} className={cn("flex w-full items-start rounded-sm text-left hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", RECORD_ROW)}>
           {head}
         </button>
       ) : (

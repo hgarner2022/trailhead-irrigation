@@ -91,7 +91,7 @@ export function TodayVisits({ view, areas, next, className }: TodayVisitsProps) 
         {next && (
           <p data-slot="today-next" className="text-center text-sm text-muted-foreground">
             Next up:{" "}
-            <Link href={`/admin/schedule?day=${next.day}`} className="rounded-sm text-foreground underline underline-offset-4 hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+            <Link href={`/admin/schedule?day=${next.day}`} className="rounded-sm text-foreground underline underline-offset-4 hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               {next.heading}
             </Link>
           </p>

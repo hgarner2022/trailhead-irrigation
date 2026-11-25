@@ -101,7 +101,7 @@ function SortIcon({ sorted }: { sorted: false | "asc" | "desc" }) {
   return <Icon className={cn("size-3.5 shrink-0", sorted ? "text-primary-dark" : "text-muted-foreground")} aria-hidden />
 }
 
-const LINK = "cursor-pointer font-medium text-primary-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-primary/50"
+const LINK = "cursor-pointer font-medium text-primary-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring"
 
 export function DataGrid<T extends RowData>({
   columns,
@@ -172,7 +172,7 @@ export function DataGrid<T extends RowData>({
         data-scrollable={scrollable}
         data-more={more}
         className={cn(
-          "group relative overflow-hidden bg-background outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+          "group relative overflow-hidden bg-background outline-none focus-visible:ring-2 focus-visible:ring-ring",
           inCard ? "bg-transparent" : "rounded-lg border border-border shadow-sm",
           "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-30 after:w-10 after:bg-linear-to-r after:from-transparent after:to-background after:opacity-0 after:transition-opacity after:content-[''] data-[more=true]:after:opacity-100",
           "[&>[data-slot=table-container]]:max-h-[70vh] [&>[data-slot=table-container]]:overflow-auto",
@@ -196,7 +196,7 @@ export function DataGrid<T extends RowData>({
                         <button
                           type="button"
                           onClick={column.getToggleSortingHandler()}
-                          className="inline-flex cursor-pointer items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                          className="inline-flex cursor-pointer items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           <table.FlexRender header={header} />
                           {sorted && <span className="sr-only">, sorted {sorted === "asc" ? "ascending" : "descending"}</span>}

@@ -30,7 +30,7 @@ export function CityServiceNotes({ name, notes }: { name: string; notes: Record<
             <li key={s.href}>
               <Link
                 href={s.href}
-                className="group flex h-full flex-col gap-2 rounded-lg border border-border bg-background p-6 transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                className="group flex h-full flex-col gap-2 rounded-lg border border-border bg-background p-6 transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="font-display text-2xl font-semibold text-navy group-hover:text-primary transition-colors">{s.label}</h3>

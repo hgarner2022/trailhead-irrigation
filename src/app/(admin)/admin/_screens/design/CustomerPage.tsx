@@ -40,7 +40,7 @@ import { NOW, noteOk } from "./job-fixtures"
 // to reach them), Property, Consent. Every record named is a chip. Every action that reaches the customer or their money confirms in a dialog
 // with the effect and the customer's channel; a result is a toast, never a message in a section. Pure props, nothing wired.
 
-const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 export type CustomerDialog = "archive" | "message" | "collect" | "card-link" | "refund" | "remind" | "edit" | "merge" | "delete" | null
 
 const scrollTo = (id: string) => () => {

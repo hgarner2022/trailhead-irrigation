@@ -38,7 +38,7 @@ export interface FlowShellProps {
 const COLUMN = "mx-auto w-full max-w-[640px]"
 
 export function FlowShell({ question, step, total, children, notice, onBack, onNext, nextLabel = "Continue", legal, busy, done, homeHref = "/", onClose, className }: FlowShellProps) {
-  const closeClass = "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-base font-medium text-navy hover:bg-card focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
+  const closeClass = "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-base font-medium text-navy hover:bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
   const close = (
     <>
       <X aria-hidden className="size-5" />

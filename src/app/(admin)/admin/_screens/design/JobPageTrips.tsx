@@ -104,7 +104,7 @@ export function TripsPage({ data, customer, onTripDo, tripHandlers, onDo, onTrip
           {data.renewal && (
             <p data-slot="pass-renewal" className="mt-3 text-sm">
               {data.renewal.kind === "from" ? "Renewed from " : "Renewed as "}
-              <Link href={`/admin/jobs?job=${data.renewal.number}`} className="rounded-sm font-medium text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+              <Link href={`/admin/jobs?job=${data.renewal.number}`} className="rounded-sm font-medium text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 {data.renewal.number}
               </Link>
             </p>

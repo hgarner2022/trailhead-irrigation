@@ -27,7 +27,7 @@ export function InfoTip({ label, children, className }: InfoTipProps) {
             aria-label={label}
             data-slot="info-tip"
             onClick={() => setOpen((o) => !o)}
-            className={cn("-my-2 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", className)}
+            className={cn("-my-2 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", className)}
           >
             <Info aria-hidden className="size-4" />
           </button>

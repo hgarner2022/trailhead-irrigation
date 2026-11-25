@@ -62,7 +62,7 @@ function PassSeasons({ passes, today }: { passes: Pass[]; today: string }) {
       </div>
       {earlier.map((p) => (
         <details key={p.id} className="mt-4 border-t border-border pt-2" data-slot="customer-pass-earlier">
-          <summary className="flex min-h-11 cursor-pointer items-center font-display text-lg text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">{`${p.season} season`}</summary>
+          <summary className="flex min-h-11 cursor-pointer items-center font-display text-lg text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{`${p.season} season`}</summary>
           <div className="mt-2">
             <PassSeasonView pass={p} today={today} idPrefix={`cust-pass-${p.id}`} withAccess={false} withConsent={false} variant="customer" />
           </div>

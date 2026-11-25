@@ -70,7 +70,7 @@ function VisitRow({ visit, onOpen }: { visit: PassSeasonVisit; onOpen?: (id: str
   )
   const cls = cn("flex min-h-11 w-full items-center text-left", RECORD_ROW)
   return visit.id && onOpen ? (
-    <button type="button" className={cn(cls, "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50")} onClick={() => onOpen(visit.id!)}>
+    <button type="button" className={cn(cls, "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring")} onClick={() => onOpen(visit.id!)}>
       {inner}
     </button>
   ) : (

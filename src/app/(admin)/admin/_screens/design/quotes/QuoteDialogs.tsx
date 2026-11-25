@@ -279,7 +279,7 @@ export function LineDialog({ line, onClose, onSave, onRemove, approved }: LineDi
           <Input inputMode="numeric" autoComplete="off" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-24" />
         </FormRow>
         {onRemove && (
-          <button type="button" onClick={onRemove} className="min-h-11 self-start rounded-sm text-destructive underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+          <button type="button" onClick={onRemove} className="min-h-11 self-start rounded-sm text-destructive underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             {approved ? "Cancel this line" : "Remove this line"}
           </button>
         )}
