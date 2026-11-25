@@ -173,10 +173,11 @@ Hannah: "I need to make sure that we are validating the city by ZIP code. That's
 **Decided by Hannah on Nov 23 2026, replacing the Nov 22 proposal (a sign-in link) and the first Nov 23 build (an emailed code): a repeat customer is recognised by their address, with no sign-in.** The reason is privacy of what we show: anyone who knows an address can type it, so nothing personal comes back. The reasoning, the table of what happens at each step and what is a stand-in are in `2026-11-23-booking-day-time-and-repeat-research.md`, section 4. In short:
 
 - The normalized street and ZIP (`addressKey`, `src/lib/booking/known-address.ts`) find a property. It is marked **On file** on the Review step's address row (**New** otherwise) and the booking links to the existing customer and property.
-- Only the zone count and the controller prefill. No name, phone, email, card, gate code or access note is ever shown or filled in.
+- The zone count, the controller and the access answer (whether anyone must be home) prefill, each with the "On file" mark, so Details is one tap. For an address alone, no name, phone, email or card is shown, and the gate code and access notes are never shown back.
+- **Nov 25 2026 (Hannah):** once the email typed on the contact step is the one on file, the name and phone fill in (one small settle) so nothing is retyped, and the card on file is offered. This shows a name and phone to anyone who knows the address and its email; the open question is whether to fill only the name.
 - The contact step is the same for everyone. On the card step, **Use the card on file** (brand and last four) is offered only when the email typed is the one on file; **Use a different card** puts the form back. Any other email, or no card on file, asks for a card as for a new customer.
 - A found address with another email still books as the same property. The office sees "Email differs from the one on file" (the Requests match panel reads the address, `matchOf`; a booking carries `emailDiffers`).
-- Stories: Contact, an address we have; Card, the card on file; Card, the address is on file, another email; Review, an address on file (and another email); a new customer is the plain Contact, Card and Review.
+- Stories: **Customer / A customer we know** (Nov 25): the whole booking at 375 and 1280 for the same email (the fast path), a different email at a known address, and a new address, each saying what the customer sees and what the office sees. Older: Contact, an address we have; Card, the card on file; Card, the address is on file, another email; Review, an address on file (and another email); a new customer is the plain Contact, Card and Review.
 
 ## Navigation and close
 
