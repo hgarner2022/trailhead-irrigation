@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useCalendarKeys } from "@/components/blocks/use-calendar-keys"
 import { useMedia } from "@/components/blocks/use-media"
-import { dayShort } from "@/components/blocks/find-a-time-model"
 import type { BlockAction } from "@/components/blocks/TimeBlock"
 import type { ExternalDrop, MoveEvent, ResizeEvent } from "@/components/blocks/time-grid-types"
 import type { UnscheduledJob } from "@/components/blocks/scheduler-panels-types"
@@ -115,7 +114,7 @@ export function useScheduleProto(init: ProtoInitial = {}) {
   /** the Unscheduled rows with their one suggested line */
   const jobs: (UnscheduledJob & { pickId?: string })[] = useMemo(
     () => state.unscheduled.map((j) => {
-      const s = suggestionFor(j, { state, people, today }, dayShort)
+      const s = suggestionFor(j, { state, people, today })
       return { ...j, suggestion: s?.words, pickId: s?.rowId }
     }),
     [state, people, today],

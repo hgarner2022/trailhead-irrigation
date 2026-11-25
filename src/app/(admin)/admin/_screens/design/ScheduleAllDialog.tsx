@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { SplitButton } from "@/components/blocks/SplitButton"
-import { dayShort } from "@/components/blocks/find-a-time-model"
+import { shortDay } from "@/emails/format"
 import { clockWords } from "@/components/blocks/time-grid-model"
 import type { ScheduleAllRow } from "./schedule-all"
 
@@ -30,7 +30,7 @@ export function ScheduleAllDialog({ rows, onRemove, onClose, onConfirm }: { rows
           <li key={r.job.id} className="flex items-center gap-2 px-3 py-2">
             <span className="min-w-0 flex-1">
               <span className="block truncate text-foreground">{`${r.job.customer} · ${r.job.service}`}</span>
-              {r.to ? <span className="block text-muted-foreground">{`${dayShort(r.to.day)}, ${r.to.start === null ? "Any time" : clockWords(r.to.start)}, ${r.to.personName}`}</span> : <span className="block text-destructive">{r.problem}</span>}
+              {r.to ? <span className="block text-muted-foreground">{`${shortDay(r.to.day)}, ${r.to.start === null ? "Any time" : clockWords(r.to.start)}, ${r.to.personName}`}</span> : <span className="block text-destructive">{r.problem}</span>}
             </span>
             <Button type="button" variant="ghost" size="sm" className="min-h-11 shrink-0" aria-label={`Remove ${r.job.customer}`} onClick={() => onRemove(r.job.id)}>
               Remove

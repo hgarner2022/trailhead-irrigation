@@ -1,8 +1,10 @@
 import type { Person, Town } from "@/lib/admin/types"
+import { shortDay } from "@/emails/format"
 import { recommendedId } from "@/components/blocks/find-a-time-model"
 import { clockWords } from "@/components/blocks/time-grid-model"
 import type { BestTimes } from "@/components/blocks/best-times"
 import { dayOpenings, openingsFor } from "./schedule-prototype-find"
+import { windowLines } from "./schedule-window"
 import { outsideDates } from "./walkthrough/walk-settings"
 import { placementProblems, type ProtoJob, type ProtoState } from "./schedule-prototype-model"
 
@@ -27,16 +29,16 @@ export function bestTimesFor(i: BestInput): BestTimes {
     currentDay: i.currentDay,
     stopsOf: (iso) => state.visits.filter((b) => b.day === iso && b.start !== null).map((b) => ({ start: b.start!, minutes: b.minutes, name: b.name, town: b.town, person: nameOf(b.personId) })),
     dayRows: (iso) => { const d = dayOpenings(find, iso); return { rows: d.openings, forced: d.forced } },
-    notes: (day) => { const n = i.kind ? outsideDates(i.kind, day) : null; return n && !i.dates ? [n] : [] },
+    notes: (day) => { const n = i.kind ? outsideDates(i.kind, day) : null; return [...(n && !i.dates ? [n] : []), ...windowLines(i.today, { old: i.currentDay, next: day })] },
     problems: ({ day, person, start }) => placementProblems(state, i.people, { id: i.excludeId ?? "new", day, personId: idOf(person), start, minutes: i.minutes, town: i.town, kind: i.kind, point: i.point, driving: false }),
   }
 }
 
 /** The one line an Unscheduled row shows for its job: "Suggested: Thu, Nov 26, 9:00 am, Ryan Garner", with the row it names. Null when nothing is open. */
-export function suggestionFor(job: Pick<ProtoJob, "town" | "minutes" | "kind" | "lat" | "lng">, i: Omit<BestInput, "town" | "minutes" | "kind" | "point">, dayShort: (iso: string) => string): { rowId: string; words: string } | null {
+export function suggestionFor(job: Pick<ProtoJob, "town" | "minutes" | "kind" | "lat" | "lng">, i: Omit<BestInput, "town" | "minutes" | "kind" | "point">): { rowId: string; words: string } | null {
   const best = bestTimesFor({ ...i, town: job.town, minutes: job.minutes, kind: job.kind, point: typeof job.lat === "number" && typeof job.lng === "number" ? { lat: job.lat, lng: job.lng } : null })
   const row = best.rows.find((r) => r.id === recommendedId(best.rows))
   if (!row) return null
   const [h, m] = row.start.split(":").map(Number) as [number, number]
-  return { rowId: row.id, words: `Suggested: ${dayShort(row.day)}, ${clockWords(h * 60 + m)}, ${row.personName}` }
+  return { rowId: row.id, words: `Suggested: ${shortDay(row.day)}, ${clockWords(h * 60 + m)}, ${row.personName}` }
 }

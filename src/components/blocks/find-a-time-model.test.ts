@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { dayShort, recommendedId, sortOpenings, timeRange } from "./find-a-time-model"
+import { shortDay } from "@/emails/format"
+import { recommendedId, sortOpenings, timeRange } from "./find-a-time-model"
 import { FORCED, OPENINGS } from "./scheduler-panels-fixtures"
 import type { Opening } from "./scheduler-panels-types"
 
@@ -42,7 +43,7 @@ describe("recommendedId", () => {
 
 describe("words", () => {
   it("writes the day and the range", () => {
-    expect(dayShort("2026-11-30")).toBe("Mon, Nov 30")
+    expect(shortDay("2026-11-30")).toBe("Mon, Nov 30")
     expect(timeRange("09:00", "10:00")).toBe("9:00 to 10:00 am")
     expect(timeRange("11:30", "12:30")).toBe("11:30 am to 12:30 pm")
     expect(timeRange("16:30", "17:30")).toBe("4:30 to 5:30 pm")

@@ -8,7 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { EmptyState } from "./EmptyState"
 import { SegmentedControl } from "./SegmentedControl"
-import { dayShort, recommendedId, sortOpenings, timeRange, type OpeningSort } from "./find-a-time-model"
+import { shortDay } from "@/emails/format"
+import { recommendedId, sortOpenings, timeRange, type OpeningSort } from "./find-a-time-model"
 import type { Opening } from "./scheduler-panels-types"
 
 // The office's ranked list of openings, inside New job (docs/plans/2026-11-25-scheduler-design.md, 7.7). Ryan types an address and a service and sees the best few
@@ -70,7 +71,7 @@ function Row({ row, picked, recommended, forced, index, focusable, onPick, onKey
     >
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span className={cn("font-semibold", forced ? "text-muted-foreground" : "text-navy")}>{dayShort(row.day)}</span>
+          <span className={cn("font-semibold", forced ? "text-muted-foreground" : "text-navy")}>{shortDay(row.day)}</span>
           <span className="tabular-nums">{timeRange(row.start, row.end)}</span>
           <span className={forced ? "" : "text-muted-foreground"}>{row.personName}</span>
           {recommended && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary-deep">Recommended</span>}

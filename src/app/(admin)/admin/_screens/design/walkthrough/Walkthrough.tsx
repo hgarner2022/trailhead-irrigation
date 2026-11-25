@@ -14,6 +14,7 @@ import type { CustomerChoice } from "../../CustomerPicker"
 import { MessageView, ReceiptToast, newestPayment, paidFrom, useReceiptToast, type Paid } from "./receipts"
 import { navigate, parseHref, routeTitle, type Route } from "./routes"
 import { ScheduleOverlays } from "../ScheduleOverlays"
+import { WALK_PEOPLE } from "./visits-data"
 import { resetWalkSchedule, walkSchedule } from "./walk-schedule"
 import { useWorldState } from "../schedule-world-store"
 import { newCount } from "../requests/request-model"
@@ -233,7 +234,7 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
         <NewJobSheet sheet={sheet} onClose={() => setSheet(null)} onMade={() => setMade((n) => n + 1)} onCreated={(id) => go({ screen: "job", id })} onActiveAgain={onActiveAgain} onNewQuote={({ customer, serviceName }) => (setSheet(null), setQuoteSheet({ choice: customer, pick: pickOf(serviceName), key: Date.now() }))} />
         <NewQuoteHost sheet={quoteSheet} onClose={() => setQuoteSheet(null)} onCreated={(id) => (setQuoteSheet(null), go({ screen: "quote", id }))} />
       </AdminShell>
-      <ScheduleOverlays store={walkSchedule()} />
+      <ScheduleOverlays store={walkSchedule()} people={WALK_PEOPLE} />
       {receiptToast.toast && <ReceiptToast text={receiptToast.toast.text} onView={() => (openReceipt(receiptToast.toast!.paid), receiptToast.clear())} />}
       {message && <MessageView channel={message.channel} paid={message.paid} onClose={() => setMessage(null)} />}
     </div>

@@ -24,15 +24,6 @@ export function recommendedId(rows: readonly Opening[]): string | undefined {
   return sortOpenings(rows.filter((r) => !r.conflict), "recommended")[0]?.id
 }
 
-const SHORT_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-/** "2026-11-30" gives "Mon, Nov 30". */
-export function dayShort(day: string): string {
-  const d = new Date(`${day}T12:00:00Z`)
-  return `${SHORT_DAYS[d.getUTCDay()]}, ${SHORT_MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`
-}
-
 /** "09:00", "10:00" gives "9:00 to 10:00 am"; across noon each end keeps its own word: "11:30 am to 12:30 pm". */
 export function timeRange(start: string, end: string): string {
   const a = clock12(start)

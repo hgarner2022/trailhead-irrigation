@@ -5,13 +5,14 @@ import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { firstNameOf } from "@/lib/admin/people"
 import { useState } from "react"
 import { hoursWords } from "@/lib/admin/day-fill"
-import { dayShort } from "@/components/blocks/find-a-time-model"
+import { shortDay } from "@/emails/format"
 import { OrderDayDialog } from "./OrderDayDialog"
 import { ScheduleAllDialog } from "./ScheduleAllDialog"
 import { ScheduleDialog } from "./ScheduleDialog"
+import { windowLines } from "./schedule-window"
 import { scheduleAllPlan } from "./schedule-all"
 import { orderDay } from "./schedule-order"
-import type { Proto } from "./use-schedule-prototype"
+import type { Dialog, Proto } from "./use-schedule-prototype"
 
 // The dialogs the Schedule prototype opens, one at a time: the one Schedule dialog (Move for a visit on the calendar, Schedule for a job with no day, the best times inside), "Move the
 // visit" listing what a drop or a keyboard move breaks, and the shortcuts list. Send a message (Notify the customer) is `ScheduleOverlays`, which also holds the moved confirmation, so it works from a job page too.
@@ -64,6 +65,9 @@ export function ScheduleProtoDialogs({ p }: { p: Proto }) {
               <li key={x}>{x}</li>
             ))}
           </ul>
+          {windowOf(p, d.action).map((x) => (
+            <p key={x} data-slot="window-line" className="mt-3 text-sm text-muted-foreground">{x}</p>
+          ))}
         </ConfirmDialog>
       )}
       {d?.kind === "order" && <OrderDay p={p} personId={d.personId} />}
@@ -80,7 +84,7 @@ function OrderDay({ p, personId }: { p: Proto; personId: string }) {
   if (!person) return null
   const cal = { people: p.people, visits: state.visits, meta: state.meta, timeOff: state.timeOff }
   const plan = orderDay(cal, person, p.day)
-  const message = `Ordered ${dayShort(p.day)}${plan.saved > 0 ? `, saves ${hoursWords(plan.saved)} of driving` : ""}`
+  const message = `Ordered ${shortDay(p.day)}${plan.saved > 0 ? `, saves ${hoursWords(plan.saved)} of driving` : ""}`
   return <OrderDayDialog plan={plan} meta={state.meta} who={firstNameOf(person.name) ?? person.name} onClose={() => p.setDialog(null)} onConfirm={() => p.dispatch({ type: "order-day", moves: plan.moves, message })} />
 }
 
@@ -98,4 +102,10 @@ function ScheduleAll({ p }: { p: Proto }) {
       onConfirm={(notify) => p.dispatch({ type: "place-all", places: rows.flatMap((r) => (r.to ? [{ jobId: r.job.id, to: { day: r.to.day, personId: r.to.personId, start: r.to.start } }] : [])), notified: notify })}
     />
   )
+}
+
+/** The day the visit is on and the day it is going to, said when either is inside the customer's 24 hours. */
+function windowOf(p: Proto, action: Extract<Dialog, { kind: "confirm" }>["action"]): string[] {
+  const here = "id" in action ? p.state.visits.find((b) => b.id === action.id)?.day : undefined
+  return windowLines(p.today, { old: action.type === "move" || action.type === "resize" ? here : null, next: action.type === "move" || action.type === "place" ? action.to.day : null })
 }

@@ -1,11 +1,13 @@
 import { addDays, weekdayOf, WEEKDAYS, worksOn } from "@/lib/admin/calendar"
 import { dayFill, fillWords, hoursWords, townsWords } from "@/lib/admin/day-fill"
 import type { Person, Visit } from "@/lib/admin/types"
-import { monthOf, shiftMonth, type MonthDay } from "@/components/blocks/month-grid-model"
+import { shortDate } from "@/lib/admin/format"
+import { longDay } from "@/lib/portal/words"
+import { monthOf, monthTitle, shiftMonth, type MonthDay } from "@/components/blocks/month-grid-model"
 import { dayColumns } from "@/components/blocks/scheduler-calendar-fixtures"
 import type { GridBlock, TimeOff } from "@/components/blocks/time-grid-model"
 import type { ColumnStat, GridColumn } from "@/components/blocks/time-grid-types"
-import { dayShort } from "@/components/blocks/find-a-time-model"
+import { shortDay } from "@/emails/format"
 import type { Meta } from "./schedule-prototype-model"
 import { drivingWords, personDay, type Calendar } from "./schedule-engine"
 
@@ -23,14 +25,12 @@ export function weekDaysShown(week: string, people: readonly Person[], visits: r
   return Array.from({ length: 7 }, (_, i) => addDays(week, i)).filter((d, i) => i < 5 || people.some((p) => worksOn(p, d)) || visits.some((v) => v.day === d))
 }
 
-const long = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" })
-const short = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
 
 /** "Week of Nov 23", "Wednesday, November 25", "November 2026". */
 export function rangeWords(view: View, day: string): string {
-  if (view === "week" || view === "list") return `Week of ${short(mondayOf(day))}`
-  if (view === "day") return long(day)
-  return new Date(`${monthOf(day)}-01T12:00:00Z`).toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })
+  if (view === "week" || view === "list") return `Week of ${shortDate(mondayOf(day))}`
+  if (view === "day") return longDay(day)
+  return monthTitle(monthOf(day))
 }
 
 /** One step back or forward: a day, a week or a month. Month keeps the day of the month where it can. */
@@ -97,4 +97,4 @@ export function mapDayOf(view: View, day: string, today: string): string {
   return mondayOf(today) === week ? today : week
 }
 
-export const mapDayWords = (day: string) => dayShort(day)
+export const mapDayWords = (day: string) => shortDay(day)

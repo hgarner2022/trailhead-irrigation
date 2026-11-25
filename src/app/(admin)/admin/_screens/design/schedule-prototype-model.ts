@@ -1,6 +1,6 @@
 import { addDays } from "@/lib/admin/calendar"
 import type { Person, Town } from "@/lib/admin/types"
-import { dayShort } from "@/components/blocks/find-a-time-model"
+import { shortDay } from "@/emails/format"
 import type { NotToldVisit, UnscheduledJob } from "@/components/blocks/scheduler-panels-types"
 import { placeProblems } from "./schedule-engine"
 import { clockToMinutes, clockWords, hoursSpan, rangeWords, type GridBlock, type TimeOff } from "@/components/blocks/time-grid-model"
@@ -58,14 +58,9 @@ export type Action =
 const snapshotOf = (s: ProtoState): Snapshot => ({ visits: s.visits, was: s.was, unscheduled: s.unscheduled, meta: s.meta })
 const placeOf = (b: GridBlock): Place => ({ day: b.day, personId: b.personId, start: b.start, minutes: b.minutes })
 const clockOrAny = (start: number | null) => (start === null ? "Any time" : clockWords(start))
-const lower = (service: string) => service.charAt(0).toLowerCase() + service.slice(1)
 
 /** "Thu, Nov 26, 9:00 am" or "Thu, Nov 26, Any time". */
-export const whenWords = (p: { day: string; start: number | null }) => `${dayShort(p.day)}, ${clockOrAny(p.start)}`
-
-/** The notified words from the saved "Day moved, text" template (src/emails/editable.ts): "Trailhead: your spring turn-on moved to Thu, Nov 26 at 9:00 am." */
-export const moveMessage = (b: Pick<GridBlock, "service" | "day" | "start">): string =>
-  `Trailhead: your ${lower(b.service)} moved to ${dayShort(b.day)}${b.start === null ? "" : ` at ${clockWords(b.start)}`}.`
+export const whenWords = (p: { day: string; start: number | null }) => `${shortDay(p.day)}, ${clockOrAny(p.start)}`
 
 /** What each change says in its toast. */
 function stamp(s: ProtoState, message: string, ids: string[], notified = false): ProtoToast {
@@ -73,7 +68,7 @@ function stamp(s: ProtoState, message: string, ids: string[], notified = false):
 }
 
 /** "Moved to Thu, Nov 26, 9:00 am" or "Scheduled for ...": the day alone for a visit with no time. */
-const onWords = (p: { day: string; start: number | null }) => (p.start === null ? dayShort(p.day) : whenWords(p))
+const onWords = (p: { day: string; start: number | null }) => (p.start === null ? shortDay(p.day) : whenWords(p))
 
 /** Marks a visit not told, remembering where it was the first time. */
 function untold(was: Record<string, Place>, before: GridBlock): Record<string, Place> {
@@ -172,8 +167,8 @@ export function visitOfJob(j: ProtoJob, to: Target): GridBlock {
 export function changeWords(was: Pick<Place, "day" | "start"> & { minutes?: number } | undefined, now: Pick<Place, "day" | "start"> & { minutes?: number }): string {
   if (!was) return `Scheduled for ${whenWords(now)}`
   // only the length changed: said as the toast says it, "Changed to 8:00 to 8:45 am"
-  if (was.day === now.day && was.start === now.start && was.minutes !== undefined && now.minutes !== undefined && was.minutes !== now.minutes) return `${lengthChange({ start: now.start, minutes: now.minutes })}, ${dayShort(now.day)}`
-  if (was.day === now.day) return `Moved from ${clockOrAny(was.start)} to ${clockOrAny(now.start)}, ${dayShort(now.day)}`
+  if (was.day === now.day && was.start === now.start && was.minutes !== undefined && now.minutes !== undefined && was.minutes !== now.minutes) return `${lengthChange({ start: now.start, minutes: now.minutes })}, ${shortDay(now.day)}`
+  if (was.day === now.day) return `Moved from ${clockOrAny(was.start)} to ${clockOrAny(now.start)}, ${shortDay(now.day)}`
   return `Moved from ${whenWords(was)} to ${whenWords(now)}`
 }
 
@@ -200,10 +195,10 @@ export interface PlaceInput { driving?: boolean; id: string; day: string; person
 export const placementProblems = (s: Pick<ProtoState, "visits" | "timeOff"> & Partial<Pick<ProtoState, "meta">>, people: readonly Person[], p: PlaceInput): string[] => placeProblems({ people, visits: s.visits, meta: s.meta ?? {}, timeOff: s.timeOff }, p)
 
 /** The size of a block's day for the side panel: "Wed, Nov 25, 9:00 to 11:00 am". */
-export const visitWhen = (b: Pick<GridBlock, "day" | "start" | "minutes">): string => (b.start === null ? `${dayShort(b.day)}, Any time` : `${dayShort(b.day)}, ${rangeWords(b.start, b.minutes)}`)
+export const visitWhen = (b: Pick<GridBlock, "day" | "start" | "minutes">): string => (b.start === null ? `${shortDay(b.day)}, Any time` : `${shortDay(b.day)}, ${rangeWords(b.start, b.minutes)}`)
 
 /** "Mon, Nov 30, all day" or "Fri, Nov 20, 12 to 2 pm": one time off as Settings, People lists it. */
-export const timeOffWords = (o: TimeOff): string => `${dayShort(o.day)}, ${o.start === null || o.end === null ? "all day" : hoursSpan(o.start, o.end)}`
+export const timeOffWords = (o: TimeOff): string => `${shortDay(o.day)}, ${o.start === null || o.end === null ? "all day" : hoursSpan(o.start, o.end)}`
 
 /** The rows a saved time off makes: one per day from `from` to `to` (at most 31), all day or the hours. */
 export function timeOffRows(v: { personId: string; allDay: boolean; from: string; to: string; startTime: string; endTime: string }, idFor: (day: string) => string): TimeOff[] {

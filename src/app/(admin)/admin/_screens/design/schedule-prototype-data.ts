@@ -71,8 +71,6 @@ export const SERVICES: { key: string; name: string; kind: VisitKind; minutes: nu
   { key: "blowout", name: "Fall blowout", kind: "blowout", minutes: 30 },
   { key: "repair", name: "Repair", kind: "repair", minutes: 60 },
 ]
-const LENGTH = (m: number) => (m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`)
-export const lengthWords = LENGTH
 
 /** The town named in an address, or null when it is none of the six. */
 export function townOf(address: string): Town | null {

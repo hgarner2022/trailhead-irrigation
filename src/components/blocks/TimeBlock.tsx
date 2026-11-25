@@ -138,7 +138,6 @@ export function TimeBlock({ block: b, personIndex = 0, initials, who, variant = 
           <DropdownMenuContent align="end" className="min-w-48">
             {conflict && <DropdownMenuLabel data-slot="conflict-words" className="max-w-56 whitespace-normal font-normal text-destructive">{conflict}</DropdownMenuLabel>}
             <DropdownMenuItem onSelect={() => onAction(b.id, "move")}>Move</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onAction(b.id, b.start === null ? "set-time" : "any-time")}>{b.start === null ? "Set a time" : "Make it Any time"}</DropdownMenuItem>
             {b.start !== null && (
               <>
                 <DropdownMenuItem disabled={b.minutes <= 15} onSelect={() => onAction(b.id, "shorter")}>15 minutes shorter</DropdownMenuItem>

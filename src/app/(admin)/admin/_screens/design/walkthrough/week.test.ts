@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { recommendedId, sortOpenings } from "@/components/blocks/find-a-time-model"
 import { bestTimesFor, suggestionFor } from "../schedule-best-times"
-import { dayShort } from "@/components/blocks/find-a-time-model"
 import { changeWords, notToldList } from "../schedule-prototype-model"
 import { initialState } from "../schedule-prototype-data"
 import { jobView, rowOf } from "./jobs-data"
@@ -58,7 +57,7 @@ describe("the best times", () => {
   it("the suggestion, the row marked Recommended and the preselected row are one opening", () => {
     const job = world.unscheduled[0]!
     const best = bestTimesFor({ ...i, town: job.town, minutes: job.minutes })
-    const s = suggestionFor(job, i, dayShort)!
+    const s = suggestionFor(job, i)!
     expect(s.rowId).toBe(recommendedId(best.rows))
   })
 })

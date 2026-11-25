@@ -1,6 +1,7 @@
 import { TOWN_CENTRES } from "@/components/blocks/day-map-helpers"
 import { clockToMinutes, type GridBlock, type TimeOff } from "@/components/blocks/time-grid-model"
 import type { Person, Town, VisitKind } from "@/lib/admin/types"
+import { hoursWords } from "@/lib/admin/day-fill"
 import { pointNear } from "../schedule-prototype-data"
 import type { Meta, Place, ProtoJob, ProtoWorld } from "../schedule-prototype-model"
 import type { GridJob } from "../JobsGridDesign"
@@ -45,7 +46,6 @@ const KIND_OF: Record<string, VisitKind> = { "Spring turn-on": "turn-on", "Fall 
 const SERVICE_NAME: Record<string, string> = { "Sprinkler repair": "Repair", "Spring turn-on": "Spring turn-on", "Fall blowout": "Fall blowout", "Season Pass": "Spring turn-on" }
 export const serviceWords = (service: string): string => SERVICE_NAME[service] ?? service
 const kindOf = (service: string): VisitKind => KIND_OF[service] ?? "other"
-const LENGTH = (m: number) => (m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`)
 
 const streetOf = (row: GridJob) => (row.property.split(",")[0] ?? row.property).replace(/^\d+\s+/, "").trim()
 const townOf = (row: GridJob): Town => ((row.property.split(", ")[1] ?? "Erie") as Town) in TOWN_CENTRES ? ((row.property.split(", ")[1] ?? "Erie") as Town) : "Erie"
@@ -104,7 +104,7 @@ export function buildWalkWorld(): ProtoWorld {
       const minutes = serviceMinutes(kind)
       const pin = pointNear(townOf(row), row.property)
       const c = contactOf(row.name)
-      unscheduled.push({ id: row.id, customer: row.name, town: townOf(row), service: SERVICE_NAME[row.service] ?? row.service, length: LENGTH(minutes), minutes, kind, street: streetOf(row), addedOn: row.id === "andrea-repair" ? "2026-11-18" : "2026-11-12", phone: c.text, email: c.email, ...pin })
+      unscheduled.push({ id: row.id, customer: row.name, town: townOf(row), service: SERVICE_NAME[row.service] ?? row.service, length: hoursWords(minutes), minutes, kind, street: streetOf(row), addedOn: row.id === "andrea-repair" ? "2026-11-18" : "2026-11-12", phone: c.text, email: c.email, ...pin })
     }
   }
   const timeOff: TimeOff[] = [

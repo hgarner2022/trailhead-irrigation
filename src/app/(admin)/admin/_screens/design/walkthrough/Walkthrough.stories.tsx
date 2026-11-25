@@ -461,6 +461,37 @@ export const ScheduleVisitToJobPageTest: Story = {
   },
 }
 
+/** Home, the Jobs grid and the job page read the same calendar as the Schedule: a visit moved off today leaves Home's Today and its Next on Jobs changes. */
+export const ScheduleMoveShowsEverywhereTest: Story = {
+  name: "Schedule, a move shows on Home, Jobs and the job page (test)",
+  globals: laptop,
+  tags: HIDDEN,
+  args: { start: { screen: "home" } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement)
+    const body = within(document.body)
+    // Sam Ortiz has Aspen Dr at 9:00 today; Home's Today lists him
+    await expect((await c.findAllByText(/^Sam\b/)).length).toBeGreaterThan(0)
+    await userEvent.click((await c.findAllByRole("link", { name: "Schedule" }))[0]!)
+    await waitFor(() => expect(route(canvasElement)).toBe("schedule"))
+    await userEvent.click((await c.findAllByRole("button", { name: /^Aspen Dr, Repair/ }))[0]!)
+    await waitFor(() => expect(route(canvasElement)).toBe("job:g-sam"))
+    await userEvent.click(await c.findByRole("button", { name: "More" }))
+    await userEvent.click(await body.findByRole("menuitem", { name: "Move" }))
+    const dialog = await body.findByRole("dialog", { name: "Move the visit" })
+    const list = await within(dialog).findByRole("radiogroup", { name: "Openings" })
+    await userEvent.click((await within(list).findAllByRole("radio"))[0]!)
+    await userEvent.click(await within(dialog).findByRole("button", { name: /Move and notify the customer/ }))
+    // the job page's Day now reads the new day, not Today
+    await waitFor(() => expect(within(canvasElement).queryByText(/^Today, Wed Nov 18$/)).toBeNull())
+    await userEvent.click((await c.findAllByRole("link", { name: "Jobs" }))[0]!)
+    const row = (await c.findAllByText("Sam Ortiz"))[0]!.closest("tr")!
+    await expect(within(row as HTMLElement).queryByText("Today")).toBeNull()
+    await userEvent.click((await c.findAllByRole("link", { name: "Home" }))[0]!)
+    await waitFor(() => expect(c.queryAllByText(/^Sam\b/)).toHaveLength(0))
+  },
+}
+
 /** A job with no day: its Unscheduled row says Suggested: day, time, person, and Schedule opens the dialog on that row. */
 export const ScheduleUnscheduledRowTest: Story = {
   name: "Schedule, Unscheduled row (test)",

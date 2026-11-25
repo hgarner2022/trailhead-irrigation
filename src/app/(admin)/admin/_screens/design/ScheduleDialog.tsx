@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { shortDay as dayLabel } from "@/emails/format"
+import { clockLabel } from "../visit-panel-model"
 import { recommendedId } from "@/components/blocks/find-a-time-model"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { SplitButton } from "@/components/blocks/SplitButton"
@@ -14,8 +16,6 @@ import { SchedulePicker, type Pick } from "./SchedulePicker"
 // "Schedule and notify the customer" as the confirm and "without notifying" under the caret. `onConfirm` gets the pick and whether the
 // customer is to be told. Pure props, client state.
 
-const dayLabel = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })
-const clockLabel = (hhmm: string) => `${Number(hhmm.slice(0, 2)) % 12 || 12}:${hhmm.slice(3, 5)} ${Number(hhmm.slice(0, 2)) < 12 ? "am" : "pm"}`
 
 export interface ScheduleResult extends Pick {
   /** the customer is texted or emailed the day and time */

@@ -28,7 +28,7 @@ export function SchedulePrototype({ withOverlays = true, ...props }: ProtoInitia
             <ScheduleProtoPanels p={p} />
           </div>
           <ScheduleProtoDialogs p={p} />
-          {withOverlays && <ScheduleOverlays store={p.store} toastSeconds={p.toastSeconds} />}
+          {withOverlays && <ScheduleOverlays store={p.store} people={p.people} toastSeconds={p.toastSeconds} />}
         </div>
       </TimeGridDndProvider>
     </TooltipProvider>

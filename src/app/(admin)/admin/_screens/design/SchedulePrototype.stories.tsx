@@ -141,7 +141,7 @@ export const ScheduleFromUnscheduledRowPhone: Story = {
 /** Dropped on a place that breaks a rule: "Move the visit" lists what it breaks. */
 export const MoveTheVisitDialog: Story = {
   name: "Move the visit (a place that breaks a rule)",
-  args: { dialog: { kind: "confirm", action: { type: "move", id: "g-sam", to: { day: "2026-11-20", personId: "person_hannah", start: 13 * 60 } }, problems: ["Hannah is off 12 to 2 pm."] } },
+  args: { dialog: { kind: "confirm", action: { type: "move", id: "g-sam", to: { day: "2026-11-20", personId: "person_hannah", start: 13 * 60 } }, problems: ["Hannah is off 12 to 2 pm.", "Adds 25 min of driving."] } },
   play: async () => {
     await expect(await body().findByRole("dialog", { name: "Move the visit" })).toBeInTheDocument()
   },

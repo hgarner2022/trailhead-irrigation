@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { firstNameOf } from "@/lib/admin/people"
 import { ScheduleToast } from "@/components/blocks/ScheduleToast"
 import { MessageDialog } from "./MessageDialog"
-import { moveMessage } from "./schedule-prototype-model"
+import { moveMessage } from "./schedule-message"
 import { useWorldState, type WorldStore } from "./schedule-world-store"
 
 // What follows any move or placement, wherever the person is (the Schedule, or a job page whose Schedule or Move was just confirmed): the confirmation ("Moved to Thu, Nov 26,
@@ -26,7 +26,7 @@ function useHeldOnPhone(): boolean {
   return held
 }
 
-export function ScheduleOverlays({ store, toastSeconds = 10 }: { store: WorldStore; toastSeconds?: number }) {
+export function ScheduleOverlays({ store, people = [], toastSeconds = 10 }: { store: WorldStore; /** who is on the calendar, so the text says who is coming */ people?: readonly { id: string; name: string }[]; toastSeconds?: number }) {
   const state = useWorldState(store)
   const held = useHeldOnPhone()
   const toast = held ? null : state.toast
@@ -50,7 +50,7 @@ export function ScheduleOverlays({ store, toastSeconds = 10 }: { store: WorldSto
         <MessageDialog
           key={head.id}
           facts={{ first: firstNameOf(meta.customer) ?? meta.customer, customer: meta.customer, service: head.service.toLowerCase(), amount: "", dueOn: "", phone: meta.phone ?? "no phone on file", email: meta.email, address: head.title, channel: meta.phone ? "text" : "email" }}
-          initialBody={moveMessage(head).slice(OPENER.length)}
+          initialBody={moveMessage(head, { customer: meta.customer, personName: people.find((p) => p.id === head.personId)?.name, was: state.was[head.id] }).slice(OPENER.length)}
           onClose={() => store.dispatch({ type: "notify-close" })}
           onSend={() => store.dispatch({ type: "notify-next", sent: true })}
         />
