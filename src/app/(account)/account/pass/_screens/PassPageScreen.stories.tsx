@@ -123,7 +123,7 @@ export const ChangePreferencePlay: Story = {
     await expect(await screen.findByRole("radio", { name: /Our recommended/ })).toBeChecked()
     await userEvent.click(await screen.findByRole("radio", { name: /Late season/ }))
     await userEvent.click(await screen.findByRole("button", { name: "Save" }))
-    await expect(await screen.findByRole("dialog", { name: "Saved: Late season, Late October." })).toBeInTheDocument()
+    await expect(await screen.findByRole("dialog", { name: "Saved: Late season, late October." })).toBeInTheDocument()
     await expect(args.onChangePreference).toHaveBeenCalledWith("blowout", "later")
   },
 }

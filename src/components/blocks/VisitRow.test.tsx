@@ -34,8 +34,8 @@ describe("VisitRow", () => {
   })
 
   it("says its preference and that we schedule it for a visit with no day, never a prompt to pick one", () => {
-    inList(<VisitRow {...booked} dayWords="Our recommended, Mid October" note="We'll schedule it about two weeks before and tell you the day." pill={{ status: "needs-a-day", label: "Not scheduled yet" }} />)
-    expect(screen.getByText("Our recommended, Mid October")).toBeInTheDocument()
+    inList(<VisitRow {...booked} dayWords="Our recommended, mid October" note="We'll schedule it about two weeks before and tell you the day." pill={{ status: "needs-a-day", label: "Not scheduled yet" }} />)
+    expect(screen.getByText("Our recommended, mid October")).toBeInTheDocument()
     expect(screen.getByText("We'll schedule it about two weeks before and tell you the day.")).toBeInTheDocument()
     expect(screen.queryByText(/pick a day|coming soon/i)).toBeNull()
   })

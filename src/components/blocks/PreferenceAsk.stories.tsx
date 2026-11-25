@@ -26,7 +26,7 @@ export const ChooseWhenPlay: Story = {
     await expect(await screen.findByRole("dialog", { name: "When would you like your fall blowout?" })).toBeInTheDocument()
     await userEvent.click(await screen.findByRole("radio", { name: /Late season/ }))
     await userEvent.click(await screen.findByRole("button", { name: "Save" }))
-    await expect(await screen.findByRole("dialog", { name: "Saved: Late season, Late October." })).toBeInTheDocument()
+    await expect(await screen.findByRole("dialog", { name: "Saved: Late season, late October." })).toBeInTheDocument()
     await expect(args.onSave).toHaveBeenCalledWith("blowout", "later")
   },
 }

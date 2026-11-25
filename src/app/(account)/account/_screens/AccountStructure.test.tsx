@@ -45,7 +45,7 @@ describe("Home", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Late season/ }))
     fireEvent.click(screen.getByRole("button", { name: "Save" }))
     expect(onSavePreference).toHaveBeenCalledWith("blowout", "later")
-    expect(screen.getByRole("dialog", { name: "Saved: Late season, Late October." })).toBeInTheDocument()
+    expect(screen.getByRole("dialog", { name: "Saved: Late season, late October." })).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Done" }))
     rerender(<HomeScreen customer={andrea} jobs={[passJob]} today="2027-09-10" pass={pass} />)
     expect(screen.queryByRole("region", { name: "Timing for your next visit" })).toBeNull()

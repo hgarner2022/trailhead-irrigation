@@ -24,8 +24,11 @@ export const TIMING_LABEL: Record<TimingPreference, string> = { earlier: "Early 
 /** "Mid May": the customer's words for the part of the window a choice names (Hannah, Nov 23 2026: these are the settled words, not computed from the window). */
 export const timingMonth = (kind: TimingKind, preference: TimingPreference) => preferenceLabel(kind, preference)
 
-/** "Our recommended, Mid May": a saved choice in one line. */
-export const timingLine = (kind: TimingKind, preference: TimingPreference) => `${TIMING_LABEL[preference]}, ${timingMonth(kind, preference)}`
+/** "Our recommended, mid May": a saved choice in one line. */
+export const timingLine = (kind: TimingKind, preference: TimingPreference) => {
+  const month = timingMonth(kind, preference)
+  return `${TIMING_LABEL[preference]}, ${month.charAt(0).toLowerCase()}${month.slice(1)}`
+}
 
 /**
  * What a visit with no day reads (Hannah, Nov 22 2026: a visit months away takes only a preference, and we schedule it about two weeks before and tell the customer). A Season Pass visit

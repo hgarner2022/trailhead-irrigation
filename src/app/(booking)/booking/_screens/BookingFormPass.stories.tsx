@@ -118,13 +118,13 @@ export const OctoberDayLaptop = dayOctober.laptop
 const prefApril = on(at("april", { step: "preference", picks: picked }), "April, preference", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Fall blowout" })).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: "Our recommended" })).toHaveAttribute("aria-pressed", "true")
-    await expect(canvas.getByRole("button", { name: "Early season" })).toHaveAttribute("aria-pressed", "false")
-    await expect(canvas.getByRole("button", { name: "Late season" })).toHaveAttribute("aria-pressed", "false")
+    await expect(canvas.getByRole("button", { name: /^Our recommended/ })).toHaveAttribute("aria-pressed", "true")
+    await expect(canvas.getByRole("button", { name: /^Early season/ })).toHaveAttribute("aria-pressed", "false")
+    await expect(canvas.getByRole("button", { name: /^Late season/ })).toHaveAttribute("aria-pressed", "false")
     await expect(canvas.getByText("We'll schedule it about two weeks before and tell you the day.")).toBeInTheDocument()
-    await expect(canvas.getByText("Early October")).toBeInTheDocument()
-    await expect(canvas.getByText("Mid October")).toBeInTheDocument()
-    await expect(canvas.getByText("Late October")).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /Early October$/ })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /Mid October$/ })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: /Late October$/ })).toBeInTheDocument()
     await expect(canvas.queryByText(/freeze/)).toBeNull()
   },
 })
@@ -253,7 +253,7 @@ export const WholePassPathPhoneTest: Story = {
     await userEvent.click((await c.findAllByRole("radio", { name: /\d:\d\d [ap]m/ }))[0]!)
     await next()
     await expect(await c.findByRole("heading", { level: 1, name: "Fall blowout" })).toBeInTheDocument()
-    await userEvent.click(await c.findByRole("button", { name: "Late season" }))
+    await userEvent.click(await c.findByRole("button", { name: /^Late season/ }))
     await next()
     await userEvent.type(await c.findByLabelText("First name"), "Andrea")
     await userEvent.type(await c.findByLabelText("Last name"), "Dalton")
@@ -265,7 +265,7 @@ export const WholePassPathPhoneTest: Story = {
     await expect(await c.findByText("Preference: Late season, late October")).toBeInTheDocument()
     // the only Change links are here; a Change comes back to this step when the customer continues
     await userEvent.click(await c.findByRole("button", { name: "Change fall blowout" }))
-    await userEvent.click(await c.findByRole("button", { name: "Our recommended" }))
+    await userEvent.click(await c.findByRole("button", { name: /^Our recommended/ }))
     await next()
     await expect(await c.findByText("Preference: Our recommended, mid October")).toBeInTheDocument()
     await next("Set up my Season Pass")

@@ -14,7 +14,7 @@ export interface TimelineRow {
   href: string
   /** the day the row sorts by: the day it was done, the day it was canceled, or its booked day; null while it has none */
   day: string | null
-  /** "Tue, Apr 28" ("Tue, Apr 28, 2027" in another year); for a visit with no day its preference in her words ("Our recommended, Mid October") or "Not scheduled yet" */
+  /** "Tue, Apr 28" ("Tue, Apr 28, 2027" in another year); for a visit with no day its preference in her words ("Our recommended, mid October") or "Not scheduled yet" */
   dayWords: string
   /** the line under a visit with no day: "We'll schedule it about two weeks before and tell you the day."; null for any other row */
   note: string | null
