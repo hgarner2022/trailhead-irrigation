@@ -173,7 +173,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
     setAttempted(false)
     if (!history.back()) setStep(steps[Math.max(at - 1, 0)]!)
   }
-  // A service chosen on its card ("Choose this service" in the open card). Opening a card to read it chooses nothing. The answers that are about the visit start over, the ones about the yard stay.
+  // A service chosen by pressing its card; the chosen card pressed again is null (the choice removed). The answers that are about the visit start over, the ones about the yard stay.
   const choose = (key: string | null) => {
     if (key === serviceKey) return setServiceKey(null)
     setServiceKey(key)
@@ -225,7 +225,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       body = (
         <>
           <p className="-mt-3 mb-6 text-base text-muted-foreground">Choose what you need.</p>
-          <StepField error={stepError}><ServicePicker entries={lists.bookable} value={serviceKey} onChange={choose} defaultOpen={initial.service} onRequestQuote={startQuote} /></StepField>
+          <StepField error={stepError}><ServicePicker entries={lists.bookable} value={serviceKey} onChange={choose} onRequestQuote={startQuote} /></StepField>
         </>
       )
       break

@@ -2,8 +2,8 @@
 // retyped in seven blocks (ChoiceChips, ZoneChips, AccessChoice, TimingChoice, PreferencePicker, the day cards and the calendar's time chips); this is that pattern, in one place, with nothing new in
 // it but what was already on some of them: an option is a rounded-lg bordered box, navy on white; chosen it is filled navy with white text and settles once (`.settle`, the calendar's own motion);
 // it darkens its edge on hover, gives a little under a press (`.opt`), and shows the same focus ring. A chip, a row and a tile differ only in size, which each block adds. The calendar's time chip
-// (DayCalendar, owned by the calendar's designer) writes the same classes itself. A card that opens to hold content (ServiceCard) is the one larger form: a navy edge, a warm tint and a check,
-// because a filled navy card of text would not read.
+// (DayCalendar, owned by the calendar's designer) writes the same classes itself. A service card (ServiceCard) is the same option at card size: its header is the option, filled navy when chosen, and the
+// card under it opens to show what is included.
 import { cn } from "@/lib/utils"
 
 const BASE = "opt cursor-pointer rounded-lg border"
@@ -14,8 +14,12 @@ const FOCUS = {
   has: "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/50 has-[:focus-visible]:ring-offset-2",
 } as const
 
-export function optionClass({ selected, error = false, focus = "self" }: { selected: boolean; error?: boolean; focus?: keyof typeof FOCUS }): string {
-  return cn(BASE, FOCUS[focus], selected ? "settle border-navy bg-navy text-white" : cn("bg-background text-navy", error ? "border-destructive" : "border-border hover:border-navy/40"))
+/** The same ring drawn round a container whose control is inside it and fills it (the service card: the ring follows the card's own corners, on white and on navy alike). */
+export const optionFocusWithin = FOCUS.has
+
+/** `settle: false` is for an option whose container settles instead (the service card, whose header is the option and whose card holds the detail). */
+export function optionClass({ selected, error = false, focus = "self", settle = true }: { selected: boolean; error?: boolean; focus?: keyof typeof FOCUS; settle?: boolean }): string {
+  return cn(BASE, FOCUS[focus], selected ? cn(settle && "settle", "border-navy bg-navy text-white") : cn("bg-background text-navy", error ? "border-destructive" : "border-border hover:border-navy/40"))
 }
 
 /** The quiet second line inside an option: muted, and light on the navy of a chosen one. */
