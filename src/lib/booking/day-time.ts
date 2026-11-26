@@ -3,13 +3,13 @@
 // read the same shape from `schedule.offerDays` and `visits.areaDays` once the slots are built. Nothing here knows about the server.
 import { longDay } from "@/lib/portal/words"
 
-/** One open start time: "HH:MM" on a 24-hour clock. `best` is the slot the engine ranks first for that day; the calendar does not mark it, and it is never selected for the customer. */
+/** One open start time: "HH:MM" on a 24-hour clock. `best` is the slot the engine ranks first for that day (least added driving); the customer forms mark it "Recommended" (`markBest`), and it is never selected for the customer. */
 export interface StartOption {
   start: string
   best?: boolean
 }
 
-/** One offered day and the start times open on it. `note` and `best` are the engine's own ranking; the calendar shows neither (Hannah, Nov 23 2026: the soonest open day is the only mark). */
+/** One offered day and the start times open on it. `note` and the day's `best` are the engine's own ranking and are never shown; the day's one mark is the soonest open day. The time marked "Recommended" is the `best` start (Hannah, Nov 25 2026). */
 export interface DayTimeOffer {
   day: string
   note?: string | null
@@ -80,11 +80,11 @@ export function fixtureDayTimes(minutes = 120, from = "2027-04-15"): DayTimeOffe
   const busy = ["08:30", "09:30", "11:30", "13:00", "14:30"]
   const [d1, d2, d3, d4, d5] = openDays(from) as [string, string, string, string, string]
   return [
-    { day: d1, times: timesFor(minutes, [...busy, "08:00", "09:00", "10:00", "10:30", "11:00", "12:00", "12:30", "13:30", "14:00"], null) },
-    { day: d2, times: timesFor(minutes, busy, null) },
-    { day: d3, times: timesFor(minutes, ["08:00", "12:00"], null) },
-    { day: d4, times: timesFor(minutes, ["09:00"], null) },
-    { day: d5, times: timesFor(minutes, [], null) },
+    { day: d1, times: timesFor(minutes, [...busy, "08:00", "09:00", "10:00", "10:30", "11:00", "12:00", "12:30", "13:30", "14:00"], "15:00") },
+    { day: d2, times: timesFor(minutes, busy, "10:00") },
+    { day: d3, times: timesFor(minutes, ["08:00", "12:00"], "09:00") },
+    { day: d4, times: timesFor(minutes, ["09:00"], "10:30") },
+    { day: d5, times: timesFor(minutes, [], "10:00") },
   ]
 }
 
@@ -109,7 +109,11 @@ export function fixtureCalendarDays(minutes = 120, from = "2027-04-15", until?: 
       continue
     }
     const busy = weekday % 3 === 0 ? ["09:00", "09:30", "11:00", "13:30"] : weekday % 2 === 0 ? ["08:30", "12:00"] : ["10:00"]
-    out.push({ day: d, times: timesFor(minutes, busy, null) })
+    // one best start a day, standing in for `offerFor`'s least-added-driving slot: it varies from day to day, and falls back to the first open start when the wanted one is taken
+    const open = timesFor(minutes, busy, null).map((t) => t.start)
+    const wanted = ["10:00", "13:00", "09:30", "14:00", "11:30"][weekday % 5]!
+    const best = open.includes(wanted) ? wanted : (open.find((t) => t >= "09:00") ?? open[0] ?? null)
+    out.push({ day: d, times: timesFor(minutes, busy, best) })
   }
   return out
 }

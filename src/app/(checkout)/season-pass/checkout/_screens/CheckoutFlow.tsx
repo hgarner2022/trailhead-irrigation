@@ -5,7 +5,7 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { Pass } from "@/lib/admin/types"
-import { STEPS, STEP_COUNT, canContinue, stepProblems, toPass, type CheckoutFields, type CheckoutState } from "./checkout-state"
+import { STEPS, STEP_COUNT, canContinue, toPass, type CheckoutFields, type CheckoutState } from "./checkout-state"
 import type { PlaceProvider } from "@/lib/places"
 import { AddressStep } from "./checkout-address"
 import { CONSENT_PROBLEM_ID } from "./checkout-consent"
@@ -16,7 +16,6 @@ import { renewalAnswers } from "./checkout-renewal"
 import { useCheckoutServer } from "./use-checkout-server"
 import { useCheckoutStorage } from "./use-checkout-storage"
 import { CardStep } from "./checkout-card"
-import { ErrorSummary } from "./checkout-errors"
 import type { BeginCheckout, FinishCheckout, OfferQuery, RenewCheckout, RenewalPrefill } from "./checkout-submit"
 import { savePassImage } from "@/lib/pass-card-image"
 import { InspectionStep } from "./checkout-inspection"
@@ -239,7 +238,6 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
               {current.question}
             </h1>
             <div className={done ? "mt-5" : "mt-8"}>{body}</div>
-            {attempted && <ErrorSummary problems={stepProblems(state)} />}
             {state.notice && (
               <p role="status" data-slot="checkout-notice" className="mt-6 text-base text-muted-foreground">
                 {state.notice}

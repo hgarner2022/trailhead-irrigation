@@ -12,6 +12,25 @@ function Harness({ initial = { day: "2027-04-15", start: null } as DayTimePick, 
   return <DayCalendar offers={list} value={pick} onChange={setPick} legend="Pick your day" />
 }
 
+describe("DayCalendar, Recommended", () => {
+  it("marks the one best time of the held day with the word Recommended when markBest is on, and chooses nothing", () => {
+    render(<DayCalendar offers={offers} value={{ day: "2027-04-19", start: null }} onChange={() => {}} legend="Pick your day" markBest />)
+    expect(screen.getAllByText("Recommended")).toHaveLength(1)
+    const marked = screen.getByText("Recommended").closest("label")!
+    expect(marked.querySelector("input")).not.toBeChecked()
+    expect(screen.queryByText(/nearby|Ryan|route|already/i)).toBeNull()
+  })
+  it("moves the mark to that day's own best time and shows none without markBest", () => {
+    const { rerender } = render(<DayCalendar offers={offers} value={{ day: "2027-04-15", start: null }} onChange={() => {}} legend="Pick your day" markBest />)
+    const first = screen.getByText("Recommended").closest("label")!.textContent
+    rerender(<DayCalendar offers={offers} value={{ day: "2027-04-19", start: null }} onChange={() => {}} legend="Pick your day" markBest />)
+    expect(screen.getAllByText("Recommended")).toHaveLength(1)
+    expect(screen.getByText("Recommended").closest("label")!.textContent).not.toBe(first)
+    rerender(<DayCalendar offers={offers} value={{ day: "2027-04-19", start: null }} onChange={() => {}} legend="Pick your day" />)
+    expect(screen.queryByText("Recommended")).toBeNull()
+  })
+})
+
 describe("DayCalendar", () => {
   it("shows the month with the soonest open day selected and marked, a dot on every open day and a full day plain", () => {
     render(<Harness />)

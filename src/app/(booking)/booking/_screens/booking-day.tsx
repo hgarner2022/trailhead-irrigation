@@ -22,7 +22,7 @@ export function CalendarGroups({ groups, picks, onPick, note, onNote, error }: {
       {groups.map((g, i) => (
         <section key={g.key} aria-label={g.heading ?? "Day and time"} data-kind={g.key}>
           {g.heading && <h2 className="mb-4 type-heading text-navy">{g.heading}</h2>}
-          <DayCalendar headingLevel={g.heading ? 3 : 2} offers={g.offers} value={picks[g.key] ?? { day: null, start: null }} onChange={(next) => onPick(g.key, next)} legend={g.heading ?? "Pick your day"} error={pickComplete(g.offers, picks[g.key] ?? { day: null, start: null }) ? undefined : error} note={i === groups.length - 1 ? note : undefined} onNote={i === groups.length - 1 ? onNote : undefined} />
+          <DayCalendar markBest headingLevel={g.heading ? 3 : 2} offers={g.offers} value={picks[g.key] ?? { day: null, start: null }} onChange={(next) => onPick(g.key, next)} legend={g.heading ?? "Pick your day"} error={pickComplete(g.offers, picks[g.key] ?? { day: null, start: null }) ? undefined : error} note={i === groups.length - 1 ? note : undefined} onNote={i === groups.length - 1 ? onNote : undefined} />
         </section>
       ))}
     </div>

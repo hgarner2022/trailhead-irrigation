@@ -28,8 +28,7 @@ describe("validation that helps", () => {
       expect(field).toHaveAttribute("aria-invalid", "true")
       expect(field).toHaveAccessibleDescription(/\w/)
     }
-    const summary = screen.getByRole("alert")
-    expect(summary).toHaveTextContent("Check these before you continue: First name, Last name, Email, Phone.")
+    expect(screen.queryByText(/Check these before you continue/)).toBeNull()
   })
   it("asks a last name beside the first, as its own required field", () => {
     render(<CheckoutFlow season={2027} initialStep={5} prefill={{ ...answers, lastName: " " }} />)

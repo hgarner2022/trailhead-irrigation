@@ -34,6 +34,8 @@ export function useKnownProperty(a: {
   }, [a.contactStep, contact, email])
   return {
     property,
+    /** the first name on file, only once the email typed is the one on file; null before that */
+    welcomeName: contact?.firstName ?? null,
     /** the card on file, only when the email typed is the one on file for the property's customer */
     offered: cardToOffer(property, email),
     otherCard,

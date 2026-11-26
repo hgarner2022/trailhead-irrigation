@@ -111,6 +111,7 @@ export function RescheduleSheet({ service, address, currentDay, days, textHref, 
                     headingLevel={2}
                     density="sheet"
                     timed={timed}
+                    markBest={timed}
                     current={currentDay ?? null}
                     timesHint={timed && currentStart ? `Your own time, ${clock12(currentStart)}, is offered again.` : undefined}
                   />

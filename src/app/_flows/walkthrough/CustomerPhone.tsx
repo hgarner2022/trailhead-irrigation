@@ -38,7 +38,8 @@ import { LiveScreen } from "./LiveScreens"
 // checkout, and Details. The real screens run over fixtures; a link to another of them is caught and opens it here, a link that leaves the
 // prototype says so in the strip. Nothing is sent.
 
-const pass = (snapshot.passes[0] as Pass) && ({ ...(snapshot.passes[0] as Pass), visits: (snapshot.passes[0] as Pass).visits.map((v) => ({ ...v, description: serviceFor(v.kind, (snapshot.passes[0] as Pass).zones)?.description })) } as Pass)
+// the July inspection is an add-on the customer chooses, so the walkthrough's pass has the usual two visits
+const pass = (snapshot.passes[0] as Pass) && ({ ...(snapshot.passes[0] as Pass), visits: (snapshot.passes[0] as Pass).visits.filter((v) => v.kind !== "inspection").map((v) => ({ ...v, description: serviceFor(v.kind, (snapshot.passes[0] as Pass).zones)?.description })) } as Pass)
 const offers = { v1: fixtureCalendarDays(60, "2027-04-15", "2027-05-14") }
 const receiptOf = {
   id: "pay_9",
