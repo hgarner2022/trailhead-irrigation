@@ -1,5 +1,6 @@
 import { RECORD_ROW, RecordList, RecordRowEnd, RecordRowText } from "@/components/blocks/RecordPanel"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
+import { moneySigned, shortDate } from "@/lib/admin/format"
 import type { AdminPayment } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
 import type { BillState } from "./bill-model"
@@ -11,9 +12,6 @@ import { paymentWords } from "./job-panel-model"
 // sent, Past due, Failed), every payment newest first with how it came and its reference, and the open invoice with when it was
 // sent and is due, its pay link and Remind. A tech's data carries no references and no pay link, so none shows for them.
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-const day = (d: string) => `${MONTHS[Number(d.slice(5, 7)) - 1]} ${Number(d.slice(8, 10))}`
-const dollars = (n: number) => `${n < 0 ? "-" : ""}$${Math.abs(n).toLocaleString("en-US")}`
 
 export function JobMoneySection({ row, payments, bill, actions }: { row: JobRow; payments: AdminPayment[]; bill: BillState; actions?: VisitActions }) {
   const ok = payments.filter((p) => p.status === "succeeded")
@@ -25,9 +23,9 @@ export function JobMoneySection({ row, payments, bill, actions }: { row: JobRow;
         <RecordList data-slot="job-payments">
           {ok.map((p) => (
             <li key={p.id} className={`flex items-center ${RECORD_ROW}`}>
-              <RecordRowText title={paymentWords(p)} detail={p.paidOn ? day(p.paidOn) : undefined} />
+              <RecordRowText title={paymentWords(p)} detail={p.paidOn ? shortDate(p.paidOn) : undefined} />
               <RecordRowEnd>
-                <span className="tabular-nums">{dollars(p.amount)}</span>
+                <span className="tabular-nums">{moneySigned(p.amount)}</span>
               </RecordRowEnd>
             </li>
           ))}
@@ -38,7 +36,7 @@ export function JobMoneySection({ row, payments, bill, actions }: { row: JobRow;
       {bill.invoice && (
         <div className="mt-4" data-slot="job-bill">
           <BillSent invoice={bill.invoice} actions={actions} />
-          <p className="mt-1 text-sm text-muted-foreground">{`Sent ${day(bill.invoice.sentOn)}, due ${day(bill.invoice.dueOn)}`}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{`Sent ${shortDate(bill.invoice.sentOn)}, due ${shortDate(bill.invoice.dueOn)}`}</p>
         </div>
       )}
     </section>

@@ -40,6 +40,6 @@ describe("44px tap targets below md", () => {
     render(<SettingsScreen data={data} today={TODAY} />)
     const buttons = screen.getAllByRole("button").filter((b) => b.getAttribute("aria-label")?.match(/^(Remove|Deactivate)/))
     expect(buttons.length).toBeGreaterThan(0)
-    for (const b of buttons) expect(b.className).toContain("min-h-11")
+    for (const b of buttons) expect(b.className).toMatch(/(^| )h-11( |$)/)
   })
 })

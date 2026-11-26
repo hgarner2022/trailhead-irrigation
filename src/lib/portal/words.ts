@@ -1,7 +1,7 @@
 // The customer's wording for the portal, pure: one place for what a visit and a payment are called on the account screens
 // (docs/plans/2026-11-18-customer-portal-design.md section 4; Hannah's words: Invoice, Unpaid, Past due, Canceled, never request or approve).
 // The money words themselves come from `src/lib/money/words.ts`; this file only adds the customer's reading of them.
-import { monthDay, monthName, monthShort, writtenDate } from "@/lib/admin/format"
+import { longDay, monthDay, monthName, monthShort, shortDay, weekdayName } from "@/lib/admin/format"
 import { firstNameOf } from "@/lib/admin/people"
 import { PHONE_DISPLAY } from "@/lib/nav"
 import type { TimingPreference } from "@/lib/admin/types"
@@ -19,13 +19,9 @@ export function customerFacingFirstName(name: string | null | undefined): string
   return firstNameOf(name)
 }
 
-const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-export const weekdayName = (day: string) => WEEKDAYS[new Date(`${day}T12:00:00Z`).getUTCDay()]!
+/** The day words live in `src/lib/admin/format.ts`; the portal reads them from here. */
+export { weekdayName, longDay, shortDay }
 
-/** "Tuesday, May 5". */
-export const longDay = (day: string) => `${weekdayName(day)}, ${writtenDate(day)}`
-/** "Tue, Apr 28". */
-export const shortDay = (day: string) => `${weekdayName(day).slice(0, 3)}, ${monthShort(monthDay(day).month)} ${monthDay(day).day}`
 /** "Dec 1". */
 export const dueDay = (day: string) => `${monthShort(monthDay(day).month)} ${monthDay(day).day}`
 /** "November 3, 2026": a sold or paid day in a list. */

@@ -36,6 +36,7 @@ import { HomeRequestRows, RequestRoute, RequestsRoute } from "./WalkRequests"
 import { ApprovedJobRoute, QuoteRoute, QuotesRoute } from "./WalkQuotes"
 import { ReceiptRoute } from "./receipts"
 import { type Route } from "./routes"
+import { money } from "@/lib/admin/format"
 
 // The screens of the walkthrough, each one of the design pages over the walkthrough's data (docs/plans/2026-11-19-prototype-walkthrough-spec.md,
 // section 2). Records open through the links the pages already draw; the two grids pass the router to their `onOpen`. No page component is edited.
@@ -47,7 +48,6 @@ const jobsColumns: GridColumnDef<GridJob>[] = jobGridColumns.map((c) =>
 // Home, Schedule, Reports and Settings are the live screens over the repo's own fixture (the catalogue stories use the same); they are not re-keyed to this world's customers.
 const LIVE = snapshot as AdminData
 const LIVE_TODAY = "2026-11-12T19:56:30Z"
-const money = (n: number) => `$${n.toLocaleString("en-US")}`
 
 /** The Jobs grid of the design with New job wired: it opens the sheet, and Add job opens the flow at Schedule. */
 export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen: (id: string) => void; onNew: () => void }) {

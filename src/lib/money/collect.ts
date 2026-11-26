@@ -3,6 +3,7 @@
 // order, their words, which one starts selected and which are held back. Nothing here moves money; every choice is a button the
 // office presses (docs/plans/2026-11-18-done-and-paid-design.md, section 3). The words after a payment come from `words.ts`.
 import { METHOD_WORDS, paidTotal, type MoneyPayment } from "./words"
+import { money } from "@/lib/admin/format"
 
 export type PayChoice = "card" | "check" | "venmo" | "cash" | "invoice" | "later"
 
@@ -60,7 +61,6 @@ export interface CollectPlan {
   initial: PayChoice
 }
 
-export const dollars = (n: number) => `$${n.toLocaleString("en-US")}`
 
 /** "Visa ending 4242", or "card ending 4242" when the brand is not known. */
 export const cardWordsOf = (card: { brand?: string | null; last4: string }) => `${card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : "card"} ending ${card.last4}`
@@ -69,7 +69,7 @@ const handed = (value: "check" | "venmo" | "cash", amount: number): PayOption =>
   value,
   label: value === "check" ? "Check" : value === "venmo" ? "Venmo" : "Cash",
   line: value === "cash" ? "Emails a receipt" : value === "check" ? "Check number, and emails a receipt" : "Venmo handle, and emails a receipt",
-  button: amount > 0 ? `Record ${dollars(amount)} paid` : "Record the payment",
+  button: amount > 0 ? `Record ${money(amount)} paid` : "Record the payment",
 })
 
 /**
@@ -84,7 +84,7 @@ export function collectPlan(i: CollectInput): CollectPlan {
   const ways = (["check", "venmo", "cash"] as const).map((v) => handed(v, i.amount))
   const asAgreed = useCard && i.isPass
   const card: PayOption[] = useCard
-    ? [{ value: "card", label: asAgreed ? "Charge the card as agreed" : `Charge the ${cardWords} now`, line: `Charges ${dollars(i.amount)} to the ${asAgreed ? cardWords : "card"} and emails a receipt`, button: `Charge ${dollars(i.amount)}` }]
+    ? [{ value: "card", label: asAgreed ? "Charge the card as agreed" : `Charge the ${cardWords} now`, line: `Charges ${money(i.amount)} to the ${asAgreed ? cardWords : "card"} and emails a receipt`, button: `Charge ${money(i.amount)}` }]
     : []
   const invoice: PayOption[] = i.canInvoice && !i.invoiceOpen && !needsAmount && !asAgreed
     ? [{ value: "invoice", label: "Send an invoice", line: `Texts a pay link, due in ${i.dueDays ?? 14} days`, button: "Send the invoice" }]
@@ -108,7 +108,7 @@ export function paidWords(method: string): string {
 export const receiptLine = (firstName: string) => `Receipt emailed to ${firstName}.`
 
 /** What the panel says while a card charge is going through. */
-export const chargingWords = (amount: number, cardWords: string) => `Charging ${dollars(amount)} to the ${cardWords}`
+export const chargingWords = (amount: number, cardWords: string) => `Charging ${money(amount)} to the ${cardWords}`
 
 /** The payment a Refund reverses: the newest succeeded positive payment by check, Venmo or cash that no refund has taken back; undefined for a card payment (Stripe's own refund) or when nothing is left. */
 export function refundable(payments: readonly (MoneyPayment & { reference?: string | null })[]): { payment: MoneyPayment; left: number } | undefined {

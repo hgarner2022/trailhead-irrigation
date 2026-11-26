@@ -1,7 +1,7 @@
 // The deposit of a quote (docs/plans/2026-11-20-requests-and-quotes-research.md, "Deposits and card on file at approval"): optional, empty by default, typed as dollars or a percent and
 // frozen as dollars, never above the total. Re-exported by quote-model.ts. Pure.
 
-export const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`
+import { moneyRounded } from "@/lib/admin/format"
 
 export type DepositMode = "none" | "dollars" | "percent"
 
@@ -29,7 +29,7 @@ export function depositOf(total: number, input: DepositInput): DepositResult {
   if (input.mode === "dollars") {
     if (!Number.isInteger(n)) return { amount: null, problem: "Use whole dollars." }
     if (n <= 0) return { amount: null, problem: "A deposit is more than $0." }
-    if (n > total) return { amount: null, problem: `A deposit cannot be more than the total, ${money(total)}.` }
+    if (n > total) return { amount: null, problem: `A deposit cannot be more than the total, ${moneyRounded(total)}.` }
     return { amount: n, problem: "" }
   }
   if (n <= 0) return { amount: null, problem: "A deposit is more than 0%." }

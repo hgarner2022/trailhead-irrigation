@@ -13,13 +13,13 @@ import { FIELD } from "./CustomerPicker"
 import type { JobActions } from "./job-actions-types"
 import { FORM_STATUS } from "./use-runner"
 import { JobLines } from "./VisitLines"
+import { money } from "@/lib/admin/format"
 
 // The Lines section of the job panel: what was sold, one row each, a canceled line struck through, an unpriced line saying
 // Quote later, a Tax line only when there is sales tax, and the total. On an open one-off job a manager changes the price and quantity of a line in place (the total
 // follows), cancels a line, and adds one from the active catalogue or as a free line, each in one dialog. A tech, a pass and a job paid in full
 // see the plain list. Every change goes through `lines.add`, `lines.update` and `lines.cancel`, which refuse what is wrong.
 
-const money = (n: number) => `$${n.toLocaleString("en-US")}`
 const FREE = "free"
 
 /** What a canceled job's canceled lines were worth, whole dollars: shown struck through where the total would be, so "Quote later" stays the word for lines nobody has priced. */

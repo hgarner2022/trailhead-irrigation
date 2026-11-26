@@ -97,6 +97,26 @@ export function writtenDate(iso: string, timeZone?: string): string {
   return `${monthName(month)} ${day}`
 }
 
+/** "$1,234": whole dollars exactly as given, with the thousands comma. The one money format; a list, a card, a band and a message all read it. */
+export const money = (n: number) => `$${n.toLocaleString("en-US")}`
+
+/** "$1,235": rounds to the dollar first, for an amount that is computed (a deposit share). */
+export const moneyRounded = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`
+
+/** "-$45": a credit or a refund reads with the sign first, never "$-45". */
+export const moneySigned = (n: number) => `${n < 0 ? "-" : ""}$${Math.abs(n).toLocaleString("en-US")}`
+
+const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+/** "Tuesday" for a calendar day ("2026-05-05"). */
+export const weekdayName = (day: string) => WEEKDAY_NAMES[new Date(`${day}T12:00:00Z`).getUTCDay()]!
+
+/** "Tue, Apr 28": a day with its weekday, for a card, a band or a panel. */
+export const shortDay = (day: string) => `${weekdayName(day).slice(0, 3)}, ${shortDate(day)}`
+
+/** "Tuesday, May 5": a day written out, where there is room. */
+export const longDay = (day: string) => `${weekdayName(day)}, ${writtenDate(day)}`
+
 /** The word for each visit kind in a sentence; "other" reads as "visit". */
 export const KIND_WORDS: Record<Visit["kind"], string> = {
   "turn-on": "turn-on",

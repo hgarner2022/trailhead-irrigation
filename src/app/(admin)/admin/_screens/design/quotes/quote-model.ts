@@ -135,7 +135,9 @@ export const QUOTE_PILL: Record<QuoteState, { status: PillStatus; label: string 
   archived: { status: "quote-archived", label: "Archived" },
 }
 
-export { depositOf, money, type DepositInput, type DepositMode, type DepositResult } from "./quote-deposit"
+export { depositOf, type DepositInput, type DepositMode, type DepositResult } from "./quote-deposit"
+/** A quote reads whole dollars, rounded (`moneyRounded` in the format module); the screens of this folder import it as `money`. */
+export { moneyRounded as money } from "@/lib/admin/format"
 /** One line's total: its price times its quantity (one when it has none). */
 export const lineTotal = (l: QuoteLine) => l.amount * (l.quantity ?? 1)
 /** The total of the lines that count: a canceled line is out. */

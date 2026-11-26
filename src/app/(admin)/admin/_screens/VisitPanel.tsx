@@ -8,13 +8,13 @@ import { RECORD_ROW, RecordFacts, RecordList, RecordPanel, RecordRowEnd, RecordR
 import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { StatusPills } from "@/components/blocks/StatusPill"
 import { dayOf } from "@/lib/admin/calendar"
-import { TIME_ZONE, shortDate } from "@/lib/admin/format"
+import { money, shortDate, TIME_ZONE } from "@/lib/admin/format"
 import { visitJob } from "@/lib/admin/jobs"
 import { customerUrl, jobUrl } from "@/lib/admin/links"
 import { routePeople } from "@/lib/admin/people"
 import type { AdminData } from "@/lib/admin/types"
 import { formatPhone } from "@/lib/format/contact"
-import { dollars, type CollectPlan } from "@/lib/money/collect"
+import { type CollectPlan } from "@/lib/money/collect"
 import { propertyLines, yardFromPass } from "./customers-model"
 import { photosAddedWords } from "@/components/blocks/Photos"
 import { PanelNotes } from "./PanelNotes"
@@ -220,7 +220,7 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
           <CollectPayment
             className="mt-3"
             plan={collectPlan}
-            summary={`${kindLabel(visit)}${plan.unpaid > 0 ? ` · ${dollars(plan.unpaid)} unpaid` : ""}`}
+            summary={`${kindLabel(visit)}${plan.unpaid > 0 ? ` · ${money(plan.unpaid)} unpaid` : ""}`}
             firstName={first}
             onCharge={actions ? () => actions.chargeCard(visit.id) : log("charge")}
             onRecord={actions ? (input) => actions.recordPayment(visit.id, input) : log("record")}
