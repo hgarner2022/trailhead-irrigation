@@ -4,18 +4,21 @@ import { useEffect, useId, useRef, useState, type CSSProperties } from "react"
 import { Clock, Tag } from "lucide-react"
 import type { ServiceEntry } from "@/lib/booking/services"
 import { cn } from "@/lib/utils"
+import { PriceLines } from "./PriceLines"
 import { ServiceIcon, iconFor } from "./ServiceIcon"
 import { Tick } from "./Tick"
-import { optionClass, optionDetailClass, optionFocusWithin } from "./option-styles"
+import { useKeyboardFocus } from "./keyboard-focus"
+import { optionClass, optionDetailClass, optionFocusKeyboard } from "./option-styles"
 import { metaLine, panelOf } from "./service-card-model"
 
-// One service card of the booking form's Service step (Hannah, Nov 25 2026: "Can it just be a clickable card?... just go do it"; the options she chose from are pictured in
-// docs/review/2026-11-25-service-card-options, this is A2, pictured in docs/review/2026-11-26-service-card-a2). THE WHOLE CARD IS THE CHOICE: its header is one toggle button (aria-pressed). One press chooses the service; a second press removes the
-// choice; choosing another card replaces it. There is no pill and no second button. What says "press me": the card sits a little above the page, its edge darkens under a pointer, it
-// gives under a press, its icon draws on first view, and an empty ring at the right marks it as a choice. Chosen, the header is the one selected state of every option on the
-// customer's screens (optionClass: navy, white text), the ring turns white and gains its dot (a radio's own mark; no tick, no badge, no pulse: docs/review/2026-11-26-check-redesign), and the card opens by itself to show what is included, the
-// length and the price rule, read from the catalogue. Every card is white until chosen, the Season Pass too (an orange tile and top rule set it apart). The motion is in app/base.css
-// (`.svc-*`), each piece once, in answer to a press, and off under prefers-reduced-motion.
+// One service card of the booking form's Service step (Hannah, Nov 25 2026: "redesign it, do better"; the research, the decision and the pictures are in docs/review/2026-11-26-service-card-redesign).
+// THE WHOLE CARD IS THE CHOICE: its header is one toggle button (aria-pressed). One press chooses the service; a second press removes the choice; choosing another card replaces it.
+// THERE IS NO MARK ON IT, chosen or not: no check, no ring, no dot, no badge, no chevron. What says "press me" is the card itself: it sits a little above the page on a soft shadow, lifts and
+// darkens its edge under a pointer, gives and settles onto the page under a press, and its icon draws on first view. What says "chosen" is the card's own body: the header fills navy with white
+// words (the one selected state of every option on the customer's screens, optionClass), the card rises on a deeper shadow and opens by itself to show what is included, the length and the price
+// rule, read from the catalogue. Filled against unfilled and open against closed are differences of lightness and shape, not of hue, so the choice reads without colour too. Every card is white
+// until chosen, the Season Pass too (an orange tile and a thin orange rule along its top set it apart). The orange focus ring is for the KEYBOARD only (useKeyboardFocus): a tap, a click or the
+// step's own focus on load never draws a second edge round the card. The motion is in app/base.css (`.svc-*`), each piece once, in answer to a press, and off under prefers-reduced-motion.
 
 export interface ServiceCardProps {
   entry: ServiceEntry
@@ -33,6 +36,7 @@ export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCar
   const ref = useRef<HTMLLIElement>(null)
   // The icon draws once on first appearance and, with a small spring, once more on each press.
   const [play, setPlay] = useState(0)
+  const kbd = useKeyboardFocus()
   const pass = entry.kind === "pass"
   const meta = metaLine(entry)
   const { lead, items, facts } = panelOf(entry)
@@ -70,8 +74,14 @@ export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCar
       data-slot="service-entry"
       data-kind={entry.kind}
       data-selected={selected || undefined}
-      className={cn("svc-card scroll-mt-4 scroll-mb-28 overflow-hidden rounded-lg border bg-background sm:scroll-mb-6", optionFocusWithin, selected ? "border-navy" : cn("border-border shadow-sm hover:border-navy/40 hover:shadow-md", pass && "border-t-2 border-t-primary"))}
+      data-kbd={kbd.shown || undefined}
+      className={cn(
+        "svc-card relative scroll-mt-4 scroll-mb-28 overflow-hidden rounded-lg border bg-background sm:scroll-mb-6",
+        optionFocusKeyboard,
+        selected ? "border-navy shadow-lg shadow-navy/15" : "border-border shadow-sm hover:border-navy/40 hover:shadow-md",
+      )}
     >
+      {pass && <span aria-hidden data-slot="service-rule" className={cn("svc-rule pointer-events-none absolute inset-x-0 top-0 z-10 h-0.5 bg-primary", selected && "opacity-0")} />}
       <button
         type="button"
         aria-pressed={selected}
@@ -82,9 +92,10 @@ export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCar
         }}
         data-slot="service-head"
         data-autofocus={selected || undefined}
+        {...kbd.handlers}
         className={cn(optionClass({ selected, settle: false }), "flex min-h-[5.5rem] w-full items-center gap-4 rounded-none border-0 p-4 text-left focus-visible:ring-0 focus-visible:ring-offset-0")}
       >
-        <span data-slot="service-tile" className={cn("svc-fade flex size-14 shrink-0 items-center justify-center rounded-lg border", pass && !selected ? "border-primary/30 bg-primary/10" : "border-border bg-background")}>
+        <span data-slot="service-tile" className={cn("svc-fade flex size-14 shrink-0 items-center justify-center rounded-lg", selected ? "bg-background" : pass ? "bg-primary/10" : "bg-stone")}>
           <span key={play} className={cn("flex", play > 0 && "svc-spring")}>
             <ServiceIcon name={iconFor(entry.key)} delay={play === 0 ? index * 40 : 0} />
           </span>
@@ -93,9 +104,6 @@ export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCar
           <span className="block type-option text-balance">{entry.name}</span>
           {meta && <span className={cn("svc-fade mt-1 block text-sm leading-5 whitespace-nowrap tabular-nums", optionDetailClass(selected))}>{meta}</span>}
         </span>
-        {!selected && (
-          <span data-slot="service-ring" aria-hidden className="svc-fade flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-navy/30" />
-        )}
       </button>
       <div ref={panel} id={`${id}-panel`} role="region" aria-label={entry.name} aria-hidden={!selected} inert={!selected} data-slot="service-panel" data-open={selected || undefined} className="svc-panel">
         <div>
@@ -105,17 +113,22 @@ export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCar
                 {lead}
               </p>
             )}
-            {items.length > 0 && (
-              <ul data-slot="service-included" className="space-y-2">
-                {items.map((item, i) => (
-                  <li key={item.text} {...line(i + 1)} className="flex items-start gap-2 text-base leading-snug text-foreground">
-                    <Tick className="mt-1" />
-                    <span className="flex-1">{item.text}</span>
-                    {item.price && <span className="shrink-0 font-semibold text-navy tabular-nums">{item.price}</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
+            {items.length > 0 &&
+              (pass ? (
+                // the pass's two visits are money: the one line-item block every customer screen lists money through
+                <div data-slot="service-included" {...line(1)}>
+                  <PriceLines className="border-b-0 [&>div:last-child]:pb-0" lines={items.map((item) => ({ name: item.text, value: item.price ?? "" }))} />
+                </div>
+              ) : (
+                <ul data-slot="service-included" className="space-y-2">
+                  {items.map((item, i) => (
+                    <li key={item.text} {...line(i + 1)} className="flex items-start gap-2 text-base leading-snug text-foreground">
+                      <Tick className="mt-1" />
+                      <span className="flex-1">{item.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              ))}
             {(facts.length || facts.rule) && (
               <ul data-slot="service-facts" {...line(items.length + 1)} className="space-y-2 text-sm text-navy">
                 {facts.length && (

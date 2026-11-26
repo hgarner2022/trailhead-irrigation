@@ -101,8 +101,8 @@ h1, h2, h3 {
   --motion-ease: cubic-bezier(0.2, 0, 0, 1);
   /* A service card choosing and opening (the booking form's Service step). It is the one large surface that grows
      under the finger, so it has its own, longer set and the shared tokens above stay as they are for the calendar,
-     the option chips and the dialogs. The order is choose, fill, open, read: the check lands at once, the header
-     cross-fades to navy over card-fill, the height starts one card-step later and takes card-open on a symmetric
+     the option chips and the dialogs. The order is choose, fill, open, read: the card gives under the press, the header
+     cross-fades to navy and the card rises on its shadow over card-fill, the height starts one card-step later and takes card-open on a symmetric
      ease (the shared ease covers most of its distance in its first third, which read as a snap on a panel this
      tall), and the lines come in from the second step, one card-stagger apart. Closing is card-close: leaving is
      quicker than arriving. Sources: Material 3 motion (medium 250 to 400ms for a component that expands, long 450
@@ -201,23 +201,32 @@ h1, h2, h3 {
 .svc-panel > div { min-height: 0; overflow: hidden; }
 @keyframes svc-line { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .svc-panel[data-open] [data-line] {
-  animation: svc-line var(--motion-card-line) var(--motion-card-ease) calc(var(--motion-card-step) * 2.2 + var(--i, 0) * var(--motion-card-stagger)) both;
+  animation: svc-line var(--motion-card-line) var(--motion-card-ease) calc(var(--motion-card-step) * 1.8 + var(--i, 0) * var(--motion-card-stagger)) both;
 }
 .svc-chevron { transition: transform var(--motion-base) var(--motion-ease); }
-.svc-card { transition: transform var(--motion-press) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease), box-shadow var(--motion-fast) var(--motion-ease); }
-/* A press on a card's header: the whole card gives a little, not the header inside its edge. */
-.svc-card:has(> .opt:active) { transform: scale(0.985); }
-.svc-card > .opt:active { transform: none; }
-/* Chosen: the header, its second line and the icon tile cross-fade to the chosen colours over card-fill; unchosen they
-   come back in card-close. The card itself does not bounce while it grows: the ease's slow finish is the settle. */
+/* A card carries no mark, so the card itself says "press me" and "chosen" (docs/review/2026-11-26-service-card-redesign).
+   At rest it sits a little above the page on a soft shadow. Under a pointer (a laptop only: a phone has no hover and a
+   stuck one after a tap would look chosen) it lifts a pixel and its shadow and edge deepen. Under a press the whole card
+   gives a little and comes down onto the page: its shadow goes. Chosen, it rises on a deeper shadow over card-fill, with
+   the header's fill, and comes back down in card-close. */
 .svc-card { --svc-fill: var(--motion-card-close); }
 .svc-card[data-selected] { --svc-fill: var(--motion-card-fill); }
+.svc-card { transition: transform var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease), box-shadow var(--svc-fill) var(--motion-card-ease); }
+@media (hover: hover) {
+  .svc-card:not([data-selected]):hover { transform: translateY(-1px); }
+}
+/* A press on a card's header: the whole card gives, not the header inside its edge. `--tw-shadow` is the card's own
+   shadow only, so the keyboard's focus ring (drawn with box-shadow too) stays while Space is held. */
+.svc-card:has(> .opt:active) { transform: scale(0.985); --tw-shadow: 0 0 #0000; transition-duration: var(--motion-press); }
+.svc-card > .opt:active { transform: none; }
+/* The Season Pass's orange rule fades out as its header fills, and comes back with it. */
+.svc-rule { transition: opacity var(--svc-fill) var(--motion-card-ease); }
+/* Chosen: the header, its second line and the icon tile cross-fade to the chosen colours over card-fill; unchosen they
+   come back in card-close. The card itself does not bounce while it grows: the ease's slow finish is the settle. */
 /* The words change colour quickly, as the background passes its middle: navy words on the light half of the fade, white
    on the dark half, so the name is never grey on grey. */
 .svc-card > .opt { transition: transform var(--motion-press) var(--motion-ease), color var(--motion-press) var(--motion-card-ease) calc(var(--svc-fill) * 0.3), background-color var(--svc-fill) var(--motion-card-ease); }
 .svc-card .svc-fade { transition: color var(--motion-press) var(--motion-card-ease) calc(var(--svc-fill) * 0.3), background-color var(--svc-fill) var(--motion-card-ease), border-color var(--svc-fill) var(--motion-card-ease); }
-/* Chosen, the card's ring turns white with the header (.svc-fade) and its dot lands at once: the choice is made. No tick, no pulse. */
-.svc-dot { animation: svc-pop var(--motion-fast) var(--motion-ease) both; }
 /* The quote card answers a press: it gives a little and its arrow moves a few pixels, then both come back. */
 .svc-quote { transition: transform var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease); }
 .svc-arrow { transition: transform var(--motion-fast) var(--motion-ease); }
@@ -226,7 +235,7 @@ h1, h2, h3 {
 @media (prefers-reduced-motion: reduce) {
   .svc-icon [data-draw] { animation: none; stroke-dashoffset: 0; }
   .svc-spring { animation: none; }
-  .svc-icon [data-pop], .svc-icon [data-turn], .svc-icon [data-rise], .svc-dot, .svc-panel[data-open] [data-line] { animation: none; }
-  .svc-panel, .svc-panel[data-open], .svc-chevron, .svc-card, .svc-card > .opt, .svc-card .svc-fade, .svc-arrow, .svc-quote { transition: none; }
-  .svc-quote:active, .svc-quote:active .svc-arrow, .svc-card:has(> .opt:active) { transform: none; }
+  .svc-icon [data-pop], .svc-icon [data-turn], .svc-icon [data-rise], .svc-panel[data-open] [data-line] { animation: none; }
+  .svc-panel, .svc-panel[data-open], .svc-chevron, .svc-card, .svc-card:has(> .opt:active), .svc-rule, .svc-card > .opt, .svc-card .svc-fade, .svc-arrow, .svc-quote { transition: none; }
+  .svc-quote:active, .svc-quote:active .svc-arrow, .svc-card:has(> .opt:active), .svc-card:not([data-selected]):hover { transform: none; }
 }
