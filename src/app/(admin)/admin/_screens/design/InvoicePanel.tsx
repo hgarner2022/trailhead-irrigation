@@ -21,6 +21,7 @@ import { ReminderDialog } from "./ReminderDialog"
 import { cancelInvoiceCopy, resendInvoiceCopy } from "./confirm-copy"
 import { INVOICE_PILL, type InvoicePageData, type ReminderRow } from "./invoice-fixtures"
 import { NOW, noteOk } from "./job-fixtures"
+import { invoiceHeading } from "@/lib/admin/record-title"
 
 // The invoice as a page of its own, like the job page (Hannah, Nov 19 2026; docs/plans/2026-11-18-invoice-workflow-research.md): the number as the
 // title with its status pill (no chip in the header), the actions at the top right (Send a payment reminder, primary while it is unpaid; Collect
@@ -110,7 +111,7 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
     <>
       <RecordPage
         crumb={{ label: "Invoices", href: "/admin/invoices" }}
-        title={d.number}
+        {...invoiceHeading({ number: d.number, service: d.job.name, customer: d.customer.name, detail: `Sent ${d.sent}` })}
         badges={<StatusPill status={pill.pill} label={pill.label} size="lg" />}
         band={<SummaryBand items={band} />}
         asideLabel="About this invoice"

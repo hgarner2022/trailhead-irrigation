@@ -4,6 +4,7 @@ import { AdminShell } from "@/components/blocks/AdminShell"
 import { PassFlow } from "./PassFlow"
 import { JobPagePass, JobPageReturnTrip } from "./JobPageTrips"
 import { passPageBoughtOf, passPageOf, returnTripOf, type PassState } from "./trip-fixtures"
+import { passService } from "@/lib/admin/record-title"
 
 // The job page for a job with more than one trip: Andrea's Season Pass in four states (Season Pass TH-2027-0008, the 2027 season) and a
 // repair with a return trip, at 1280 and 375. The trips are rows with Move and Mark done on the row. Pure screens over fixtures.
@@ -77,7 +78,7 @@ export const PassCanceled: Story = { ...pass("canceled", laptop), name: "Pass ca
 export const PassCanceledPhone: Story = { ...pass("canceled", phone), name: "Pass canceled, phone" }
 
 const renewedFrom: Story = { args: { data: passPageOf("ahead", { kind: "from", number: "TH-2026-0003" }) } }
-const renewedAs: Story = { args: { data: { ...passPageOf("both-done", { kind: "as", number: "TH-2027-0008" }), title: "Season Pass TH-2026-0003" } } }
+const renewedAs: Story = { args: { data: { ...passPageOf("both-done", { kind: "as", number: "TH-2027-0008" }), service: passService("TH-2026-0003") } } }
 
 /** Ryan sees "Renewed from TH-2026-0003" under the pass card, a link to last season's pass. */
 export const RenewedFrom: Story = { name: "Renewed from", ...renewedFrom, globals: laptop }

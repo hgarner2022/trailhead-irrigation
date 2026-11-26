@@ -9,6 +9,7 @@ import type { PhotoItem } from "@/lib/photos/types"
 import { collectPlan } from "@/lib/money/collect"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import { FROM_ANDREA, noop, photo, visa, type BillingData, type FooterPlan, type JobPageData, type PillData } from "./job-fixtures"
+import { passService } from "@/lib/admin/record-title"
 
 // Design fixtures for a job with more than one trip: Andrea's Season Pass (Spring turn-on, Fall blowout) in four states, and a repair that
 // needed a return trip. A Season Pass trip carries what a one-trip job's visit carries (Hannah, Nov 19 2026): when and who, its checklist
@@ -52,8 +53,10 @@ export interface TripData {
 }
 
 export interface MultiTripData {
-  title: string
-  subtitle: string
+  /** the job's own name, the page title: "Season Pass 2027", "Sprinkler repair" (record-title.ts) */
+  service: string
+  /** the key fact after "for <customer>" under the title: "Sold Nov 2, website" */
+  detail: string
   pills: PillData[]
   notice?: string
   columns: RecordPageColumn[]
@@ -205,8 +208,8 @@ export function passPageFromTrips(trips: TripData[], o: { canceled?: boolean; re
   const sum = billing.summary[1]![1]
   const allDone = trips.every((t) => t.trip?.state === "charged")
   return {
-    title: "Season Pass TH-2027-0008",
-    subtitle: "Andrea Dalton · Sold Nov 2, website",
+    service: passService("TH-2027-0008"),
+    detail: "Sold Nov 2, website",
     pills: [canceled ? { status: "cancelled" } : allDone ? { status: "done" } : { status: "active" }],
     notice: canceled ? "Pass canceled Nov 10. Nothing more will be charged." : undefined,
     columns: passColumns,
@@ -238,13 +241,13 @@ export function passPageBoughtOf(when: "april" | "january"): MultiTripData {
   const spring = when === "april" ? tripOf(SPRING, "t1", "scheduled", { day: "Thu, Apr 29", time: "10:30 am" }) : preferenceTripOf(SPRING, "t1", "Early May")
   const fall = preferenceTripOf(FALL, "t2", when === "april" ? "Early October" : "Late October")
   const data = passPageFromTrips([spring, fall])
-  return { ...data, subtitle: `Andrea Dalton · Sold ${when === "april" ? "Apr 14" : "Jan 12"}, website`, columns: data.columns.map((c) => (c.heading === "Season Pass" ? { ...c, rows: c.rows.filter(([k]) => k !== "Timing") } : c)) }
+  return { ...data, detail: `Sold ${when === "april" ? "Apr 14" : "Jan 12"}, website`, columns: data.columns.map((c) => (c.heading === "Season Pass" ? { ...c, rows: c.rows.filter(([k]) => k !== "Timing") } : c)) }
 }
 
 export function returnTripOf(): MultiTripData {
   return {
-    title: "Andrea Dalton",
-    subtitle: "Sprinkler repair, 2 trips · Added Nov 12",
+    service: "Sprinkler repair",
+    detail: "2 visits · Added Nov 12",
     pills: [{ status: "scheduled" }, { status: "owed", label: "$85 unpaid" }],
     columns: [{ heading: "Where", rows: WHERE }, { heading: "Who", rows: [["Phone", "(970) 555-0123"], ["Who", "Ryan Garner"], ["Card on file", "Visa ending 4242"]] }],
     tripsHeading: "Visits",

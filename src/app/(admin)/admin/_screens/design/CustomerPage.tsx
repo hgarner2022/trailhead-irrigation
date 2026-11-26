@@ -32,6 +32,7 @@ import { MessageDialog } from "./MessageDialog"
 import { ReminderDialog } from "./ReminderDialog"
 import { NOW, noteOk } from "./job-fixtures"
 import { TextLink } from "@/components/blocks/TextLink"
+import { customerHeading } from "@/lib/admin/record-title"
 
 // The customer page (Hannah: "update the customer layout to look like this"), on the page frame of the job page and the rules of
 // docs/plans/2026-11-19-admin-page-layout-research.md and her rules of Nov 19 2026. Header: the name, the badges, and the actions at the top
@@ -148,8 +149,7 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
     <>
       <RecordPage
         crumb={{ label: "Customers", href: "/admin/customers" }}
-        title={d.name}
-        subtitle={d.subtitle}
+        {...customerHeading({ name: d.name, detail: d.subtitle })}
         badges={
           <>
             <StatusPill status={pill.status} label={pill.label} size="lg" />

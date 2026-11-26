@@ -21,6 +21,7 @@ import { isQuoteFirst, type ServicePick } from "./request-catalogue"
 import { REQUEST_PILL, SOURCE_WORDS, cameIn, cameInOn, fullName, matchNote, matchOf, matchWords, serviceWords, stateOf, type ArchiveReason, type Match, type RequestData } from "./request-model"
 import { TextLink } from "@/components/blocks/TextLink"
 import { Notice } from "@/components/blocks/Notice"
+import { requestHeading } from "@/lib/admin/record-title"
 
 // A request as a page of its own (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.2 to 4.5; Hannah's answers 2 and 3 of Nov 20 2026), on the
 // record page frame: the person's name with its status, the band (when it came in, what they asked for, where, how to reach them; none of the four is a link), the customer's
@@ -145,8 +146,7 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
     <>
       <RecordPage
         crumb={{ label: "Requests", href: "/admin/requests" }}
-        title={name}
-        subtitle={`${serviceWords(r) === "Not said" ? "Request" : `Request for ${serviceWords(r)}`} · Came in ${cameInOn(r.receivedAt)}`}
+        {...requestHeading({ name, askedFor: serviceWords(r) === "Not said" ? undefined : serviceWords(r), detail: `Came in ${cameInOn(r.receivedAt)}` })}
         badges={
           <>
             <StatusPill status={REQUEST_PILL[state].status} label={REQUEST_PILL[state].label} size="lg" />

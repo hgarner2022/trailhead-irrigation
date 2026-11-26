@@ -14,6 +14,7 @@ import { walkQuotes } from "../quotes/quote-store"
 import { buildWorldCustomer, quoteRowsFor } from "./customer-build"
 import { worldCustomerIds } from "./world-customers"
 import { shortDate, money } from "@/lib/admin/format"
+import { passService, requestHeading } from "@/lib/admin/record-title"
 export * from "./jobs-data"
 
 // One consistent world for the walkthrough (docs/plans/2026-11-19-prototype-walkthrough-spec.md, section 2), built from the design fixtures and
@@ -252,12 +253,13 @@ export function ownerOf(route: Route): string | undefined {
 export function nameOfRoute(route: Route): string | undefined {
   if (route.screen === "request") {
     const r = requestStore.getSnapshot().find((x) => x.id === route.id)
-    return r ? fullName(r) : undefined
+    return r ? requestHeading({ name: fullName(r) }).title : undefined
   }
   if (route.screen === "customer") return customerPage(route.id ?? "")?.name
   if (route.screen === "job") {
+    // the job's own name, as its page is titled: the service, a Season Pass with its season
     const r = rowOf(route.id ?? "")
-    return r ? (r.service === "Season Pass" ? r.title : r.name) : undefined
+    return r ? (r.service === "Season Pass" ? passService(r.title.replace("Season Pass ", "")) : r.title) : undefined
   }
   if (route.screen === "invoice") return INVOICES.find((i) => i.id === route.id)?.number
   if (route.screen === "quote") return route.id

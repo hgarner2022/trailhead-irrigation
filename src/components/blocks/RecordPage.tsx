@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
 import { FooterSlotContext } from "./record-slot"
 import { TextLink } from "./TextLink"
@@ -14,9 +14,12 @@ import { TextLink } from "./TextLink"
 // Pure props, nothing fetched.
 
 export interface RecordPageProps {
+  /** the record's OWN name, by the one rule in `@/lib/admin/record-title` (a job is its service, a quote and an invoice their number, a request "Request from <person>", a customer their name) */
   title: string
-  /** one muted line; says what the record is, never what a badge says */
+  /** one muted line: who it is for and one key fact ("for Andrea Dalton · Added Nov 18"), never what a badge says */
   subtitle?: string
+  /** the browser tab while the page is open: the title and who it is for, so two tabs for one customer differ */
+  tab?: string
   /** the status badges beside the title: one or two `StatusPill size="lg"` */
   badges?: ReactNode
   /** the list this page belongs to, as a crumb above the title: Jobs */
@@ -36,11 +39,20 @@ export interface RecordPageProps {
   className?: string
 }
 
-export function RecordPage({ title, subtitle, badges, crumb, notice, band, aside, asideLabel = "About this job", actions, children, className }: RecordPageProps) {
+export function RecordPage({ title, subtitle, tab, badges, crumb, notice, band, aside, asideLabel = "About this job", actions, children, className }: RecordPageProps) {
   const [element, setElement] = useState<HTMLElement | null>(null)
+  // the browser tab names this record while its page is open, and goes back to what it said when the page is left
+  useEffect(() => {
+    if (!tab) return
+    const before = document.title
+    document.title = tab
+    return () => {
+      document.title = before
+    }
+  }, [tab])
   return (
     <FooterSlotContext.Provider value={{ element, setElement }}>
-      <article data-slot="record-page" aria-labelledby="record-page-title" className={cn("mx-auto grid w-full max-w-6xl grid-cols-1 gap-x-6 gap-y-4 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto]", className)}>
+      <article data-slot="record-page" data-tab={tab} aria-labelledby="record-page-title" className={cn("mx-auto grid w-full max-w-6xl grid-cols-1 gap-x-6 gap-y-4 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto]", className)}>
         <header data-slot="record-page-header" className="flex min-w-0 flex-col gap-1 lg:col-start-1 lg:row-start-1">
           {crumb && (
             <TextLink href={crumb.href} className="-ml-1 flex w-fit gap-0 px-1 text-sm">

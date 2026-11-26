@@ -6,6 +6,7 @@ import { jobGridRow } from "../quotes/quote-grid"
 import { walkQuotes } from "../quotes/quote-store"
 import { clearWorldCustomers, worldCustomer } from "./world-customers"
 import { money } from "@/lib/admin/format"
+import { passService } from "@/lib/admin/record-title"
 
 // The walkthrough's jobs (see data.ts for the world): the Jobs grid's rows and the page each one opens.
 
@@ -116,8 +117,8 @@ function dalePass(next: boolean): MultiTripData {
   const swap = (t: string) => t.replaceAll("TH-2027-0008", number).replaceAll("Andrea", "Dale")
   return {
     ...d,
-    title: `Season Pass ${number}`,
-    subtitle: next ? "Dale Whitaker · Renewed Nov 3, website" : "Dale Whitaker · Sold Mar 2, website",
+    service: passService(number),
+    detail: next ? "Renewed Nov 3, website" : "Sold Mar 2, website",
     columns: d.columns.map((c) => ({
       ...c,
       rows: c.rows.map((r) => (r[0] === "Address" ? ["Address", "212 Main St, Lafayette"] : r[0] === "Zones" ? ["Zones", "6"] : r[0] === "Gate code" ? ["Gate code", "None"] : r[0] === "Card" ? ["Card", "Visa ending 1881"] : r)),
@@ -140,7 +141,7 @@ export function jobView(id: string): JobView {
   if (id === "pass-2027") return { kind: "trips", data: passPageOf("ahead", { kind: "from", number: "TH-2026-0021" }) }
   if (id === "pass-2026") {
     const d = passPageOf("both-done", { kind: "as", number: "TH-2027-0008" })
-    return { kind: "trips", data: { ...d, title: "Season Pass TH-2026-0021", subtitle: "Andrea Dalton · Sold Mar 2, website", notes: d.notes.map((n) => ({ ...n, what: n.what.replace("TH-2027-0008", "TH-2026-0021") })), messages: d.messages.map((m) => ({ ...m, body: m.body.replace("TH-2027-0008", "TH-2026-0021") })) } }
+    return { kind: "trips", data: { ...d, service: passService("TH-2026-0021"), detail: "Sold Mar 2, website", notes: d.notes.map((n) => ({ ...n, what: n.what.replace("TH-2027-0008", "TH-2026-0021") })), messages: d.messages.map((m) => ({ ...m, body: m.body.replace("TH-2027-0008", "TH-2026-0021") })) } }
   }
   if (id.startsWith("dale-pass")) return { kind: "trips", data: dalePass(id === "dale-pass-2027"), customer: { id: "dale", name: "Dale Whitaker", phone: { text: "(970) 555-0140", href: "tel:+19705550140" } } }
   const c = contactOf(row.name)
@@ -171,7 +172,8 @@ export function jobView(id: string): JobView {
       phone: { text: c.text, href: c.href },
       where,
       billing,
-      subtitle: `${row.title} · Added Nov 12`,
+      service: row.title,
+      added: "Added Nov 12",
       pastVisits: isAndrea ? data.pastVisits : [],
       pastTotal: isAndrea ? data.pastTotal : 0,
       contact: { channel: "text", email: c.email },
