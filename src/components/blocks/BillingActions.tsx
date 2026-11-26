@@ -1,12 +1,11 @@
 "use client"
 
-import Link from "next/link"
 import { ExternalLink, FileText, MoreHorizontal, Receipt, Undo2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
 import { useMedia } from "./use-media"
+import { TextLink } from "./TextLink"
 
 // The buttons of a Billing row (Hannah, Nov 20 2026): on a laptop icon buttons that each carry an aria-label and a tooltip ("View receipt",
 // "Open in Stripe", "Open invoice"), Remind as a quiet word, and More holding Refund; on a phone the same actions as a quiet line of words under
@@ -23,18 +22,18 @@ export interface RowActionsSpec {
   refund?: { amount: string; onRefund: () => void }
 }
 
-export const LINK = "inline-flex min-h-11 items-center gap-1 rounded-sm text-sm font-medium text-primary-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-const ICON_BUTTON = "inline-flex size-11 items-center justify-center rounded-sm text-primary-dark hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:size-9"
+/** a row's text action: 14px, medium, a 44px target on a phone */
+const ACTION = "text-sm"
 
 function IconLink({ href, label, external, children }: { href: string; label: string; external?: boolean; children: React.ReactNode }) {
   const link = external ? (
-    <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`${label} (opens in a new tab)`} className={ICON_BUTTON}>
+    <TextLink href={href} target="_blank" icon aria-label={`${label} (opens in a new tab)`} className="md:size-9">
       {children}
-    </a>
+    </TextLink>
   ) : (
-    <Link href={href} aria-label={label} className={ICON_BUTTON}>
+    <TextLink href={href} icon aria-label={label} className="md:size-9">
       {children}
-    </Link>
+    </TextLink>
   )
   return (
     <TooltipProvider>
@@ -50,9 +49,9 @@ function Icons({ spec }: { spec: RowActionsSpec }) {
   return (
     <span className="flex items-center justify-end">
       {spec.onRemind && (
-        <button type="button" onClick={spec.onRemind} className={`${LINK} px-2 md:min-h-9`}>
+        <TextLink weight="medium" onClick={spec.onRemind} className={`${ACTION} px-2 md:min-h-9`}>
           Remind
-        </button>
+        </TextLink>
       )}
       {spec.receiptHref && (
         <IconLink href={spec.receiptHref} label="View receipt">
@@ -93,31 +92,31 @@ export function ActionLine({ spec, lead }: { spec: RowActionsSpec; lead?: React.
     <span className="flex flex-wrap items-center gap-x-4">
       {lead && <span className="block w-full">{lead}</span>}
       {spec.onRemind && (
-        <button type="button" onClick={spec.onRemind} className={LINK}>
+        <TextLink weight="medium" onClick={spec.onRemind} className={ACTION}>
           Remind
-        </button>
+        </TextLink>
       )}
       {spec.receiptHref && (
-        <Link href={spec.receiptHref} className={LINK}>
+        <TextLink href={spec.receiptHref} weight="medium" className={ACTION}>
           View receipt
-        </Link>
+        </TextLink>
       )}
       {spec.stripeHref && (
-        <a href={spec.stripeHref} target="_blank" rel="noopener noreferrer" className={LINK}>
+        <TextLink href={spec.stripeHref} target="_blank" weight="medium" className={ACTION}>
           Open in Stripe
           <ExternalLink className="size-3.5" aria-hidden />
           <span className="sr-only"> (opens in a new tab)</span>
-        </a>
+        </TextLink>
       )}
       {spec.invoiceHref && (
-        <Link href={spec.invoiceHref} className={LINK}>
+        <TextLink href={spec.invoiceHref} weight="medium" className={ACTION}>
           Open invoice
-        </Link>
+        </TextLink>
       )}
       {spec.refund && (
-        <button type="button" onClick={spec.refund.onRefund} className={cn(LINK, "text-destructive")}>
+        <TextLink tone="destructive" weight="medium" onClick={spec.refund.onRefund} className={ACTION}>
           Refund {spec.refund.amount}
-        </button>
+        </TextLink>
       )}
     </span>
   )

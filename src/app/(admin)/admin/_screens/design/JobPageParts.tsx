@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { useState, type ReactNode } from "react"
 import { Calendar, MapPin, Receipt, UserRound } from "lucide-react"
 import { AsideCard } from "@/components/blocks/AsideCard"
@@ -26,6 +25,7 @@ import { MessageDialog } from "./MessageDialog"
 import { ScheduleForFacts, type ScheduleResult } from "./ScheduleDialog"
 import { NOW, noop, noteOk, type FooterPlan, type JobPageData, type PastVisit, type PillData } from "./job-fixtures"
 import { money } from "@/lib/admin/format"
+import { TextLink } from "@/components/blocks/TextLink"
 
 // The cards the one-trip, Season Pass and return-trip job pages share, so a card reads the same on every job (the rules are in
 // docs/plans/2026-11-19-admin-page-layout-research.md): the badges for the header, the summary band's four cells, the aside (Customer,
@@ -38,9 +38,7 @@ const ALERT: PillStatus[] = ["overdue", "failed", "charge-failed"]
 const row = (rows: readonly RecordFact[], label: string) => rows.find(([k]) => k === label)?.[1] as string | undefined
 
 export const EditLink = ({ label = "Edit" }: { label?: string }) => (
-  <button type="button" onClick={noop} className="min-h-11 rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-    {label}
-  </button>
+  <TextLink onClick={noop}>{label}</TextLink>
 )
 
 /** The status badges beside the title, large, with a muted note after them ("day passed"). */
@@ -145,9 +143,9 @@ export function PastVisitsCard({ street, visits, total }: { street: string; visi
             ))}
           </ul>
           {total > 3 && (
-            <Link href="/admin/customers" className="mt-3 inline-flex min-h-11 items-center rounded-sm text-sm font-medium text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <TextLink href="/admin/customers" weight="medium" className="mt-3 text-sm">
               See all {total}
-            </Link>
+            </TextLink>
           )}
         </>
       )}

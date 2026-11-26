@@ -12,6 +12,7 @@ import { useUndoToast } from "@/components/blocks/UndoToast"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import type { ConsentData, ConsentEventRow } from "./customer-fixtures"
+import { TextLink } from "@/components/blocks/TextLink"
 
 // The Consent card of the customer page (docs/DATA_MODEL.md, "consent (terms, marketing)"; Hannah, Nov 19 2026): two different things, kept apart.
 // (a) Texts and email about visits and billing are transactional: Allowed, with the source, the date and the terms version, and a quiet line
@@ -25,7 +26,6 @@ type Channel = "email" | "text"
 const CHANNEL_WORDS: Record<Channel, string> = { email: "Email", text: "Text" }
 const SOURCES = ["They asked me by phone", "In person", "Website form"] as const
 const SELECT = "min-h-11 rounded-lg border border-input bg-background px-3 text-sm"
-const LINK = "inline-flex min-h-11 items-center rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 
 function Switch({ checked, label, onChange }: { checked: boolean; label: string; onChange: (next: boolean) => void }) {
   return (
@@ -102,7 +102,7 @@ export function ConsentCard({ consent, firstName, initial = null }: ConsentCardP
   const channelOpen = open === "email" || open === "text" ? open : null
   return (
     <>
-      <SectionCard title="Consent" id="consent-h" action={<button type="button" onClick={() => setOpen("history")} className={LINK}>Consent history</button>}>
+      <SectionCard title="Consent" id="consent-h" action={<TextLink onClick={() => setOpen("history")}>Consent history</TextLink>}>
         <div className="flex flex-col divide-y divide-border text-sm [&>section]:py-4 [&>section:first-child]:pt-0 [&>section:last-child]:pb-0">
           <section aria-labelledby={`${id}-tx`}>
             <h3 id={`${id}-tx`} className="text-muted-foreground">Texts and email about your visits and billing</h3>

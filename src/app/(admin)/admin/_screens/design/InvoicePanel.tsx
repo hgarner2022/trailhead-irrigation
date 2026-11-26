@@ -13,6 +13,7 @@ import { RecordFacts } from "@/components/blocks/RecordPanel"
 import { SectionCard } from "@/components/blocks/SectionCard"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { SummaryBand, type SummaryItem } from "@/components/blocks/SummaryBand"
+import { TextLink } from "@/components/blocks/TextLink"
 import { useToast } from "@/components/blocks/Toast"
 import { CollectDialog, CopyDialog } from "./CustomerDialogs"
 import { MessagesTable, PaymentsTable } from "./CustomerTables"
@@ -29,7 +30,6 @@ import { NOW, noteOk } from "./job-fixtures"
 // with Pause), Messages and Notes and history; the aside holds the Customer, the Job and the Property. Every action that reaches the customer
 // confirms with the exact effect and their channel; a result is a toast and the section changes state (a new reminder row, a new pill). Pure props.
 
-const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 const scrollTo = (id: string) => () => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
 type Dialog = "remind" | "collect" | "resend" | "cancel" | null
 
@@ -125,7 +125,7 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
             <SectionCard title="Customer" id="customer-h">
               <div className="flex flex-col gap-1">
                 <CustomerChip doNotService={d.customer.doNotService} id={d.customer.id} name={d.customer.name} phone={d.customer.phone.text} address={d.customer.street} unpaid={unpaid} />
-                <a href={d.customer.phone.href} className={`${LINK} inline-flex min-h-11 items-center text-sm font-medium`}>{d.customer.phone.text}</a>
+                <TextLink href={d.customer.phone.href} weight="medium" className="text-sm">{d.customer.phone.text}</TextLink>
                 <p className="text-sm text-muted-foreground">Contact by {c.channel === "text" ? "text" : "email"}</p>
               </div>
             </SectionCard>

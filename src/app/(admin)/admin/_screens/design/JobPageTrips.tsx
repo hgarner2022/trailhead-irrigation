@@ -11,12 +11,12 @@ import { SummaryBand } from "@/components/blocks/SummaryBand"
 import { TripRow } from "@/components/blocks/TripRow"
 import type { MultiTripData, TripData } from "./trip-fixtures"
 import { PHONE_LINK } from "./trip-fixtures"
-import Link from "next/link"
 import { BillingCard } from "./BillingCard"
 import { Actions, Aside, Badges, CONTACT, EditLink, MessagesCard, Notice, bandItems, hasFooter, type CollectHandlers } from "./JobPageParts"
 import { TripBody } from "./TripBody"
 import type { ScheduleResult } from "./ScheduleDialog"
 import type { ConfirmFacts } from "./confirm-copy"
+import { TextLink } from "@/components/blocks/TextLink"
 
 // A job with more than one trip (docs/plans/2026-11-19-job-object-design.md): a Season Pass, or a repair with a return trip, on the same page
 // frame as the one-trip job (docs/plans/2026-11-19-admin-page-layout-research.md). The band reads Next visit, Who, Where, Total; the main
@@ -104,9 +104,9 @@ export function TripsPage({ data, customer, onTripDo, tripHandlers, onDo, onTrip
           {data.renewal && (
             <p data-slot="pass-renewal" className="mt-3 text-sm">
               {data.renewal.kind === "from" ? "Renewed from " : "Renewed as "}
-              <Link href={`/admin/jobs?job=${data.renewal.number}`} className="rounded-sm font-medium text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <TextLink href={`/admin/jobs?job=${data.renewal.number}`} touch="inline" weight="medium">
                 {data.renewal.number}
-              </Link>
+              </TextLink>
             </p>
           )}
         </SectionCard>

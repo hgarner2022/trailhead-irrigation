@@ -11,6 +11,7 @@ import { quoteLink, quoteReminderText, quoteText, quoteSubject, quoteReminderSub
 import { REMINDER_LINE_MAX } from "../confirm-copy"
 import { QUOTE_ARCHIVE_REASONS, type QuoteArchiveReason } from "../requests/request-model"
 import { depositOf, linesTotal, money, type Channel, type DepositHow, type Party, type QuoteLine, type QuoteRecord } from "./quote-model"
+import { TextLink } from "@/components/blocks/TextLink"
 
 // The questions of the quote (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.6; Hannah's answers 3 to 8 of Nov 20 2026; the quote is its own record from Nov 22 2026).
 // Every action that reaches the customer confirms in a dialog that states its exact effect and the channel from their contact preference, with a "without notifying" caret on a send;
@@ -279,9 +280,9 @@ export function LineDialog({ line, onClose, onSave, onRemove, approved }: LineDi
           <Input inputMode="numeric" autoComplete="off" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-24" />
         </FormRow>
         {onRemove && (
-          <button type="button" onClick={onRemove} className="min-h-11 self-start rounded-sm text-destructive underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <TextLink tone="destructive" onClick={onRemove} className="self-start">
             {approved ? "Cancel this line" : "Remove this line"}
-          </button>
+          </TextLink>
         )}
       </div>
     </ConfirmDialog>

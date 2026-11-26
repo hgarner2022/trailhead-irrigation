@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, type ReactNode } from "react"
-import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { FooterSlotContext } from "./record-slot"
+import { TextLink } from "./TextLink"
 
 // The frame of a record that is a page of its own (docs/DESIGN.md, "The recipe"; the rules are in
 // docs/plans/2026-11-19-admin-page-layout-research.md): the job and, later, the customer. On the cream canvas, top to bottom: the header
@@ -43,10 +43,10 @@ export function RecordPage({ title, subtitle, badges, crumb, notice, band, aside
       <article data-slot="record-page" aria-labelledby="record-page-title" className={cn("mx-auto grid w-full max-w-6xl grid-cols-1 gap-x-6 gap-y-4 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto]", className)}>
         <header data-slot="record-page-header" className="flex min-w-0 flex-col gap-1 lg:col-start-1 lg:row-start-1">
           {crumb && (
-            <Link href={crumb.href} className="-ml-1 flex min-h-11 w-fit items-center rounded-sm px-1 text-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <TextLink href={crumb.href} className="-ml-1 flex w-fit gap-0 px-1 text-sm">
               <span aria-hidden>‹&nbsp;</span>
               {crumb.label}
-            </Link>
+            </TextLink>
           )}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <h1 id="record-page-title" className="type-admin-title text-navy">

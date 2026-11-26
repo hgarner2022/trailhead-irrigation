@@ -6,6 +6,7 @@ import { RecordFacts, RecordList, RecordRowEnd, RECORD_ROW } from "@/components/
 import { SectionCard } from "@/components/blocks/SectionCard"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import type { SummaryItem } from "@/components/blocks/SummaryBand"
+import { TextLink } from "@/components/blocks/TextLink"
 import type { TimelineLine } from "@/lib/events/timeline"
 import { cn } from "@/lib/utils"
 import { JobChip, QuoteChip } from "../RecordChips"
@@ -16,8 +17,6 @@ import { jobStageOf } from "./quote-model"
 // is sent), Job (once approved: "Job created" with the job's chip), the earlier and later quotes of a revision, and the summary band. While the quote is a Draft the page leads with the
 // one Quote editor card instead (QuoteEditor.tsx). Pure props.
 
-export const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-export const QUIET = `min-h-11 ${LINK}`
 export const HOW_WORDS: Record<DepositHow, string> = { card: "card", check: "check", cash: "cash", venmo: "Venmo" }
 
 export function depositFact(q: QuoteRecord): string {
@@ -99,7 +98,7 @@ export function QuoteCard({ quote, now }: { quote: QuoteRecord; now: string }) {
           ["Deposit", depositFact(quote)],
           ["Decision", decisionFact(quote)],
           ["Reminders", quote.reminders.length ? `${quote.reminders.length} sent, the last ${ago(last!.at, now)}` : "None sent"],
-          ...(quote.state === "sent" || quote.state === "approved" || quote.state === "declined" ? ([["Quote page", <a key="l" href={`/quote/${quote.id}`} className={cn(LINK, "inline-flex min-h-11 items-center")}>Open the quote page</a>]] as [string, React.ReactNode][]) : []),
+          ...(quote.state === "sent" || quote.state === "approved" || quote.state === "declined" ? ([["Quote page", <TextLink key="l" href={`/quote/${quote.id}`} native>Open the quote page</TextLink>]] as [string, React.ReactNode][]) : []),
         ]}
       />
     </SectionCard>

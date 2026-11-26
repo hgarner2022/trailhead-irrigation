@@ -18,6 +18,7 @@ import { NOW, noteOk } from "../job-fixtures"
 import { ArchiveDialog, CreateJobDialog, type ChosenService, type CreateMode } from "./RequestDialogs"
 import { isQuoteFirst, type ServicePick } from "./request-catalogue"
 import { REQUEST_PILL, SOURCE_WORDS, cameIn, cameInOn, fullName, matchNote, matchOf, matchWords, serviceWords, stateOf, type ArchiveReason, type Match, type RequestData } from "./request-model"
+import { TextLink } from "@/components/blocks/TextLink"
 
 // A request as a page of its own (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.2 to 4.5; Hannah's answers 2 and 3 of Nov 20 2026), on the
 // record page frame: the person's name with its status, the band (when it came in, what they asked for, where, which customer they match), the customer's
@@ -31,7 +32,6 @@ import { REQUEST_PILL, SOURCE_WORDS, cameIn, cameInOn, fullName, matchNote, matc
 // archives the request). Nothing here reaches the customer. A result is a toast and the page changes, never a message in a section.
 // Pure props: `onSeen`, `onCreateJob`, `onJobCreated` and `onArchive` let a host keep state and take Ryan to the job or the quote.
 
-const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 const UNSCHEDULED = { status: "needs-a-day" as PillStatus, label: "Unscheduled" }
 const DRAFT = { status: "quote-draft" as PillStatus, label: "Draft" }
 const CHANNEL_WORDS = { text: "Text", email: "Email", both: "Text and email" }
@@ -165,8 +165,8 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
               <RecordFacts
                 divided
                 rows={[
-                  ["Phone", r.phone ? <a key="p" href={`tel:${r.phone.replace(/[^\d+]/g, "")}`} className={LINK}>{r.phone}</a> : "None given"],
-                  ["Email", r.email ? <a key="e" href={`mailto:${r.email}`} className={LINK}>{r.email}</a> : "None given"],
+                  ["Phone", r.phone ? <TextLink key="p" href={`tel:${r.phone.replace(/[^\d+]/g, "")}`} touch="inline">{r.phone}</TextLink> : "None given"],
+                  ["Email", r.email ? <TextLink key="e" href={`mailto:${r.email}`} touch="inline">{r.email}</TextLink> : "None given"],
                   ["Reach by", CHANNEL_WORDS[r.contact]],
                   ["Address", r.street ? `${r.street}, ${r.town}` : "None given"],
                 ]}

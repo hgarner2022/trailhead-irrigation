@@ -1,13 +1,13 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Link from "next/link"
 import { CircleDollarSign, Clock, FileText, Receipt, Send } from "lucide-react"
 import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
 import type { GridCardSlots } from "@/components/blocks/DataGridCard"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { SummaryBand } from "@/components/blocks/SummaryBand"
+import { TextLink } from "@/components/blocks/TextLink"
 import { recordHref } from "@/components/blocks/record-preview-model"
 import { useToast } from "@/components/blocks/Toast"
 import { useMedia } from "@/components/blocks/use-media"
@@ -25,8 +25,8 @@ import { shortDate, money } from "@/lib/admin/format"
 // buttons and Open as an icon, and the invoice chip opens the invoice. Remind confirms with the exact text, Collect payment opens "How is this
 // paid?"; a result is a toast. Pure props: the rows come in.
 
-const TEXT_BUTTON = "inline-flex min-h-11 items-center whitespace-nowrap rounded-sm px-2 text-sm font-medium text-primary-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:text-muted-foreground disabled:no-underline"
-const ICON_LINK = "inline-flex size-11 items-center justify-center rounded-sm text-primary-dark hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+/** a row action: a quiet text link that never wraps (Remind, Collect payment, Open invoice) */
+const ROW_ACTION = "whitespace-nowrap px-2 text-sm"
 
 const reachOf = (r: InvoiceListRow): Reach => ({ first: r.customer.split(" ")[0]!, channel: "text", phone: "(970) 555-0123", email: `${r.customer.split(" ")[0]!.toLowerCase()}@example.com` })
 const CARD: GridCardSlots = { title: "label", line: ["customerText", "jobText"], state: "status", when: ["datesText"], money: "amount", actions: "actions" }
@@ -40,22 +40,22 @@ function Actions({ row, onRemind, onCollect }: { row: InvoiceListRow; onRemind: 
     <span className="flex flex-nowrap items-center justify-end gap-0.5">
       {row.balance > 0 && (
         <>
-          <button type="button" className={TEXT_BUTTON} disabled={row.remindedToday} onClick={() => onRemind(row)}>
+          <TextLink weight="medium" className={ROW_ACTION} disabled={row.remindedToday} onClick={() => onRemind(row)}>
             {row.remindedToday ? "Reminded today" : "Remind"}
-          </button>
-          <button type="button" className={TEXT_BUTTON} onClick={() => onCollect(row)}>
+          </TextLink>
+          <TextLink weight="medium" className={ROW_ACTION} onClick={() => onCollect(row)}>
             Collect payment
-          </button>
+          </TextLink>
         </>
       )}
       {phone ? (
-        <Link href={href} className={TEXT_BUTTON}>
+        <TextLink href={href} weight="medium" className={ROW_ACTION}>
           Open invoice
-        </Link>
+        </TextLink>
       ) : (
-        <Link href={href} aria-label="Open invoice" title="Open invoice" className={ICON_LINK}>
+        <TextLink href={href} icon aria-label="Open invoice" title="Open invoice">
           <FileText className="size-4" aria-hidden />
-        </Link>
+        </TextLink>
       )}
     </span>
   )
