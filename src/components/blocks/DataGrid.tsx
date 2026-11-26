@@ -11,15 +11,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DataGridBulkBar, DataGridToolbar, type GridBulkAction, type GridFilter, type GridSearch } from "./data-grid-toolbar"
 import { DataGridCards, type GridCardSlots } from "./DataGridCard"
 import { useMedia } from "./use-media"
-import { SELECT_COLUMN, columnId, gridFeatures, useScrollCue, withFilterFns, type GridColumnDef } from "./data-grid-table"
+import { SELECT_COLUMN, columnId, gridFeatures, pressName, useScrollCue, withFilterFns, type GridColumnDef } from "./data-grid-table"
 import { TextLink } from "./TextLink"
 
 // The one table of the app (docs/DESIGN.md, Tables): shadcn's TanStack data
 // table recipe on TanStack Table v9, with filter chips, a Columns menu that
 // hides and reorders, selection with a bulk bar, and CSV export. The first
-// column is the record's name and the only thing on the row that opens it; it
-// cannot be hidden or moved. The checkbox selects; nothing else on the row is
-// a target. The header is sticky inside the grid's own scroller, the checkbox
+// column is the record's name and the ONE link on the row (Hannah, Nov 25 2026:
+// "too many links"); it cannot be hidden or moved. Every other record a row
+// names is plain text. With `rowOpens` a click anywhere on the row that is not
+// on a control opens the same record: the row's click presses the name link, so
+// the two can never go to different places, and the link stays the keyboard's
+// and the screen reader's way in. The checkbox selects. The header is sticky inside the grid's own scroller, the checkbox
 // and name columns stay frozen on the left, and the right edge fades while
 // there is more table to the right. Below `md` a screen that declares `card` slots
 // shows each row as one card instead (DataGridCard.tsx); search, filters, count and empty states are the same.
@@ -36,8 +39,12 @@ export interface DataGridProps<T extends RowData> {
   search?: GridSearch
   /** Chips, one per column, each a menu of checkable options */
   filters?: GridFilter[]
-  /** Fired from the link in the first column, never from a row click */
+  /** Fired from the link in the first column (and, with `rowOpens`, from a click on the row, which presses that link) */
   onOpen?: (row: T) => void
+  /** A click anywhere on a row opens its record, as the name link does. A click on a control in the row (a button, a link, a checkbox, a menu) or one that ends a text selection does nothing. */
+  rowOpens?: boolean
+  /** How the first column's link is drawn: "link" (the default) is the orange name; "plain" is for a row that is not a record with a page (a message), whose first cell is a date or a word: body colour, underlined on hover and focus */
+  nameTone?: "link" | "plain"
   /** Actions on the selected rows; the checkbox column is only there when this is non-empty */
   bulkActions?: GridBulkAction<T>[]
   /** Enables export as `<exportName>.csv` of every row that matches the current search and filters, in the current sort, with the visible columns */
@@ -70,6 +77,8 @@ const SKELETON_ROWS = 8
 const SORT_FROM = 6
 /** the cells of an embedded table: 8px between columns, none at the card's own edges */
 const CARD_CELL = "px-2 first:pl-0 last:pr-0"
+/** the first cell of a row that is not a record with a page: it still opens the row (a button for the keyboard), in the body colour */
+const PLAIN_NAME = "text-left font-normal text-foreground"
 const SELECT_WIDTH = "w-10 min-w-10 max-w-10"
 // The checkbox and name columns stay put while the rest scrolls. The checkbox
 // column is a fixed 40px, so the name sits 40px in when it is there and at the
@@ -110,6 +119,8 @@ export function DataGrid<T extends RowData>({
   search,
   filters = [],
   onOpen,
+  rowOpens = false,
+  nameTone = "link",
   bulkActions = [],
   exportName,
   pageSize = 25,
@@ -163,7 +174,7 @@ export function DataGrid<T extends RowData>({
       {toolbar && <DataGridToolbar table={table} nameId={nameId} search={search} filters={filters} exportName={exportName} disabled={loading} />}
       {!loading && hasSelect && <DataGridBulkBar table={table} actions={bulkActions} />}
       {asCards && card ? (
-        <DataGridCards table={table} rows={rows} slots={card} nameId={nameId} loading={loading} empty={{ hasData: data.length > 0, emptyTitle, emptyLine, noMatchTitle }} onOpen={onOpen} />
+        <DataGridCards table={table} rows={rows} slots={card} nameId={nameId} loading={loading} empty={{ hasData: data.length > 0, emptyTitle, emptyLine, noMatchTitle }} onOpen={onOpen} nameTone={nameTone} />
       ) : (
       <div
         ref={wrap}
@@ -242,7 +253,7 @@ export function DataGrid<T extends RowData>({
               </TableRow>
             ) : (
               rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() ? "selected" : undefined} className={cn("bg-background", inCard ? "h-14" : "h-11")}>
+                <TableRow key={row.id} data-state={row.getIsSelected() ? "selected" : undefined} data-row-opens={rowOpens || undefined} onClick={rowOpens ? pressName : undefined} className={cn("bg-background", inCard ? "h-14" : "h-11", rowOpens && "cursor-pointer")}>
                   {row.getVisibleCells().map((cell) => {
                     const { column } = cell
                     const right = column.columnDef.meta?.align === "right"
@@ -252,11 +263,11 @@ export function DataGrid<T extends RowData>({
                         {column.id !== nameId || column.columnDef.meta?.bare ? (
                           <table.FlexRender cell={cell} />
                         ) : href ? (
-                          <TextLink href={href} native touch="inline" underline="hover" weight="medium">
+                          <TextLink href={href} native touch="inline" underline="hover" weight="medium" data-grid-name="" className={nameTone === "plain" ? PLAIN_NAME : undefined}>
                             <table.FlexRender cell={cell} />
                           </TextLink>
                         ) : (
-                          <TextLink touch="inline" underline="hover" weight="medium" onClick={() => onOpen?.(row.original)}>
+                          <TextLink touch="inline" underline="hover" weight="medium" data-grid-name="" className={nameTone === "plain" ? PLAIN_NAME : "text-left"} onClick={() => onOpen?.(row.original)}>
                             <table.FlexRender cell={cell} />
                           </TextLink>
                         )}

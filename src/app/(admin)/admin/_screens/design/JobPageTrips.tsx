@@ -18,6 +18,8 @@ import type { ScheduleResult } from "./ScheduleDialog"
 import type { ConfirmFacts } from "./confirm-copy"
 import { TextLink } from "@/components/blocks/TextLink"
 import { Notice } from "@/components/blocks/Notice"
+import { jobHeading } from "@/lib/admin/record-title"
+import { listCrumb } from "@/components/blocks/admin-nav"
 
 // A job with more than one trip (docs/plans/2026-11-19-job-object-design.md): a Season Pass, or a repair with a return trip, on the same page
 // frame as the one-trip job (docs/plans/2026-11-19-admin-page-layout-research.md). The band reads Next visit, Who, Where, Total; the main
@@ -48,6 +50,8 @@ function factsOf(data: MultiTripData, customer?: PageCustomer): ConfirmFacts {
 
 /** Whose page it is, when not Andrea Dalton (the fixtures are hers): the aside card and the confirmations name them. */
 export interface PageCustomer {
+  /** the customer's id, for the Customer card's one link; Andrea's when left out */
+  id?: string
   name: string
   phone: { text: string; href: string }
 }
@@ -73,13 +77,12 @@ export function TripsPage({ data, customer, onTripDo, tripHandlers, onDo, onTrip
   const where = data.columns.find((c) => c.heading === "Where")?.rows ?? []
   return (
     <RecordPage
-      crumb={{ label: "Jobs", href: "/admin/jobs" }}
-      title={data.title}
-      subtitle={data.subtitle}
+      crumb={listCrumb("jobs")}
+      {...jobHeading({ service: data.service, customer: customer?.name ?? "Andrea Dalton", detail: data.detail })}
       badges={<Badges pills={data.pills} />}
       notice={data.notice ? <Notice tone="page" role="status">{data.notice}</Notice> : undefined}
       band={<SummaryBand items={bandOf(data)} />}
-      aside={<Aside customer={customer?.name ?? "Andrea Dalton"} phone={customer?.phone ?? PHONE_LINK} where={where} notes={data.notes} />}
+      aside={<Aside customer={customer?.name ?? "Andrea Dalton"} customerId={customer?.id ?? "c-1"} phone={customer?.phone ?? PHONE_LINK} where={where} notes={data.notes} />}
       actions={hasFooter(data.footer) ? <Actions plan={data.footer} facts={facts} onDo={onDo} /> : undefined}
     >
       <SectionCard title={data.tripsHeading} id="trips-h" flush>

@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { moreItems, railItems } from "@/components/blocks/admin-nav"
+import { NAV, TAB_ITEMS, moreItems, railItems } from "@/components/blocks/admin-nav"
 import { QuotesList } from "./QuotesList"
 import { searchQuotes } from "./QuotesShell"
 import { ALL_QUOTE_FIXTURES, QUOTE_FIXTURES } from "./quote-fixtures"
@@ -76,14 +76,19 @@ describe("the rows and the count", () => {
 })
 
 describe("the rail and the phone's More", () => {
-  it("draws Quotes after Jobs when the shell has it, and Requests after Schedule", () => {
-    expect(railItems(false, false).map((n) => n.id)).toEqual(["home", "schedule", "jobs", "customers", "reports", "settings"])
-    expect(railItems(true, true).map((n) => n.id)).toEqual(["home", "schedule", "requests", "jobs", "quotes", "customers", "reports", "settings"])
-    expect(railItems(false, true).map((n) => n.id)).toEqual(["home", "schedule", "jobs", "quotes", "customers", "reports", "settings"])
+  const all = { requests: true, quotes: true, invoices: true }
+  it("is one order, Hannah's: Home, Schedule, Customers, Requests, Quotes, Jobs, Invoices, Reports, Settings", () => {
+    expect(NAV.map((n) => n.label)).toEqual(["Home", "Schedule", "Customers", "Requests", "Quotes", "Jobs", "Invoices", "Reports", "Settings"])
+    expect(railItems(all).map((n) => n.id)).toEqual(NAV.map((n) => n.id))
   })
-  it("puts Quotes in More after Requests", () => {
-    expect(moreItems(true, true).map((n) => n.id)).toEqual(["requests", "quotes", "reports", "settings"])
-    expect(moreItems(false, false).map((n) => n.id)).toEqual(["reports", "settings"])
+  it("leaves out the pages a shell does not have, and never changes the order of the rest", () => {
+    expect(railItems().map((n) => n.id)).toEqual(["home", "schedule", "customers", "jobs", "reports", "settings"])
+    expect(railItems({ quotes: true }).map((n) => n.id)).toEqual(["home", "schedule", "customers", "quotes", "jobs", "reports", "settings"])
+  })
+  it("gives the phone four tabs in the rail's order and puts the rest in More, in the rail's order", () => {
+    expect(TAB_ITEMS.map((n) => n.id)).toEqual(["home", "schedule", "customers", "jobs"])
+    expect(moreItems(all).map((n) => n.id)).toEqual(["requests", "quotes", "invoices", "reports", "settings"])
+    expect(moreItems().map((n) => n.id)).toEqual(["reports", "settings"])
   })
 })
 
@@ -143,11 +148,12 @@ describe("the Quotes list", () => {
     await userEvent.click(screen.getByRole("tab", { name: /^All/ }))
     expect(screen.getAllByRole("row")).toHaveLength(8)
   })
-  it("has a row per quote with the quote and the customer as chips, what it is for and the sent day with its age", () => {
+  it("has a row per quote with ONE link (its number), the customer as text, what it is for and the sent day with its age", () => {
     render(<QuotesList quotes={ALL} now={QUOTES_NOW} />)
     const first = screen.getAllByRole("row")[1]!
-    expect(within(first).getByRole("link", { name: "Quote: Q-2026-0007" })).toHaveAttribute("href", "/admin/quotes?quote=Q-2026-0007")
-    expect(within(first).getByRole("link", { name: /Customer: Beth Orr/ })).toBeInTheDocument()
+    expect(within(first).getAllByRole("link")).toHaveLength(1)
+    expect(within(first).getByRole("link", { name: "Q-2026-0007" })).toHaveAttribute("href", "/admin/quotes?quote=Q-2026-0007")
+    expect(within(first).getByText("Beth Orr").closest("a")).toBeNull()
     // no job chip: a quote is not a job
     expect(within(first).queryByRole("link", { name: /Job:/ })).toBeNull()
     expect(within(first).getByText("Christmas lights")).toBeInTheDocument()
@@ -165,7 +171,7 @@ describe("the Quotes list", () => {
     expect(within(dana).getByText("Not sent")).toBeInTheDocument()
     for (const label of ["Draft", "Approved", "Declined", "Replaced"]) expect(screen.getAllByText(label, { selector: "[data-slot=status-pill]" }).length).toBeGreaterThan(0)
   })
-  it("has Remind as the Next action of a Sent quote and Open on the others", () => {
+  it("has Remind as the Next action of a Sent quote and none on the others: the row opens the quote", () => {
     const onRemind = vi.fn()
     render(<QuotesList quotes={ALL} now={QUOTES_NOW} onRemind={onRemind} />)
     expect(screen.getByRole("columnheader", { name: "Next action" })).toBeInTheDocument()
@@ -176,7 +182,9 @@ describe("the Quotes list", () => {
     for (const n of ["Q-2026-0004", "Q-2026-0005", "Q-2026-0006", "Q-2026-0002"]) {
       const row = rows.find((r) => r.textContent?.includes(n))!
       expect(within(row).queryByRole("button", { name: "Remind" })).toBeNull()
-      expect(within(row).getByRole("link", { name: `Open quote ${n}` })).toHaveAttribute("href", `/admin/quotes?quote=${n}`)
+      expect(within(row).queryByRole("button")).toBeNull()
+      expect(within(row).getAllByRole("link")).toHaveLength(1)
+      expect(within(row).getByRole("link", { name: n })).toHaveAttribute("href", `/admin/quotes?quote=${n}`)
     }
     fireEvent.click(within(sent).getByRole("button", { name: "Remind" }))
     expect(screen.getByRole("dialog", { name: "Send a quote reminder" })).toBeInTheDocument()

@@ -9,25 +9,27 @@ import { LineItemList } from "@/components/blocks/LineItemList"
 import { NotesAndHistory } from "@/components/blocks/NotesAndHistory"
 import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
 import { RecordPage } from "@/components/blocks/RecordPage"
-import { RecordFacts } from "@/components/blocks/RecordPanel"
 import { SectionCard } from "@/components/blocks/SectionCard"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { SummaryBand, type SummaryItem } from "@/components/blocks/SummaryBand"
-import { TextLink } from "@/components/blocks/TextLink"
+import { CustomerCard } from "@/components/blocks/CustomerCard"
 import { useToast } from "@/components/blocks/Toast"
 import { CollectDialog, CopyDialog } from "./CustomerDialogs"
 import { MessagesTable, PaymentsTable } from "./CustomerTables"
-import { AddressChip, CustomerChip, JobChip, paymentHref } from "./RecordChips"
+import { JobChip } from "./RecordChips"
 import { ReminderDialog } from "./ReminderDialog"
 import { cancelInvoiceCopy, resendInvoiceCopy } from "./confirm-copy"
 import { INVOICE_PILL, type InvoicePageData, type ReminderRow } from "./invoice-fixtures"
 import { NOW, noteOk } from "./job-fixtures"
+import { invoiceHeading } from "@/lib/admin/record-title"
+import { listCrumb } from "@/components/blocks/admin-nav"
 
 // The invoice as a page of its own, like the job page (Hannah, Nov 19 2026; docs/plans/2026-11-18-invoice-workflow-research.md): the number as the
-// title with its status pill and the customer chip, the actions at the top right (Send a payment reminder, primary while it is unpaid; Collect
-// payment; More: Resend, Open pay page, Cancel invoice in the destructive colour), the summary band (Amount, Sent, Due, Paid on, each a link to
-// what it summarises), then Lines (frozen, with tax when any), Payments, Reminders (what was sent, by hand or by the schedule, and the next one
-// with Pause), Messages and Notes and history; the aside holds the Customer, the Job and the Property. Every action that reaches the customer
+// title with its status pill (no chip in the header), the actions at the top right (Send a payment reminder, primary while it is unpaid; Collect
+// payment; More: Resend, Open pay page, Cancel invoice in the destructive colour), the summary band (Amount, Sent, Due, Paid on: each scrolls to its
+// section on this page and none leaves it), then Lines (frozen, with tax when any), Payments, Reminders (what was sent, by hand or by the schedule,
+// and the next one with Pause) and Messages; the aside holds the one `CustomerCard` (the page's only link to the customer, with the address as text),
+// the Job (its chip, once) and Notes and history, last, as on every record page. An invoice has no Property card. Every action that reaches the customer
 // confirms with the exact effect and their channel; a result is a toast and the section changes state (a new reminder row, a new pill). Pure props.
 
 const scrollTo = (id: string) => () => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -92,7 +94,7 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
     { label: "Amount", value: d.amount, sub: d.totals.some(([k, v]) => k === "Tax" && v !== "$0") ? "Tax included" : "No tax", icon: Receipt, onClick: scrollTo("lines-h") },
     { label: "Sent", value: d.sent, sub: first ? `${d.customer.contact.channel === "text" ? "Text" : "Email"} to ${first}` : undefined, icon: Send, onClick: scrollTo("messages-h") },
     { label: "Due", value: d.due, sub: status === "past-due" ? "Past due" : status === "sent" ? "Not yet due" : undefined, tone: status === "past-due" ? "alert" : "plain", icon: Calendar, onClick: scrollTo("reminders-h") },
-    { label: "Paid on", value: d.refundedOn ? "Refunded" : paidNow ? paidNow.label.split(",")[0]! : "Not paid", sub: d.refundedOn ? d.refundedOn.label : paidNow ? paidNow.label.split(", ")[1] ?? "" : status === "canceled" ? "Canceled" : `${unpaid} unpaid`, icon: CheckCircle2, ...(d.refundedOn ? { href: paymentHref(d.refundedOn.paymentId) } : paidNow ? { href: paymentHref(paidNow.paymentId) } : {}) },
+    { label: "Paid on", value: d.refundedOn ? "Refunded" : paidNow ? paidNow.label.split(",")[0]! : "Not paid", sub: d.refundedOn ? d.refundedOn.label : paidNow ? paidNow.label.split(", ")[1] ?? "" : status === "canceled" ? "Canceled" : `${unpaid} unpaid`, icon: CheckCircle2, ...(d.refundedOn || paidNow ? { onClick: scrollTo("payments-h") } : {}) },
   ]
 
   const more: FooterAction[] = [act("Resend the invoice", () => setDialog("resend")), { label: "Open pay page", href: `https://trailheadirrigation.com/pay/${d.id}`, external: true }]
@@ -109,26 +111,15 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
   return (
     <>
       <RecordPage
-        crumb={{ label: "Invoices", href: "/admin/invoices" }}
-        title={d.number}
-        badges={
-          <>
-            <StatusPill status={pill.pill} label={pill.label} size="lg" />
-            <CustomerChip doNotService={d.customer.doNotService} id={d.customer.id} name={d.customer.name} phone={d.customer.phone.text} address={d.customer.street} unpaid={unpaid} />
-          </>
-        }
+        crumb={listCrumb("invoices")}
+        {...invoiceHeading({ number: d.number, service: d.job.name, customer: d.customer.name, detail: `Sent ${d.sent}` })}
+        badges={<StatusPill status={pill.pill} label={pill.label} size="lg" />}
         band={<SummaryBand items={band} />}
         asideLabel="About this invoice"
         actions={actions}
         aside={
           <>
-            <SectionCard title="Customer" id="customer-h">
-              <div className="flex flex-col gap-1">
-                <CustomerChip doNotService={d.customer.doNotService} id={d.customer.id} name={d.customer.name} phone={d.customer.phone.text} address={d.customer.street} unpaid={unpaid} />
-                <TextLink href={d.customer.phone.href} weight="medium" className="text-sm">{d.customer.phone.text}</TextLink>
-                <p className="text-sm text-muted-foreground">Contact by {c.channel === "text" ? "text" : "email"}</p>
-              </div>
-            </SectionCard>
+            <CustomerCard id="customer-h" customer={{ id: d.customer.id, name: d.customer.name, doNotService: d.customer.doNotService, unpaid }} phone={d.customer.phone.text} address={[d.customer.street, d.customer.town].filter(Boolean)} channel={c.channel === "text" ? "text" : "email"} />
             <SectionCard title="Job" id="job-h">
               <div className="flex flex-col gap-2">
                 <JobChip id={d.job.id} name={d.job.name} customer={d.customer.name} status={d.job.status} total={d.job.total} />
@@ -138,8 +129,8 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
                 </div>
               </div>
             </SectionCard>
-            <SectionCard title="Property" id="property-h">
-              <RecordFacts divided rows={[["Address", <AddressChip key="a" customerId={d.customer.id} street={d.customer.street} />], ...d.property]} />
+            <SectionCard title="Notes and history" id="notes-h">
+              <NotesAndHistory bare lines={d.notes} onAddNote={noteOk} now={NOW} />
             </SectionCard>
           </>
         }
@@ -148,14 +139,11 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
           <LineItemList lines={d.lines} totals={totals} />
         </SectionCard>
         <SectionCard title="Payments" id="payments-h">
-          {payments.length ? <PaymentsTable rows={payments} customer={d.customer.name} cardWords={d.card ? `${d.card.brand} ending ${d.card.last4}` : undefined} omitJob /> : <p className="text-sm text-muted-foreground">No payments yet. A payment shows here with its receipt, and settles the invoice.</p>}
+          {payments.length ? <PaymentsTable rows={payments} cardWords={d.card ? `${d.card.brand} ending ${d.card.last4}` : undefined} omitJob /> : <p className="text-sm text-muted-foreground">No payments yet. A payment shows here with its receipt, and settles the invoice.</p>}
         </SectionCard>
         <RemindersCard d={{ ...d, status }} rows={reminders} paused={state.paused} onPause={() => (setState((s) => ({ ...s, paused: !s.paused })), toast(state.paused ? "Scheduled reminders resumed" : "Scheduled reminders paused"))} />
         <SectionCard title="Messages" id="messages-h">
           <MessagesTable messages={d.messages} to={{ sms: d.customer.phone.text, email: c.email }} />
-        </SectionCard>
-        <SectionCard title="Notes and history" id="notes-h">
-          <NotesAndHistory bare lines={d.notes} onAddNote={noteOk} now={NOW} />
         </SectionCard>
       </RecordPage>
 

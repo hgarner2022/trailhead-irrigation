@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, within } from "storybook/test"
 import { AdminTabBar } from "./AdminTabBar"
 
-// The phone's bottom bar: Home, Schedule, Jobs, Customers and More (Reports, Settings). The bar is `md:hidden`, so every story is at phone width.
+// The phone's bottom bar: Home, Schedule, Customers, Jobs and More (a sheet with the rest of the rail). The bar is `md:hidden`, so every story is at phone width.
 // `fixed` puts it at the foot of the story's frame.
 
 const PHONE = { viewport: { value: "phone", isRotated: false } }
@@ -27,12 +27,12 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     const bar = within(await canvas.findByRole("navigation", { name: "Main" }))
-    await expect(bar.getAllByRole("link").map((l) => l.textContent)).toEqual(["Home", "Schedule", "Jobs", "Customers"])
+    await expect(bar.getAllByRole("link").map((l) => l.textContent)).toEqual(["Home", "Schedule", "Customers", "Jobs"])
     await expect(bar.getByRole("button", { name: "More" })).toBeInTheDocument()
   },
 }
 
-/** Reports or Settings is the screen: More is lit (its menu, Reports and Settings, is covered by the unit test). */
+/** Reports or Settings is the screen: More is lit (its sheet is covered by the unit test). */
 export const MoreLit: Story = {
   args: { current: "reports" },
   play: async ({ canvas }) => {

@@ -8,16 +8,17 @@ import { groupRefunds, invoiceDetail, invoiceListRows, refundDetail, type Invoic
 import { ConfirmDialog } from "./ConfirmDialog"
 import { DataGrid, type GridColumnDef } from "./DataGrid"
 import type { GridCardSlots } from "./DataGridCard"
-import { RecordChip } from "./RecordChip"
+import { TextLink } from "./TextLink"
 import { StatusPill, type PillStatus } from "./StatusPill"
 import { useMedia } from "./use-media"
 
 // The two tables of a Billing card (Hannah, Nov 19 and 20 2026), on the Message table's own grid (`DataGrid` in a card: same header, same 56px
 // row, same cards on a phone, no toolbar, no sort arrows under six rows). They fit the card they sit in: at most five columns.
-// `InvoiceTable` is "Invoices and payments": an invoice that was paid is ONE row (the chip with how it was paid under it, the amount, the Paid
-// pill, the buttons) and a refund of that payment is a grey negative row under it; an invoice still out is a row with Remind.
+// `InvoiceTable` is "Invoices and payments": an invoice that was paid is ONE row (its number, which is the row's one link and the one link to that invoice on the page, with
+// how it was paid under it, the amount, the Paid pill, the row's action) and a refund of that payment is a grey negative row under it; an invoice still out is a row with Remind.
+// A click anywhere on an invoice's row opens the invoice. The job a payment or an invoice was for is text.
 // `PaymentTable` is only the payments with no invoice (a check, Venmo, cash, a card charged directly), each with its refunds under it.
-// Buttons are `RowActions`: icons with tooltips and labels on a laptop, a quiet line of words under the card on a phone. Pure props.
+// Buttons are `RowActions`: one action in words and More on a laptop, a quiet line of words under the card on a phone. Pure props.
 
 export type { InvoiceRowData, PaymentMethod, PaymentRowData } from "./billing-model"
 
@@ -39,7 +40,7 @@ const paymentSpec = (row: PaymentRowData, onRefund?: (row: PaymentRowData) => vo
   ...(row.canRefund && onRefund ? { refund: { amount: row.amount, onRefund: () => onRefund(row) } } : {}),
 })
 
-/** The job chip under the method on a laptop; on a phone it moves to the line under the card (a card is one button). */
+/** The job's name under the method on a laptop; on a phone it moves to the line under the card. */
 function MethodJob({ job }: { job: React.ReactNode }) {
   return useMedia("(max-width: 767px)") ? null : <span className="block">{job}</span>
 }
@@ -144,7 +145,10 @@ export function InvoiceTable({ rows, onRemind, onRefund }: { rows: InvoiceRowDat
             </span>
           ) : (
             <span className="flex min-w-0 flex-col items-start gap-0.5">
-              <RecordChip kind="invoice" name={r.invoice.number} href={hrefOf(r.invoice)} className="text-sm font-medium md:min-h-8" />
+              <TextLink href={hrefOf(r.invoice)} touch="inline" underline="hover" weight="medium" data-grid-name="" className="whitespace-nowrap">
+                <span className="sr-only">Invoice:</span>{" "}
+                {r.invoice.number}
+              </TextLink>
               <span className={QUIET}>{rowDetail(r)}</span>
               {r.invoice.note && <span className={QUIET}>{r.invoice.note}</span>}
             </span>
@@ -168,7 +172,7 @@ export function InvoiceTable({ rows, onRemind, onRefund }: { rows: InvoiceRowDat
   const note = open?.kind === "invoice" ? open.invoice.note : undefined
   return (
     <div data-slot="invoice-table">
-      <DataGrid columns={columns} card={INVOICE_CARD} data={data} getRowId={(r) => r.id} onOpen={setOpen} toolbar={false} inCard hiddenColumns={["label", "detail"]} pageSize={10} emptyTitle="No invoices yet" emptyLine="Every invoice sent for this job shows here." />
+      <DataGrid columns={columns} card={INVOICE_CARD} data={data} getRowId={(r) => r.id} onOpen={setOpen} rowOpens toolbar={false} inCard hiddenColumns={["label", "detail"]} pageSize={10} emptyTitle="No invoices yet" emptyLine="Every invoice sent for this job shows here." />
       <ConfirmDialog open={open !== null} onOpenChange={(o) => !o && setOpen(null)} title={open ? (open.kind === "invoice" ? `Invoice ${open.invoice.number}` : "Refund") : "Invoice"} actions="none" size="md" slot="invoice-dialog">
         {open && (
           <div className="flex flex-col gap-3 text-sm">

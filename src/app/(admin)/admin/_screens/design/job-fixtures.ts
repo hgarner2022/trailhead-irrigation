@@ -71,8 +71,13 @@ export interface JobPageData {
   pastVisits: PastVisit[]
   pastTotal: number
   customer: string
+  /** the customer's id: the Customer card's name and "See all" open that customer's own page */
+  customerId: string
   phone: { text: string; href: string }
-  subtitle: string
+  /** the job's own name, the page title: "Sprinkler repair" (record-title.ts) */
+  service: string
+  /** the key fact after "for <customer>" under the title: "Added Nov 18" */
+  added: string
   pills: PillData[]
   /** muted words next to the pills: "day passed" */
   pillNote?: string
@@ -107,10 +112,10 @@ const PAST: PastVisit[] = [
   { id: "pv2", jobId: "job-pv2", date: "Apr 28, 2026", service: "Spring turn-on", who: "Ryan", note: "Backflow valve is behind the green box on the south side. Controller battery replaced." },
   { id: "pv3", jobId: "job-pv3", date: "Jul 9, 2025", service: "Repair", who: "Tech Two", note: "Replaced a broken rotor in zone 3. Customer asked for a quote on drip lines for the garden bed." },
 ]
-const base: Omit<JobPageData, "when" | "pills" | "footer" | "billing" | "totals" | "notes" | "messages"> = { photos: [], pastVisits: PAST, pastTotal: 7, customer: "Andrea Dalton", phone: PHONE, subtitle: "Sprinkler repair · Added Nov 18", where: WHERE, lines: LINE }
+const base: Omit<JobPageData, "when" | "pills" | "footer" | "billing" | "totals" | "notes" | "messages"> = { photos: [], pastVisits: PAST, pastTotal: 7, customer: "Andrea Dalton", customerId: "c-1", phone: PHONE, service: "Sprinkler repair", added: "Added Nov 18", where: WHERE, lines: LINE }
 const owedTotals: LineTotal[] = [["Total", "$145", "strong"], ["Paid", "$0"], ["Unpaid", "$145", "alert"]]
 const openTotals: LineTotal[] = [["Total", "$145", "strong"], ["Paid", "$0"]]
-const waiting = { summary: [["Total", "$145"], CARD] as [string, string][], rows: [], emptyLine: "Nothing to bill until the trip is done." }
+const waiting = { summary: [["Total", "$145"], CARD] as [string, string][], rows: [], emptyLine: "Nothing to bill until the visit is done." }
 const day = (d: string, t: string): RecordFact[] => [["Day", d], ["Time", t], ["Who", WHO]]
 const more = (...labels: string[]) => labels.map(act)
 export const visa = { brand: "visa", last4: "4242" }
@@ -234,7 +239,7 @@ function buildJob(state: JobState): JobPageData {
     case "today":
       return { ...base, pills: [{ status: "today" }], when: day("Today, Wed Nov 18", "9:00 am"), billing: waiting, totals: openTotals, notes: [ADDED("n1")], messages: [...scheduledMsgs, msg("m2", "2026-11-17T23:00:00Z", "sms", "day-before", "Trailhead: your repair is tomorrow, Wed, Nov 18 at 9:00 am.")], footer: { primary: act("On my way"), secondary: [act("Mark done"), act("Send a message")], more: more("Move", "Edit", "Add a note"), destructive: act("Cancel job") } }
     case "late":
-      return { ...base, pills: [{ status: "scheduled" }], pillNote: "day passed", notice: "This trip was Mon, Nov 16 and was never marked done. Mark done or Skip.", when: day("Mon, Nov 16", "Any time"), billing: waiting, totals: openTotals, notes: [ADDED("n1", "2026-11-10T16:10:00Z")], messages: scheduledMsgs, footer: { primary: act("Mark done"), secondary: [act("Skip"), act("Move")], more: more("Send a message", "Edit"), destructive: act("Cancel job") } }
+      return { ...base, pills: [{ status: "scheduled" }], pillNote: "day passed", notice: "This visit was Mon, Nov 16 and was never marked done. Mark done or Skip.", when: day("Mon, Nov 16", "Any time"), billing: waiting, totals: openTotals, notes: [ADDED("n1", "2026-11-10T16:10:00Z")], messages: scheduledMsgs, footer: { primary: act("Mark done"), secondary: [act("Skip"), act("Move")], more: more("Send a message", "Edit"), destructive: act("Cancel job") } }
     case "done-unpaid":
       return { ...base, pills: [{ status: "done" }, { status: "owed" }], when: day("Today, Wed Nov 18", "Done at 9:40 am"), billing: { summary: [["Total", "$145"], ["Paid", "$0"], ["Unpaid", "$145"], CARD], rows: [], paidLine: { tone: "unpaid", title: "$145 unpaid", text: "No invoice yet." } }, totals: owedTotals, collect: { plan: collectPlan({ ...input, card: visa }), summary: "Repair · $145 unpaid" }, notes: [{ id: "n3", at: "2026-11-18T16:40:00Z", actor: "Ryan", what: "Marked done", kind: "event" }, ADDED("n1")], messages: scheduledMsgs, footer: { primary: act("Collect payment"), secondary: [act("Send a message")], more: more("Undo done", "Edit") } }
     case "done-paid":
@@ -264,7 +269,7 @@ export const STATE_NOTES: Record<JobState, string> = {
   today: "Ryan sees today with the time the customer was told. The one primary action is On my way: it opens its confirmation (Text Andrea that Ryan is on the way to 480 Briggs St.) and on Send the job becomes Active and Mark done takes over. More has Start without texting for a customer with no mobile.",
   "on-the-way": "Ryan pressed On my way and sent the text, so the job is Active since 9:12 am, in the band under the time. The one primary action is Mark done, which leads to How is this paid?.",
   "active": "Ryan sees Active since 9:12 am and the checklist half done. The one primary action is Mark done.",
-  late: "Ryan sees a trip whose day passed with no Mark done. The one primary action is Mark done, with Skip beside it.",
+  late: "Ryan sees a visit whose day passed with no Mark done. The one primary action is Mark done, with Skip beside it.",
   "done-unpaid": "Right after Mark done, How is this paid? opens as its own dialog (Not now leaves the job Done and unpaid). Here Ryan sees Billing say $145 unpaid. No invoice yet. (no figures, because nothing has been paid) with the card on file, and the header's one primary is Collect payment, which opens the same How is this paid? dialog: the card on file first and preselected.",
   "done-paid": "Ryan sees Billing read Paid in full in green (Venmo has no invoice, so its one payment is the Payments table's one row). No figures and no card: nothing needs explaining. There is no primary action; the quiet ones are under More.",
   "paid-check": "Paid by check: the green headline Paid in full and one Payments row (a check has no invoice) with View receipt and, under its More menu, Refund. The check number is the row's quiet line.",

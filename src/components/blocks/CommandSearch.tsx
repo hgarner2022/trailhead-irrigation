@@ -1,6 +1,6 @@
 "use client"
 
-import { Briefcase, CalendarDays, FileText, Inbox, Users } from "lucide-react"
+import { Briefcase, CalendarDays, FileText, Inbox, Receipt, Users } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -8,7 +8,7 @@ import type { RecordKey } from "@/lib/admin/record-url"
 import type { SearchHit } from "@/lib/admin/search-hit"
 
 // Cmd or Ctrl+K (docs/plans/2026-11-18-admin-holistic-design.md, section 4): one box over every screen that finds a customer, a job or a day's work by
-// name, street, phone or pass number and opens the record. The matching is the server's (`onSearch`, asked after a short pause so a fast typist
+// name, street, phone or pass number, and a quote or an invoice by its number, and opens the record. The matching is the server's (`onSearch`, asked after a short pause so a fast typist
 // asks once); the box only lists what comes back, three groups, a row each with what it is under its name. Choosing one calls `onOpen` and closes.
 // Nothing needs the keyboard: the shell also has a Search button. The group "Days" is a visit; the word is kept to the panels.
 
@@ -23,13 +23,16 @@ export interface CommandSearchProps {
   delay?: number
 }
 
-const GROUPS: { kind: RecordKey | "request" | "quote"; heading: string; icon: typeof Users }[] = [
+// the groups in the rail's order: Customers, Requests, Quotes, Jobs, Invoices, then the days
+const GROUPS: { kind: RecordKey | "request" | "quote" | "invoice"; heading: string; icon: typeof Users }[] = [
   { kind: "customer", heading: "Customers", icon: Users },
   // a request still waiting (New and Seen) is found here and nowhere else; once a job is made of it, its customer and job are (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.7)
   { kind: "request", heading: "Requests", icon: Inbox },
-  { kind: "job", heading: "Jobs", icon: Briefcase },
-  // a quote is found by its number or its customer's name and opens the Quotes list on it (Hannah, Nov 20 2026)
+  // a quote is found by its number ("Q-2026-0005") or its customer's name and opens its own page (Hannah, Nov 20 2026)
   { kind: "quote", heading: "Quotes", icon: FileText },
+  { kind: "job", heading: "Jobs", icon: Briefcase },
+  // an invoice is found by its number ("INV-2026-0042") or its customer's name and opens its own page (Hannah, Nov 25 2026, as Jobber's search does)
+  { kind: "invoice", heading: "Invoices", icon: Receipt },
   { kind: "visit", heading: "Days", icon: CalendarDays },
 ]
 

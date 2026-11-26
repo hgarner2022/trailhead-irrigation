@@ -11,7 +11,6 @@ import { TextLink } from "@/components/blocks/TextLink"
 import { recordHref } from "@/components/blocks/record-preview-model"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CustomerChip, QuoteChip, useRowOpen } from "../RecordChips"
 import { QuoteReminderDialog } from "./QuoteDialogs"
 import { QUOTE_TABS, closeRate, oldestWaitingDays, quoteRowsOf, quoteTotals, sortQuoteRows, tabCounts, type QuoteListRow, type QuoteTab } from "./quote-list-model"
 import { QUOTE_PILL, ago, dayOf, money, type Channel, type QuoteRecord } from "./quote-model"
@@ -20,28 +19,24 @@ import { QUOTE_PILL, ago, dayOf, money, type Channel, type QuoteRecord } from ".
 // button). From the top: a row of tiles by stage (Open pipeline, Waiting for an answer with how long the oldest has waited, Approved this month, Declined this month, and Close rate, which is
 // shown only once a quote is decided and is only approved divided by approved plus declined); each tile that has something to show is also the filter, it sets the tab below. Then status tabs
 // with live counts (All, Draft, Sent, Approved, Declined, Replaced, Archived), then search and one `DataGrid` with the quote number, customer and what it is for, the amount, the deposit (a
-// dollar figure or a dash), the day it was sent with its age, the status pill and a Next action: Remind on a Sent quote (the quote's own reminder dialog, once a day), Open on the others.
-// The waiting ones come first. A click on the row or the quote chip opens the quote's page. On a phone the table is cards, the tiles two by two and the tabs a row that scrolls sideways. Pure props.
+// dollar figure or a dash), the day it was sent with its age, the status pill and a Next action: Remind on a Sent quote (the quote's own reminder dialog, once a day), and nothing on the others.
+// The waiting ones come first. One link a row (Hannah, Nov 25 2026): the quote's number is the link, the whole row opens the quote's page, and the customer is plain text. On a phone the table is
+// cards, the tiles two by two and the tabs a row that scrolls sideways. Pure props.
 
-/** a row action: a quiet text link that never wraps (Remind, Open) */
+/** a row action: a quiet text link that never wraps (Remind) */
 const ROW_ACTION = "whitespace-nowrap px-2 text-sm"
-const CARD: GridCardSlots = { title: "label", line: ["customerText", "serviceText"], state: "status", when: ["datesText"], money: "amount", actions: "next" }
+const CARD: GridCardSlots = { line: ["customer", "service"], state: "status", when: ["datesText"], money: "amount", actions: "next" }
 const TAB_WORDS: Record<QuoteTab, string> = { all: "All", draft: QUOTE_PILL.draft.label, sent: QUOTE_PILL.sent.label, approved: QUOTE_PILL.approved.label, declined: QUOTE_PILL.declined.label, replaced: QUOTE_PILL.replaced.label, archived: QUOTE_PILL.archived.label }
 const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`
 
-/** Next action: Remind on a Sent quote (greyed once pressed today), Open on every other. */
+/** Next action: Remind on a Sent quote (greyed once pressed today). Every other row has none: the row itself opens the quote. */
 function NextAction({ row, onRemind }: { row: QuoteListRow; onRemind: (r: QuoteListRow) => void }) {
+  if (row.state !== "sent") return null
   return (
     <span className="flex flex-nowrap items-center justify-end">
-      {row.state === "sent" ? (
-        <TextLink weight="medium" className={ROW_ACTION} disabled={row.remindedToday} onClick={() => onRemind(row)}>
-          {row.remindedToday ? "Reminded today" : "Remind"}
-        </TextLink>
-      ) : (
-        <TextLink href={recordHref.quote(row.id)} aria-label={`Open quote ${row.id}`} weight="medium" className={ROW_ACTION}>
-          Open
-        </TextLink>
-      )}
+      <TextLink weight="medium" className={ROW_ACTION} disabled={row.remindedToday} onClick={() => onRemind(row)}>
+        {row.remindedToday ? "Reminded today" : "Remind"}
+      </TextLink>
     </span>
   )
 }
@@ -59,7 +54,6 @@ export interface QuotesListProps {
 }
 
 export function QuotesList({ quotes, now, onRemind, onNewQuote, initialTab = "all" }: QuotesListProps) {
-  const open = useRowOpen()
   const [tab, setTab] = useState<QuoteTab>(initialTab)
   const [remind, setRemind] = useState<QuoteListRow | null>(null)
   const rows = useMemo(() => quoteRowsOf(quotes, now), [quotes, now])
@@ -77,13 +71,10 @@ export function QuotesList({ quotes, now, onRemind, onNewQuote, initialTab = "al
         id: "number",
         accessorFn: (r) => `${r.id} ${r.customer} ${r.street}`,
         header: "Quote",
-        meta: { bare: true, csv: (r) => (r as QuoteListRow).id },
-        cell: ({ row: { original: r } }) => <QuoteChip table number={r.id} />,
+        meta: { href: (r) => recordHref.quote((r as QuoteListRow).id), csv: (r) => (r as QuoteListRow).id },
+        cell: ({ row: { original: r } }) => <span className="whitespace-nowrap">{r.id}</span>,
       },
-      { id: "label", accessorFn: (r) => r.id, header: "Quote number" },
-      { id: "serviceText", accessorFn: (r) => r.service, header: "Service name" },
-      { id: "customerText", accessorFn: (r) => r.customer, header: "Customer name" },
-      { id: "customer", accessorFn: (r) => r.customer, header: "Customer", cell: ({ row: { original: r } }) => <CustomerChip table id={r.customerId} name={r.customer} address={r.street} /> },
+      { id: "customer", accessorFn: (r) => r.customer, header: "Customer" },
       { id: "service", accessorFn: (r) => r.service, header: "For" },
       { id: "amount", accessorFn: (r) => r.amount, header: "Amount", meta: { align: "right", csv: (r) => String((r as QuoteListRow).amount) }, cell: ({ row: { original: r } }) => money(r.amount) },
       {
@@ -170,8 +161,8 @@ export function QuotesList({ quotes, now, onRemind, onNewQuote, initialTab = "al
         data={data}
         getRowId={(r) => r.id}
         search={{ column: "number", placeholder: "Search by number, name or street" }}
-        hiddenColumns={["label", "customerText", "serviceText", "datesText"]}
-        onOpen={(r) => open(r.id)}
+        hiddenColumns={["datesText"]}
+        rowOpens
         exportName="quotes"
         pageSize={25}
         noMatchTitle="No quotes match."

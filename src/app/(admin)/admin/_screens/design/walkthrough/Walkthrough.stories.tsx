@@ -35,7 +35,7 @@ const laptopPath: Story["play"] = async ({ canvasElement }) => {
   const c = within(canvasElement)
   await expect(await c.findByRole("heading", { level: 1, name: "Jobs" })).toBeInTheDocument()
   // a job opens from its grid row
-  await userEvent.click((await c.findAllByRole("button", { name: "Andrea Dalton" }))[0]!)
+  await userEvent.click((await c.findAllByText("Andrea Dalton"))[0]!)
   await waitFor(() => expect(route(canvasElement)).toBe("job:andrea-repair"))
   // the flow: Schedule, Mark done, send the invoice
   const body = within(document.body)
@@ -53,7 +53,7 @@ const laptopPath: Story["play"] = async ({ canvasElement }) => {
   await waitFor(() => expect(route(canvasElement)).toBe("customer:andrea"))
   await expect(await c.findByRole("heading", { level: 1, name: "Andrea Dalton" })).toBeInTheDocument()
   // Invoices in the rail, then an invoice, then back to Jobs
-  await userEvent.click(await c.findByRole("link", { name: "Invoices" }))
+  await userEvent.click(await c.findByRole("link", { name: /^Invoices/ }))
   await waitFor(() => expect(route(canvasElement)).toBe("invoices"))
   await userEvent.click((await c.findAllByRole("link", { name: /INV-2026-0042/ }))[0]!)
   await waitFor(() => expect(route(canvasElement)).toBe("invoice:inv-42"))
@@ -102,7 +102,7 @@ export const FromSearchTest: Story = {
 const receiptPath: Story["play"] = async ({ canvasElement }) => {
   const c = within(canvasElement)
   const body = within(document.body)
-  await userEvent.click((await c.findAllByRole("button", { name: "Andrea Dalton" }))[0]!)
+  await userEvent.click((await c.findAllByText("Andrea Dalton"))[0]!)
   await userEvent.click(await c.findByRole("button", { name: "Schedule" }))
   await userEvent.click(await body.findByRole("button", { name: /Schedule and notify the customer/ }))
   await userEvent.click(await c.findByRole("button", { name: "Mark done" }))
@@ -191,7 +191,7 @@ export const EveryCustomerOpensTest: Story = {
     await expect(await c.findByText("No messages yet")).toBeInTheDocument()
     // a job's chip opens its customer: Quotes is not needed, Jobs has Reese's blowout
     await userEvent.click(await c.findByRole("link", { name: "Jobs" }))
-    await userEvent.click((await c.findAllByRole("button", { name: "Reese Holloway" }))[0]!)
+    await userEvent.click((await c.findAllByText("Reese Holloway"))[0]!)
     await waitFor(() => expect(route(canvasElement)).toBe("job:g-reese"))
     await userEvent.click((await c.findAllByRole("link", { name: /Reese Holloway/ }))[0]!)
     await waitFor(() => expect(route(canvasElement)).toBe("customer:other-reese-holloway"))
@@ -278,8 +278,8 @@ export const RequestToQuoteTest: Story = {
     await expect(within(row).getByText("Rosa Delgado")).toBeInTheDocument()
     await expect(within(row).getByText("Sent", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
     await expect(within(row).getByText("$300")).toBeInTheDocument()
-    // a click on the row's quote chip opens the quote's own page; marking it approved is the moment the job is made
-    await userEvent.click(within(row).getByRole("link", { name: "Quote: Q-2026-0009" }))
+    // a click on the row's one link, the quote's number, opens the quote's own page; marking it approved is the moment the job is made
+    await userEvent.click(within(row).getByRole("link", { name: "Q-2026-0009" }))
     await waitFor(() => expect(route(canvasElement)).toBe("quote:Q-2026-0009"))
     await userEvent.click(await c.findByRole("button", { name: "Mark approved" }))
     const dialog = within(await body.findByRole("dialog"))

@@ -11,12 +11,18 @@ const CARD: PaymentRowData = { id: "p2", at: "2026-04-20T17:00:00Z", method: "ca
 const CHECK: PaymentRowData = { ...CARD, id: "p1", method: "check", methodLabel: "Check #1042", stripeHref: undefined }
 
 describe("PaymentTable", () => {
-  it("offers View receipt on every row and Open in Stripe only on a card payment, in a new tab, each icon with its label", () => {
+  it("shows ONE action a row in words, View receipt, and keeps Open in Stripe under More, only on a card payment, in a new tab", async () => {
     render(<PaymentTable rows={[CARD, CHECK]} />)
     expect(screen.getAllByRole("link", { name: "View receipt" })).toHaveLength(2)
-    const stripe = screen.getAllByRole("link", { name: /Open in Stripe/ })
-    expect(stripe).toHaveLength(1)
-    expect(stripe[0]).toHaveAttribute("rel", expect.stringContaining("noopener"))
+    // no bare icon stands for an action, and nothing else in a row is a link
+    expect(screen.queryByRole("link", { name: /Open in Stripe/ })).toBeNull()
+    const more = screen.getAllByRole("button", { name: "More" })
+    expect(more).toHaveLength(1) // the card payment's; the check has nothing more
+    fireEvent.pointerDown(more[0]!, { button: 0, ctrlKey: false })
+    fireEvent.click(more[0]!)
+    const stripe = await screen.findByRole("menuitem", { name: /Open in Stripe/ })
+    expect(stripe).toHaveAttribute("target", "_blank")
+    expect(stripe).toHaveAttribute("rel", expect.stringContaining("noopener"))
   })
 
   it("puts Refund under More and asks the caller to confirm it", async () => {
@@ -39,14 +45,17 @@ describe("PaymentTable", () => {
 })
 
 describe("InvoiceTable", () => {
-  it("shows the number, amount, sent and due days with the pill and its two buttons", () => {
+  it("shows the number as the row's one link, the amount, sent and due days with the pill and Remind", () => {
     const onRemind = vi.fn()
     render(<InvoiceTable rows={[{ id: "i1", number: "INV-2026-0001", amount: "$145", sent: "Nov 18", due: "Dec 2", status: "bill-sent", canRemind: true }]} onRemind={onRemind} />)
     expect(screen.getByText("INV-2026-0001")).toBeInTheDocument()
     expect(screen.getByText("Invoice sent")).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Remind" }))
     expect(onRemind).toHaveBeenCalled()
-    expect(screen.getByRole("link", { name: "Open invoice" })).toBeInTheDocument()
+    // the number is the link to the invoice; there is no second "Open invoice" button
+    expect(screen.getByRole("link", { name: "Invoice: INV-2026-0001" })).toHaveAttribute("href", "/admin/invoices?invoice=i1")
+    expect(screen.queryByRole("link", { name: "Open invoice" })).toBeNull()
+    expect(screen.getAllByRole("link")).toHaveLength(1)
   })
 
   it("has no Remind on a paid invoice", () => {
@@ -59,15 +68,19 @@ const OUT: InvoiceRowData = { id: "i1", number: "INV-2026-0042", amount: "$145",
 const PAID: InvoiceRowData = { ...OUT, status: "paid", canRemind: false, paidBy: CARD }
 
 describe("InvoiceTable: Invoices and payments", () => {
-  it("is one row for a paid invoice: the number, how it was paid under it, the amount, the Paid pill and the buttons", () => {
+  it("is one row for a paid invoice: the number, how it was paid under it, the amount, the Paid pill, View receipt and More", async () => {
     render(<InvoiceTable rows={[PAID]} onRefund={vi.fn()} />)
     const table = document.querySelector("[data-slot=invoice-table]") as HTMLElement
     expect(within(table).getAllByRole("row")).toHaveLength(2) // the header and one row
     expect(within(table).getByText("Paid by Visa ending 4242 on Apr 20 · Andrea, online")).toBeInTheDocument()
     expect(within(table).getByText("Paid")).toBeInTheDocument()
     expect(within(table).getByRole("link", { name: "View receipt" })).toBeInTheDocument()
-    expect(within(table).getByRole("link", { name: /Open in Stripe/ })).toBeInTheDocument()
-    expect(within(table).getByRole("link", { name: "Open invoice" })).toBeInTheDocument()
+    expect(within(table).getByRole("link", { name: `Invoice: ${PAID.number}` })).toBeInTheDocument()
+    expect(within(table).getAllByRole("link")).toHaveLength(2)
+    const more = within(table).getByRole("button", { name: /^More/ })
+    fireEvent.pointerDown(more, { button: 0, ctrlKey: false })
+    fireEvent.click(more)
+    expect(await screen.findByRole("menuitem", { name: /Open in Stripe/ })).toBeInTheDocument()
     expect(within(table).queryByRole("button", { name: "Remind" })).toBeNull()
   })
 

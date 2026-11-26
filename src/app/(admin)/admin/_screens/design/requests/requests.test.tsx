@@ -99,7 +99,7 @@ describe("the catalogue flag", () => {
 })
 
 describe("Requests list", () => {
-  it("lists the open requests, New first, with the match as a chip and a status pill; one that became a job or a quote has left", () => {
+  it("lists the open requests, New first, with the match as text and a status pill; one that became a job or a quote has left", () => {
     render(<RequestsList requests={REQUEST_FIXTURES} now={REQUESTS_NOW} onOpen={() => undefined} />)
     const rows = screen.getAllByRole("row")
     expect(rows).toHaveLength(7)
@@ -109,7 +109,10 @@ describe("Requests list", () => {
     expect(within(rows[1]!).getByRole("button", { name: "Rosa Delgado" })).toBeInTheDocument()
     expect(within(rows[1]!).getByText("No match")).toBeInTheDocument()
     expect(within(rows[1]!).getByText("New", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
-    expect(within(rows[2]!).getByRole("link", { name: /Customer: Andrea Dalton/ })).toHaveAttribute("href", "/admin/customers?customer=andrea")
+    // one link a row: the request's own name. The customer it matches is text here and is linked on the request's page
+    expect(within(rows[2]!).getAllByText("Andrea Dalton")).toHaveLength(2)
+    expect(within(rows[2]!).queryByRole("link")).toBeNull()
+    expect(within(rows[2]!).getAllByRole("button")).toHaveLength(1)
   })
   it("shows a request again, Archived, when its quote was archived", () => {
     const archived: RequestData = { ...req("rq-beth"), archived: { reason: "No answer", at: REQUESTS_NOW } }
@@ -133,7 +136,7 @@ describe("Requests list", () => {
 describe("Request page", () => {
   it("shows New with Send a quote as the way out for a service with no price, Archive beside it, Mark as seen under More, and no Create job", () => {
     render(<RequestPage request={req("rq-rosa")} now={REQUESTS_NOW} markSeenOnOpen={false} />)
-    expect(screen.getByRole("heading", { level: 1, name: "Rosa Delgado" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { level: 1, name: "Request from Rosa Delgado" })).toBeInTheDocument()
     expect(screen.getByText("New", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
     expect(footerButtons().slice(0, 2)).toEqual(["Send a quote", "Archive"])
     expect(screen.queryByRole("button", { name: "Create job" })).toBeNull()

@@ -11,7 +11,8 @@ import { recommendedId, type OpeningSort } from "@/components/blocks/find-a-time
 import type { Opening } from "@/components/blocks/scheduler-panels-types"
 import type { BestTimes } from "@/components/blocks/best-times"
 import { CREW_LINE_MAX, crewText, notices } from "./crew-copy"
-import { optionClass } from "@/components/blocks/option-styles"
+import { optionClass, optionGroup } from "@/components/blocks/option-styles"
+import { useKeyboardFocus } from "@/components/blocks/keyboard-focus"
 
 // The Schedule and Move dialog's body (docs/plans/2026-11-18-scheduling-engine-design.md section 4, the offer rule, and the customer's
 // day-and-time choice): the one calendar (`DayCalendar`, the office's mode: any day from today may be chosen, the days with an opening
@@ -161,7 +162,7 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
             <p data-slot="crew-text" className="pl-8 text-muted-foreground">{crewText({ day: day.label, time: at === "any" ? "Any time" : time(at), address, service, instructions })}</p>
           </div>
         )}
-        {(!best || names.length > 1) && <FormRow label="Instructions for the crew (optional)" hint={`${instructions.length} of ${CREW_LINE_MAX}. In the text to the crew and on the trip.`}>
+        {(!best || names.length > 1) && <FormRow label="Instructions for the crew (optional)" hint={`${instructions.length} of ${CREW_LINE_MAX}. In the text to the crew and on the visit.`}>
           <Input value={instructions} maxLength={CREW_LINE_MAX} onChange={(e) => (setInstructions(e.target.value), emit(day, people, at, { instructions: e.target.value }))} className="min-h-11" />
         </FormRow>}
       </div>
@@ -194,15 +195,16 @@ function DayTimes({ best, day, pickedId, at, onPick, onAny }: { best: BestTimes;
 }
 
 function PersonAndTimes({ names, day, people, setPeople, stops, starts, at, minutes, pick }: { names: readonly string[]; day: Day; people: string[]; setPeople: (ps: string[]) => void; stops: Stop[]; starts: number[]; at: number | "any"; minutes: number; pick: (t: number | "any") => void }) {
+  const kbd = useKeyboardFocus()
   return (
     <>
       <fieldset className="flex flex-col gap-1">
         <legend className="mb-1 font-medium">Who</legend>
-        <div className="flex flex-wrap gap-2">
+        <div className={cn("flex flex-wrap gap-2", optionGroup)} data-kbd={kbd.shown || undefined} {...kbd.handlers}>
           {names.map((p) => {
             const on = people.includes(p)
             return (
-              <button key={p} type="button" role="checkbox" aria-checked={on} onClick={() => setPeople(on ? (people.length > 1 ? people.filter((x) => x !== p) : people) : [...people, p])} className={cn(optionClass({ selected: on }), "min-h-11 px-3 font-medium")}>
+              <button key={p} type="button" role="checkbox" aria-checked={on} onClick={() => setPeople(on ? (people.length > 1 ? people.filter((x) => x !== p) : people) : [...people, p])} className={cn(optionClass({ selected: on, focus: "selfKbd" }), "min-h-11 px-3 font-medium")}>
                 {p}
               </button>
             )

@@ -24,13 +24,13 @@ describe("customer page", () => {
     })
   }
 
-  it("makes every summary tile with something behind it a link or a button, and leaves an empty one plain", () => {
+  it("makes every summary tile with something behind it scroll to its section on this page, never leave it, and leaves an empty one plain", () => {
     render(<CustomerPage customer={customerPageOf("pass-holder")} />)
-    expect(document.querySelectorAll("[data-slot=summary-cell][data-link]")).toHaveLength(4)
-    expect(screen.getByRole("link", { name: /Unpaid/ })).toHaveAttribute("href", expect.stringContaining("invoice=i1"))
-    expect(screen.getByRole("link", { name: /Next visit/ })).toHaveAttribute("href", expect.stringContaining("job=j1"))
-    expect(within(document.querySelector("[data-slot=summary-band]") as HTMLElement).getByRole("link", { name: /Season Pass/ })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Card on file/ })).toBeInTheDocument()
+    const band = document.querySelector("[data-slot=summary-band]") as HTMLElement
+    expect(band.querySelectorAll("[data-slot=summary-cell][data-link]")).toHaveLength(4)
+    // each tile does one thing: it is a button that scrolls; the job, the invoice and the pass are linked once, in their own sections
+    expect(band.querySelectorAll("a")).toHaveLength(0)
+    for (const name of [/Next visit/, /Unpaid/, /Season Pass/, /Card on file/]) expect(within(band).getByRole("button", { name })).toBeInTheDocument()
     render(<CustomerPage customer={customerPageOf("nothing-yet")} />)
     const bands = document.querySelectorAll("[data-slot=summary-band]")
     expect(bands[1]!.querySelectorAll("[data-link]")).toHaveLength(0)
@@ -54,13 +54,16 @@ describe("customer page", () => {
     expect(screen.getByRole("menuitem", { name: "Delete customer" })).toBeInTheDocument()
   })
 
-  it("lists every job with a name chip, a day chip to the Schedule, a person chip, a status pill and a money word, open jobs first", () => {
+  it("lists every job with its name as the row's ONE link, the day and the person as text, a status pill and a money word, open jobs first", () => {
     render(<CustomerPage customer={customerPageOf("pass-holder")} />)
     const jobs = within(sectionOf("Jobs"))
     expect(jobs.getAllByRole("row")).toHaveLength(6)
     expect(jobs.queryByRole("button", { name: "Columns" })).toBeNull()
-    expect(jobs.getByRole("link", { name: /Day: May 3, 2027/ })).toHaveAttribute("href", expect.stringContaining("/admin/schedule?day=2027-05-03"))
-    expect(jobs.getAllByRole("link", { name: /Person: Ryan/ }).length).toBeGreaterThan(0)
+    // one link a row: five jobs, five links, none to the Schedule or to Settings
+    expect(jobs.getAllByRole("link")).toHaveLength(5)
+    expect(jobs.getByText("May 3, 2027").closest("a")).toBeNull()
+    expect(jobs.getAllByText("Ryan")[0]!.closest("a")).toBeNull()
+    expect(sectionOf("Jobs").querySelectorAll("[data-slot=record-chip]")).toHaveLength(0)
     expect(jobs.getByText("Paid, Venmo")).toBeInTheDocument()
     expect(jobs.getByText("Charged after each visit")).toBeInTheDocument()
     const first = jobs.getAllByRole("row")[1]!
@@ -68,12 +71,17 @@ describe("customer page", () => {
     expect(sortJobs(customerPageOf("pass-holder").jobs).map((j) => j.open)).toEqual([true, true, false, false, false])
   })
 
-  it("is the embedded grid: no Columns control and no search, the job chip is the row's link, and a day never wraps", () => {
+  it("is the embedded grid: no Columns control and no search, the job's name is the row's link and the whole row opens it, and a day never wraps", () => {
     render(<CustomerPage customer={customerPageOf("pass-holder")} />)
     const jobs = within(sectionOf("Jobs"))
     expect(jobs.queryByRole("button", { name: "Columns" })).toBeNull()
     expect(jobs.queryByRole("searchbox")).toBeNull()
-    expect(jobs.getAllByRole("link", { name: /Job: Sprinkler repair/ })[0]).toHaveAttribute("href", expect.stringContaining("/admin/jobs?job="))
+    const link = jobs.getAllByRole("link", { name: "Sprinkler repair" })[0]!
+    expect(link).toHaveAttribute("href", expect.stringContaining("/admin/jobs?job="))
+    const opened = vi.fn((e: Event) => e.preventDefault())
+    link.addEventListener("click", opened)
+    fireEvent.click(within(link.closest("tr")!).getByText("Scheduled"))
+    expect(opened).toHaveBeenCalledTimes(1)
     expect(document.querySelector("[data-slot=data-grid-table] th")).not.toHaveClass("bg-stone")
   })
 
@@ -81,22 +89,24 @@ describe("customer page", () => {
     const { unmount } = render(<CustomerPage customer={customerPageOf("pass-holder")} />)
     const billing = within(sectionOf("Billing"))
     expect(billing.getByText("$145 unpaid.")).toBeInTheDocument()
-    expect(document.querySelector("[data-slot=settled-line]")).toHaveTextContent("$145 unpaid. Invoice Invoice: INV-2026-0042 sent Nov 12, due Dec 2.")
+    expect(document.querySelector("[data-slot=settled-line]")).toHaveTextContent("$145 unpaid. Invoice INV-2026-0042 sent Nov 12, due Dec 2.")
+    // the status line says the invoice in words; its row below carries the one link
+    expect(document.querySelector("[data-slot=settled-line] a")).toBeNull()
     for (const label of ["Total", "Paid", "Unpaid", "Card on file"]) expect(billing.getAllByText(label).length).toBeGreaterThan(0)
     expect(billing.getByText(/Visa ending 4242, expires 08\/28/)).toBeInTheDocument()
-    expect(billing.getAllByRole("link", { name: /Open in Stripe/ }).length).toBeGreaterThan(1)
+    expect(billing.getAllByRole("link", { name: /Open in Stripe/ })).toHaveLength(1) // the card's own row; a payment's is under its More
     expect(billing.getByRole("button", { name: "Update card" })).toBeInTheDocument()
     unmount()
     render(<CustomerPage customer={customerPageOf("one-off")} />)
     expect(within(sectionOf("Billing")).getByText("Paid in full")).toBeInTheDocument()
   })
 
-  it("puts the invoices still out first and links each invoice row to the invoice", () => {
+  it("puts the invoices still out first and links each invoice ONCE, by its row", () => {
     expect(sortInvoices(customerPageOf("pass-holder").billing.invoices).map((i) => i.number)).toEqual(["INV-2026-0042", "INV-2026-0031"])
     render(<CustomerPage customer={customerPageOf("pass-holder")} />)
     const links = within(sectionOf("Billing")).getAllByRole("link", { name: "Invoice: INV-2026-0042" })
-    expect(links.length).toBeGreaterThan(1) // the status line names it and so does its row
-    for (const link of links) expect(link).toHaveAttribute("href", expect.stringContaining("invoice=i1"))
+    expect(links).toHaveLength(1) // the status line names it in words; its row is the link
+    expect(links[0]).toHaveAttribute("href", expect.stringContaining("invoice=i1"))
   })
 
   it("links a renewal back to last season and last season forward to the renewal", () => {
@@ -141,7 +151,7 @@ describe("customer page", () => {
     expect(screen.queryByRole("button", { name: "More ways" })).toBeNull()
   })
 
-  it("shows the payments as the job page's table: the date, the method with its handle as a quiet line, the amount, a status and icon buttons", () => {
+  it("shows the payments as the job page's table: the date, the method with its handle as a quiet line, the amount, a status and one action in words", () => {
     render(<CustomerPage customer={customerPageOf("pass-holder")} />)
     // the Venmo payment has no invoice, so it is the Payments table's one row; the card payment is part of its paid invoice's row
     const pay = within(document.querySelector("[data-slot=payment-table]") as HTMLElement)
@@ -149,10 +159,13 @@ describe("customer page", () => {
     expect(pay.getByText("Oct 12 · Ryan")).toBeInTheDocument()
     expect(pay.getAllByRole("link", { name: "View receipt" }).length).toBe(1)
     expect(pay.queryByRole("link", { name: /Open in Stripe/ })).toBeNull()
-    expect(pay.getAllByRole("link", { name: /Job:/ }).length).toBe(1)
+    // the job a payment was for is text: the job is linked once, in Jobs
+    expect(pay.getByText("Fall blowout").closest("a")).toBeNull()
+    expect(pay.getAllByRole("link")).toHaveLength(1)
     const inv = within(document.querySelector("[data-slot=invoice-table]") as HTMLElement)
     expect(inv.getByText(/^Paid by Visa ending 4242 on Apr 20/)).toBeInTheDocument()
-    expect(inv.getAllByRole("link", { name: /Open in Stripe/ }).length).toBe(1)
+    expect(inv.queryByRole("link", { name: /Open in Stripe/ })).toBeNull()
+    expect(inv.getAllByRole("button", { name: /^More/ }).length).toBe(1)
   })
 
   it("shows refunds in the words of the job page: Refunded in Jobs, the negative grey row, no Unpaid, no Collect payment", () => {
@@ -230,7 +243,15 @@ describe("customer page", () => {
     }
     render(<CustomerPage customer={customerPageOf("pass-holder")} />)
     expect(within(document.querySelector("[data-slot=record-page-badges]") as HTMLElement).getByText("Season Pass 2027")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: /Unpaid/ })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Unpaid/ })).toBeInTheDocument()
+  })
+
+  it("never links to the page it is on: the Contact card has no name link and the address is text", () => {
+    render(<CustomerPage customer={customerPageOf("pass-holder")} />)
+    expect(document.querySelectorAll("a[href*='/admin/customers?customer=']")).toHaveLength(0)
+    const contact = within(sectionOf("Contact"))
+    expect(contact.getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["tel:+19705550123", "mailto:andrea.dalton@example.com"])
+    expect(within(sectionOf("Property")).getByText(/480 Briggs St/).closest("a")).toBeNull()
   })
 
   it("marks Do not service with a red tag and edits it from a checkbox with an optional reason that goes to the history", async () => {

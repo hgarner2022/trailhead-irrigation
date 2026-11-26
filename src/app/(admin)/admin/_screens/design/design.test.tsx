@@ -20,9 +20,10 @@ beforeAll(() => {
 describe("job page, one trip", () => {
   const PRIMARY: Record<string, string | null> = { unscheduled: "Schedule", scheduled: "Move", today: "On my way", late: "Mark done", "done-unpaid": "Collect payment", "invoice-sent": "Send a payment reminder", "past-due": "Send a payment reminder", "on-the-way": "Mark done", active: "Mark done", "done-paid": null, canceled: null }
   for (const state of JOB_STATES) {
-    it(`renders ${state} with the customer as the title`, () => {
+    it(`renders ${state} titled with the service, the customer under it`, () => {
       render(<JobPage job={jobPageOf(state)} />)
-      expect(screen.getByRole("heading", { level: 1, name: "Andrea Dalton" })).toBeInTheDocument()
+      expect(screen.getByRole("heading", { level: 1, name: "Sprinkler repair" })).toBeInTheDocument()
+      expect(screen.getByText("for Andrea Dalton · Added Nov 18")).toBeInTheDocument()
       expect(screen.getByRole("heading", { name: "Billing" })).toBeInTheDocument()
       const first = document.querySelector("[data-slot=record-footer] button")
       if (state in PRIMARY && PRIMARY[state]) expect(first).toHaveTextContent(PRIMARY[state] as string)
@@ -47,12 +48,14 @@ describe("job page, one trip", () => {
     render(<JobPage job={jobPageOf("invoice-sent")} />)
     expect(screen.getByRole("button", { name: "Collect payment" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Record the payment" })).toBeNull()
-    expect(document.querySelector("[data-slot=settled-line]")).toHaveTextContent(/\$145 unpaid\. Invoice Invoice: INV-2026-0001 sent Nov 18, due Dec 2\./)
+    expect(document.querySelector("[data-slot=settled-line]")).toHaveTextContent(/\$145 unpaid\. Invoice INV-2026-0001 sent Nov 18, due Dec 2\./)
     const table = document.querySelector("[data-slot=invoice-table]") as HTMLElement
     expect(within(table).getByText("INV-2026-0001")).toBeInTheDocument()
     expect(within(table).getByText("Invoice sent")).toBeInTheDocument()
     expect(within(table).getByRole("button", { name: "Remind" })).toBeInTheDocument()
-    expect(within(table).getByRole("link", { name: /Open invoice/ })).toBeInTheDocument()
+    // the invoice is linked once on the page: its number in its row (not the Total tile, not the status line, no "Open invoice" button)
+    expect(document.querySelectorAll("a[href*='/admin/invoices?invoice=']")).toHaveLength(1)
+    expect(within(table).getByRole("link", { name: "Invoice: INV-2026-0001" })).toBeInTheDocument()
   })
 
   it("says Paid in full in green and nothing else, with the one payment in a Payments table (a check has no invoice)", () => {
@@ -69,14 +72,13 @@ describe("job page, one trip", () => {
     expect(within(table).getByRole("button", { name: /More for the \$145 payment/ })).toBeInTheDocument()
   })
 
-  it("shows a card payment that settled an invoice as ONE row, with Open in Stripe in a new tab", () => {
+  it("shows a card payment that settled an invoice as ONE row, with View receipt and the rest under its More", () => {
     render(<JobPage job={jobPageOf("paid-card")} />)
     const table = document.querySelector("[data-slot=invoice-table]") as HTMLElement
     expect(document.querySelector("[data-slot=payment-table]")).toBeNull()
     expect(within(table).getAllByRole("row")).toHaveLength(2)
     expect(within(table).getByText("INV-2026-0001")).toBeInTheDocument()
     expect(within(table).getByText("Paid by Visa ending 4242 on Nov 18 · Ryan")).toBeInTheDocument()
-    expect(within(table).getByRole("link", { name: /Open in Stripe/ })).toHaveAttribute("target", "_blank")
     expect(within(table).getByRole("link", { name: "View receipt" })).toBeInTheDocument()
     expect(within(table).getByRole("button", { name: /More for the \$145 payment/ })).toBeInTheDocument()
     expect(document.querySelector("[data-slot=billing-figures]")).toBeNull()
@@ -121,7 +123,7 @@ describe("job page, one trip", () => {
 
   it("shows a refund as its own negative grey row and keeps the payment", () => {
     render(<JobPage job={jobPageOf("refunded")} />)
-    expect(screen.getByRole("heading", { level: 1, name: "Andrea Dalton" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { level: 1, name: "Sprinkler repair" })).toBeInTheDocument()
     expect(screen.getAllByText("Refunded").length).toBeGreaterThan(0)
     expect(screen.queryByText("Unpaid", { selector: "[data-slot=status-pill]" })).toBeNull()
     const head = document.querySelector("[data-slot=record-page-actions]") as HTMLElement
@@ -149,9 +151,9 @@ describe("job page, one trip", () => {
     expect(document.querySelector("[aria-labelledby=messages-h] [data-slot=data-grid-toolbar]")).toBeNull()
   })
 
-  it("links the invoice number to its page as a chip and keeps the visit-report note", () => {
+  it("links the invoice number to its page as the row's one link and keeps the visit-report note", () => {
     render(<JobPage job={jobPageOf("invoice-sent")} />)
-    const chip = document.querySelector("[data-slot=invoice-table] [data-slot=record-chip]") as HTMLElement
+    const chip = document.querySelector("[data-slot=invoice-table] a[data-grid-name]") as HTMLElement
     expect(chip).toHaveAttribute("href", "/admin/invoices?invoice=inv-1")
     expect(chip).toHaveTextContent("INV-2026-0001")
     expect(screen.getByText("Includes the visit report")).toBeInTheDocument()
@@ -188,12 +190,28 @@ describe("job page, one trip", () => {
     expect(document.body.textContent).not.toContain("1042")
   })
 
-  it("names the job and the person in Past visits as chips that link", () => {
+  it("gives a past visit ONE link, the job, with the day and the person as text, and See all to the customer's own page", () => {
     render(<JobPage job={jobPageOf("scheduled")} />)
-    const past = screen.getAllByText("Fall blowout").map((e) => e.closest("[data-slot=record-chip]")).find(Boolean) as HTMLElement
-    expect(past).toHaveAttribute("data-kind", "job")
-    expect(past).toHaveAttribute("href", expect.stringContaining("/admin/jobs?job="))
-    expect(document.querySelectorAll("[data-slot=past-visit] [data-kind=person]").length).toBeGreaterThan(0)
+    const visits = document.querySelectorAll<HTMLElement>("[data-slot=past-visit]")
+    expect(visits.length).toBeGreaterThan(0)
+    for (const v of visits) expect(v.querySelectorAll("a")).toHaveLength(1)
+    expect(visits[0]!.querySelector("a")).toHaveAttribute("href", expect.stringContaining("/admin/jobs?job="))
+    expect(visits[0]).toHaveTextContent("Fall blowout · Oct 14, 2026 · Ryan")
+    expect(document.querySelectorAll("[data-slot=past-visit] [data-slot=record-chip]")).toHaveLength(0)
+    expect(screen.getByRole("link", { name: "See all 7" })).toHaveAttribute("href", "/admin/customers?customer=c-1#jobs-h")
+  })
+
+  it("links the customer once, in the one Customer card, and never to the Customers list, Settings or a property anchor", () => {
+    render(<JobPage job={jobPageOf("scheduled")} />)
+    const hrefs = Array.from(document.querySelectorAll("a[href]")).map((a) => a.getAttribute("href")!)
+    expect(hrefs.filter((h) => h === "/admin/customers")).toHaveLength(0)
+    expect(hrefs.filter((h) => h.includes("/admin/settings") || h.includes("#property-h"))).toHaveLength(0)
+    expect(within(screen.getByRole("region", { name: "Customer" })).getByRole("link", { name: "Customer: Andrea Dalton" })).toHaveAttribute("href", "/admin/customers?customer=c-1")
+    // the band: When opens the Schedule on that day, Total scrolls to Billing, Who and Where are plain
+    const band = document.querySelector("[data-slot=summary-band]") as HTMLElement
+    expect(band.querySelectorAll("a")).toHaveLength(1)
+    expect(band.querySelector("a")).toHaveAttribute("href", expect.stringContaining("/admin/schedule?day="))
+    for (const label of ["Who", "Where"]) expect(Array.from(band.querySelectorAll("[data-slot=summary-cell]")).find((c) => c.textContent?.startsWith(label))).not.toHaveAttribute("data-link")
   })
 
   it("says Mark done or Skip for a trip whose day passed", () => {
@@ -210,9 +228,10 @@ describe("job page, one trip", () => {
 
 describe("job page, more than one trip", () => {
   for (const state of PASS_STATES) {
-    it(`renders the Season Pass ${state} titled with its number and two rows`, () => {
+    it(`renders the Season Pass ${state} titled with its season and two rows`, () => {
       const { container } = render(<JobPagePass data={passPageOf(state)} />)
-      expect(screen.getByRole("heading", { level: 1, name: "Season Pass TH-2027-0008" })).toBeInTheDocument()
+      expect(screen.getByRole("heading", { level: 1, name: "Season Pass 2027" })).toBeInTheDocument()
+      expect(screen.getByText(/^for Andrea Dalton · Sold /)).toBeInTheDocument()
       expect(container.querySelectorAll("[data-slot=trip-row]")).toHaveLength(2)
     })
   }
@@ -244,7 +263,9 @@ describe("job page, more than one trip", () => {
     expect(within(body).getByText("Ours")).toBeInTheDocument()
     expect(within(body).getByText("Notes and history")).toBeInTheDocument()
     expect(within(body).getByRole("button", { name: "Move" })).toBeInTheDocument()
-    expect(within(body).getByRole("link", { name: /Person: Ryan Garner/ })).toBeInTheDocument()
+    // who is on the visit is text: a person is never a link
+    expect(within(body).getByText("Ryan Garner").closest("a")).toBeNull()
+    expect(body.querySelectorAll("[data-slot=record-chip]")).toHaveLength(0)
     fireEvent.click(within(rows[1]!).getByRole("button", { name: /Fall blowout/ }))
     expect(rows[0]).toHaveAttribute("data-open", "false")
     expect(rows[1]).toHaveAttribute("data-open", "true")

@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { CircleDollarSign, Clock, FileText, Receipt, Send } from "lucide-react"
+import { CircleDollarSign, Clock, Receipt, Send } from "lucide-react"
 import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
 import type { GridCardSlots } from "@/components/blocks/DataGridCard"
 import { PageHeader } from "@/components/blocks/PageHeader"
@@ -10,9 +10,9 @@ import { SummaryBand } from "@/components/blocks/SummaryBand"
 import { TextLink } from "@/components/blocks/TextLink"
 import { recordHref } from "@/components/blocks/record-preview-model"
 import { useToast } from "@/components/blocks/Toast"
-import { useMedia } from "@/components/blocks/use-media"
+import { RowMore } from "@/components/blocks/RowMore"
 import { CollectDialog } from "./CustomerDialogs"
-import { CustomerChip, InvoiceChip, JobChip, useRowOpen } from "./RecordChips"
+import { CustomerText } from "./RecordChips"
 import { ReminderDialog } from "./ReminderDialog"
 import type { Reach } from "./confirm-copy"
 import { INVOICE_PILL, INVOICE_STATUSES, invoiceTotals, sortInvoiceRows, type InvoiceListRow } from "./invoice-fixtures"
@@ -20,43 +20,27 @@ import { shortDate, money } from "@/lib/admin/format"
 
 // Invoices, the primary nav item (docs/plans/2026-11-19-job-object-design.md, Hannah's rules of Nov 19 2026), in the shape of the Jobs grid: a
 // summary band (Unpaid, Past due, Sent this month, Paid this month; each tile sets the Status filter, and a tile with nothing is plain), then
-// one `DataGrid` with its one toolbar row (Status and Who as chips, search by number, name or street), past due first. The invoice, the
-// customer and the job are chips; a date or an amount never wraps; the row's actions are on one line, Remind and Collect payment as quiet text
-// buttons and Open as an icon, and the invoice chip opens the invoice. Remind confirms with the exact text, Collect payment opens "How is this
-// paid?"; a result is a toast. Pure props: the rows come in.
+// one `DataGrid` with its one toolbar row (Status and Who as chips, search by number, name or street), past due first. One link a row (Hannah,
+// Nov 25 2026: "Too many links"): the invoice's number is the row's link and the whole row opens the invoice; the customer and the job are plain
+// text (the invoice's page links each once). A date or an amount never wraps. A row shows ONE action, Remind, while the invoice is out; Collect
+// payment is under its More. Remind confirms with the exact text, Collect payment opens "How is this paid?"; a result is a toast. Pure props: the rows come in.
 
-/** a row action: a quiet text link that never wraps (Remind, Collect payment, Open invoice) */
+/** a row action: a quiet text link that never wraps (Remind) */
 const ROW_ACTION = "whitespace-nowrap px-2 text-sm"
 
 const reachOf = (r: InvoiceListRow): Reach => ({ first: r.customer.split(" ")[0]!, channel: "text", phone: "(970) 555-0123", email: `${r.customer.split(" ")[0]!.toLowerCase()}@example.com` })
-const CARD: GridCardSlots = { title: "label", line: ["customerText", "jobText"], state: "status", when: ["datesText"], money: "amount", actions: "actions" }
+const CARD: GridCardSlots = { line: ["customer", "jobName"], state: "status", when: ["datesText"], money: "amount", actions: "actions" }
 
 type Preset = { key: string; filters: { column: string; values: string[] }[] }
 
 function Actions({ row, onRemind, onCollect }: { row: InvoiceListRow; onRemind: (r: InvoiceListRow) => void; onCollect: (r: InvoiceListRow) => void }) {
-  const phone = useMedia("(max-width: 767px)")
-  const href = recordHref.invoice(row.id)
+  if (row.balance <= 0) return null
   return (
     <span className="flex flex-nowrap items-center justify-end gap-0.5">
-      {row.balance > 0 && (
-        <>
-          <TextLink weight="medium" className={ROW_ACTION} disabled={row.remindedToday} onClick={() => onRemind(row)}>
-            {row.remindedToday ? "Reminded today" : "Remind"}
-          </TextLink>
-          <TextLink weight="medium" className={ROW_ACTION} onClick={() => onCollect(row)}>
-            Collect payment
-          </TextLink>
-        </>
-      )}
-      {phone ? (
-        <TextLink href={href} weight="medium" className={ROW_ACTION}>
-          Open invoice
-        </TextLink>
-      ) : (
-        <TextLink href={href} icon aria-label="Open invoice" title="Open invoice">
-          <FileText className="size-4" aria-hidden />
-        </TextLink>
-      )}
+      <TextLink weight="medium" className={ROW_ACTION} disabled={row.remindedToday} onClick={() => onRemind(row)}>
+        {row.remindedToday ? "Reminded today" : "Remind"}
+      </TextLink>
+      <RowMore label={`More for ${row.number}`} items={[{ label: "Collect payment", onSelect: () => onCollect(row) }]} />
     </span>
   )
 }
@@ -69,7 +53,6 @@ export interface InvoicesPageProps {
 
 export function InvoicesPage({ rows, initialFilters = [] }: InvoicesPageProps) {
   const toast = useToast()
-  const open = useRowOpen()
   const [preset, setPreset] = useState<Preset>({ key: "all", filters: initialFilters })
   const [remind, setRemind] = useState<InvoiceListRow | null>(null)
   const [collect, setCollect] = useState<InvoiceListRow | null>(null)
@@ -83,14 +66,11 @@ export function InvoicesPage({ rows, initialFilters = [] }: InvoicesPageProps) {
         id: "number",
         accessorFn: (r) => `${r.number} ${r.customer} ${r.street}`,
         header: "Invoice",
-        meta: { bare: true, csv: (r) => (r as InvoiceListRow).number },
-        cell: ({ row: { original: r } }) => <InvoiceChip table id={r.id} number={r.number} customer={r.customer} status={INVOICE_PILL[r.status].pill} statusLabel={INVOICE_PILL[r.status].label} total={money(r.amount)} balance={money(r.balance)} due={shortDate(r.dueOn)} />,
+        meta: { href: (r) => recordHref.invoice((r as InvoiceListRow).id), csv: (r) => (r as InvoiceListRow).number },
+        cell: ({ row: { original: r } }) => <span className="whitespace-nowrap">{r.number}</span>,
       },
-      { id: "label", accessorFn: (r) => r.number, header: "Invoice number" },
-      { id: "jobText", accessorFn: (r) => r.jobName, header: "Job name" },
-      { id: "customerText", accessorFn: (r) => r.customer, header: "Customer name" },
-      { id: "customer", accessorFn: (r) => r.customer, header: "Customer", cell: ({ row: { original: r } }) => <CustomerChip table doNotService={r.doNotService} id={r.customerId} name={r.customer} address={r.street} unpaid={money(r.balance)} /> },
-      { id: "jobName", accessorFn: (r) => r.jobName, header: "Job", cell: ({ row: { original: r } }) => <JobChip table id={r.jobId} name={r.jobName} customer={r.customer} status="done" total={money(r.amount)} /> },
+      { id: "customer", accessorFn: (r) => r.customer, header: "Customer", cell: ({ row: { original: r } }) => <CustomerText name={r.customer} doNotService={r.doNotService} /> },
+      { id: "jobName", accessorFn: (r) => r.jobName, header: "Job" },
       { id: "amount", accessorFn: (r) => r.amount, header: "Amount", meta: { align: "right", csv: (r) => String((r as InvoiceListRow).amount) }, cell: ({ row: { original: r } }) => money(r.amount) },
       { id: "datesText", accessorFn: (r) => `Sent ${shortDate(r.sentOn)}, due ${shortDate(r.dueOn)}`, header: "Sent and due" },
       { id: "due", accessorFn: (r) => r.dueOn, header: "Due", cell: ({ row: { original: r } }) => shortDate(r.dueOn) },
@@ -139,8 +119,8 @@ export function InvoicesPage({ rows, initialFilters = [] }: InvoicesPageProps) {
           { column: "who", label: "Who", options: people },
         ]}
         defaultFilters={preset.filters}
-        hiddenColumns={["label", "customerText", "jobText", "datesText", "who"]}
-        onOpen={(r) => open(r.number)}
+        hiddenColumns={["datesText", "who"]}
+        rowOpens
         exportName="invoices"
         pageSize={25}
         noMatchTitle="No invoices match."

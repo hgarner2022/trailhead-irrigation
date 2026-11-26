@@ -1,6 +1,6 @@
 "use client"
 
-import { RecordChip } from "@/components/blocks/RecordChip"
+import { TextLink } from "@/components/blocks/TextLink"
 import { recordHref } from "@/components/blocks/record-preview-model"
 import { RequestRows, requestRowsOf, type RequestRow } from "@/components/blocks/RequestRows"
 import { useToast } from "@/components/blocks/Toast"
@@ -68,7 +68,7 @@ export function RequestRoute({ id, onJobCreated }: { id: string; onJobCreated?: 
   if (!request) {
     return (
       <Placeholder title="Not in this prototype" line="That request is not in the prototype's world. Requests has every one that opens.">
-        <RecordChip kind="request" name="Back to Requests" href="/admin/requests" />
+        <TextLink href="/admin/requests">Back to Requests</TextLink>
       </Placeholder>
     )
   }

@@ -8,7 +8,8 @@ import { chargingWords, paidWords, receiptLine, type CollectPlan, type PayChoice
 import { cn } from "@/lib/utils"
 import { FormRow } from "./FormRow"
 import { useFooterSlot } from "./record-slot"
-import { optionClass, optionDetailClass } from "./option-styles"
+import { optionClass, optionDetailClass, optionGroup } from "./option-styles"
+import { useKeyboardFocus } from "./keyboard-focus"
 
 // "How is this paid?": the second beat of a finished visit, in one block for the visit panel and the job panel. Pure props. The
 // choices come from `collectPlan` (the card on file first and selected, the cash ways, an invoice, Pay later only for a customer
@@ -47,15 +48,15 @@ export interface CollectPaymentProps {
   className?: string
 }
 
-// a way to pay is an option: navy when chosen, the same look as every choice in a form (`optionClass`); the radio inside keeps the group's keyboard behaviour and its ring shows on the box
+// a way to pay is an option: navy when chosen, the same look as every choice in a form (`optionClass`); the radio inside keeps the group's keyboard behaviour and its ring shows on the box, only while the keyboard is steering (a click leaves no orange ring round the navy fill)
 const RADIO = "flex min-h-14 items-start gap-3 px-3 py-2 text-sm has-[:disabled]:cursor-not-allowed has-[:disabled]:border-dashed"
 
 function Choice({ option, checked, disabled, onPick, effect }: { option: PayOption; checked: boolean; disabled: boolean; onPick: () => void; effect?: ReactNode }) {
   const title = useId()
   const line = useId()
   return (
-    <div className={cn(optionClass({ selected: checked, focus: "has" }), RADIO)} onClick={() => !disabled && onPick()}>
-      <input type="radio" name="pay-choice" value={option.value} checked={checked} disabled={disabled} onChange={onPick} aria-labelledby={title} aria-describedby={line} className={cn("mt-0.5 size-4 shrink-0", checked ? "accent-white" : "accent-primary")} />
+    <div className={cn(optionClass({ selected: checked, focus: "hasKbd" }), RADIO)} onClick={() => !disabled && onPick()}>
+      <input type="radio" name="pay-choice" value={option.value} checked={checked} disabled={disabled} onChange={onPick} aria-labelledby={title} aria-describedby={line} className={cn("mt-0.5 size-4 shrink-0 outline-none", checked ? "accent-white" : "accent-primary")} />
       <span className="flex min-w-0 flex-col">
         <span id={title} className="font-medium">
           {option.label}
@@ -80,6 +81,7 @@ export interface AskCopy {
 }
 
 export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, onInvoice, onLater, onClose, buttonLabel, notNow, confirmFor, onSettled, onDone, className }: CollectPaymentProps) {
+  const kbd = useKeyboardFocus()
   const [choice, setChoice] = useState<PayChoice>(plan.initial)
   const [more, setMore] = useState(false)
   const [reference, setReference] = useState("")
@@ -154,7 +156,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
           {chargingWords(plan.amount, plan.cardWords)}
         </p>
       )}
-      <fieldset className="flex flex-col gap-2" disabled={busy}>
+      <fieldset className={cn("flex flex-col gap-2", optionGroup)} disabled={busy} data-kbd={kbd.shown || undefined} {...kbd.handlers}>
         {/* The panel's or dialog's own heading says it once, so the legend is for a screen reader only. */}
         <legend className="sr-only">How is this paid?</legend>
         {shown.map((o) => (

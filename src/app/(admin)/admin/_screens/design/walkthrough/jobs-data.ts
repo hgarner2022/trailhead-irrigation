@@ -24,6 +24,7 @@ function withLive(r: GridJob): GridJob {
   return { ...r, stage, next: v.day === WEEK_TODAY ? "Today" : weekDayShort(v.day), who: v.personName }
 }
 import { money } from "@/lib/admin/format"
+import { passService } from "@/lib/admin/record-title"
 
 // The walkthrough's jobs (see data.ts for the world): the Jobs grid's rows and the page each one opens.
 
@@ -58,7 +59,6 @@ const BASE_ROWS: GridJob[] = [
   g("g-dana", "Dana Cho", "Fall blowout", "Fall blowout", "18 Cedar Way, Erie", "done", "1 of 1 done", 115, "paid", "Paid, card", "None", RYAN, "2026"),
   g("g-priya", "Priya Shah", "Sprinkler repair", "Sprinkler repair", "330 Elm Dr, Lafayette", "done", "1 of 1 done", 145, "paid", "Paid, check", "None", HANNAH),
   g("g-tom", "Tom Becker", "Sprinkler repair", "Sprinkler repair", "600 Hill Rd, Broomfield", "cancelled", "0 of 1 done", 145, null, "", "None", NOONE),
-  g("g-tom-install", "Tom Becker", "New sprinkler system installation", "New sprinkler system installation", "600 Hill Rd, Broomfield", "unscheduled", "0 of 1 done", 0, null, "", "Unscheduled", NOONE),
   g("g-lena-lights", "Lena Park", "Christmas lights", "Christmas lights", "7 Oak Ct, Lafayette", "unscheduled", "0 of 1 done", 600, null, "", "Unscheduled", NOONE),
   g("hal-turn-on", "Hal Reed", "Spring turn-on", "Spring turn-on", "41 Cottonwood Dr, Erie", "done", "1 of 1 done", 145, "overdue", "Past due since Apr 3, 2025", "None", RYAN, "2025"),
   g("ivy-repair", "Ivy Lund", "Sprinkler repair", "Sprinkler repair", "9 Meadow Ln, Louisville", "done", "1 of 1 done", 145, "paid", "Paid, check", "None", RYAN, "2024"),
@@ -139,8 +139,8 @@ function dalePass(next: boolean): MultiTripData {
   const swap = (t: string) => t.replaceAll("TH-2027-0008", number).replaceAll("Andrea", "Dale")
   return {
     ...d,
-    title: `Season Pass ${number}`,
-    subtitle: next ? "Dale Whitaker · Renewed Nov 3, website" : "Dale Whitaker · Sold Mar 2, website",
+    service: passService(number),
+    detail: next ? "Renewed Nov 3, website" : "Sold Mar 2, website",
     columns: d.columns.map((c) => ({
       ...c,
       rows: c.rows.map((r) => (r[0] === "Address" ? ["Address", "212 Main St, Lafayette"] : r[0] === "Zones" ? ["Zones", "6"] : r[0] === "Gate code" ? ["Gate code", "None"] : r[0] === "Card" ? ["Card", "Visa ending 1881"] : r)),
@@ -186,9 +186,9 @@ export function jobView(id: string): JobView {
   if (id === "pass-2027") return { kind: "trips", data: passPageOf("ahead", { kind: "from", number: "TH-2026-0021" }) }
   if (id === "pass-2026") {
     const d = passPageOf("both-done", { kind: "as", number: "TH-2027-0008" })
-    return { kind: "trips", data: { ...d, title: "Season Pass TH-2026-0021", subtitle: "Andrea Dalton · Sold Mar 2, website", notes: d.notes.map((n) => ({ ...n, what: n.what.replace("TH-2027-0008", "TH-2026-0021") })), messages: d.messages.map((m) => ({ ...m, body: m.body.replace("TH-2027-0008", "TH-2026-0021") })) } }
+    return { kind: "trips", data: { ...d, service: passService("TH-2026-0021"), detail: "Sold Mar 2, website", notes: d.notes.map((n) => ({ ...n, what: n.what.replace("TH-2027-0008", "TH-2026-0021") })), messages: d.messages.map((m) => ({ ...m, body: m.body.replace("TH-2027-0008", "TH-2026-0021") })) } }
   }
-  if (id.startsWith("dale-pass")) return { kind: "trips", data: dalePass(id === "dale-pass-2027"), customer: { name: "Dale Whitaker", phone: { text: "(970) 555-0140", href: "tel:+19705550140" } } }
+  if (id.startsWith("dale-pass")) return { kind: "trips", data: dalePass(id === "dale-pass-2027"), customer: { id: "dale", name: "Dale Whitaker", phone: { text: "(970) 555-0140", href: "tel:+19705550140" } } }
   const c = contactOf(row.name)
   const data = withWeek(id, jobPageOf(STATE_OF(row)))
   const [street, town] = row.property.split(", ")
@@ -213,10 +213,12 @@ export function jobView(id: string): JobView {
     data: {
       ...data,
       customer: row.name,
+      customerId: customerIdOf(row.name),
       phone: { text: c.text, href: c.href },
       where,
       billing,
-      subtitle: `${row.title} · Added Nov 12`,
+      service: row.title,
+      added: "Added Nov 12",
       pastVisits: isAndrea ? data.pastVisits : [],
       pastTotal: isAndrea ? data.pastTotal : 0,
       contact: { channel: "text", email: c.email },
