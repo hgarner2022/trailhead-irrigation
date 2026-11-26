@@ -236,7 +236,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       body = (
         <>
           <AddressStep state={fields} attempted={attempted} places={places} showAccess={false} onTypedChange={setAddressTyped} onTypedValues={setTyped} onType={(text) => dispatch({ type: "typeAddress", text })} onPick={(place) => dispatch({ type: "pickPlace", place })} set={set} />
-          {property && <OnFileMark className="mt-4" />}
+          {property && <OnFileMark className="mt-2" />}
           {deadEnd && (
             <p data-slot="address-help" className="mt-4 text-base text-muted-foreground">
               {"Not sure? Call Ryan at "}
