@@ -26,16 +26,21 @@ export function dayDetailLines(column: GridColumn, people: readonly Person[]): s
   return lines
 }
 
-/** Under the Week's day: each person column named by its colour dot and first name, or by initials from five people. Nothing for one person. */
+/** A person column narrower than this (px) names its person by initials; at or over it, by first name. One rule for every width, panel and head (the grid's columns are never under 92 px). */
+export const NAME_MIN_PX = 80
+
+/** Under the Week's day: each person column named by its colour dot and first name, or by initials when the column is under 80 px (a container query on the column itself, so the choice follows the real width). The full name is the accessible name and the hover title either way. Nothing for one person. */
 export function PersonSubRow({ people, colourOf }: { people: readonly Person[]; colourOf: (id: string) => number }) {
   if (people.length < 2) return null
-  const initials = people.length >= 5
   return (
     <div data-slot="person-subrow" className="flex">
       {people.map((p) => (
-        <span key={p.id} role="img" aria-label={p.name} title={p.name} tabIndex={initials ? 0 : undefined} className="type-admin-dense flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-sm px-0.5 pb-1.5 leading-none text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
-          <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
-          <span aria-hidden className="truncate">{initials ? p.initials : firstNameOf(p.name)}</span>
+        <span key={p.id} role="img" aria-label={p.name} title={p.name} tabIndex={0} className="type-admin-dense @container flex min-w-0 flex-1 items-center justify-center rounded-sm px-0.5 pb-1.5 leading-none text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+          <span aria-hidden className="flex min-w-0 items-center justify-center gap-1.5">
+            <span className={cn("size-1.5 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
+            <span data-slot="person-name" className="hidden whitespace-nowrap @[5rem]:inline">{firstNameOf(p.name)}</span>
+            <span data-slot="person-initials" className="whitespace-nowrap @[5rem]:hidden">{p.initials}</span>
+          </span>
         </span>
       ))}
     </div>
@@ -88,12 +93,12 @@ export function DayHead({ column, people, colourOf, variant = "week", onOpenDay 
         {people.map((p) => {
           const stat = column.stats?.[p.id]
           return (
-            <span key={p.id} className="type-admin-dense flex min-w-0 flex-1 items-start justify-center gap-1.5 px-0.5 text-center text-muted-foreground">
-              <span aria-hidden className={cn("mt-[0.3em] size-1.5 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
-              <span className="min-w-0">
+            <span key={p.id} data-slot="person-head" className="type-admin-dense flex min-w-0 flex-1 flex-col items-center px-0.5 text-center text-muted-foreground contain-inline-size">
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
                 <span className="font-semibold text-navy">{firstNameOf(p.name)}</span>
-                {stat && ` ${[stat.open, stat.driving && `${stat.driving} drive`].filter(Boolean).join(" · ")}`}
               </span>
+              {stat && [stat.open, stat.driving && `${stat.driving} drive`].filter(Boolean).map((part, i) => <span key={i} className="block">{part}</span>)}
             </span>
           )
         })}

@@ -16,6 +16,7 @@ import { HOUR_PX } from "@/components/blocks/time-grid-model"
 
 const LAPTOP = { viewport: { value: "laptop", isRotated: false } }
 const PHONE = { viewport: { value: "phone", isRotated: false } }
+const SMALL = { viewport: { value: "laptopSmall", isRotated: false } }
 const WIDE = { viewport: { value: "wide", isRotated: false } }
 
 const meta = {
@@ -179,6 +180,85 @@ export const PeekBesideBottomBlock: Story = {
     await expect(card.bottom).toBeLessThanOrEqual(grid.bottom + 1)
     // it moved up to fit, and still does not cover its own block
     await expect(card.right <= block.left || card.left >= block.right).toBe(true)
+  },
+}
+/**
+ * The same peek at 1024x768 and 768: a card beside the block (the Week's grid is narrower now, so it narrows to the room, 280 to 360 px) and, when there is no room on either side,
+ * floating over the calendar's edge away from the block. The calendar stays visible; the full-height sheet is only for a phone.
+ */
+const staysOnScreen = async (grid: HTMLElement, card: DOMRect) => {
+  await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth)
+  await expect(card.left).toBeGreaterThanOrEqual(grid.getBoundingClientRect().left - 1)
+  await expect(card.right).toBeLessThanOrEqual(grid.getBoundingClientRect().right + 1)
+  await expect(card.width).toBeGreaterThanOrEqual(279)
+  await expect(card.width).toBeLessThanOrEqual(361)
+}
+export const PeekLaptop1024Left: Story = {
+  name: "Peek at 1024, first column",
+  globals: SMALL,
+  play: async ({ canvasElement }) => {
+    const { content, block, card, grid } = await peekBox(canvasElement, /^Elm Dr, Repair, Lafayette, 9:00/)
+    await expect(content).toHaveAttribute("data-side", "right")
+    await expect(Math.abs(card.left - block.right - 8)).toBeLessThan(2)
+    await staysOnScreen(canvasElement.querySelector('[data-slot="time-grid"]')!, card)
+    await expect(grid.width).toBeGreaterThan(0)
+  },
+}
+export const PeekLaptop1024Last: Story = {
+  name: "Peek at 1024, last column",
+  globals: SMALL,
+  play: async ({ canvasElement }) => {
+    const { block, card } = await peekBox(canvasElement, /^Pine St, Repair, Louisville, 9:00 to 10:00/)
+    await staysOnScreen(canvasElement.querySelector('[data-slot="time-grid"]')!, card)
+    await expect(card.right <= block.left || card.left >= block.right).toBe(true)
+  },
+}
+export const PeekLaptop1024Bottom: Story = {
+  name: "Peek at 1024, bottom block",
+  globals: SMALL,
+  play: async ({ canvasElement }) => {
+    const { block, card, grid } = await peekBox(canvasElement, /^Pine St, Repair, Louisville, 2:00 to 3:00/)
+    await staysOnScreen(canvasElement.querySelector('[data-slot="time-grid"]')!, card)
+    await expect(card.top).toBeGreaterThanOrEqual(grid.top)
+    await expect(card.bottom).toBeLessThanOrEqual(grid.bottom + 1)
+    await expect(card.right <= block.left || card.left >= block.right).toBe(true)
+  },
+}
+/** Five people on the Day at 768: the columns are about 120 px; the card narrows to the room beside the block (280 to 360 px), stays inside the calendar and never covers its block. */
+export const PeekTablet768FivePeopleDay: Story = {
+  name: "Peek at 768, five people on the Day",
+  globals: { viewport: { value: "tablet", isRotated: false } },
+  args: { world: teamWorld(5), hidden: [], view: "day", day: "2026-11-18" },
+  play: async ({ canvasElement }) => {
+    const target = (await within(canvasElement).findAllByRole("button", { name: /^Pine St, Repair, Louisville, 10:00 am to 12:00 pm/ }))[0]!
+    await userEvent.click(target)
+    const content = await waitFor(() => { const c = document.querySelector<HTMLElement>('[data-slot="peek-anchor"]'); if (!c) throw new Error("no peek"); return c })
+    await waitFor(() => expect(content.getBoundingClientRect().width).toBeGreaterThan(0))
+    await new Promise((r) => setTimeout(r, 300))
+    const block = target.closest<HTMLElement>('[data-slot="time-block"]')!.getBoundingClientRect()
+    const card = content.getBoundingClientRect()
+    await staysOnScreen(canvasElement.querySelector('[data-slot="time-grid"]')!, card)
+    await expect(card.right <= block.left || card.left >= block.right).toBe(true)
+  },
+}
+/** A panel is open at 1024 (a sheet from the bottom below 1280): opening a visit from the map closes it and the peek floats over the calendar, the page never scrolls sideways. */
+export const PeekLaptop1024PanelOpen: Story = {
+  name: "Peek at 1024, a panel open",
+  globals: SMALL,
+  args: { panels: { unscheduled: true, map: false } },
+  play: async () => {
+    await expect(await body().findByRole("dialog", { name: /Unscheduled/ })).toBeInTheDocument()
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth)
+  },
+}
+export const PeekTablet768: Story = {
+  name: "Peek at 768, floats",
+  globals: { viewport: { value: "tablet", isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const { card } = await peekBox(canvasElement, /^Elm Dr, Repair, Lafayette, 9:00/)
+    await expect(document.querySelector('[data-slot="peek-anchor"]')).toBeTruthy()
+    await expect(card.width).toBeGreaterThanOrEqual(279)
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth)
   },
 }
 export const PeekAnyTimeChip: Story = {

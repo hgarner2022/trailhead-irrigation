@@ -11,6 +11,19 @@ afterEach(() => vi.unstubAllGlobals())
 const base: VisitPeekProps = { customer: "Willow Dr", service: "Fall blowout", when: "Wed, Nov 18, 8:00 to 9:00 am", length: "1 h", who: "Ryan Garner", address: "Willow Dr, Erie", job: "Fall blowout at Willow Dr", canMarkDone: false, onEdit: () => {}, onMarkDone: () => {}, onOpenJob: () => {}, onClose: () => {} }
 
 describe("VisitPeek", () => {
+  it("is the docked card from 768 and the full-height sheet only below it", () => {
+    const at = (px: number) => vi.stubGlobal("matchMedia", vi.fn((q: string) => ({ matches: Number(/min-width:\s*(\d+)px/.exec(q)?.[1] ?? 0) <= px, media: q, addEventListener: vi.fn(), removeEventListener: vi.fn() })))
+    for (const px of [768, 1024, 1279]) {
+      at(px)
+      const { unmount } = render(<VisitPeek {...base} />)
+      expect(screen.getByRole("complementary", { name: "Willow Dr" })).toHaveAttribute("data-mode", "docked")
+      unmount()
+    }
+    at(767)
+    render(<VisitPeek {...base} />)
+    expect(screen.queryByRole("complementary", { name: "Willow Dr" })).toBeNull()
+    expect(screen.getByRole("dialog", { name: "Willow Dr" })).toBeInTheDocument()
+  })
   it("is a non-modal aside from 1280 that names the customer and lists the facts in the product's words", () => {
     media(true)
     render(<VisitPeek {...base} />)

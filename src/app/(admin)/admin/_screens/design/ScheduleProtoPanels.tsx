@@ -15,9 +15,9 @@ import { personDay } from "./schedule-engine"
 import { mapDayOf, mapDayWords, mondayOf, visitsOf, weekDaysShown } from "./schedule-prototype-view"
 import type { Proto } from "./use-schedule-prototype"
 
-// Beside and over the calendar (docs/plans/2026-11-25-scheduler-design.md, 7.6). `SchedulePeek` is the peek of the visit just clicked: from 1280 a light card that floats over the calendar's own
+// Beside and over the calendar (docs/plans/2026-11-25-scheduler-design.md, 7.6). `SchedulePeek` is the peek of the visit just clicked: from 768 a light card that floats over the calendar's own
 // stage, at the edge away from the visit, so the calendar never moves or narrows when it opens; another visit swaps its words in place (the card stays mounted, so it does not enter again). Below
-// 1280 it is the full-height sheet. `ScheduleProtoPanels` is Unscheduled and Map: from 1280 one column beside the calendar, sharing its height (the calendar keeps its column widths and scrolls
+// 768 it is the full-height sheet. `ScheduleProtoPanels` is Unscheduled and Map: from 1280 one column beside the calendar, sharing its height (the calendar keeps its column widths and scrolls
 // sideways inside itself); on a phone each is a sheet from the bottom, one at a time. A row's Schedule opens the one Schedule dialog on its suggested time. Hovering a row, a block or a pin
 // lights the same visit in both: they read one `hoverId`.
 
@@ -32,16 +32,16 @@ const findBlock = (id: string) => document.querySelector<HTMLElement>(`${STAGE} 
 const gridOf = () => document.querySelector<HTMLElement>(`${STAGE} [data-slot="time-grid"]`)
 
 export function SchedulePeek({ p }: { p: Proto }) {
-  const { state, wide } = p
+  const { state, peekFloats } = p
   const visit = p.selectedId ? state.visits.find((b) => b.id === p.selectedId) : undefined
   const id = visit?.id
-  // From 1280 the card opens beside the block that was clicked (PeekAnchor); a visit with no block on a clock (the Month, the List, a map pin) keeps the old fixed card at the stage's edge.
+  // From 768 the card opens beside the block that was clicked (PeekAnchor); a visit with no block on a clock (the Month, the List, a map pin) keeps the old fixed card at the stage's edge.
   // `mode` is read once the block is in the page, before it paints, so the card never draws in the wrong place first.
   const [mode, setMode] = useState<"pending" | "anchored" | "float">("pending")
   useLayoutEffect(() => {
-    if (!wide || !id) return
+    if (!peekFloats || !id) return
     setMode(findBlock(id) ? "anchored" : "float")
-  }, [id, wide, p.view])
+  }, [id, peekFloats, p.view])
   if (!visit) return null
   const names = (personId: string) => firstNameOf(p.people.find((x) => x.id === personId)?.name) ?? "They"
   const closePeek = () => {
@@ -70,7 +70,7 @@ export function SchedulePeek({ p }: { p: Proto }) {
       onClose={closePeek}
     />
   )
-  if (!wide) return peek()
+  if (!peekFloats) return peek()
   if (mode === "pending") return null
   if (mode === "anchored")
     return (

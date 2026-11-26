@@ -65,7 +65,10 @@ export function TimeBlock({ block: b, personIndex = 0, who, variant = "block", s
   const lines = Math.max(1, Math.floor((px - 6) / ((touch ? 14 : 12) * LINE_EM)))
   const one = lines === 1
   // the Week's narrow column says when it starts (the gutter says am or pm); the Day's wide one says the whole span
-  const lead = b.start === null ? "" : compact || one ? clockWords(b.start, true) : rangeWords(b.start, b.minutes)
+  // (a block under 10.5 rem wide, two side by side in a Day column, says only when it starts, so the time is never cut mid-word)
+  const startOnly = b.start === null ? "" : clockWords(b.start, true)
+  const range = b.start === null || compact || one ? "" : rangeWords(b.start, b.minutes)
+  const lead = range || startOnly
   const mark = b.done ? <Check aria-hidden className="mt-px size-3 shrink-0 text-positive-deep" /> : b.waiting ? <Clock3 aria-hidden className="mt-px size-3 shrink-0 text-warning-ink" /> : null
   const clip = (n: number) => ({ maxHeight: `${n * LINE_EM}em` })
   return (
@@ -104,7 +107,7 @@ export function TimeBlock({ block: b, personIndex = 0, who, variant = "block", s
         aria-pressed={selected || undefined}
         onClick={() => onSelect?.(b.id)}
         className={cn(
-          "absolute inset-0 z-0 flex w-full cursor-pointer flex-col rounded-md pl-2 pr-0.5 text-left leading-[1.3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+          "absolute inset-0 z-0 flex w-full cursor-pointer flex-col rounded-md pl-2 pr-1 text-left leading-[1.3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
           touch ? "type-admin-body" : "type-admin-dense",
           chip || one ? "justify-center" : "py-[3px]",
         )}
@@ -122,7 +125,13 @@ export function TimeBlock({ block: b, personIndex = 0, who, variant = "block", s
           <span aria-hidden className="flex min-w-0 flex-col overflow-hidden leading-[1.3]" style={clip(lines)}>
             <span className="flex min-w-0 items-start gap-0.5">
               <span className="min-w-0 flex-1 overflow-hidden" style={clip(lines >= 3 || narrow ? 2 : 1)}>
-                {lead && <span className="whitespace-nowrap tabular-nums text-navy-light">{lead} </span>}
+                {lead && (
+                  <>
+                    <span className="whitespace-nowrap tabular-nums text-navy-light">
+                      {range ? <><span className="hidden @[10.5rem]:inline">{range}</span><span className="@[10.5rem]:hidden">{startOnly}</span></> : lead}
+                    </span>{" "}
+                  </>
+                )}
                 <span className="font-semibold">{b.title}</span>
               </span>
               {one && mark}

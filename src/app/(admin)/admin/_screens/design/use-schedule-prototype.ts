@@ -84,6 +84,8 @@ export function useScheduleProto(init: ProtoInitial = {}) {
   const [selectedId, setSelectedId] = useState<string | undefined>(init.selectedId)
   const [dialog, setDialog] = useState<Dialog | null>(init.dialog ?? null)
   const wide = useMedia("(min-width: 1280px)")
+  /** the visit peek is a floating card from 768 and a full-height sheet only on a phone */
+  const peekFloats = useMedia("(min-width: 768px)")
   const [hidden, setHidden] = useState<string[]>(() => { const h = init.hidden ?? storedHidden(world.people); return h.length >= world.people.length ? [] : h })
 
   const { onState } = init
@@ -149,7 +151,7 @@ export function useScheduleProto(init: ProtoInitial = {}) {
     const to: Target = { day: r.dayIso, personId, start: startFromWords(r.time) }
     dispatch(d.job ? { type: "place", jobId: d.id, to, notified: r.notify, minutes: r.minutes } : { type: "move", id: d.id, to, notified: r.notify, minutes: r.minutes })
     // on a phone the full-screen peek would cover the result and hold the toast back, so it closes when the change is saved
-    if (!wide) setSelectedId(undefined)
+    if (!peekFloats) setSelectedId(undefined)
   }
 
   /** the people whose day in view has an Any time stop to order (Day view only) */
@@ -157,7 +159,7 @@ export function useScheduleProto(init: ProtoInitial = {}) {
 
   return {
     shown, hidden, togglePerson, orderable, mapPick, setMapPick,
-    state, store, dispatch, people, wide, view, setView, day, setDay, panels, setPanel, togglePanel, hoverId, setHoverId, selectedId, setSelectedId, dialog, setDialog,
+    state, store, dispatch, people, wide, peekFloats, view, setView, day, setDay, panels, setPanel, togglePanel, hoverId, setHoverId, selectedId, setSelectedId, dialog, setDialog,
     moneyOf: init.moneyOf ?? walkMoney, keys, openDay, notify, now: world.now, today, toastSeconds: init.toastSeconds, jobs, bestFor, schedule,
     commit, move, onMove, onResize, onDropExternal, onSelect, closePeek, openJob, markDone, onNewJob: init.onNewJob, onOpenSettings: init.onOpenSettings,
   }
