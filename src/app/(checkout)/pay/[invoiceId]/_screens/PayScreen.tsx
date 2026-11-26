@@ -38,7 +38,7 @@ function Open({ bill, payAction, payWithSavedAction }: PayScreenProps) {
         value={money(bill.total)}
         note={<p data-slot="pay-due" className={bill.status === "overdue" ? "mt-1 text-right type-meta font-medium text-warning" : "mt-1 text-right type-meta text-muted-foreground"}>{dueWords(bill)}</p>}
       />
-      {!saved && <p className="mt-6 text-sm text-foreground">You can keep the card for future visits on the next page.</p>}
+      {!saved && <p className="mt-6 text-sm text-foreground">To keep this card for future visits, tick “Save my payment method for future use” on the next page.</p>}
       <div className={saved ? "mt-6" : "mt-3"}>
         <PayForm label={payLabel(bill)} action={payAction} saved={saved} />
       </div>

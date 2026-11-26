@@ -63,7 +63,7 @@ describe("a customer with a card on file", () => {
     expect(screen.getByRole("button", { name: "Pay $115 with Visa ending 4242" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Use a different card" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Pay $115 by card" })).toBeNull()
-    expect(screen.queryByText(/keep the card for future visits/)).toBeNull()
+    expect(screen.queryByText(/keep this card for future visits/)).toBeNull()
   })
 
   it("is not offered a saved card by a page that cannot take it (the live page today)", () => {

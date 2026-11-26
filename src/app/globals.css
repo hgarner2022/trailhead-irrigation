@@ -23,6 +23,7 @@
 @source not "../components/ui/chart.tsx";
 @source not "../components/ui/checkbox.tsx";
 @source not "../components/ui/grid.tsx";
+@source not "../components/ui/hover-card.tsx";
 @source not "../components/ui/command.tsx";
 @source not "../components/ui/dialog.tsx";
 @source not "../components/ui/dropdown-menu.tsx";

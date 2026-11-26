@@ -30,6 +30,8 @@ export default defineConfig({
         extends: true,
         // Runs every story in .storybook as a browser test (Storybook's Vitest addon).
         plugins: [storybookTest({ configDir: fileURLToPath(new URL("./.storybook", import.meta.url)) })],
+        // Pre-bundled up front: found mid-run, the drag library makes Vite reload and fails the first stories (the calendar's).
+        optimizeDeps: { include: ["@dnd-kit/react", "@dnd-kit/dom"] },
         test: {
           name: "storybook",
           browser: {

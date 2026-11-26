@@ -1,11 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { DayCalendar } from "@/components/blocks/DayCalendar"
 import { FormRow } from "@/components/blocks/FormRow"
 import { TimeChips } from "@/components/blocks/TimeChips"
 import { Input } from "@/components/ui/input"
+import { FindATime } from "@/components/blocks/FindATime"
+import { recommendedId, type OpeningSort } from "@/components/blocks/find-a-time-model"
+import type { Opening } from "@/components/blocks/scheduler-panels-types"
+import type { BestTimes } from "@/components/blocks/best-times"
 import { CREW_LINE_MAX, crewText, notices } from "./crew-copy"
 import { optionClass, optionGroup } from "@/components/blocks/option-styles"
 import { useKeyboardFocus } from "@/components/blocks/keyboard-focus"
@@ -53,6 +57,8 @@ export function slotsOf(day: Day, person: string, minutes: number): { starts: nu
 }
 
 export interface Pick {
+  /** the day as the calendar holds it, "2026-11-24" (set by every change; the label below is for the words) */
+  dayIso?: string
   day: string
   time: string
   /** the first person chosen (the customer hears this one's first name, and the offered times are theirs) */
@@ -77,31 +83,74 @@ export interface SchedulePickerProps {
   /** stories: who is chosen and whether the crew text box is on to begin with */
   initialPeople?: string[]
   initialCrewText?: boolean
+  /** the ranked best times above the calendar, and the day's stops from the calendar's own world; absent, the dialog is the reviewed one */
+  best?: BestTimes
 }
 
-export function SchedulePicker({ minutes = 60, firstName, channel = "text", onChange, signedIn = "Ryan Garner", address = "480 Briggs St", service = "Sprinkler repair", initialPeople = [PEOPLE[0]], initialCrewText = false }: SchedulePickerProps) {
-  const [dayIso, setDayIso] = useState("2026-11-24")
-  const [people, setPeople] = useState<string[]>(initialPeople)
+export function SchedulePicker({ minutes = 60, firstName, channel = "text", onChange, signedIn = "Ryan Garner", address = "480 Briggs St", service = "Sprinkler repair", initialPeople = [PEOPLE[0]], initialCrewText = false, best }: SchedulePickerProps) {
+  const first = best ? [...best.rows, ...(best.forced ?? [])].find((r) => r.id === (best.initialPickId ?? (best.current ? undefined : recommendedId(best.rows)))) : undefined
+  const own = best?.current && !first ? best.current : undefined
+  const [dayIso, setDayIso] = useState(first?.day ?? own?.day ?? "2026-11-24")
+  const [sort, setSort] = useState<OpeningSort>("recommended")
+  const [pickedId, setPickedId] = useState<string | null>(first?.id ?? null)
+  const [people, setPeople] = useState<string[]>(best && first ? [first.personName] : own ? [own.personName] : initialPeople)
   const [crew, setCrew] = useState(initialCrewText)
   const [instructions, setInstructions] = useState("")
   const person = people[0]!
-  const [at, setAt] = useState<number | "any">("any")
-  const day = dayOf(dayIso)
+  const [at, setAt] = useState<number | "any">(first ? toMinutes(first.start) : own?.start ? toMinutes(own.start) : "any")
+  const day = best ? { ...dayOf(dayIso), stops: best.stopsOf(dayIso).map((x) => ({ ...x, person: x.person as Stop["person"] })) } : dayOf(dayIso)
+  const names = best ? best.people : [...PEOPLE]
   const { starts, stops } = slotsOf(day, person, minutes)
   const others = people.filter((p) => p !== signedIn)
   const emit = (d: Day, ps: string[], t: number | "any", extra: Partial<Pick> = {}) =>
-    onChange({ day: d.label, time: t === "any" ? "Any time" : time(t), person: ps[0]!, people: ps, crewText: crew && ps.some((p) => p !== signedIn), instructions, ...extra })
+    onChange({ dayIso: d.iso, day: d.label, time: t === "any" ? "Any time" : time(t), person: ps[0]!, people: ps, crewText: crew && ps.some((p) => p !== signedIn), instructions, ...extra })
+  const pickRow = (row: Opening) => {
+    const d = best ? { ...dayOf(row.day), stops: best.stopsOf(row.day).map((x) => ({ ...x, person: x.person as Stop["person"] })) } : dayOf(row.day)
+    setPickedId(row.id)
+    setDayIso(row.day)
+    setPeople([row.personName])
+    setAt(toMinutes(row.start))
+    emit(d, [row.personName], toMinutes(row.start))
+  }
   const pickDay = (iso: string) => {
-    const d = dayOf(iso)
+    const d = best ? { ...dayOf(iso), stops: best.stopsOf(iso).map((x) => ({ ...x, person: x.person as Stop["person"] })) } : dayOf(iso)
+    setPickedId(null)
     setDayIso(iso)
     setAt("any")
     emit(d, people, "any")
   }
+  // The Length field ranks the times again: a chosen row that no longer fits is cleared (the dialog's own state with no time picked), one that still fits is kept
+  const rowKey = best ? [...best.rows, ...(best.forced ?? [])].map((r) => r.id).join("|") : ""
+  useEffect(() => {
+    if (!best || pickedId === null) return
+    if (![...best.rows, ...(best.forced ?? [])].some((r) => r.id === pickedId)) {
+      setPickedId(null)
+      setAt("any")
+      emit(day, people, "any")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowKey])
   return (
     <div data-slot="schedule-picker" className="flex flex-col gap-4 text-sm">
-      <DayCalendar offers={DAYS.map((d) => ({ day: d.iso, times: [] }))} timed={false} free={{ from: TODAY_ISO }} density="sheet" headingLevel={3} legend="Day" value={{ day: dayIso, start: null }} onChange={(next) => next.day && pickDay(next.day)} />
+      {best && (
+        <FindATime bare state={best.rows.length ? "results" : "none"} openings={best.rows} forced={best.forced} sort={sort} onSort={setSort} selectedId={pickedId} onPick={pickRow} estimated />
+      )}
 
-      <PersonAndTimes day={day} people={people} setPeople={(ps) => (setPeople(ps), setAt("any"), emit(day, ps, "any"))} stops={stops} starts={starts} at={at} minutes={minutes} pick={(t) => (setAt(t), emit(day, people, t))} />
+      <AnotherDay best={best} open={Boolean(best && (best.rows.length === 0 || (best.currentDay && !best.rows.some((r) => r.day === best.currentDay))))}>
+      <DayCalendar offers={(best ? [...new Set(best.rows.map((r) => r.day))] : DAYS.map((d) => d.iso)).map((iso) => ({ day: iso, times: [] }))} timed={false} free={{ from: best?.today ?? TODAY_ISO }} density="sheet" headingLevel={3} legend="Day" value={{ day: dayIso, start: null }} onChange={(next) => next.day && pickDay(next.day)} />
+
+      {best?.dayRows ? (
+        <DayTimes best={best} day={dayIso} pickedId={pickedId} at={at} onPick={pickRow} onAny={() => (setPickedId(null), setAt("any"), emit(day, people, "any"))} />
+      ) : (
+        <PersonAndTimes names={names} day={day} people={people} setPeople={(ps) => (setPeople(ps), setPickedId(null), setAt("any"), emit(day, ps, "any"))} stops={stops} starts={starts} at={at} minutes={minutes} pick={(t) => (setPickedId(null), setAt(t), emit(day, people, t))} />
+      )}
+      </AnotherDay>
+      {best?.problems && (() => {
+        const problems = best.problems({ day: dayIso, person: people[0]!, start: at === "any" ? null : at })
+        return problems.length ? <ul data-slot="place-problems" className="list-disc space-y-1 pl-5 text-foreground">{problems.map((x) => <li key={x}>{x}</li>)}</ul> : null
+      })()}
+
+      {best?.notes?.(dayIso).map((x) => <p key={x} data-slot="place-note" className="text-muted-foreground">{x}</p>)}
 
       <div data-slot="crew-options" className="flex flex-col gap-3">
         {others.length > 0 && (
@@ -113,9 +162,9 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
             <p data-slot="crew-text" className="pl-8 text-muted-foreground">{crewText({ day: day.label, time: at === "any" ? "Any time" : time(at), address, service, instructions })}</p>
           </div>
         )}
-        <FormRow label="Instructions for the crew (optional)" hint={`${instructions.length} of ${CREW_LINE_MAX}. In the text to the crew and on the visit.`}>
+        {(!best || names.length > 1) && <FormRow label="Instructions for the crew (optional)" hint={`${instructions.length} of ${CREW_LINE_MAX}. In the text to the crew and on the visit.`}>
           <Input value={instructions} maxLength={CREW_LINE_MAX} onChange={(e) => (setInstructions(e.target.value), emit(day, people, at, { instructions: e.target.value }))} className="min-h-11" />
-        </FormRow>
+        </FormRow>}
       </div>
 
       <p data-slot="schedule-sentence" className="text-muted-foreground">{notices({ first: firstName, channel, others: crew ? others : [] })}</p>
@@ -123,14 +172,36 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
   )
 }
 
-function PersonAndTimes({ day, people, setPeople, stops, starts, at, minutes, pick }: { day: Day; people: string[]; setPeople: (ps: string[]) => void; stops: Stop[]; starts: number[]; at: number | "any"; minutes: number; pick: (t: number | "any") => void }) {
+/** With best times shown, the dialog's own calendar, Who and start time sit behind one quiet "Another day"; without them they are drawn as reviewed. */
+function AnotherDay({ best, open, children }: { best?: BestTimes; open: boolean; children: React.ReactNode }) {
+  if (!best) return <>{children}</>
+  return (
+    <details data-slot="another-day" open={open} className="group rounded-lg border border-border">
+      <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm font-medium text-foreground">Another day</summary>
+      <div className="flex flex-col gap-4 px-3 pb-3">{children}</div>
+    </details>
+  )
+}
+
+/** One chosen day inside "Another day": that day's openings ranked the way the best times are (least added driving first), a time that breaks a rule greyed with its sentence, and Any time. */
+function DayTimes({ best, day, pickedId, at, onPick, onAny }: { best: BestTimes; day: string; pickedId: string | null; at: number | "any"; onPick: (r: Opening) => void; onAny: () => void }) {
+  const { rows, forced } = best.dayRows!(day)
+  return (
+    <div data-slot="day-times" className="flex flex-col gap-2">
+      <FindATime bare oneDay state={rows.length || forced.length ? "results" : "none"} openings={rows} forced={forced} sort="recommended" onSort={() => undefined} selectedId={pickedId} onPick={onPick} />
+      <TimeChips legend="Start time" hideLegend density="sheet" anyTime options={[]} value={at === "any" ? null : hhmm(at)} onChange={() => onAny()} />
+    </div>
+  )
+}
+
+function PersonAndTimes({ names, day, people, setPeople, stops, starts, at, minutes, pick }: { names: readonly string[]; day: Day; people: string[]; setPeople: (ps: string[]) => void; stops: Stop[]; starts: number[]; at: number | "any"; minutes: number; pick: (t: number | "any") => void }) {
   const kbd = useKeyboardFocus()
   return (
     <>
       <fieldset className="flex flex-col gap-1">
         <legend className="mb-1 font-medium">Who</legend>
         <div className={cn("flex flex-wrap gap-2", optionGroup)} data-kbd={kbd.shown || undefined} {...kbd.handlers}>
-          {PEOPLE.map((p) => {
+          {names.map((p) => {
             const on = people.includes(p)
             return (
               <button key={p} type="button" role="checkbox" aria-checked={on} onClick={() => setPeople(on ? (people.length > 1 ? people.filter((x) => x !== p) : people) : [...people, p])} className={cn(optionClass({ selected: on, focus: "selfKbd" }), "min-h-11 px-3 font-medium")}>
@@ -139,7 +210,7 @@ function PersonAndTimes({ day, people, setPeople, stops, starts, at, minutes, pi
             )
           })}
         </div>
-        {people.length > 1 && <p className="text-muted-foreground">The customer hears about {people[0]!.split(" ")[0]}, the first one chosen.</p>}
+        {people.length > 1 && <p className="text-muted-foreground">The customer is told {people[0]!.split(" ")[0]} is coming.</p>}
       </fieldset>
       <div className="flex flex-col gap-2">
         <p className="font-medium">Start time <span className="font-normal text-muted-foreground">({minutes} minutes)</span></p>

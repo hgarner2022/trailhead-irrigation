@@ -54,6 +54,9 @@ export interface DayCalendarProps {
   autoFocusDay?: boolean
   /** a date with no year (a service's "bookable from", repeating every year): the heading and the days read "April 15", no weekday names; give it the days of one leap year */
   yearless?: boolean
+  /** the ONE time to mark as recommended, on `recommendedDay` when given (the Schedule's pick; no reason shown). Nothing is chosen for the customer. */
+  recommendedStart?: string | null
+  recommendedDay?: string | null
 }
 
 const WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -76,7 +79,7 @@ function weeksOf(ym: string, yearless = false): (string | null)[][] {
 
 const LINK = "inline-flex min-h-11 items-center font-semibold text-primary-deep underline underline-offset-2"
 
-export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2, note = "", onNote, error, className, timed = true, current: yourDay = null, currentLabel = "Your day", free, anyTime = false, timesHint, density = "page", autoFocusDay = false, yearless = false }: DayCalendarProps) {
+export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2, note = "", onNote, error, className, timed = true, current: yourDay = null, currentLabel = "Your day", free, anyTime = false, timesHint, density = "page", autoFocusDay = false, yearless = false, recommendedStart = null, recommendedDay = null }: DayCalendarProps) {
   const Month = headingLevel === 2 ? "h2" : "h3"
   const id = useId()
   const grid = useRef<HTMLTableElement>(null)
@@ -230,7 +233,7 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
 
       {showTimes && held && (
         <div key={held}>
-          <TimeChips options={heldTimes} value={value.start} onChange={(start) => onChange({ day: held, start })} anyTime={anyTime} legend={longDay(held)} hint={timesHint} density={density} error={error} />
+          <TimeChips options={heldTimes} value={value.start} onChange={(start) => onChange({ day: held, start })} anyTime={anyTime} legend={longDay(held)} hint={timesHint} density={density} error={error} recommendedStart={!recommendedDay || recommendedDay === held ? recommendedStart : null} />
           {heldTimes.length === 0 && !anyTime && <p className="mt-3 text-base text-muted-foreground">No times are left on this day. Pick another day.</p>}
         </div>
       )}

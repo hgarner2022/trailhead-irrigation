@@ -49,9 +49,11 @@ export interface HomeScreenProps {
   defaultCustomerId?: string
   defaultJobId?: string
   defaultVisitId?: string
+  /** a stop opens somewhere else (the prototype's job page) instead of the panel */
+  onOpenVisit?: (visitId: string) => void
 }
 
-export function HomeScreen({ data, today, readOnly = false, onAttentionAction, onDismiss, visitActions, jobActions, customerActions, needsActionLead, defaultCustomerId, defaultJobId, defaultVisitId }: HomeScreenProps) {
+export function HomeScreen({ data, today, readOnly = false, onAttentionAction, onDismiss, visitActions, jobActions, customerActions, needsActionLead, defaultCustomerId, defaultJobId, defaultVisitId, onOpenVisit }: HomeScreenProps) {
   const view = todayView(data, today)
   const money = todayMoney(data.visits, (v) => visitPrice(data, v), today)
   // With nothing today the screen says when the next visits are, once, as a link to that day.
@@ -60,7 +62,7 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
   const attention = data.attention.map((a) => (a.passId && !a.jobId ? { ...a, jobId: jobIdOfPass(data, a.passId) } : a))
   return (
     <div data-slot="home-screen" className="space-y-6">
-      <RecordHost data={data} today={today} readOnly={readOnly} visitActions={visitActions} jobActions={jobActions} customerActions={customerActions} initial={initialRecord({ customerId: defaultCustomerId, jobId: defaultJobId, visitId: defaultVisitId })}>
+      <RecordHost onOpenVisit={onOpenVisit} data={data} today={today} readOnly={readOnly} visitActions={visitActions} jobActions={jobActions} customerActions={customerActions} initial={initialRecord({ customerId: defaultCustomerId, jobId: defaultJobId, visitId: defaultVisitId })}>
         <PageHeader title="Today" context={longDate(today)} actions={!readOnly && <NewJobButton data={data} today={today} actions={visitActions} />} />
 
         <TodayMoney

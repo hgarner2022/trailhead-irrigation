@@ -4,7 +4,8 @@ import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { SERVICE_LIST } from "@/lib/services"
-import type { AdminData, ServiceItem } from "@/lib/admin/types"
+import type { AdminData, ServiceItem, Town } from "@/lib/admin/types"
+import type { BestTimes } from "@/components/blocks/best-times"
 import { CustomerPicker, FIELD, LABEL, emptyChoice, type CustomerChoice } from "./CustomerPicker"
 import { NewJobPass, type NewPassInitial } from "./NewJobPass"
 import { NewJobService, servicePriceLine } from "./NewJobService"
@@ -50,6 +51,8 @@ export interface NewJobProps {
   onNewQuote?: (o: { customer: CustomerChoice; serviceName: string }) => void
   /** opened from a day on the Schedule (yyyy-mm-dd): the sheet says "Tuesday, Nov 24" at the top and the day is set */
   day?: string
+  /** the best times for the chosen customer's town and the service's minutes, listed under the day; the live admin does not pass it yet (the walkthrough does) */
+  bestTimes?: (town: Town, minutes: number, kind?: string) => BestTimes | null
 }
 
 /** "Tuesday, Nov 24" from "2026-11-24". */
@@ -58,7 +61,7 @@ export const sheetDay = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDa
 /** The active services the sheet offers: the screen's own, else the site's catalogue. */
 const offered = (data: AdminData): readonly ServiceItem[] => (data.services ?? (SERVICE_LIST as readonly ServiceItem[])).filter((s) => s.active !== false)
 
-export function NewJob({ data, today, open, onOpenChange, customerId, actions, initial = {}, onCreated, day, quotes, onNewQuote }: NewJobProps) {
+export function NewJob({ data, today, open, onOpenChange, customerId, actions, initial = {}, onCreated, day, quotes, onNewQuote, bestTimes }: NewJobProps) {
   const host = useOpenRecord()
   const [choice, setChoice] = useState<CustomerChoice>(initial.customer ?? emptyChoice(customerId))
   const startWith = initial.choice === SEASON_PASS ? SEASON_PASS : initial.choice ? serviceGroupId(initial.choice) : ""
@@ -139,6 +142,7 @@ export function NewJob({ data, today, open, onOpenChange, customerId, actions, i
               actions={actions}
               initialDay={day}
               quotes={quotes}
+              bestTimes={bestTimes}
               onNewQuote={() => {
                 done()
                 onNewQuote?.({ customer: choice, serviceName: service.name })

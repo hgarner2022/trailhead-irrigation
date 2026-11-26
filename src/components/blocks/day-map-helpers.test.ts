@@ -57,8 +57,8 @@ describe("stops in words", () => {
 })
 
 describe("colours", () => {
-  it("gives each person a token class and wraps after three", () => {
-    expect([0, 1, 2, 3].map(personClass)).toEqual(["bg-primary", "bg-navy", "bg-positive", "bg-primary"])
+  it("gives each of five people their own token class and wraps at the sixth", () => {
+    expect([0, 1, 2, 3, 4, 5].map(personClass)).toEqual(["bg-primary", "bg-navy", "bg-positive", "bg-person-4", "bg-person-5", "bg-primary"])
   })
 
   it("reads a token colour from a probe and leaves nothing behind", () => {

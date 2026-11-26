@@ -72,7 +72,7 @@ describe("HomeScreen", () => {
     const { unmount } = render(<HomeScreen data={withDay(dayVisits)} today={TODAY} />)
     await userEvent.click(screen.getByRole("tab", { name: "By person" }))
     const people = Array.from(document.querySelectorAll<HTMLElement>('[data-slot="today-person"]'))
-    expect(people.map((p) => p.querySelector("h3")!.textContent)).toEqual(["Ryan Garner2 stops", "Tech Two2 stops"])
+    expect(people.map((p) => p.querySelector("h3")!.textContent)).toEqual(["Ryan Garner2 visits", "Tech Two2 visits"])
     expect(within(people[0]!).getAllByRole("button").map((b) => b.textContent)).toEqual([expect.stringContaining("Pat"), expect.stringContaining("Lee")])
     expect(Array.from(people[0]!.querySelectorAll('[data-slot="route-number"]')).map((n) => n.textContent)).toEqual(["Stop 1", "Stop 2"])
     expect(window.localStorage.getItem("trailhead.home.today-view")).toBe("person")
@@ -98,7 +98,7 @@ describe("HomeScreen", () => {
     expect(screen.getByText("Jobs with no day wait on the Schedule.")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Open Schedule" })).toHaveAttribute("href", "/admin/schedule")
     expect(screen.queryByRole("tab")).toBeNull()
-    expect(screen.getByRole("link", { name: "Tue, Apr 27 · 1 stop in Erie" })).toHaveAttribute("href", "/admin/schedule?day=2027-04-27")
+    expect(screen.getByRole("link", { name: "Tue, Apr 27 · 1 visit in Erie" })).toHaveAttribute("href", "/admin/schedule?day=2027-04-27")
     expect(screen.queryByText(/Next Nia/)).toBeNull()
   })
 

@@ -7,6 +7,12 @@ import { newCustomerFrom, type CustomerChoice } from "../../CustomerPicker"
 import { customerIdOf, markActiveAgain, registerJob } from "./jobs-data"
 import { registerWorldCustomer, WORLD_CUSTOMERS } from "./world-customers"
 import { customerPage } from "./data"
+import { WALK_PEOPLE, serviceWords, townOfProperty } from "./visits-data"
+import { serviceMinutes } from "./walk-settings"
+import { pointNear } from "../schedule-prototype-data"
+import { clockToMinutes, type GridBlock } from "@/components/blocks/time-grid-model"
+import { walkSchedule } from "./walk-schedule"
+import { contactOf } from "./jobs-data"
 
 // What the real New job sheet (`_screens/NewJob.tsx`) needs, as fixtures: the walkthrough's three customers for the type-ahead, the site's service
 // catalogue, the people for Who, and two server actions stubbed to make a row in the prototype's Jobs grid. A new job is Unscheduled (or Scheduled
@@ -32,7 +38,7 @@ for (const [id, w] of Object.entries(WORLD_CUSTOMERS)) {
 }
 
 /** The sheet's data: the repo's fixture (settings, people, services) with this world's customers. */
-export const WALK_DATA: AdminData = { ...visitsData, clients: WALK_CLIENTS }
+export const WALK_DATA: AdminData = { ...visitsData, clients: WALK_CLIENTS, settings: { ...visitsData.settings, people: WALK_PEOPLE } }
 
 const DAY = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })
 let seq = 0
@@ -69,8 +75,17 @@ export function makeNewJobActions(onMade: () => void, onActiveAgain?: (name: str
       // Hannah, Nov 22 2026: a job made here is always real work: a quote is made by New quote, and its job exists only once it is approved
       const id = `new-${++seq}`
       const title = jobName(service?.name) ?? "Job"
-      const row: GridJob = { id, name, service: jobName(service?.name) ?? "Sprinkler repair", title, property, stage: input.scheduledOn ? "scheduled" : "unscheduled", who: "No one yet", season: "", visits: "0 of 1 done", total: input.price ?? 0, billingState: null, billing: "", next: input.scheduledOn ? DAY.format(new Date(`${input.scheduledOn}T12:00:00Z`)) : "Unscheduled" }
+      // a job made with a day is on the calendar at once: the person and time the sheet chose, else the first person who works and Any time
+      const person = WALK_PEOPLE.find((p) => p.id === input.personId) ?? WALK_PEOPLE[0]!
+      const row: GridJob = { id, name, service: jobName(service?.name) ?? "Sprinkler repair", title, property, stage: input.scheduledOn ? "scheduled" : "unscheduled", who: input.scheduledOn ? person.name : "No one yet", season: "", visits: "0 of 1 done", total: input.price ?? 0, billingState: null, billing: "", next: input.scheduledOn ? DAY.format(new Date(`${input.scheduledOn}T12:00:00Z`)) : "Unscheduled" }
       registerJob(row)
+      if (input.scheduledOn) {
+        const kind: GridBlock["kind"] = service && ["turn-on", "inspection", "blowout", "repair", "install"].includes(service.kind) ? (service.kind as GridBlock["kind"]) : input.kind ?? "other"
+        const town = townOfProperty(property)
+        const c = contactOf(name)
+        const visit: GridBlock = { id, day: input.scheduledOn, personId: person.id, start: input.startTime ? clockToMinutes(input.startTime) : null, minutes: input.durationMinutes ?? serviceMinutes(kind), title: (property.split(",")[0] ?? property).replace(/^\d+\s+/, "").trim(), name: name.split(" ")[0] ?? name, kind, town, service: serviceWords(title) }
+        walkSchedule().dispatch({ type: "seed-visit", visit, meta: { customer: name, phone: c.text, email: c.email, ...pointNear(town, property) } })
+      }
       onMade()
       return { ok: true as const, data: { id: `v-${id}`, jobId: id } }
     },

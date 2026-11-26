@@ -1,11 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DayField } from "@/components/blocks/DayField"
+import { FindATime } from "@/components/blocks/FindATime"
+import { recommendedId, type OpeningSort } from "@/components/blocks/find-a-time-model"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import type { AdminData, ServiceItem } from "@/lib/admin/types"
+import type { AdminData, ServiceItem, Town } from "@/lib/admin/types"
+import type { BestTimes } from "@/components/blocks/best-times"
 import { routePeople } from "@/lib/admin/people"
 import { serviceCost } from "@/lib/services"
 import { FIELD, LABEL, choiceReady, newCustomerFrom, type CustomerChoice } from "./CustomerPicker"
@@ -45,9 +48,11 @@ interface Props {
   /** New quote: the host opens the New quote sheet with this customer and this service */
   onNewQuote?: () => void
   onDone: (made: { id: string; jobId: string }) => void
+  /** the ranked best times for this customer's town and the service's minutes, listed under the day (no title: its sort control and its rows); picking a row fills the Day, the time and Who. Absent, nothing is listed */
+  bestTimes?: (town: Town, minutes: number, kind?: string) => BestTimes | null
 }
 
-export function NewJobService({ data, today, choice, group, service, zones, onZones, actions, initialDay, quotes, onNewQuote, onDone }: Props) {
+export function NewJobService({ data, today, choice, group, service, zones, onZones, actions, initialDay, quotes, onNewQuote, onDone, bestTimes }: Props) {
   const todayDay = today.slice(0, 10)
   // No day until one is chosen: a job taken by phone can be given its day later, and a day filled in by default booked today by accident.
   const [day, setDay] = useState(initialDay ?? "")
@@ -69,6 +74,16 @@ export function NewJobService({ data, today, choice, group, service, zones, onZo
   // The catalogue decides (Hannah, Nov 20 2026): a service with no price is quoted first, so "New quote" is the only button (no job exists until the quote is approved, Nov 22 2026);
   // a priced service leads with Add job and offers New quote beside it.
   const quoteFirst = Boolean(quotes) && service.price === undefined
+  const [sort, setSort] = useState<OpeningSort>("recommended")
+  const [pickedId, setPickedId] = useState<string | null>(null)
+  const town = ready && !choice.isNew ? data.clients.find((c) => c.id === choice.chosen)?.town : undefined
+  const best = useMemo(() => (bestTimes && town && !quoteFirst ? bestTimes(town, Number(shownMinutes) || service.slotMinutes, service.kind) : null), [bestTimes, town, quoteFirst, shownMinutes, service.slotMinutes])
+  // the recommended row is the one preselected, the same opening the Unscheduled row suggests and the Schedule dialog marks
+  const preselected = useRef<unknown>(null)
+  useEffect(() => {
+    const top = best?.rows.find((r) => r.id === recommendedId(best.rows))
+    if (top && preselected.current !== best && !day && !pickedId) (preselected.current = best, setPickedId(top.id), setDay(top.day), setTime(top.start), setPersonId(top.personId))
+  }, [best, day, pickedId])
 
   const submit = () => {
     const accessLine = choice.isNew && choice.person.access.trim() ? `Access: ${choice.person.access.trim()}` : ""
@@ -92,7 +107,20 @@ export function NewJobService({ data, today, choice, group, service, zones, onZo
 
   return (
     <>
-      <DayField label="Day (optional)" value={day} start={time} onChange={(d, t) => (setDay(d), setTime(t))} from={todayDay} timed clearable />
+      <DayField label="Day (optional)" value={day} start={time} onChange={(d, t) => (setDay(d), setTime(t), setPickedId(null))} from={todayDay} timed clearable />
+
+      {best && (
+        <FindATime
+          bare
+          state={best.rows.length ? "results" : "none"}
+          openings={best.rows}
+          sort={sort}
+          onSort={setSort}
+          selectedId={pickedId}
+          estimated
+          onPick={(row) => (setPickedId(row.id), setDay(row.day), setTime(row.start), setPersonId(row.personId))}
+        />
+      )}
 
       {banded && (
         <div>

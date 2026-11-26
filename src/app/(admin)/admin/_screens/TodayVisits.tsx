@@ -128,7 +128,7 @@ export function TodayVisits({ view, areas, next, className }: TodayVisitsProps) 
             <section key={person.personId} data-slot="today-person" aria-labelledby={`today-person-${person.personId}`} className="space-y-2">
               <h3 id={`today-person-${person.personId}`} className="text-sm font-medium text-navy">
                 {person.name}
-                <span className="ml-2 font-normal text-muted-foreground">{person.rows.length === 1 ? "1 stop" : `${person.rows.length} stops`}</span>
+                <span className="ml-2 font-normal text-muted-foreground">{person.rows.length === 1 ? "1 visit" : `${person.rows.length} visits`}</span>
               </h3>
               <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
                 {person.rows.map((row) => (

@@ -1,6 +1,27 @@
-import { describe, it, expect } from "vitest"
+import { afterAll, beforeAll, describe, it, expect, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import { MonthBars, TrendLine } from "./Chart"
+
+// jsdom lays nothing out, so recharts' ResponsiveContainer measures 0 by 0 and renders no chart (and so no legend). The real cause is the measure, not the component: give the
+// container a size through a ResizeObserver that reports one when it starts observing, as the browser does.
+const SIZE = { width: 600, height: 240 }
+class SizedObserver {
+  constructor(private cb: ResizeObserverCallback) {}
+  observe(target: Element) {
+    const box = { inlineSize: SIZE.width, blockSize: SIZE.height }
+    this.cb([{ target, contentRect: { ...SIZE, x: 0, y: 0, top: 0, left: 0, right: SIZE.width, bottom: SIZE.height, toJSON: () => ({}) }, borderBoxSize: [box], contentBoxSize: [box], devicePixelContentBoxSize: [box] } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver)
+  }
+  unobserve() {}
+  disconnect() {}
+}
+const original = globalThis.ResizeObserver
+beforeAll(() => {
+  vi.stubGlobal("ResizeObserver", SizedObserver)
+})
+afterAll(() => {
+  vi.restoreAllMocks()
+  vi.stubGlobal("ResizeObserver", original)
+})
 
 const y2026 = [
   { year: 2026, month: 4, revenue: 3331, visits: 14 },

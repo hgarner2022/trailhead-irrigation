@@ -3,18 +3,18 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { DayHeader } from "./DayHeader"
 
-const base = { label: "Tue 24", day: "2026-11-24", fill: "5 stops, 3 h open", towns: "Erie 3, Lafayette 2" }
+const base = { label: "Tue 24", day: "2026-11-24", fill: "5 visits, 3 h open", towns: "Erie 3, Lafayette 2" }
 
 describe("DayHeader", () => {
   it("names the day, how full it is and the towns already in it", () => {
     render(<DayHeader {...base} />)
     expect(screen.getByText("Tue 24")).toBeInTheDocument()
-    expect(document.querySelector('[data-slot="day-fill"]')).toHaveTextContent("5 stops, 3 h open")
+    expect(document.querySelector('[data-slot="day-fill"]')).toHaveTextContent("5 visits, 3 h open")
     expect(document.querySelector('[data-slot="day-towns"]')).toHaveTextContent("Erie 3, Lafayette 2")
   })
 
   it("marks today for a reader and leaves the towns line off an empty day", () => {
-    render(<DayHeader {...base} today towns="" fill="No stops" />)
+    render(<DayHeader {...base} today towns="" fill="No visits" />)
     expect(screen.getByText(", today")).toHaveClass("sr-only")
     expect(document.querySelector('[data-slot="day-towns"]')).toBeNull()
   })

@@ -14,7 +14,7 @@ describe("dayFill", () => {
     const visits = [visit("a", "Erie"), visit("b", "Erie"), visit("c", "Lafayette"), visit("d", "Erie", { startAt: "2026-11-25T16:00:00Z" })]
     const fill = dayFill(visits, "2026-11-24", [weekdays, weekdays], TZ)
     expect(fill).toEqual({ stops: 3, working: 2, openMinutes: 2 * DEFAULT_DAY_MINUTES - 180, towns: [{ town: "Erie", count: 2 }, { town: "Lafayette", count: 1 }] })
-    expect(fillWords(fill)).toBe("3 stops, 13 h open")
+    expect(fillWords(fill)).toBe("3 visits, 13 h open")
     expect(townsWords(fill)).toBe("Erie 2, Lafayette 1")
   })
 
@@ -23,7 +23,7 @@ describe("dayFill", () => {
     expect(fill.openMinutes).toBe(DEFAULT_DAY_MINUTES - 120)
     const full = dayFill([visit("a", "Erie", { minutes: 600 })], "2026-11-24", [weekdays], TZ)
     expect(full.openMinutes).toBe(0)
-    expect(fillWords(full)).toBe("1 stop, full")
+    expect(fillWords(full)).toBe("1 visit, full")
   })
 
   it("leaves a canceled visit out, and does not count a person who does not work the day or the season", () => {
@@ -45,9 +45,9 @@ describe("dayFill", () => {
     expect(dayFill([], "2026-11-24", [{ ...weekdays, hoursStart: "17:00", hoursEnd: "09:00" }], TZ).openMinutes).toBe(0)
   })
 
-  it("says Day off when no one works it and No stops when someone does", () => {
+  it("says Day off when no one works it and No visits when someone does", () => {
     expect(fillWords(dayFill([], "2026-11-28", [weekdays], TZ))).toBe("Day off")
-    expect(fillWords(dayFill([], "2026-11-24", [weekdays], TZ))).toBe("No stops")
+    expect(fillWords(dayFill([], "2026-11-24", [weekdays], TZ))).toBe("No visits")
     expect(townsWords(dayFill([], "2026-11-24", [weekdays], TZ))).toBe("")
   })
 
