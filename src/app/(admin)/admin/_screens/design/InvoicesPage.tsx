@@ -57,8 +57,8 @@ export function InvoicesPage({ rows, initialFilters = [] }: InvoicesPageProps) {
   const [remind, setRemind] = useState<InvoiceListRow | null>(null)
   const [collect, setCollect] = useState<InvoiceListRow | null>(null)
   const t = invoiceTotals(rows)
-  const data = useMemo(() => sortInvoiceRows(rows), [rows])
-  const people = useMemo(() => [...new Set(rows.map((r) => r.who))].sort().map((w) => ({ value: w, label: w })), [rows])
+  const data = sortInvoiceRows(rows)
+  const people = [...new Set(rows.map((r) => r.who))].sort().map((w) => ({ value: w, label: w }))
 
   const columns = useMemo<GridColumnDef<InvoiceListRow>[]>(
     () => [
