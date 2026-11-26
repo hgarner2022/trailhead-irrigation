@@ -205,6 +205,7 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, onSear
   const bar = useMemo(() => ({ mode: phone ? ("inline" as const) : ("bar" as const), title: titleSlot, actions: actionsSlot, primary: primarySlot }), [phone, titleSlot, actionsSlot, primarySlot])
   return (
     <SidebarProvider data-slot="admin-shell" data-phone={phone || undefined} open={open} onOpenChange={setChoice} style={phone ? PHONE_STYLE : RAIL_WIDTH}>
+      <a href="#admin-main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-navy focus:shadow-lg focus:ring-2 focus:ring-ring">Skip to content</a>
       {phone ? null : <Rail current={current} switcher={switcher} requests={requests} quotes={quotes} invoices={invoices} user={user} profileHref={profileHref} helpHref={helpHref} customerHref={customerHref} onSignOut={onSignOut} />}
       <SidebarInset className="min-h-svh min-w-0 bg-cream">
         <TopBar
@@ -217,7 +218,7 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, onSear
           search={onSearch ? <SearchButton onClick={() => setSearching(true)} iconOnly={phone} /> : undefined}
           account={phone ? <AdminAccountMenu user={user} compact profileHref={profileHref} helpHref={helpHref} customerHref={customerHref} onSignOut={onSignOut} /> : undefined}
         />
-        <div className={cn(GUTTER, "w-full max-w-7xl pt-4 md:pt-6", phone ? "pb-[calc(5rem+env(safe-area-inset-bottom))]" : "pb-8")}>
+        <div id="admin-main" tabIndex={-1} className={cn(GUTTER, "outline-none w-full max-w-7xl pt-4 md:pt-6", phone ? "pb-[calc(5rem+env(safe-area-inset-bottom))]" : "pb-8")}>
           <AdminBarContext.Provider value={bar}>
             <UndoToastProvider><ToastProvider>{children}</ToastProvider></UndoToastProvider>
           </AdminBarContext.Provider>

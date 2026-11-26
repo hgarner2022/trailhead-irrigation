@@ -61,6 +61,7 @@ function Grid({ rows, services, defaultFilters }: { rows: JobRow[]; services: Ad
       search={{ column: "name", placeholder: "Search by name, street or pass number" }}
       filters={filters}
       onOpen={(row) => host?.open("job", row.id)}
+      rowOpens
       exportName="jobs"
       defaultFilters={defaultFilters}
       pageSize={25}

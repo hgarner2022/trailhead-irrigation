@@ -65,6 +65,7 @@ export function VisitsList({ data, today, forJob, defaultFilters }: VisitsListPr
         search={{ column: "name", placeholder: "Search by name or street" }}
         filters={filters}
         onOpen={(row) => open?.(row.id)}
+        rowOpens
         exportName="visits"
         defaultFilters={defaultFilters}
         pageSize={25}
