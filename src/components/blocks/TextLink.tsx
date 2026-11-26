@@ -9,7 +9,7 @@ import { focusRingClass } from "./option-styles"
 // Three things differ from one use to the next and each is a prop, nothing else is:
 //  - `touch`: "lone" (the default) is a link or button that stands alone on its line or in a cell (Edit, Remind, a phone number): a 44px row (`min-h-11`) so a phone can hit it. "inline" is a link inside a
 //    sentence or a label, which takes the line it is on (a 44px box would break the sentence).
-//  - `underline`: "hover" (default) or "always" (a record named in prose, which has to read as a link without a pointer).
+//  - `underline`: "hover" (the default for a lone link) or "always" (the default for an inline one: a link inside a sentence has to read as a link without a pointer, which axe also requires). A name in a grid cell or a fact row is alone in its cell, so it says `underline="hover"`.
 //  - `tone`: "primary", or "destructive" for the one link that undoes money (Refund).
 // An icon on its own is `icon`: a square 44px target (36 from `md` when the caller adds `md:size-9`) that tints on hover; give it an `aria-label`.
 //
@@ -27,7 +27,7 @@ export interface TextLinkLook {
 }
 
 /** The class string alone, for an element a caller must draw itself (`RecordChip`'s name beside its icon). Prefer `<TextLink>`. */
-export function textLinkClass({ touch = "lone", underline = "hover", tone = "primary", weight = "normal", icon = false, className }: TextLinkLook = {}): string {
+export function textLinkClass({ touch = "lone", underline = touch === "inline" ? "always" : "hover", tone = "primary", weight = "normal", icon = false, className }: TextLinkLook = {}): string {
   return cn(
     "cursor-pointer rounded-sm disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline",
     focusRingClass,

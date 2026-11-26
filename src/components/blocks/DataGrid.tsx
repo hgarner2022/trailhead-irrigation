@@ -252,11 +252,11 @@ export function DataGrid<T extends RowData>({
                         {column.id !== nameId || column.columnDef.meta?.bare ? (
                           <table.FlexRender cell={cell} />
                         ) : href ? (
-                          <TextLink href={href} native touch="inline" weight="medium">
+                          <TextLink href={href} native touch="inline" underline="hover" weight="medium">
                             <table.FlexRender cell={cell} />
                           </TextLink>
                         ) : (
-                          <TextLink touch="inline" weight="medium" onClick={() => onOpen?.(row.original)}>
+                          <TextLink touch="inline" underline="hover" weight="medium" onClick={() => onOpen?.(row.original)}>
                             <table.FlexRender cell={cell} />
                           </TextLink>
                         )}

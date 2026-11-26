@@ -45,6 +45,9 @@ describe("TextLink", () => {
     expect(hover).toContain("text-primary-dark")
     expect(hover).toContain("hover:underline")
     expect(textLinkClass({ underline: "always" })).toContain("underline decoration-primary/40")
+    // inside a sentence a link is always underlined; alone it is underlined on hover
+    expect(textLinkClass({ touch: "inline" })).toContain("underline decoration-primary/40")
+    expect(textLinkClass({ touch: "inline", underline: "hover" })).not.toContain("decoration-primary/40")
     expect(textLinkClass({ tone: "destructive" })).toContain("text-destructive")
   })
 

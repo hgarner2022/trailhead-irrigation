@@ -166,8 +166,8 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
               <RecordFacts
                 divided
                 rows={[
-                  ["Phone", r.phone ? <TextLink key="p" href={`tel:${r.phone.replace(/[^\d+]/g, "")}`} touch="inline">{r.phone}</TextLink> : "None given"],
-                  ["Email", r.email ? <TextLink key="e" href={`mailto:${r.email}`} touch="inline">{r.email}</TextLink> : "None given"],
+                  ["Phone", r.phone ? <TextLink key="p" href={`tel:${r.phone.replace(/[^\d+]/g, "")}`} touch="inline" underline="hover">{r.phone}</TextLink> : "None given"],
+                  ["Email", r.email ? <TextLink key="e" href={`mailto:${r.email}`} touch="inline" underline="hover">{r.email}</TextLink> : "None given"],
                   ["Reach by", CHANNEL_WORDS[r.contact]],
                   ["Address", r.street ? `${r.street}, ${r.town}` : "None given"],
                 ]}
