@@ -31,6 +31,7 @@ export const Payment: Story = {
     const menu = within(document.body)
     await expect(await menu.findByRole("menuitem", { name: /Open in Stripe/ })).toHaveAttribute("target", "_blank")
     await expect(menu.getByRole("menuitem", { name: "Refund $145" })).toBeVisible()
+    await userEvent.keyboard("{Escape}")
   },
 }
 

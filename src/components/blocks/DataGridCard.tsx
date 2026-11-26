@@ -39,6 +39,8 @@ export interface DataGridCardsProps<T extends RowData> {
   loading: boolean
   empty: { hasData: boolean; emptyTitle: string; emptyLine: string; noMatchTitle: string }
   onOpen?: (row: T) => void
+  /** "plain": the title is in the body colour, for a row that is not a record with a page (a message) */
+  nameTone?: "link" | "plain"
 }
 
 function Joined({ parts, className }: { parts: { id: string; node: ReactNode }[]; className?: string }) {
@@ -55,7 +57,7 @@ function Joined({ parts, className }: { parts: { id: string; node: ReactNode }[]
   )
 }
 
-export function DataGridCards<T extends RowData>({ table, rows, slots, nameId, loading, empty, onOpen }: DataGridCardsProps<T>) {
+export function DataGridCards<T extends RowData>({ table, rows, slots, nameId, loading, empty, onOpen, nameTone = "link" }: DataGridCardsProps<T>) {
   const { FlexRender } = table
   if (loading) {
     return (
@@ -100,7 +102,7 @@ export function DataGridCards<T extends RowData>({ table, rows, slots, nameId, l
         const body = (
           <>
             <span className="min-w-0 flex-1 space-y-1">
-              <span className="block truncate font-medium text-primary-dark">{cell(slots.title ?? nameId)}</span>
+              <span className={nameTone === "plain" ? "block truncate font-medium text-foreground" : "block truncate font-medium text-primary-dark"}>{cell(slots.title ?? nameId)}</span>
               <Joined parts={parts(slots.line)} className="block text-sm text-foreground" />
               {slots.state && <span className="block">{cell(slots.state)}</span>}
               <Joined parts={parts(slots.when)} className="block text-sm text-muted-foreground" />

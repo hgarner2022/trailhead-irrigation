@@ -174,7 +174,7 @@ export function DataGrid<T extends RowData>({
       {toolbar && <DataGridToolbar table={table} nameId={nameId} search={search} filters={filters} exportName={exportName} disabled={loading} />}
       {!loading && hasSelect && <DataGridBulkBar table={table} actions={bulkActions} />}
       {asCards && card ? (
-        <DataGridCards table={table} rows={rows} slots={card} nameId={nameId} loading={loading} empty={{ hasData: data.length > 0, emptyTitle, emptyLine, noMatchTitle }} onOpen={onOpen} />
+        <DataGridCards table={table} rows={rows} slots={card} nameId={nameId} loading={loading} empty={{ hasData: data.length > 0, emptyTitle, emptyLine, noMatchTitle }} onOpen={onOpen} nameTone={nameTone} />
       ) : (
       <div
         ref={wrap}
