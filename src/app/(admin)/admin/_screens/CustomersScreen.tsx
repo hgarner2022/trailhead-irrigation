@@ -74,6 +74,7 @@ function Grid({ rows, offers }: { rows: CustomerRow[]; offers: boolean }) {
       search={{ column: "name", placeholder: "Search by name" }}
       filters={filters}
       onOpen={(row) => host?.open("customer", row.id)}
+      rowOpens
       bulkActions={offers ? BULK_ACTIONS : undefined}
       exportName="customers"
       hiddenColumns={["marketing"]}

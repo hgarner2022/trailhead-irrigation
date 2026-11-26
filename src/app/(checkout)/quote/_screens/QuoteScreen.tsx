@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { MessageSquareText, Phone } from "lucide-react"
 import { Tick } from "@/components/blocks/Tick"
 import { Button } from "@/components/ui/button"
@@ -97,7 +98,7 @@ function Approved({ quote, depositPaid, cardSaved, onAddCard }: Pick<QuoteScreen
             {`We sent a receipt for your ${money(quote.deposit)} deposit to ${quote.email}.`}
           </p>
           <Button asChild variant="outline" size="lg" className="mt-4 w-full">
-            <a href="/account/visits">View the receipt</a>
+            <Link href="/account/visits">View the receipt</Link>
           </Button>
         </>
       ) : cardSaved ? (

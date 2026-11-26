@@ -1,6 +1,6 @@
 "use client"
 
-import { useId, useMemo, useState } from "react"
+import { useId, useMemo, useRef, useState } from "react"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
 import type { GridCardSlots } from "@/components/blocks/DataGridCard"
@@ -69,8 +69,9 @@ export function ConsentCard({ consent, firstName, initial = null }: ConsentCardP
   const id = useId()
   const anyOn = state.email.on || state.text.on
   const history = useMemo(() => state.history, [state.history])
+  const seq = useRef(0)
 
-  const record = (what: string, src: string, who: string): ConsentEventRow => ({ id: `k${Date.now()}${what}`, on: "Nov 18, 2026", what, source: src, who })
+  const record = (what: string, src: string, who: string): ConsentEventRow => ({ id: `k${(seq.current += 1)}${what}`, on: "Nov 18, 2026", what, source: src, who })
   const change = (channel: Channel, next: { on: boolean; note?: string }, row: ConsentEventRow) => setState((s) => ({ ...s, [channel]: next, history: [row, ...s.history] }))
 
   const turnOff = (channel: Channel) => {
