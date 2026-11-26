@@ -37,7 +37,7 @@ export const Sent: Story = {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole("heading", { name: "Your invoice" })).toBeInTheDocument()
     await expect(canvas.getByText("Due Dec 1")).toBeInTheDocument()
-    await expect(canvas.getByText("You can keep the card for future visits on the next page.")).toBeInTheDocument()
+    await expect(canvas.getByText("To keep this card for future visits, tick “Save my payment method for future use” on the next page.")).toBeInTheDocument()
     await expect(canvas.getByText("Paid by check, Venmo or cash already? Nothing to do.")).toBeInTheDocument()
     await userEvent.click(canvas.getByRole("button", { name: "Pay $145 by card" }))
     await expect(args.payAction).toHaveBeenCalledTimes(1)

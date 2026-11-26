@@ -46,7 +46,7 @@ export function CommandSearch({ open, onOpenChange, onSearch, onOpen, delay = 15
       <DialogContent data-slot="command-search" showCloseButton={false} className="top-[20%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-lg">
         <DialogHeader className="sr-only">
           <DialogTitle>Search</DialogTitle>
-          <DialogDescription>Find a customer, a job or a day by name, street, phone or pass number.</DialogDescription>
+          <DialogDescription>Find a customer, a job or a day by name, street, phone or number.</DialogDescription>
         </DialogHeader>
         <SearchBox onSearch={onSearch} onPick={pick} delay={delay} defaultQuery={defaultQuery} />
       </DialogContent>
@@ -76,7 +76,7 @@ function SearchBox({ onSearch, onPick, delay, defaultQuery }: { onSearch: Comman
   const hits = ready && !waiting ? found.hits : []
   return (
     <Command label="Search" shouldFilter={false} className="rounded-lg">
-      <CommandInput value={query} onValueChange={setQuery} placeholder="Search by name, street, phone or pass number" />
+      <CommandInput value={query} onValueChange={setQuery} placeholder="Search by name, street, phone or number" />
       <CommandList className="max-h-[60vh]">
         {hits.length === 0 && (
           // the list is never empty (an empty listbox is not valid): with nothing to choose it holds one line, which cannot be chosen
