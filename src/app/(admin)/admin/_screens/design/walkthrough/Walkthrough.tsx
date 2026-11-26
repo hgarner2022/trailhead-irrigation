@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } fr
 import { AdminShell, type AdminSection } from "@/components/blocks/AdminShell"
 import { useToast } from "@/components/blocks/Toast"
 import { Button } from "@/components/ui/button"
-import { allRows, nameOfRoute, ownerOf, pastDueCount, resetExtras, resolveRoute, searchWorld } from "./data"
+import { INVOICES, allRows, nameOfRoute, ownerOf, resetExtras, resolveRoute, searchWorld } from "./data"
+import { pastDueCount } from "../invoice-search"
 import { NewJobSheet, RouteScreen } from "./WalkScreens"
 import { NewQuoteHost } from "./WalkQuotes"
 import { pickOf, type ServicePick } from "../requests/request-catalogue"
@@ -193,7 +194,7 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
 
   return (
     <div data-slot="walkthrough" data-route={`${top.screen}${top.id ? `:${top.id}` : ""}`} style={{ display: "contents" }} onClickCapture={onClickCapture} onKeyDownCapture={onKeyDownCapture}>
-      <AdminShell key={`${top.screen}:${top.id ?? ""}`} current={SECTION_OF[top.screen]} user={USER} defaultSearchOpen={startSearch} requests={{ count: newCount(requests) }} quotes={{ count: waitingCount(Object.values(quoteWorld.quotes)) }} invoices={{ count: pastDueCount() }} onSearch={async (q) => searchWorld(q)} profileHref="/admin/profile" helpHref="/admin/help">
+      <AdminShell key={`${top.screen}:${top.id ?? ""}`} current={SECTION_OF[top.screen]} user={USER} defaultSearchOpen={startSearch} requests={{ count: newCount(requests) }} quotes={{ count: waitingCount(Object.values(quoteWorld.quotes)) }} invoices={{ count: pastDueCount(INVOICES) }} onSearch={async (q) => searchWorld(q)} profileHref="/admin/profile" helpHref="/admin/help">
         <ToastBridge toastRef={toastRef} later={laterToast} />
         <Strip stack={stack} onJump={jump} onStartOver={startOver} />
         <div key={`${epoch}-${top.screen}-${top.id ?? ""}`}>

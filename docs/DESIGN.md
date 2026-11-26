@@ -338,7 +338,7 @@ One rule for every record page: the title is the record's OWN name, never anothe
 | Season Pass job | "Season Pass 2027" (the season, from the pass number) | "for Andrea Dalton · Sold Nov 2, website" | "Season Pass 2027 for Andrea Dalton · Trailhead admin" |
 | Quote | Its number: "Q-2026-0005" | "New sprinkler system installation for Dana Whitfield · From a request" | "Q-2026-0005 · New sprinkler system installation for Dana Whitfield · Trailhead admin" |
 | Invoice | Its number: "INV-2026-0042" | "Sprinkler repair for Marcus Bell · Sent Nov 12" | "INV-2026-0042 · Sprinkler repair for Marcus Bell · Trailhead admin" |
-| Request | "Request from Rosa Delgado" | "Christmas lights · Came in Nov 18" (what they asked for is left out when they did not say) | "Request from Rosa Delgado · Christmas lights · Trailhead admin" |
+| Request | "Request from Rosa Delgado" | "Christmas lights · Came in Nov 18 at 9:02 am" (what they asked for is left out when they did not say) | "Request from Rosa Delgado · Christmas lights · Trailhead admin" |
 | Customer | The customer's name | "Customer since Apr 2026 · 480 Briggs St, Erie" | "Andrea Dalton · Customer · Trailhead admin" |
 
 The word is **visit**, never "trip", on every admin screen and story ("Return visit", "Add a return visit", "Visit 1"); "trip" is left only in code names (`TripRow`, `trip-fixtures.ts`).

@@ -15,7 +15,7 @@ import { buildWorldCustomer, quoteRowsFor } from "./customer-build"
 import { worldCustomerIds } from "./world-customers"
 import { shortDate, money } from "@/lib/admin/format"
 import { passService, requestHeading } from "@/lib/admin/record-title"
-import { invoiceHits, pastDueCount as countPastDue } from "../invoice-search"
+import { invoiceHits } from "../invoice-search"
 export * from "./jobs-data"
 
 // One consistent world for the walkthrough (docs/plans/2026-11-19-prototype-walkthrough-spec.md, section 2), built from the design fixtures and
@@ -258,7 +258,6 @@ export function nameOfRoute(route: Route): string | undefined {
   }
   if (route.screen === "customer") return customerPage(route.id ?? "")?.name
   if (route.screen === "job") {
-    // the job's own name, as its page is titled: the service, a Season Pass with its season
     const r = rowOf(route.id ?? "")
     return r ? (r.service === "Season Pass" ? passService(r.title.replace("Season Pass ", "")) : r.title) : undefined
   }
@@ -268,9 +267,7 @@ export function nameOfRoute(route: Route): string | undefined {
 }
 
 // ------------------------------------------------------------------------------------------------------------------ search
-
 const digits = (s: string) => s.replace(/\D/g, "")
-/** Cmd+K over the walkthrough data: customers, then jobs, by name, street, phone or pass number. */
 /** A Cmd+K customer hit reads "street · Active" (and "· Do not service" when marked); an archived customer is still found. */
 function statusDetail(id: string, street: string): string {
   const page = customerPage(id)
@@ -295,13 +292,9 @@ export function searchWorld(query: string): SearchHit[] {
     .filter((r) => !r.becameJob && !r.becameQuote && ["new", "seen"].includes(stateOf(r)))
     .filter((r) => `${fullName(r)} ${r.street} ${r.email} ${r.service}`.toLowerCase().includes(q) || (qd.length >= 3 && digits(r.phone).includes(qd)))
     .map((r) => ({ kind: "request" as const, id: r.id, title: fullName(r), detail: [serviceWords(r), r.town].filter((x) => x !== "Not said" && x).join(" · "), href: `/admin/requests?request=${r.id}`, contact: r.phone }))
-  // a quote is found by its number, its customer's name or the street, and opens its own page
+  // a quote and an invoice are each found by their number, their customer's name or the street, and open their own page
   const quotes: SearchHit[] = quoteRowsOf(Object.values(walkQuotes.getSnapshot().quotes), QUOTES_NOW)
     .filter((r) => `${r.id} ${r.customer} ${r.street}`.toLowerCase().includes(q))
     .map((r) => ({ kind: "quote" as const, id: r.id, title: r.id, detail: `${r.customer}, ${r.service}, ${quoteMoney(r.amount)} · ${QUOTE_PILL[r.state].label}`, href: recordHref.quote(r.id) }))
-  // an invoice is found by its number, its customer's name or the street, and opens its own page
   return [...requests, ...customers, ...jobs, ...quotes, ...invoiceHits(INVOICES, q)]
 }
-
-/** The count beside Invoices in the rail: the invoices past due. */
-export const pastDueCount = () => countPastDue(INVOICES)

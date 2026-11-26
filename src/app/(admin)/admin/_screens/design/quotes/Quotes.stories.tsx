@@ -260,7 +260,7 @@ export const FinalInvoiceAfterChange: Story = {
   args,
   globals: laptop,
   render: () => (
-    <DesignShell current="jobs">
+    <DesignShell current="invoices">
       <InvoicePage invoice={finalInvoiceOf(afterPriceChange("email")().getSnapshot().jobs["qj-0007"]!, { number: "INV-2026-0045", sentOn: "2026-11-24", dueOn: "2026-12-08" })} />
     </DesignShell>
   ),
