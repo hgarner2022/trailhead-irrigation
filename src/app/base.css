@@ -201,7 +201,7 @@ h1, h2, h3 {
 .svc-panel > div { min-height: 0; overflow: hidden; }
 @keyframes svc-line { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .svc-panel[data-open] [data-line] {
-  animation: svc-line var(--motion-card-line) var(--motion-card-ease) calc(var(--motion-card-step) * 2.2 + var(--i, 0) * var(--motion-card-stagger)) both;
+  animation: svc-line var(--motion-card-line) var(--motion-card-ease) calc(var(--motion-card-step) * 1.8 + var(--i, 0) * var(--motion-card-stagger)) both;
 }
 .svc-chevron { transition: transform var(--motion-base) var(--motion-ease); }
 /* A card carries no mark, so the card itself says "press me" and "chosen" (docs/review/2026-11-26-service-card-redesign).

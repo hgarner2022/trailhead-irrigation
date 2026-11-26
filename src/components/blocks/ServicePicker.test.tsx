@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react"
+import { act, fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe as suite, expect, it, vi } from "vitest"
 import { bookingEntries } from "@/lib/booking/pass-entry"
@@ -23,7 +23,7 @@ suite("ServicePicker", () => {
     expect(screen.queryByRole("button", { name: /New sprinkler system installation/ })).toBeNull()
     expect(screen.getByRole("button", { name: /^Water efficiency and drip/ })).toBeEnabled()
   })
-  it("makes the whole card the one control: its icon, name and short one-line meta, a ring that marks it as a choice, and no pill or second button", () => {
+  it("makes the whole card the one control: its icon, name and short one-line meta, with no mark of any kind and no pill or second button", () => {
     const { container } = render(<ServicePicker entries={SERVICES} value={null} onChange={() => {}} />)
     expect(screen.getByRole("button", { name: /^Spring turn-on/ })).toHaveTextContent("From $145 · 1 hr")
     expect(screen.getByRole("button", { name: /^Mid-season inspection/ })).toHaveTextContent("From $145 · 1 hr 30 min")
@@ -36,8 +36,14 @@ suite("ServicePicker", () => {
     // one button per card and nothing else to press: no Details or Hide, no Choose this service
     expect(container.querySelectorAll("[data-slot=service-entry] button")).toHaveLength(SERVICES.length)
     expect(screen.queryByText(/^(Details|Hide|Choose this service|Chosen|Remove)$/)).toBeNull()
-    expect(container.querySelectorAll("[data-slot=service-ring]")).toHaveLength(SERVICES.length)
-    expect(container.querySelector("[data-slot=service-dot]")).toBeNull()
+    // an unchosen card carries no mark (Hannah: "the circle is still there"): no ring, dot, check, badge or chevron, and nothing round; the only drawing in its button is its service icon
+    expect(container.querySelector("[data-slot=service-ring], [data-slot=service-dot], [data-slot=service-check]")).toBeNull()
+    for (const head of container.querySelectorAll("[data-slot=service-head]")) {
+      expect(head.querySelectorAll("svg")).toHaveLength(1)
+      expect(head.querySelector(".rounded-full")).toBeNull()
+    }
+    // it reads as pressable by itself: raised on a shadow, and it is a button
+    expect((screen.getByRole("button", { name: /^Fall blowout/ }).closest("li") as HTMLElement).className).toMatch(/shadow-sm/)
     // the Season Pass is a white card like the others: nothing but a chosen card looks chosen
     expect((screen.getByRole("button", { name: /^Season Pass/ }).closest("li") as HTMLElement).className).not.toMatch(/bg-navy|ring-navy/)
     expect(shortLength(45)).toBe("45 min")
@@ -61,9 +67,11 @@ suite("ServicePicker", () => {
     expect(within(region).getByText("$145")).toBeInTheDocument()
     expect(within(region).queryByRole("button")).toBeNull()
     // the chosen card carries no mark at all (the navy header and the open detail say it): no ring, no dot, no badge; only the chosen card is open
-    expect(document.querySelectorAll("[data-slot=service-dot]")).toHaveLength(0)
-    expect(repair.querySelector("[data-slot=service-ring]")).toBeNull()
-    expect(repair.querySelector("svg[data-slot=tick], [data-slot=service-check]")).toBeNull()
+    expect(document.querySelector("[data-slot=service-dot], [data-slot=service-ring], [data-slot=service-check]")).toBeNull()
+    expect(repair.querySelectorAll("svg")).toHaveLength(1)
+    expect(repair.querySelector(".rounded-full, [data-slot=tick]")).toBeNull()
+    // the chosen card rises: a deeper shadow than a card at rest
+    expect((repair.closest("li") as HTMLElement).className).toMatch(/shadow-lg/)
     // what is included is marked by the one thin tick, in ink: never green or orange
     rerender(<ServicePicker entries={SERVICES} value="spring-turn-on" onChange={onChange} />)
     const ticks = [...screen.getByRole("region", { name: "Spring turn-on" }).querySelectorAll("[data-slot=service-included] [data-slot=tick]")]
@@ -90,11 +98,43 @@ suite("ServicePicker", () => {
     await userEvent.keyboard("{Enter}")
     expect(onChange).toHaveBeenLastCalledWith("spring-turn-on")
   })
-  it("opens the chosen Season Pass to both visits, each with what it costs from", () => {
+  it("draws the focus ring for the keyboard only: never after a click or a tap, and never for the focus a step gives its chosen card on load", async () => {
+    render(<ServicePicker entries={SERVICES} value="repair" onChange={() => {}} />)
+    const repair = screen.getByRole("button", { name: /^Sprinkler repair/ })
+    const card = repair.closest("li") as HTMLElement
+    // the ring is tied to data-kbd and to nothing the browser guesses
+    expect(card.className).toMatch(/data-\[kbd\]:ring-2/)
+    expect(card.className).not.toMatch(/focus-visible/)
+    // the step opening on its chosen card: a script's focus, when the last thing the person did was not a key (an earlier test in this file pressed keys)
+    fireEvent.pointerDown(document.body)
+    act(() => repair.focus())
+    expect(card).not.toHaveAttribute("data-kbd")
+    act(() => repair.blur())
+    // typing is not steering: a note typed on another step (a phone's keyboard sends keys too), then this step opening on its chosen card
+    const note = document.body.appendChild(document.createElement("textarea"))
+    await userEvent.type(note, "Gate on the left")
+    act(() => repair.focus())
+    expect(card).not.toHaveAttribute("data-kbd")
+    note.remove()
+    // a click
+    await userEvent.click(screen.getByRole("button", { name: /^Fall blowout/ }))
+    expect(screen.getByRole("button", { name: /^Fall blowout/ }).closest("li")).not.toHaveAttribute("data-kbd")
+    // Tab: the keyboard holds the focus, and the ring is on that card alone
+    await userEvent.tab()
+    const focused = document.activeElement!.closest("li") as HTMLElement
+    expect(focused).toHaveAttribute("data-kbd")
+    expect(document.querySelectorAll("[data-kbd]")).toHaveLength(1)
+    // a pointer again takes it away
+    await userEvent.click(repair)
+    expect(document.querySelector("[data-kbd]")).toBeNull()
+  })
+  it("opens the chosen Season Pass to both visits, each with what it costs from, as the one line-item block", () => {
     render(<ServicePicker entries={bookingEntries(SERVICES, "2027-04-14")} value="season-pass" onChange={() => {}} />)
     expect(screen.getByRole("button", { name: /^Season Pass 2027/ })).toHaveTextContent("Spring turn-on and fall blowout")
-    const rows = within(screen.getByRole("region", { name: "Season Pass 2027" })).getAllByRole("listitem")
+    const region = screen.getByRole("region", { name: "Season Pass 2027" })
+    const rows = [...region.querySelectorAll("[data-slot=price-lines] [data-slot=price-line]")]
     expect(rows.map((r) => r.textContent)).toEqual(["Spring turn-onFrom $145", "Fall blowoutFrom $95"])
+    expect(region.querySelector("[data-slot=tick]")).toBeNull()
   })
   it("reads the description and the price rule from the catalogue and retypes nothing", () => {
     const turnOn = describe(entry("spring-turn-on").included)

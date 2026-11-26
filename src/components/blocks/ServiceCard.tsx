@@ -116,8 +116,8 @@ export function ServiceCard({ entry, index = 0, selected, onToggle }: ServiceCar
             {items.length > 0 &&
               (pass ? (
                 // the pass's two visits are money: the one line-item block every customer screen lists money through
-                <div {...line(1)}>
-                  <PriceLines data-slot="service-included" lines={items.map((item) => ({ name: item.text, value: item.price ?? "" }))} />
+                <div data-slot="service-included" {...line(1)}>
+                  <PriceLines className="border-b-0 [&>div:last-child]:pb-0" lines={items.map((item) => ({ name: item.text, value: item.price ?? "" }))} />
                 </div>
               ) : (
                 <ul data-slot="service-included" className="space-y-2">

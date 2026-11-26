@@ -7,8 +7,20 @@ import { useEffect, useState, type FocusEvent, type KeyboardEvent, type PointerE
 // This is the fact instead: the page remembers whether the last thing the person did was press a key or use a pointer, and a control asks when it takes the focus. A focus on load, before
 // any key, is not a keyboard focus. A keyboard user who presses Enter on Continue and lands on a control by script still gets the ring, because their last act was a key.
 
+// Typing is not moving through the page: a phone's own keyboard sends key events too, and someone who types a note and then goes back a step has not picked up a keyboard to steer with.
+// Tab always counts; any other key counts only outside a field that takes text.
+
 let lastWasKey = false
 let listening = false
+
+const TYPING = "input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]), textarea, select, [contenteditable]"
+/** Does this key press mean the person is steering the page with the keyboard? */
+function steers(e: { key: string; metaKey: boolean; ctrlKey: boolean; altKey: boolean; target: EventTarget | null }): boolean {
+  // a shortcut (Cmd+R, Ctrl+L) or a modifier on its own is not moving through the page
+  if (e.metaKey || e.ctrlKey || e.altKey || ["Shift", "Meta", "Control", "Alt"].includes(e.key)) return false
+  if (e.key === "Tab") return true
+  return !(e.target instanceof Element && e.target.closest(TYPING))
+}
 
 function listen() {
   if (listening || typeof document === "undefined") return
@@ -16,8 +28,7 @@ function listen() {
   document.addEventListener(
     "keydown",
     (e) => {
-      // a shortcut (Cmd+R, Ctrl+L) is not moving through the page
-      if (!e.metaKey && !e.ctrlKey && !e.altKey) lastWasKey = true
+      if (steers(e)) lastWasKey = true
     },
     true,
   )
@@ -45,7 +56,7 @@ export function useKeyboardFocus(): KeyboardFocus {
       onFocus: () => setShown(lastWasKey),
       onBlur: () => setShown(false),
       onKeyDown: (e) => {
-        if (!e.metaKey && !e.ctrlKey && !e.altKey) setShown(true)
+        if (steers(e)) setShown(true)
       },
       onPointerDown: () => setShown(false),
     },
