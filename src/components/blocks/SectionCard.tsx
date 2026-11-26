@@ -24,7 +24,7 @@ export function SectionCard({ title, id, action, flush, children, className }: S
     <section data-slot="section-card" aria-labelledby={title ? id : undefined} className={cn("overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-sm", className)}>
       {title && (
         <div data-slot="section-card-bar" className="border-b border-border px-5 py-3">
-          <SectionHeading level={2} size="section" id={id} action={action}>
+          <SectionHeading level={2} size="card" id={id} action={action}>
             {title}
           </SectionHeading>
         </div>

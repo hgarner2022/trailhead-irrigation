@@ -14,7 +14,6 @@ import { walkQuotes } from "../quotes/quote-store"
 import { buildWorldCustomer, quoteRowsFor } from "./customer-build"
 import { worldCustomerIds } from "./world-customers"
 import { shortDate, money } from "@/lib/admin/format"
-
 export * from "./jobs-data"
 
 // One consistent world for the walkthrough (docs/plans/2026-11-19-prototype-walkthrough-spec.md, section 2), built from the design fixtures and

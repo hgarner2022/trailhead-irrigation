@@ -49,7 +49,7 @@ export function RecordPage({ title, subtitle, badges, crumb, notice, band, aside
             </Link>
           )}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <h1 id="record-page-title" className="font-display text-3xl font-semibold leading-tight text-navy">
+            <h1 id="record-page-title" className="type-admin-title text-navy">
               {title}
             </h1>
             {badges && (
@@ -58,7 +58,7 @@ export function RecordPage({ title, subtitle, badges, crumb, notice, band, aside
               </span>
             )}
           </div>
-          {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+          {subtitle && <p className="type-admin-meta text-muted-foreground">{subtitle}</p>}
         </header>
         {actions && (
           <div

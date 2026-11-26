@@ -25,7 +25,7 @@ export function EmptyState({ title, line, action, icon: Icon, className }: Empty
           <Icon className="size-5" aria-hidden />
         </span>
       )}
-      <p className="font-display text-xl text-navy">{title}</p>
+      <p className="type-admin-card text-navy">{title}</p>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">{line}</p>
       {action && <div className="mt-5">{action}</div>}
     </div>

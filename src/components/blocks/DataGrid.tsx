@@ -190,7 +190,7 @@ export function DataGrid<T extends RowData>({
                     <TableHead
                       key={header.id}
                       aria-sort={column.getCanSort() ? (sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none") : undefined}
-                      className={cn(freeze(column.id), right && "text-right", column.columnDef.meta?.width, inCard && cn("h-9 text-xs text-muted-foreground", CARD_CELL))}
+                      className={cn(inCard ? "type-admin-meta h-9 text-muted-foreground" : "type-admin-label", freeze(column.id), right && "text-right", column.columnDef.meta?.width, inCard && CARD_CELL)}
                     >
                       {header.isPlaceholder ? null : column.getCanSort() ? (
                         <button
@@ -227,14 +227,14 @@ export function DataGrid<T extends RowData>({
                 <TableCell colSpan={visibleCount} className="py-12 text-center whitespace-normal">
                   {data.length > 0 ? (
                     <>
-                      <p className="font-display text-xl text-navy">{noMatchTitle}</p>
+                      <p className="type-admin-card text-navy">{noMatchTitle}</p>
                       <Button size="touch" variant="outline" className="mt-4" onClick={() => table.setColumnFilters([])}>
                         Clear filters
                       </Button>
                     </>
                   ) : (
                     <>
-                      <p className="font-display text-xl text-navy">{emptyTitle}</p>
+                      <p className="type-admin-card text-navy">{emptyTitle}</p>
                       <p className="mt-1 text-sm text-muted-foreground">{emptyLine}</p>
                     </>
                   )}

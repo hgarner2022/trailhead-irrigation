@@ -89,6 +89,34 @@ h1, h2, h3 {
 :is(h1, h2, h3):is(.type-body, .type-item, .type-value, .type-label, .type-meta, .type-caption) { font-family: var(--font-sans); letter-spacing: normal; line-height: 1.4; }
 :is(h1, h2, h3).type-caption { letter-spacing: 0.06em; line-height: 1.3; }
 
+/* ADMIN TYPE, the same idea one step denser: the admin is a laptop tool, so its body is 14 (docs/DESIGN.md, "The admin
+   type scale"). Display face (Barlow Condensed) names things and is always 600; the body face says things.
+   Heading (24, a panel's or a dialog's title) is the customer's own type-heading; the rest is here:
+   28 page title, 20 card title, 16 section, 14 body and label, 13 meta, 12 caption, 36 figure. */
+:root {
+  --type-admin-title: 1.75rem;    /* 28: the one h1 of a list page and of a record page */
+  --type-admin-card: 1.25rem;     /* 20: the title of a card, a Settings entry, an empty state */
+  --type-admin-section: 1rem;     /* 16: a part inside a card or a panel */
+  --type-admin-body: 0.875rem;    /* 14: sentences, cells, facts, labels */
+  --type-admin-meta: 0.8125rem;   /* 13: a quiet second line */
+  --type-admin-caption: 0.75rem;  /* 12: an overline or a short status */
+  --type-admin-figure: 2.25rem;   /* 36: the number on a stat tile */
+}
+@utility type-admin-title { font-family: var(--font-display); font-size: var(--type-admin-title); font-weight: 600; line-height: 1.1; letter-spacing: 0.01em; text-wrap: balance; }
+@utility type-admin-card { font-family: var(--font-display); font-size: var(--type-admin-card); font-weight: 600; line-height: 1.2; letter-spacing: 0.01em; }
+@utility type-admin-section { font-family: var(--font-sans); font-size: var(--type-admin-section); font-weight: 600; line-height: 1.4; }
+@utility type-admin-body { font-family: var(--font-sans); font-size: var(--type-admin-body); font-weight: 400; line-height: 1.5; }
+@utility type-admin-label { font-family: var(--font-sans); font-size: var(--type-admin-body); font-weight: 500; line-height: 1.4; }
+@utility type-admin-meta { font-family: var(--font-sans); font-size: var(--type-admin-meta); font-weight: 400; line-height: 1.4; }
+@utility type-admin-caption { font-family: var(--font-sans); font-size: var(--type-admin-caption); font-weight: 600; line-height: 1.3; letter-spacing: 0.06em; text-transform: uppercase; }
+@utility type-admin-figure { font-family: var(--font-display); font-size: var(--type-admin-figure); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* a heading tag keeps the global h1, h2, h3 face and line height unless the role says otherwise */
+:is(h1, h2, h3).type-admin-title { line-height: 1.1; }
+:is(h1, h2, h3).type-admin-card { line-height: 1.2; }
+:is(h1, h2, h3).type-admin-figure { line-height: 1; }
+:is(h1, h2, h3):is(.type-admin-section, .type-admin-body, .type-admin-label, .type-admin-meta, .type-admin-caption) { font-family: var(--font-sans); letter-spacing: normal; line-height: 1.4; }
+:is(h1, h2, h3).type-admin-caption { letter-spacing: 0.06em; line-height: 1.3; }
+
 /* MOTION, one set for every customer screen (and nothing else defines a duration or an easing): a press answers in
    --motion-press, a state settles in --motion-fast, something opens in --motion-base, an icon draws in --motion-draw,
    all on one easing. Everything plays once, in answer to a press or on first appearance; nothing loops; and under

@@ -114,7 +114,7 @@ Every admin screen sets type by role too, from the same place: the `type-admin-*
 | Role | Class | Face, size, weight | Used for |
 |---|---|---|---|
 | Page title | `type-admin-title` | Display, 28, 600 | The one h1 of a screen: a list page (`PageHeader`) and a record page (`RecordPage`) read the same |
-| Heading | `type-heading` (the customer's, 24, 600) | Display, 24, 600 | A panel's name (`SidePanel`) and a dialog's title (`ConfirmDialog`, `DIALOG_TITLE`): the title of a modal surface |
+| Heading | `type-heading` (the customer's, 24, 600) | Display, 24, 600 | A panel's name (`SidePanel`) and a dialog's title (`ConfirmDialog`): the title of a modal surface |
 | Card title | `type-admin-card` | Display, 20, 600 | The h2 of a card on a screen: `SectionCard`, Home's cards, a Settings entry, an empty state's title, a stat band's value on a phone |
 | Section | `type-admin-section` | Body, 16, 600 | An h3 inside a card or a panel (`SectionHeading`), a row's name in Settings |
 | Body | `type-admin-body` | Body, 14, 400, 1.5 | Sentences, cells, facts |
@@ -131,7 +131,7 @@ The rules: the display face is always 600 and names things; the body face says t
 
 | Size | Height | Use |
 |---|---|---|
-| `sm` | 32 | A quiet button in a row on a laptop screen (the old default for small) |
+| `sm` | 32 | A quiet button in a row on a laptop screen, 12px text |
 | `compact` | 36 | A toolbar button (Columns, Export, Clear filters) |
 | `default` | 40 | Marketing and anything that has no touch need |
 | `touch` | 44 | Anything a phone or a tablet must hit: a page's primary, a footer button, a dialog's buttons |
