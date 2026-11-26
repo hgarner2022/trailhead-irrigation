@@ -155,7 +155,7 @@ export const AddressNoCityPickTest: Story = {
   },
 }
 
-/** 2. Service: only the service cards. Each is a drawn icon, its name, the price and the length and a ring where the check lands; the whole card is the choice: one press chooses it and it opens to show what is included, a second press removes the choice. Nothing is open until one is chosen, nothing about zones or access is on this step, and Continue is always on. */
+/** 2. Service: only the service cards. Each is a drawn icon, its name, the price and the length, with no mark on it (no ring, check or badge: a raised card that gives under a press); the whole card is the choice: one press chooses it and it opens to show what is included, a second press removes the choice. Nothing is open until one is chosen, nothing about zones or access is on this step, and Continue is always on. */
 const services = on({ initial: { step: "service", fields: home } }, "Service", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-pressed", "false")
@@ -169,7 +169,7 @@ const services = on({ initial: { step: "service", fields: home } }, "Service", {
 })
 export const ServicesPhone: Story = { ...services.phone, name: "Service, phone" }
 export const ServicesLaptop: Story = { ...services.laptop, name: "Service, laptop" }
-/** The repair card chosen and open: the catalogue's description, the length and the price, with a check on the chosen card. */
+/** The repair card chosen and open: the catalogue's description, the length and the price. The step opens on it (its header takes the focus) and no orange ring is drawn round it: that ring is for the keyboard. */
 const repairOpen = on({ initial: { step: "service", service: "repair", fields: home } }, "Service, repair open", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: /^Sprinkler repair/ })).toHaveAttribute("aria-pressed", "true")

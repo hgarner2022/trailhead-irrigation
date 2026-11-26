@@ -8,6 +8,7 @@ import type { PhotoItem } from "@/lib/photos/types"
 import type { AddPhotoResult } from "@/lib/photos/upload"
 import { cn } from "@/lib/utils"
 import { ConfirmDialog } from "./ConfirmDialog"
+import { EmptyState } from "./EmptyState"
 import { SectionHeading } from "./SectionHeading"
 
 // Photos: the pictures on one visit, for the visit panel, the job panel and the customer's visit page (docs/DATA_MODEL.md, photo). A grid
@@ -201,7 +202,11 @@ export function Photos({ photos, audience = "staff", configured = true, onAdd, o
             <p className="mt-2 text-sm text-muted-foreground">{visitDone ? "A photo you show reaches the customer now." : "A photo you show reaches the customer once the visit is Done."}</p>
           )}
           {empty ? (
-            <p className="mt-2 text-sm text-muted-foreground">{PHOTO_WORDS.empty}</p>
+            audience === "customer" ? (
+              <EmptyState scene="photo" size="sm" title={PHOTO_WORDS.empty} className="mt-3" />
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">{PHOTO_WORDS.empty}</p>
+            )
           ) : (
             <ul className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
               {shown.map((p) => (

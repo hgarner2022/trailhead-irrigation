@@ -25,7 +25,8 @@ export interface ServicePickerProps {
   className?: string
 }
 
-/** "Need a quote?" as the last card of the list: the same family, quieter. Its icon draws again and its arrow moves on a press. */
+/** "Need a quote?" as the last card of the list: the same family, quieter, and plainly a different kind of thing. A service card is white and raised and it is chosen; this one lies flat in the
+ * page's own stone and it goes somewhere, which its one plain arrow says (no disc round it). Its icon draws again and its arrow moves on a press. */
 function QuoteRow({ onRequestQuote }: { onRequestQuote: () => void }) {
   const [play, setPlay] = useState(0)
   const [title, rest] = REQUEST_QUOTE.split(/(?<=\?)\s+/)
@@ -36,18 +37,16 @@ function QuoteRow({ onRequestQuote }: { onRequestQuote: () => void }) {
       aria-label={REQUEST_QUOTE}
       onPointerDown={() => setPlay((n) => n + 1)}
       onClick={onRequestQuote}
-      className="svc-quote flex min-h-[5.5rem] w-full cursor-pointer items-center gap-4 rounded-lg border border-dashed border-navy/25 p-4 text-left hover:border-navy/50 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="svc-quote flex min-h-[5.5rem] w-full cursor-pointer items-center gap-4 rounded-lg border border-transparent bg-stone p-4 text-left hover:border-navy/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
-      <span className="flex size-14 shrink-0 items-center justify-center rounded-lg border border-border bg-background">
+      <span className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-background">
         <ServiceIcon key={play} name="quote" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block type-option text-navy">{title}</span>
         {rest && <span className="mt-1 block text-sm leading-5 text-muted-foreground">{rest}</span>}
       </span>
-      <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-full bg-stone text-navy">
-        <ArrowRight className="svc-arrow size-4" />
-      </span>
+      <ArrowRight aria-hidden className="svc-arrow mr-1 size-5 shrink-0 text-navy/60" />
     </button>
   )
 }
