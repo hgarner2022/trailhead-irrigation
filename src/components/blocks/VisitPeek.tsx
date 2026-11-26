@@ -9,7 +9,7 @@ import { StatusPill } from "./StatusPill"
 import { TextLink } from "./TextLink"
 
 // The peek (docs/plans/2026-11-26-scheduler-review-research.md, point 2): one click or Enter on a visit on the Schedule opens its facts in the product's docked SidePanel, a non-modal
-// aside beside the grid from 1280 (the grid stays usable) and a full-height sheet on a phone. It shows the customer, service, day and time, length, who, where and the job, and three
+// aside beside the grid from 768 (the grid stays usable) and a full-height sheet on a phone. It shows the customer, service, day and time, length, who, where and the job, and three
 // buttons: Edit visit (one dialog changes the day, time, person and length), Mark done (only for a visit today or earlier) and Open job (the job's page, where the history, payments and photos
 // live). Opening another visit swaps the content; Escape or Close shuts it and the host returns focus to the block. Pure props, client component.
 
@@ -41,7 +41,7 @@ export interface VisitPeekProps {
 }
 
 export function VisitPeek({ customer, service, when, length, who, address, job, done, waiting, canMarkDone, conflict, onEdit, onMarkDone, onOpenJob, onClose, className }: VisitPeekProps) {
-  // Escape shuts the docked peek (the sheet below 1280 is a dialog and closes itself); the heading takes focus when a visit is opened or swapped in
+  // Escape shuts the docked peek (the sheet below 768 is a dialog and closes itself); the heading takes focus when a visit is opened or swapped in
   useEffect(() => {
     const key = (e: KeyboardEvent) => e.key === "Escape" && !e.defaultPrevented && !document.querySelector('[role="dialog"]') && onClose()
     document.addEventListener("keydown", key)
@@ -72,11 +72,12 @@ export function VisitPeek({ customer, service, when, length, who, address, job, 
   return (
     <SidePanel
       variant="docked"
+      dockedFrom="(min-width: 768px)"
       open
       onOpenChange={(o) => !o && onClose()}
       title={customer}
       pills={(done || waiting) && <>{done && <StatusPill status="done" />}{waiting && <StatusPill status="waiting" />}</>}
-      className={`visit-peek max-xl:h-dvh max-xl:rounded-none ${className ?? ""}`}
+      className={`visit-peek max-md:h-dvh max-md:rounded-none ${className ?? ""}`}
       footer={
         <>
           {primary && <Button type="button" size="touch" onClick={onMarkDone}>Mark done</Button>}

@@ -34,6 +34,8 @@ export interface SidePanelProps {
    * docs/plans/2026-11-25-scheduler-design.md 7.6): from 1280 an `aside` in the page's own layout, not modal, no scrim, the page stays usable; below 1280 a sheet from the bottom, one at a time.
    */
   variant?: "overlay" | "docked"
+  /** The width from which a docked panel is an `aside` and not a sheet (default 1280; the visit peek floats from 768) */
+  dockedFrom?: string
 }
 
 const LG = "(min-width: 1024px)"
@@ -238,7 +240,7 @@ function Docked({ open, onOpenChange, title, description, pills, children, foote
 
 export function SidePanel(props: SidePanelProps) {
   const desktop = useDesktop()
-  const wide = useMedia(XL)
+  const wide = useMedia(props.dockedFrom ?? XL)
   if (props.variant === "docked") return wide ? <Docked {...props} /> : <PhoneSheet {...props} side="bottom" />
   return desktop ? <Drawer {...props} /> : <PhoneSheet {...props} />
 }

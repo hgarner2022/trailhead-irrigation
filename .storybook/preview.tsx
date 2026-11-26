@@ -16,6 +16,7 @@ const preview: Preview = {
       options: {
         phone: { name: "Phone 375", styles: { width: "375px", height: "812px" } },
         tablet: { name: "Tablet 768", styles: { width: "768px", height: "1024px" } },
+        laptopSmall: { name: "Laptop 1024", styles: { width: "1024px", height: "768px" } },
         laptop: { name: "Laptop 1280", styles: { width: "1280px", height: "800px" } },
         wide: { name: "Wide 1440", styles: { width: "1440px", height: "900px" } },
       },
