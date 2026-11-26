@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { CalendarDays } from "lucide-react"
 import { EmptyState } from "@/components/blocks/EmptyState"
 import { VisitRow } from "@/components/blocks/VisitRow"
 import { Button } from "@/components/ui/button"
@@ -32,7 +31,18 @@ function Section({ id, title, rows, empty, times }: { id: string; title: string;
       <h2 id={id} className="type-heading text-navy">
         {title}
       </h2>
-      {rows.length ? <ul className="divide-y divide-border rounded-lg border border-border bg-card px-4 shadow-sm sm:px-6">{rows.map((r) => rowOf(r, times))}</ul> : <p className="text-base text-muted-foreground">{empty}</p>}
+      {rows.length ? <ul className="divide-y divide-border rounded-lg border border-border bg-card px-4 shadow-sm sm:px-6">{rows.map((r) => rowOf(r, times))}</ul> : (
+        <EmptyState
+          scene="trail"
+          size="sm"
+          title={empty}
+          action={
+            <Button asChild variant="outline" className="min-h-11">
+              <a href="/book">Book Online</a>
+            </Button>
+          }
+        />
+      )}
     </section>
   )
 }
@@ -65,11 +75,12 @@ export function VisitsScreen({ customer, jobs, today, street, times }: VisitsScr
       {all.streets.length > 1 && <StreetFilter streets={all.streets} street={street} />}
       {all.upcoming.length + all.past.length === 0 ? (
         <EmptyState
-          icon={CalendarDays}
+          scene="signpost"
+          titleAs="h2"
           title="No visits yet."
           line="When we book your work, every visit shows up here with its day."
           action={
-            <Button asChild variant="outline">
+            <Button asChild>
               <a href="/book">Book Online</a>
             </Button>
           }
