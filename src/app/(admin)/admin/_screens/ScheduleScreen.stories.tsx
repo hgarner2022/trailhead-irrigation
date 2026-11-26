@@ -174,7 +174,7 @@ export const TwoPeopleLaptop: Story = {
   globals: { viewport: { value: "laptop", isRotated: false } },
   play: async ({ canvas }) => {
     await expect(rowNames(canvas as never)).toEqual(["Ryan Garner", "Tech Two"])
-    await expect((await canvas.findAllByText(/stops, .* open|stops, full/)).length).toBeGreaterThan(3)
+    await expect((await canvas.findAllByText(/visits?, .* open|visits?, full/)).length).toBeGreaterThan(3)
   },
 }
 
