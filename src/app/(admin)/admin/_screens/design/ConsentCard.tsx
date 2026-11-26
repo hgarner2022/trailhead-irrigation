@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import type { ConsentData, ConsentEventRow } from "./customer-fixtures"
 import { TextLink } from "@/components/blocks/TextLink"
+import { SelectField } from "@/components/blocks/SelectField"
 
 // The Consent card of the customer page (docs/DATA_MODEL.md, "consent (terms, marketing)"; Hannah, Nov 19 2026): two different things, kept apart.
 // (a) Texts and email about visits and billing are transactional: Allowed, with the source, the date and the terms version, and a quiet line
@@ -25,7 +26,6 @@ import { TextLink } from "@/components/blocks/TextLink"
 type Channel = "email" | "text"
 const CHANNEL_WORDS: Record<Channel, string> = { email: "Email", text: "Text" }
 const SOURCES = ["They asked me by phone", "In person", "Website form"] as const
-const SELECT = "min-h-11 rounded-lg border border-input bg-background px-3 text-sm"
 
 function Switch({ checked, label, onChange }: { checked: boolean; label: string; onChange: (next: boolean) => void }) {
   return (
@@ -119,11 +119,11 @@ export function ConsentCard({ consent, firstName, initial = null }: ConsentCardP
           </section>
           <section>
             <FormRow label="Contact by" hint="The channel for receipts, invoices and visit texts.">
-              <select value={state.contactBy} onChange={(e) => (setState((s) => ({ ...s, contactBy: e.target.value as ConsentData["contactBy"] })), toast(`${firstName} will be contacted by ${e.target.value}`))} className={SELECT}>
+              <SelectField value={state.contactBy} onChange={(e) => (setState((s) => ({ ...s, contactBy: e.target.value as ConsentData["contactBy"] })), toast(`${firstName} will be contacted by ${e.target.value}`))}>
                 <option value="text">Text</option>
                 <option value="email">Email</option>
                 <option value="both">Both</option>
-              </select>
+              </SelectField>
             </FormRow>
           </section>
         </div>
@@ -143,12 +143,12 @@ export function ConsentCard({ consent, firstName, initial = null }: ConsentCardP
         >
           <div className="flex flex-col gap-3">
             <FormRow label="How did they say yes?">
-              <select value={source} onChange={(e) => setSource(e.target.value)} className={SELECT}>
+              <SelectField value={source} onChange={(e) => setSource(e.target.value)}>
                 <option value="">Choose one</option>
                 {SOURCES.map((s) => (
                   <option key={s}>{s}</option>
                 ))}
-              </select>
+              </SelectField>
             </FormRow>
             <FormRow label="Note" hint="What they said, in a line. Marketing needs the customer's own yes.">
               <Textarea value={note} rows={2} onChange={(e) => setNote(e.target.value)} />

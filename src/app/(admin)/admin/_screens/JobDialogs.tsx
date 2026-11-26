@@ -7,11 +7,11 @@ import { FormRow } from "@/components/blocks/FormRow"
 import { SERVICE_LIST } from "@/lib/services"
 import { OFFICE_KINDS } from "@/lib/admin/visit-defaults"
 import type { AdminData, ServiceItem } from "@/lib/admin/types"
-import { FIELD } from "./CustomerPicker"
 import type { Outcome } from "./action-types"
 import type { JobActions } from "./job-actions-types"
 import { servicePriceLine } from "./NewJobService"
 import { useOpenVisit } from "./RecordHost"
+import { SelectField } from "@/components/blocks/SelectField"
 
 // The small dialogs the job panel's footer opens, each the one `ConfirmDialog`: Cancel job (the pass's Cancel pass uses it too) and
 // New visit (another visit on this job, from the active catalogue). Each says the API's refusal in place and closes when it goes through.
@@ -51,7 +51,7 @@ export function NewVisitDialog({ jobId, data, today, open, onOpenChange, actions
       onConfirm={add}
     >
       <FormRow label="What is the visit for?" hint={service ? servicePriceLine(service) : undefined}>
-        <select value={what} onChange={(e) => setWhat(e.target.value)} className={FIELD}>
+        <SelectField value={what} onChange={(e) => setWhat(e.target.value)}>
           <option value="" disabled>
             Choose one
           </option>
@@ -60,7 +60,7 @@ export function NewVisitDialog({ jobId, data, today, open, onOpenChange, actions
               {s.name}
             </option>
           ))}
-        </select>
+        </SelectField>
       </FormRow>
       <DayField label="Day, or leave it for later" value={day} onChange={(d) => setDay(d)} from={today.slice(0, 10)} clearable />
     </ConfirmDialog>

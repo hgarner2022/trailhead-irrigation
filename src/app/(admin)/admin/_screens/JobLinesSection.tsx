@@ -9,11 +9,11 @@ import { RECORD_ROW, RecordList, RecordRowEnd, RecordRowText } from "@/component
 import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { SERVICE_LIST } from "@/lib/services"
 import type { AdminData, JobLine, ServiceItem } from "@/lib/admin/types"
-import { FIELD } from "./CustomerPicker"
 import type { JobActions } from "./job-actions-types"
 import { FORM_STATUS } from "./use-runner"
 import { JobLines } from "./VisitLines"
 import { money } from "@/lib/admin/format"
+import { SelectField } from "@/components/blocks/SelectField"
 
 // The Lines section of the job panel: what was sold, one row each, a canceled line struck through, an unpriced line saying
 // Quote later, a Tax line only when there is sales tax, and the total. On an open one-off job a manager changes the price and quantity of a line in place (the total
@@ -96,14 +96,14 @@ function AddLineDialog({ jobId, services, actions, open, onOpenChange }: { jobId
   return (
     <ConfirmDialog slot="add-line" title="Add a line" confirmLabel="Add line" confirmDisabled={!ready} open={open} onOpenChange={onOpenChange} onConfirm={add}>
       <FormRow label="What was added">
-        <select value={what} onChange={(e) => (setWhat(e.target.value), setPrice(null))} className={FIELD}>
+        <SelectField value={what} onChange={(e) => (setWhat(e.target.value), setPrice(null))}>
           <option value={FREE}>Something else, with its own name</option>
           {services.map((s) => (
             <option key={s.key} value={s.key}>
               {s.name}
             </option>
           ))}
-        </select>
+        </SelectField>
       </FormRow>
       {!service && (
         <FormRow label="Name">

@@ -12,6 +12,7 @@ import { collectPlan } from "@/lib/money/collect"
 import { collectConfirm, type ConfirmCopy, type Reach } from "./confirm-copy"
 import type { CustomerPageData } from "./customer-fixtures"
 import { money } from "@/lib/admin/format"
+import { SelectField } from "@/components/blocks/SelectField"
 
 // The dialogs behind the customer page's buttons. A button that reaches the customer or their money opens one of these first; each states its
 // exact effect and the customer's own channel, and a result is a toast, never a message left in a section. Pure props: nothing is sent.
@@ -76,7 +77,6 @@ export function CollectDialog({ who, amount, card, invoice, onClose, onPaid }: C
   )
 }
 
-const FIELD = "min-h-11 rounded-lg border border-input bg-background px-3 text-sm"
 
 export function EditDetailsDialog({ d, dns, onClose, onDone }: { d: CustomerPageData; dns?: { reason?: string }; onClose: () => void; onDone: (v: { dns?: { reason?: string } }) => void }) {
   const [channel, setChannel] = useState(d.contact.channel)
@@ -89,10 +89,10 @@ export function EditDetailsDialog({ d, dns, onClose, onDone }: { d: CustomerPage
         <FormRow label="Phone"><Input defaultValue={d.contact.phone.text} inputMode="tel" className="min-h-11" /></FormRow>
         <FormRow label="Email"><Input defaultValue={d.contact.email} inputMode="email" className="min-h-11" /></FormRow>
         <FormRow label="Contact by">
-          <select value={channel} onChange={(e) => setChannel(e.target.value as "text" | "email")} className={FIELD}>
+          <SelectField value={channel} onChange={(e) => setChannel(e.target.value as "text" | "email")}>
             <option value="text">Text</option>
             <option value="email">Email</option>
-          </select>
+          </SelectField>
         </FormRow>
         <div className="flex min-h-11 items-center gap-3 text-sm font-medium">
           <input id="dns-box" type="checkbox" checked={mark} onChange={(e) => setMark(e.target.checked)} aria-labelledby="dns-box-l" className="size-5 shrink-0 cursor-pointer accent-primary" />
@@ -114,11 +114,11 @@ export function MergeDialog({ d, others, copy, onClose, onDone }: { d: CustomerP
   return (
     <ConfirmDialog open onOpenChange={(o) => !o && onClose()} title={c.title} message={c.message} confirmLabel={c.confirmLabel} destructive size="md" slot="merge-customers" onConfirm={async () => (onDone(other), { ok: true })}>
       <FormRow label={`Merge into ${d.name}`}>
-        <select value={other} onChange={(e) => setOther(e.target.value)} className={FIELD}>
+        <SelectField value={other} onChange={(e) => setOther(e.target.value)}>
           {others.map((o) => (
             <option key={o}>{o}</option>
           ))}
-        </select>
+        </SelectField>
       </FormRow>
     </ConfirmDialog>
   )

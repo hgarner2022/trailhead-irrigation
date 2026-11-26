@@ -12,6 +12,7 @@ import type { CapacityKind, Person, PersonRole, Weekday } from "@/lib/admin/type
 import { KIND_PLURALS, MAX_CAPACITY, type SettingsState } from "../settings-model"
 import { addPerson, removePerson, setCapacity, setHours, setPersonName, setPersonRole, setPersonText, setTakesVisits, toggleWorkingDay } from "../settings-people"
 import { CommitInput, ConfirmButton, TAP_TARGET, type Apply } from "./fields"
+import { SelectField } from "@/components/blocks/SelectField"
 
 // People are rows of a SettingsList: who works here, how to reach them, what they are (owner, admin, tech), whether they take visits
 // (a person who does is a row on the Schedule; one who does not, an office admin, is here and nowhere else), the days and hours they
@@ -22,7 +23,6 @@ import { CommitInput, ConfirmButton, TAP_TARGET, type Apply } from "./fields"
 const DAY_WORDS: Record<Weekday, string> = { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" }
 const PER_DAY: CapacityKind[] = ["turn-on", "inspection", "blowout", "repair"]
 /** The native select, styled like `Input`. */
-const FIELD = "min-h-11 w-full rounded-lg border border-input bg-background px-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 md:min-h-9"
 
 function PersonFacts({ person, apply }: { person: Person; apply: Apply }) {
   const { name } = person
@@ -39,13 +39,13 @@ function PersonFacts({ person, apply }: { person: Person; apply: Apply }) {
         <CommitInput label={`${name} phone`} value={person.phone ?? ""} onCommit={(v) => apply((s, a) => setPersonText(s, person.id, "phone", v, a))} />
       </FormRow>
       <FormRow label="Role" inline>
-        <select aria-label={`${name} role`} value={person.role} onChange={(e) => apply((s, a) => setPersonRole(s, person.id, e.target.value as PersonRole, a))} className={FIELD}>
+        <SelectField density="compact" aria-label={`${name} role`} value={person.role} onChange={(e) => apply((s, a) => setPersonRole(s, person.id, e.target.value as PersonRole, a))}>
           {ROLES.map((role) => (
             <option key={role} value={role}>
               {ROLE_WORDS[role]}
             </option>
           ))}
-        </select>
+        </SelectField>
       </FormRow>
       <FormRow label="Takes visits" inline hint="On the Schedule, with a row of their own">
         <Checkbox className={`mt-2.5 ${TAP_TARGET}`} aria-label={`${name} takes visits`} checked={Boolean(person.truck)} onCheckedChange={(v) => apply((s, a) => setTakesVisits(s, person.id, v === true, a))} />
