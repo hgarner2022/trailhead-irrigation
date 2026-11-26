@@ -12,7 +12,8 @@ import { StatusPill, type PillStatus } from "./StatusPill"
 
 // Everything the app sent one customer, as a table (Hannah, Nov 19 2026: emails and more will come, so a list, not chat bubbles): Date,
 // Message (the kind as the title, the first line of the body under it, quiet), Channel (icon and word), To (the number or address), Status
-// (a dot pill: Delivered, Sent, Not delivered with its reason). Newest first. A row opens the whole message in a read-only dialog. On a phone
+// (a dot pill: Delivered, Sent, Not delivered with its reason). Newest first. A row opens the whole message in a read-only dialog: the whole row is the
+// target and the date is drawn as text, not in the link colour, because a message is not a record with a page (Hannah, Nov 25 2026: "Too many links"). On a phone
 // the same rows are cards. It is a `DataGrid` underneath, so it sorts and pages like every other table; `compact` (in a side panel) leaves
 // the To column out. Client component.
 
@@ -105,6 +106,8 @@ export function MessageTable({ messages, to, compact, toolbar = true }: MessageT
         data={rows}
         getRowId={(r) => r.id}
         onOpen={setOpen}
+        rowOpens
+        nameTone="plain"
         hiddenColumns={compact ? ["to"] : undefined}
         toolbar={toolbar}
         inCard={!toolbar}

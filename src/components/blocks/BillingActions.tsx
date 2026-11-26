@@ -1,15 +1,14 @@
 "use client"
 
-import { ExternalLink, FileText, MoreHorizontal, Receipt, Undo2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { ExternalLink } from "lucide-react"
+import { RowMore } from "./RowMore"
 import { useMedia } from "./use-media"
 import { TextLink } from "./TextLink"
 
-// The buttons of a Billing row (Hannah, Nov 20 2026): on a laptop icon buttons that each carry an aria-label and a tooltip ("View receipt",
-// "Open in Stripe", "Open invoice"), Remind as a quiet word, and More holding Refund; on a phone the same actions as a quiet line of words under
-// the card, since a card is one button and cannot hold buttons. One `RowActions` for the invoice rows, the payment rows and the refund rows.
+// The buttons of a Billing row. On a laptop a row shows ONE action in words (Hannah, Nov 25 2026: at most one visible action a row, the rest under More): Remind while an
+// invoice is out, else View receipt; Open in Stripe and Refund are under the row's More, and there is no "Open invoice" button because the invoice's number in the row is
+// its link. No bare icon stands for an action. On a phone the same actions are a quiet line of words under the card, since a card is one button and cannot hold buttons.
+// One `RowActions` for the invoice rows, the payment rows and the refund rows.
 
 export interface RowActionsSpec {
   /** Remind, while an invoice is out and unpaid */
@@ -25,63 +24,28 @@ export interface RowActionsSpec {
 /** a row's text action: 14px, medium, a 44px target on a phone */
 const ACTION = "text-sm"
 
-function IconLink({ href, label, external, children }: { href: string; label: string; external?: boolean; children: React.ReactNode }) {
-  const link = external ? (
-    <TextLink href={href} target="_blank" icon aria-label={`${label} (opens in a new tab)`} className="md:size-9">
-      {children}
-    </TextLink>
-  ) : (
-    <TextLink href={href} icon aria-label={label} className="md:size-9">
-      {children}
-    </TextLink>
-  )
+/** A laptop row: the one action in words, then More. */
+function Lead({ spec }: { spec: RowActionsSpec }) {
+  const cls = `${ACTION} whitespace-nowrap px-2 md:min-h-9`
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{link}</TooltipTrigger>
-        <TooltipContent>{label}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  )
-}
-
-function Icons({ spec }: { spec: RowActionsSpec }) {
-  return (
-    <span className="flex items-center justify-end">
-      {spec.onRemind && (
-        <TextLink weight="medium" onClick={spec.onRemind} className={`${ACTION} px-2 md:min-h-9`}>
+    <span className="flex items-center justify-end gap-0.5">
+      {spec.onRemind ? (
+        <TextLink weight="medium" onClick={spec.onRemind} className={cls}>
           Remind
         </TextLink>
-      )}
-      {spec.receiptHref && (
-        <IconLink href={spec.receiptHref} label="View receipt">
-          <Receipt className="size-4" aria-hidden />
-        </IconLink>
-      )}
-      {spec.stripeHref && (
-        <IconLink href={spec.stripeHref} label="Open in Stripe" external>
-          <ExternalLink className="size-4" aria-hidden />
-        </IconLink>
-      )}
-      {spec.invoiceHref && (
-        <IconLink href={spec.invoiceHref} label="Open invoice">
-          <FileText className="size-4" aria-hidden />
-        </IconLink>
-      )}
-      {spec.refund && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button type="button" variant="ghost" size="icon" className="size-11 md:size-9" aria-label={`More for the ${spec.refund.amount} payment`}>
-              <MoreHorizontal className="size-4" aria-hidden />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem variant="destructive" onSelect={spec.refund.onRefund}>
-              <Undo2 aria-hidden /> Refund {spec.refund.amount}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+      ) : spec.receiptHref ? (
+        <TextLink href={spec.receiptHref} weight="medium" className={cls}>
+          View receipt
+        </TextLink>
+      ) : null}
+      <RowMore
+        label={spec.refund ? `More for the ${spec.refund.amount} payment` : "More"}
+        items={[
+          spec.onRemind && spec.receiptHref ? { label: "View receipt", href: spec.receiptHref } : undefined,
+          spec.stripeHref ? { label: "Open in Stripe", href: spec.stripeHref, external: true } : undefined,
+          spec.refund ? { label: `Refund ${spec.refund.amount}`, destructive: true, onSelect: spec.refund.onRefund } : undefined,
+        ]}
+      />
     </span>
   )
 }
@@ -122,7 +86,7 @@ export function ActionLine({ spec, lead }: { spec: RowActionsSpec; lead?: React.
   )
 }
 
-/** Icons from `md` up, the quiet line below it. */
+/** One action and More from `md` up, the quiet line below it. */
 export function RowActions({ spec, lead }: { spec: RowActionsSpec; lead?: React.ReactNode }) {
-  return useMedia("(max-width: 767px)") ? <ActionLine spec={spec} lead={lead} /> : <Icons spec={spec} />
+  return useMedia("(max-width: 767px)") ? <ActionLine spec={spec} lead={lead} /> : <Lead spec={spec} />
 }

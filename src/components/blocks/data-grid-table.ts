@@ -2,7 +2,7 @@
 // (sort, filter, hide, reorder, select, paginate), the column types that go
 // with it, and the hook that tells the grid when there is more table to the
 // right. Nothing here renders; DataGrid.tsx and data-grid-toolbar.tsx do.
-import { useEffect, useState, type RefObject } from "react"
+import { useEffect, useState, type MouseEvent, type RefObject } from "react"
 import {
   columnFilteringFeature,
   columnOrderingFeature,
@@ -127,4 +127,20 @@ export function useScrollCue(ref: RefObject<HTMLElement | null>): ScrollCue {
     }
   }, [ref])
   return cue
+}
+
+/** what a row click must leave alone: anything that acts by itself */
+const ROW_CONTROLS = "a, button, input, select, textarea, label, summary, [role=checkbox], [role=menuitem], [role=button], [role=dialog]"
+
+/** `rowOpens`: a click on a row presses the row's own name link (the one link of the row), unless the click was on a control or ended a text selection. */
+export function pressName(event: MouseEvent<HTMLTableRowElement>) {
+  if (event.defaultPrevented || event.button !== 0) return
+  if ((event.target as Element).closest(ROW_CONTROLS)) return
+  if (window.getSelection()?.toString()) return
+  const name = event.currentTarget.querySelector<HTMLElement>("[data-grid-name]")
+  if (!name) return
+  const href = name.getAttribute("href")
+  // a new tab keeps working from anywhere on the row
+  if (href && (event.metaKey || event.ctrlKey)) window.open(href, "_blank", "noopener")
+  else name.click()
 }

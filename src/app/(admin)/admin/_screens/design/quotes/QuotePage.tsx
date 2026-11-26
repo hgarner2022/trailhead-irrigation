@@ -1,20 +1,18 @@
 "use client"
 
 import { useState } from "react"
-import { AsideCard } from "@/components/blocks/AsideCard"
+import { CustomerCard } from "@/components/blocks/CustomerCard"
 import { NotesAndHistory } from "@/components/blocks/NotesAndHistory"
 import { Photos } from "@/components/blocks/Photos"
 import { recordHref } from "@/components/blocks/record-preview-model"
 import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
 import { RecordPage } from "@/components/blocks/RecordPage"
-import { RecordFacts } from "@/components/blocks/RecordPanel"
 import { SectionCard } from "@/components/blocks/SectionCard"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { SummaryBand } from "@/components/blocks/SummaryBand"
 import { useToast } from "@/components/blocks/Toast"
 import type { PhotoItem } from "@/lib/photos/types"
 import { NOW, noteOk } from "../job-fixtures"
-import { AddressChip, CustomerChip } from "../RecordChips"
 import type { QuoteArchiveReason } from "../requests/request-model"
 import type { ServicePick } from "../requests/request-catalogue"
 import { ChangeServiceDialog } from "./ChangeServiceDialog"
@@ -26,8 +24,8 @@ import { useQuoteWorld, type QuoteStore } from "./quote-store"
 import { Notice } from "@/components/blocks/Notice"
 
 // A quote as a page of its own (Hannah, Nov 22 2026: "A quote probably should be [its own thing] until it's approved"), built like the invoice page: the quote number as the title with its
-// status pill and the customer chip, the band, the one Quote editor while it is a Draft (price the lines in their rows, an optional deposit, then Send a quote) or its facts once it is out,
-// What's included, Job (once approved: "Job created" with the job's chip), Revisions, and in the aside the Customer, the Property and Notes and history. While a quote is out its lines are
+// status pill (no chip in the header), the band (Total, Deposit, Sent, Decision in every state), the one Quote editor while it is a Draft (price the lines in their rows, an optional deposit, then Send a quote) or its facts once it is out,
+// What's included, Job (once approved: "Job created" with the job's chip), Revisions, and in the aside the one `CustomerCard` (the page's only link to the customer, with the address as text) and Notes and history. A quote has no Property card. While a quote is out its lines are
 // locked; Revise marks it Replaced and makes a new Draft from it; Mark approved takes a deposit by check, cash or Venmo and creates the job. Archive asks why and archives the request the
 // quote came from. Every action that reaches the customer confirms and states its effect; a result is a toast and the page changes state, never a message in a section. Pure props over a store.
 
@@ -93,22 +91,14 @@ export function QuotePage({ store, quoteId, now = QUOTES_NOW, photos, initialDia
         crumb={{ label: "Quotes", href: "/admin/quotes" }}
         title={q.id}
         subtitle={`${q.service} · ${q.requestId ? "From a request" : q.visit ? "From a design visit" : q.replaces ? `Revision of ${q.replaces}` : "Made by the office"}`}
-        badges={
-          <>
-            <StatusPill status={pill.status} label={pill.label} size="lg" />
-            <CustomerChip id={q.customerId} name={q.customer} phone={q.phone} address={q.street} />
-          </>
-        }
+        badges={<StatusPill status={pill.status} label={pill.label} size="lg" />}
         notice={notice ? <Notice tone="page" role="status">{notice}</Notice> : undefined}
         band={<SummaryBand items={quoteBand(q)} />}
         asideLabel="About this quote"
         actions={actions}
         aside={
           <>
-            <AsideCard name={q.customer} href={recordHref.customer(q.customerId)} phone={{ text: q.phone, href: `tel:${q.phone.replace(/[^\d+]/g, "")}` }} address={[q.street, `${q.town}, CO`]} />
-            <SectionCard title="Property" id="property-h">
-              <RecordFacts divided rows={[["Address", <AddressChip key="a" customerId={q.customerId} street={q.street} />]]} />
-            </SectionCard>
+            <CustomerCard customer={{ id: q.customerId, name: q.customer }} phone={q.phone} address={[q.street, `${q.town}, CO`]} channel={q.contact} />
             <SectionCard title="Notes and history" id="notes-h">
               <NotesAndHistory bare lines={historyLines(q.history)} onAddNote={noteOk} now={NOW} />
             </SectionCard>

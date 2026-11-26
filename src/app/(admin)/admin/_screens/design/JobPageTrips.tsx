@@ -48,6 +48,8 @@ function factsOf(data: MultiTripData, customer?: PageCustomer): ConfirmFacts {
 
 /** Whose page it is, when not Andrea Dalton (the fixtures are hers): the aside card and the confirmations name them. */
 export interface PageCustomer {
+  /** the customer's id, for the Customer card's one link; Andrea's when left out */
+  id?: string
   name: string
   phone: { text: string; href: string }
 }
@@ -79,7 +81,7 @@ export function TripsPage({ data, customer, onTripDo, tripHandlers, onDo, onTrip
       badges={<Badges pills={data.pills} />}
       notice={data.notice ? <Notice tone="page" role="status">{data.notice}</Notice> : undefined}
       band={<SummaryBand items={bandOf(data)} />}
-      aside={<Aside customer={customer?.name ?? "Andrea Dalton"} phone={customer?.phone ?? PHONE_LINK} where={where} notes={data.notes} />}
+      aside={<Aside customer={customer?.name ?? "Andrea Dalton"} customerId={customer?.id ?? "c-1"} phone={customer?.phone ?? PHONE_LINK} where={where} notes={data.notes} />}
       actions={hasFooter(data.footer) ? <Actions plan={data.footer} facts={facts} onDo={onDo} /> : undefined}
     >
       <SectionCard title={data.tripsHeading} id="trips-h" flush>

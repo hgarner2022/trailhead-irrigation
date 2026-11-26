@@ -3,7 +3,6 @@
 import { AlertCircle, CheckCircle2, Clock, Undo2 } from "lucide-react"
 import { InvoiceTable, PaymentTable } from "./BillingTables"
 import { billingFigures, splitBilling, type InvoiceRowData, type PaymentRowData } from "./billing-model"
-import { RecordChip } from "./RecordChip"
 import { RecordFacts } from "./RecordPanel"
 import { SectionHeading } from "./SectionHeading"
 import { Notice, type NoticeTone } from "./Notice"
@@ -19,9 +18,9 @@ import { Notice, type NoticeTone } from "./Notice"
 export interface BillingLine {
   tone: "paid" | "unpaid" | "pastdue" | "refunded"
   title: string
-  /** the rest of the sentence after "Title."; `{invoice}` is the invoice's chip */
+  /** the rest of the sentence after "Title."; `{invoice}` is the invoice's number, as text: the invoice is linked once, by its row in "Invoices and payments" */
   text?: string
-  invoice?: { name: string; href: string }
+  invoice?: { name: string; href?: string }
 }
 
 const TONE: Record<BillingLine["tone"], NoticeTone> = { paid: "success", unpaid: "warning", pastdue: "error", refunded: "neutral" }
@@ -35,7 +34,7 @@ export function BillingHeadline({ line }: { line: BillingLine }) {
       <span className="font-semibold">{text ? `${line.title}.` : line.title}</span>
       {text ? " " : ""}
       {before}
-      {line.invoice && <RecordChip kind="invoice" name={line.invoice.name} href={line.invoice.href} className="text-sm font-medium text-current! md:min-h-8" />}
+      {line.invoice && <span data-slot="headline-invoice" className="font-medium">{line.invoice.name}</span>}
       {after}
     </Notice>
   )

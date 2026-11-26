@@ -1,18 +1,30 @@
 "use client"
 
 import { RecordChip } from "@/components/blocks/RecordChip"
-import { customerPreview, dayPreview, invoicePreview, jobPreview, personPreview, recordHref } from "@/components/blocks/record-preview-model"
-import { useToast } from "@/components/blocks/Toast"
+import { customerPreview, invoicePreview, jobPreview, recordHref } from "@/components/blocks/record-preview-model"
 import type { PillStatus } from "@/components/blocks/StatusPill"
 
-// Every record named on the customer page and the invoice page is one of these (Hannah, Nov 19 2026: every record name is a link; docs/plans/
-// 2026-11-19-record-links-research.md): the customer, a job, an invoice, a payment's receipt, a person, the address and a scheduled day (to the
-// Schedule). They are `RecordChip` with the preview card wired from the same `record-preview-model` helpers, so a fact on a card cannot differ
-// from the page. A whole table row opens its record too (`useRowOpen`), and the chips inside keep their own links. Pure props.
+// The record chips of the prototype pages, each a `RecordChip` with the preview card wired from the same `record-preview-model` helpers, so a fact on a card cannot differ from
+// the page. Since the link diet (Hannah, Nov 25 2026: "Too many links"; docs/plans/2026-11-25-admin-audit-customer.md, section 4) a chip is for a record named ON ITS OWN as a
+// relation ("From quote Q-2026-0005", the Job card of an invoice, "Renewed as"), once per page. It is never in a table row: a row's one link is its own name, and every other
+// record in it is text (`CustomerText` keeps the Do not service mark on a customer's name). A person, a day in a row and an address are not record links, so they have no chip.
+// A payment has no page: its one address is its receipt (`receiptHref`). Pure props.
 
-const q = encodeURIComponent
-export const paymentHref = (id: string) => `/admin/payments?payment=${q(id)}`
-export const propertyHref = (customerId: string) => `/admin/customers?customer=${q(customerId)}#property-h`
+/** The one address of a payment: the receipt the customer has too. */
+export const receiptHref = (id: string) => `/account/receipts/${encodeURIComponent(id)}`
+
+/** A customer's name as text in a row that is not the customer's own, with the Do not service mark (a small red dot with the words for a screen reader and a tooltip). */
+export const CustomerText = ({ name, doNotService }: { name: string; doNotService?: boolean }) => (
+  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+    {name}
+    {doNotService && (
+      <span data-slot="do-not-service-dot" title="Do not service" className="inline-flex shrink-0 items-center">
+        <span aria-hidden className="size-2 rounded-full bg-destructive" />
+        <span className="sr-only">, Do not service</span>
+      </span>
+    )}
+  </span>
+)
 
 type Size = "row" | "band"
 /** In a table row a chip is a line of text, not a headline: 14px medium, 32px tall from md (44px on a phone), and a day or a person never wraps. */
@@ -34,20 +46,3 @@ export const InvoiceChip = ({ id, number, customer, status, statusLabel, total, 
 /** A quote is its own record: the chip opens its page by its number. */
 export const QuoteChip = ({ number, table }: { number: string; table?: boolean }) => <RecordChip kind="quote" name={number} href={recordHref.quote(number)} className={tableCls(table, true)} />
 
-export const PaymentChip = ({ id, receipt, table }: { id: string; receipt: string; table?: boolean }) => <RecordChip kind="payment" name={`Receipt ${receipt}`} href={paymentHref(id)} className={tableCls(table, true)} />
-
-export const PersonChip = ({ name, role = "Technician", stopsToday = 0, size, table }: { table?: boolean; name: string; role?: string; stopsToday?: number; size?: Size }) => (
-  <RecordChip kind="person" name={name} href={recordHref.person()} size={size} className={tableCls(table, true)} preview={personPreview({ name, role, stopsToday })} />
-)
-
-export const DayChip = ({ iso, label, stops, who, table }: { table?: boolean; iso: string; label: string; stops: number; who: string }) => (
-  <RecordChip kind="day" name={label} href={recordHref.day(iso)} className={tableCls(table, true)} preview={dayPreview({ isoDay: iso, label, stops, who })} />
-)
-
-export const AddressChip = ({ customerId, street, table }: { customerId: string; street: string; table?: boolean }) => <RecordChip kind="property" name={street} href={propertyHref(customerId)} className={tableCls(table)} />
-
-/** What a click on a whole row does in a prototype: the record opens (here, a toast says which); in the app it is the record host. */
-export function useRowOpen(): (what: string) => void {
-  const toast = useToast()
-  return (what) => toast(`Opens ${what}`)
-}

@@ -11,10 +11,10 @@ import { Photos } from "@/components/blocks/Photos"
 import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
 import { RecordPage } from "@/components/blocks/RecordPage"
 import { RecordFacts } from "@/components/blocks/RecordPanel"
+import { CustomerCard } from "@/components/blocks/CustomerCard"
 import { SectionCard } from "@/components/blocks/SectionCard"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { SummaryBand, type SummaryItem } from "@/components/blocks/SummaryBand"
-import { recordHref } from "@/components/blocks/record-preview-model"
 import { useToast } from "@/components/blocks/Toast"
 import { useUndoToast } from "@/components/blocks/UndoToast"
 import { DoNotServiceTag } from "@/components/blocks/DoNotServiceTag"
@@ -24,7 +24,7 @@ import { ConsentCard } from "./ConsentCard"
 import { CustomerBilling } from "./CustomerBilling"
 import { CollectDialog, CopyDialog, EditDetailsDialog, MergeDialog, contactOf } from "./CustomerDialogs"
 import { MessagesTable, JobsTable } from "./CustomerTables"
-import { AddressChip, JobChip } from "./RecordChips"
+import { JobChip } from "./RecordChips"
 import { cardLinkCopy, deleteCustomerCopy, mergeCopy, refundCopy } from "./confirm-copy"
 import { AS_OF, STATUS_PILL, type CustomerPageData, type PassArea, type SeasonLink } from "./customer-fixtures"
 import { CustomerQuotes } from "./CustomerQuotes"
@@ -36,9 +36,9 @@ import { TextLink } from "@/components/blocks/TextLink"
 // The customer page (Hannah: "update the customer layout to look like this"), on the page frame of the job page and the rules of
 // docs/plans/2026-11-19-admin-page-layout-research.md and her rules of Nov 19 2026. Header: the name, the badges, and the actions at the top
 // right: New job (primary), Send a message, Collect payment when anything is unpaid, More (Edit details, New quote, Send card link, Merge, and Delete only
-// while nothing has happened). The summary band: Next visit, Unpaid, Season Pass, Card on file, each a link to what it summarises and a plain
-// cell when it has nothing behind it. Main column: Jobs, Quotes (Nov 22 2026, with New quote), Season Pass, Billing, Messages, Photos, Notes and history. Aside: Contact (with how
-// to reach them), Property, Consent. Every record named is a chip. Every action that reaches the customer or their money confirms in a dialog
+// while nothing has happened). The summary band: Next visit, Unpaid, Season Pass, Card on file; each scrolls to its section on this page (Jobs, Billing, Season Pass, the card row)
+// and none leaves it, since the job, the invoice and the pass are each linked once in their own section (Hannah, Nov 25 2026: "Too many links"); a cell with nothing behind it is plain. Main column: Jobs, Quotes (Nov 22 2026, with New quote), Season Pass, Billing, Messages, Photos, Notes and history. Aside: Contact (with how
+// to reach them: the one `CustomerCard` with no name, since a page never links to itself), Property (the address is text), Consent. A job's name is its row's one link. Every action that reaches the customer or their money confirms in a dialog
 // with the effect and the customer's channel; a result is a toast, never a message in a section. Pure props, nothing wired.
 
 export type CustomerDialog = "archive" | "message" | "collect" | "card-link" | "refund" | "remind" | "edit" | "merge" | "delete" | null
@@ -50,12 +50,11 @@ const scrollTo = (id: string) => () => {
 
 export function bandOf(d: CustomerPageData): SummaryItem[] {
   const { next, unpaid, pass, card } = d.band
-  const hasUnpaid = d.unpaid !== undefined
-  const jobHref = (id?: string) => (id ? recordHref.job(id) : undefined)
+  const hasUnpaid = d.unpaid !== undefined || Boolean(unpaid.invoiceId)
   return [
-    { label: "Next visit", value: next.value, sub: next.sub, icon: CalendarDays, href: jobHref(next.jobId) },
-    { label: "Unpaid", value: unpaid.value, sub: unpaid.sub, tone: unpaid.alert ? "alert" : "plain", icon: Receipt, ...(unpaid.invoiceId ? { href: recordHref.invoice(unpaid.invoiceId) } : hasUnpaid ? { onClick: scrollTo("billing-h") } : {}) },
-    { label: "Season Pass", value: pass.value, sub: pass.sub, icon: Ticket, href: jobHref(pass.jobId) },
+    { label: "Next visit", value: next.value, sub: next.sub, icon: CalendarDays, ...(next.jobId ? { onClick: scrollTo("jobs-h") } : {}) },
+    { label: "Unpaid", value: unpaid.value, sub: unpaid.sub, tone: unpaid.alert ? "alert" : "plain", icon: Receipt, ...(hasUnpaid ? { onClick: scrollTo("billing-h") } : {}) },
+    { label: "Season Pass", value: pass.value, sub: pass.sub, icon: Ticket, ...(pass.jobId && d.area.kind === "pass" ? { onClick: scrollTo("pass-h") } : {}) },
     { label: "Card on file", value: card.value, sub: card.sub, icon: CreditCard, ...(d.billing.card ? { onClick: scrollTo("card-row") } : {}) },
   ]
 }
@@ -173,17 +172,9 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
         actions={<RecordFooter primary={{ label: "New job", href: `/admin/jobs?new=1&customer=${d.id}` }} secondary={secondary} more={more} destructive={d.untouched ? act("Delete customer", open("delete")) : undefined} destructiveInMenu />}
         aside={
           <>
-            <SectionCard title="Contact" id="contact-h" action={<TextLink onClick={open("edit")}>Edit</TextLink>}>
-              <RecordFacts
-                divided
-                rows={[
-                  ["Phone", <TextLink key="p" href={d.contact.phone.href}>{d.contact.phone.text}</TextLink>],
-                  ["Email", <TextLink key="e" href={`mailto:${d.contact.email}`} className="break-all">{d.contact.email}</TextLink>],
-                ]}
-              />
-            </SectionCard>
+            <CustomerCard title="Contact" id="contact-h" phone={d.contact.phone.text} email={d.contact.email} action={<TextLink onClick={open("edit")}>Edit</TextLink>} />
             <SectionCard title="Property" id="property-h" action={<TextLink onClick={open("edit")}>Edit</TextLink>}>
-              <RecordFacts divided rows={[["Address", <AddressChip key="a" customerId={d.id} street={d.address[0]} />], ...d.property]} />
+              <RecordFacts divided rows={[["Address", d.address.filter(Boolean).join(", ")], ...d.property]} />
             </SectionCard>
             <ConsentCard consent={d.consent} firstName={d.firstName} initial={initialConsent} />
           </>
@@ -191,14 +182,14 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
       >
         <SectionCard title="Jobs" id="jobs-h">
           {d.jobs.length ? (
-            <JobsTable rows={d.jobs} customer={d.name} />
+            <JobsTable rows={d.jobs} />
           ) : (
             <EmptyState title="No jobs yet" line="Start with a repair, a spring turn-on or a Season Pass. The job and its days show here." action={<Button size="touch" asChild variant="outline"><Link href={`/admin/jobs?new=1&customer=${d.id}`}>New job</Link></Button>} />
           )}
         </SectionCard>
         <CustomerQuotes quotes={d.quotes ?? []} customerId={d.id} />
         <SeasonPassCard d={d} />
-        <CustomerBilling billing={d.billing} customerName={d.name} onUpdateCard={open("card-link")} onRefund={(r) => (setRow({ amount: r.amount, how: r.methodLabel.split(" ")[0]!.toLowerCase() }), setDialog("refund"))} onRemind={(r) => (setRow({ number: r.number, amount: r.amount, due: r.due, pastDue: r.status === "overdue" }), setDialog("remind"))} />
+        <CustomerBilling billing={d.billing} onUpdateCard={open("card-link")} onRefund={(r) => (setRow({ amount: r.amount, how: r.methodLabel.split(" ")[0]!.toLowerCase() }), setDialog("refund"))} onRemind={(r) => (setRow({ number: r.number, amount: r.amount, due: r.due, pastDue: r.status === "overdue" }), setDialog("remind"))} />
         <SectionCard title="Messages" id="messages-h">
           <MessagesTable messages={d.messages} to={{ sms: d.contact.phone.text, email: d.contact.email }} />
         </SectionCard>

@@ -6,7 +6,6 @@ import { BillingBody, type BillingLine } from "@/components/blocks/BillingBody"
 import type { InvoiceRowData, PaymentRowData } from "@/components/blocks/BillingTables"
 import { SectionCard } from "@/components/blocks/SectionCard"
 import { TextLink } from "@/components/blocks/TextLink"
-import { recordHref } from "@/components/blocks/record-preview-model"
 import { sortInvoices, toInvoiceRows, toPaymentRows } from "./CustomerTables"
 import type { CustomerBillingData } from "./customer-fixtures"
 
@@ -18,7 +17,6 @@ import type { CustomerBillingData } from "./customer-fixtures"
 
 export interface CustomerBillingProps {
   billing: CustomerBillingData
-  customerName: string
   /** Update card: opens the card-link confirmation */
   onUpdateCard: () => void
   /** Refund, from a payment row's More: opens the refund confirmation */
@@ -30,19 +28,19 @@ export interface CustomerBillingProps {
 /** The headline, from the customer's money: the invoice still out (newest first, past due on top) is named in the sentence. */
 export function lineOf(billing: CustomerBillingData): BillingLine {
   const out = sortInvoices(billing.invoices).find((i) => i.status === "overdue" || i.status === "bill-sent")
-  const invoice = out ? { name: out.number, href: recordHref.invoice(out.id) } : undefined
+  const invoice = out ? { name: out.number } : undefined
   if (billing.settled === "paid") return { tone: "paid", title: billing.line }
   if (billing.settled === "refunded" || billing.unpaid === "$0") return { tone: "refunded", title: billing.line }
   if (billing.tone === "past-due") return { tone: "pastdue", title: billing.line, text: out ? `${billing.unpaid} unpaid. Invoice {invoice} sent ${out.sent}.` : `${billing.unpaid} unpaid.`, invoice }
   return { tone: "unpaid", title: billing.line, text: out ? `Invoice {invoice} sent ${out.sent}, due ${out.due}.` : undefined, invoice }
 }
 
-export function CustomerBilling({ billing, customerName, onUpdateCard, onRefund, onRemind }: CustomerBillingProps) {
+export function CustomerBilling({ billing, onUpdateCard, onRefund, onRemind }: CustomerBillingProps) {
   const { card } = billing
   const facts: [string, string][] = [["Total", billing.total], ["Paid", billing.paid], billing.refunded ? ["Refunded", billing.refunded] : ["Unpaid", billing.unpaid]]
   const cardWords = card ? `${card.brand} ending ${card.last4}` : undefined
-  const payments = useMemo(() => toPaymentRows(billing.payments, customerName, { cardWords, canRefund: true }), [billing.payments, customerName, cardWords])
-  const invoices = useMemo(() => toInvoiceRows(billing.invoices, customerName), [billing.invoices, customerName])
+  const payments = useMemo(() => toPaymentRows(billing.payments, { cardWords, canRefund: true }), [billing.payments, cardWords])
+  const invoices = useMemo(() => toInvoiceRows(billing.invoices), [billing.invoices])
   const cardRow = card ? (
     <span id="card-row" className="flex flex-wrap items-center gap-x-4">
       <span>

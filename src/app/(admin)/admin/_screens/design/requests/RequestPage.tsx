@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Clock, ClipboardList, MapPin, UserRound } from "lucide-react"
+import { Clock, ClipboardList, MapPin, MessageSquare } from "lucide-react"
+import { CustomerCard, telHref } from "@/components/blocks/CustomerCard"
 import { NotesAndHistory } from "@/components/blocks/NotesAndHistory"
 import { Photos } from "@/components/blocks/Photos"
 import { RecordChip } from "@/components/blocks/RecordChip"
@@ -22,8 +23,8 @@ import { TextLink } from "@/components/blocks/TextLink"
 import { Notice } from "@/components/blocks/Notice"
 
 // A request as a page of its own (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.2 to 4.5; Hannah's answers 2 and 3 of Nov 20 2026), on the
-// record page frame: the person's name with its status, the band (when it came in, what they asked for, where, which customer they match), the customer's
-// words and photos, the contact and a match panel in the aside. A request waits here until Ryan makes a job of it, even when its email matches a customer
+// record page frame: the person's name with its status, the band (when it came in, what they asked for, where, how to reach them; none of the four is a link), the customer's
+// words and photos, and in the aside the match (the one `CustomerCard`, the page's only link to the customer) and the phone and email they gave. A request waits here until Ryan makes a job of it, even when its email matches a customer
 // (the panel shows the match), so spam never becomes a customer. There are two ways out and the header has both: "Create job" and "Send a quote", plus
 // Archive (asks why) and, under More, Mark as seen. The catalogue decides which is primary (`isQuoteFirst`): a service with no price (an installation,
 // Christmas lights, the larger repair) leads with Send a quote, a priced one with Create job. Each opens a dialog that states the exact effect. Hannah, Nov
@@ -131,13 +132,11 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
   if (r.becameJob) return <BecameJobPage request={r} stage={jobStage} now={now} />
   if (r.becameQuote) return <BecameQuotePage request={r} stage={quoteStage} now={now} />
 
-  const customerValue = match ? match.customer.name : "No match"
-  const customerHref = match ? recordHref.customer(match.customer.id) : undefined
   const band: SummaryItem[] = [
     { label: "Came in", value: cameIn(r, now), sub: cameInOn(r.receivedAt), icon: Clock },
     { label: "Asked for", value: serviceWords(r), sub: SOURCE_WORDS[r.source], icon: ClipboardList },
     { label: "Where", value: r.street || "No address", sub: r.town ? `${r.town}, CO` : undefined, icon: MapPin },
-    { label: "Customer", value: customerValue, sub: match ? [matchWords(match), matchNote(match)].filter(Boolean).join(". ") : r.email ? "No customer has this email or phone" : undefined, icon: UserRound, ...(customerHref ? { href: customerHref } : {}) },
+    { label: "Reach by", value: CHANNEL_WORDS[r.contact], icon: MessageSquare },
   ]
 
   const archivedNote = r.archived ? `Archived as ${r.archived.reason}. No customer was added and nothing was sent.` : undefined
@@ -159,17 +158,13 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
         actions={actions}
         aside={
           <>
-            <SectionCard title="Customer match" id="match-h">
-              <MatchPanel match={match} request={r} />
-            </SectionCard>
+            <MatchPanel match={match} request={r} />
             <SectionCard title="Contact" id="contact-h">
               <RecordFacts
                 divided
                 rows={[
-                  ["Phone", r.phone ? <TextLink key="p" href={`tel:${r.phone.replace(/[^\d+]/g, "")}`} touch="inline" underline="hover">{r.phone}</TextLink> : "None given"],
-                  ["Email", r.email ? <TextLink key="e" href={`mailto:${r.email}`} touch="inline" underline="hover">{r.email}</TextLink> : "None given"],
-                  ["Reach by", CHANNEL_WORDS[r.contact]],
-                  ["Address", r.street ? `${r.street}, ${r.town}` : "None given"],
+                  ["Phone", r.phone ? <TextLink key="p" href={telHref(r.phone)}>{r.phone}</TextLink> : "None given"],
+                  ["Email", r.email ? <TextLink key="e" href={`mailto:${r.email}`} className="break-all">{r.email}</TextLink> : "None given"],
                 ]}
               />
             </SectionCard>
@@ -242,31 +237,31 @@ export function BecameQuotePage({ request, stage, now }: { request: RequestData;
   )
 }
 
-/** "Matches Andrea Dalton" with the customer as a chip, or "No match". It is a hint to Ryan: making the job is his decision. */
+/** The Customer match card: "Matches Andrea Dalton" on the one `CustomerCard` every record page has (the page's only link to the customer, with the preview), or "No match". It is a hint to Ryan: making the job is his decision. */
 export function MatchPanel({ match, request }: { match: Match | null; request: RequestData }) {
   if (!match) {
     return (
-      <div data-slot="match-panel" data-match="no" className="flex flex-col gap-1 text-sm">
-        <p className="font-semibold">No match</p>
-        <p className="text-muted-foreground">No customer has this email or phone. Creating the job adds {fullName(request)} as a customer.</p>
-      </div>
+      <SectionCard title="Customer match" id="match-h">
+        <div data-slot="match-panel" data-match="no" className="flex flex-col gap-1 text-sm">
+          <p className="font-semibold">No match</p>
+          <p className="text-muted-foreground">No customer has this email or phone. Creating the job adds {fullName(request)} as a customer.</p>
+        </div>
+      </SectionCard>
     )
   }
   return (
-    <div data-slot="match-panel" data-match="yes" className="flex flex-col gap-1 text-sm">
-      <p className="flex flex-wrap items-center gap-x-2 font-semibold">
-        Matches
-        <RecordChip kind="customer" name={match.customer.name} href={recordHref.customer(match.customer.id)} />
-      </p>
-      <p className="text-muted-foreground">
-        {matchWords(match)}. {match.customer.street}.
-      </p>
-      {matchNote(match) && (
-        <p data-slot="match-note" className="font-semibold text-foreground">
-          {matchNote(match)}.
+    <CustomerCard title="Customer match" id="match-h" lead="Matches" customer={{ id: match.customer.id, name: match.customer.name }}>
+      <div data-slot="match-panel" data-match="yes" className="flex flex-col gap-1 text-sm">
+        <p className="text-muted-foreground">
+          {matchWords(match)}. {match.customer.street}.
         </p>
-      )}
-      <p className="text-muted-foreground">A match is a hint. The request waits until you make a job of it.</p>
-    </div>
+        {matchNote(match) && (
+          <p data-slot="match-note" className="font-semibold text-foreground">
+            {matchNote(match)}.
+          </p>
+        )}
+        <p className="text-muted-foreground">A match is a hint. The request waits until you make a job of it.</p>
+      </div>
+    </CustomerCard>
   )
 }

@@ -1,11 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { AsideCard } from "@/components/blocks/AsideCard"
+import { CustomerCard } from "@/components/blocks/CustomerCard"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { NotesAndHistory } from "@/components/blocks/NotesAndHistory"
 import { Photos } from "@/components/blocks/Photos"
-import { recordHref } from "@/components/blocks/record-preview-model"
 import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
 import { RecordPage } from "@/components/blocks/RecordPage"
 import { SectionCard } from "@/components/blocks/SectionCard"
@@ -25,7 +24,7 @@ import { useQuoteWorld, type QuoteStore } from "./quote-store"
 import { Notice } from "@/components/blocks/Notice"
 
 // The page of a job made from an approved quote (Hannah, Nov 22 2026: a job is created only when the quote is approved, so it has no quote state of its own: no Needs a quote, no Quote sent, no
-// quote editor). It is ready to schedule with no day, says which quote it came from with that quote's chip, and holds the approved lines, copied once from the frozen quote. A price change after
+// quote editor). It is ready to schedule with no day, says which quote it came from ONCE (that quote's chip, in the aside under the customer; not in the subtitle and not in the band), has the band every job has (When, Who, Where, Total), and holds the approved lines, copied once from the frozen quote. A price change after
 // approval is made HERE: Ryan edits the lines and tells the customer (no second approval, the quote stays as it was approved). Billing shows the deposit already paid. Cancel job is blocked
 // while the deposit is paid, until Ryan refunds it himself. Every action that reaches the customer confirms; a result is a toast and the page changes state. Pure props over a store.
 
@@ -70,7 +69,7 @@ export function ApprovedJobPage({ store, jobId, now = QUOTES_NOW, photos, initia
       <RecordPage
         crumb={{ label: "Jobs", href: "/admin/jobs" }}
         title={job.customer}
-        subtitle={`${job.service} · From quote ${job.quoteId}`}
+        subtitle={job.service}
         badges={<StatusPill status={pill.status} label={pill.label} size="lg" />}
         notice={stage === "canceled" ? <Notice tone="page" role="status">This job is canceled.</Notice> : undefined}
         band={<SummaryBand items={jobBand(job)} />}
@@ -78,14 +77,14 @@ export function ApprovedJobPage({ store, jobId, now = QUOTES_NOW, photos, initia
         actions={actions}
         aside={
           <>
-            <AsideCard name={job.customer} href={recordHref.customer(job.customerId)} phone={{ text: job.phone, href: `tel:${job.phone.replace(/[^\d+]/g, "")}` }} address={[job.street, `${job.town}, CO`]} />
+            <CustomerCard customer={{ id: job.customerId, name: job.customer }} phone={job.phone} address={[job.street, `${job.town}, CO`]} channel={job.contact} />
+            <FromQuoteCard job={job} />
             <SectionCard title="Notes and history" id="notes-h">
               <NotesAndHistory bare lines={historyLines(job.history)} onAddNote={noteOk} now={NOW} />
             </SectionCard>
           </>
         }
       >
-        <FromQuoteCard job={job} />
         <LinesCard job={job} onAdd={() => setDialog({ line: "new" })} onEdit={(id) => setDialog({ line: id })} onTell={() => setTell(untoldChange(job))} />
         <QuoteBilling job={job} onRefund={() => setDialog("refund")} />
         {photos && photos.length > 0 && (

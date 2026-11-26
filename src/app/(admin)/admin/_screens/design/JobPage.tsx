@@ -36,7 +36,7 @@ export function JobPage({ job, onDo, onMessage, intercept = [], handlers }: { jo
       badges={<Badges pills={job.pills} note={job.pillNote} />}
       notice={job.notice ? <Notice tone="page" role="status">{job.notice}</Notice> : undefined}
       band={<SummaryBand items={bandOfJob(job)} />}
-      aside={<Aside customer={job.customer} phone={job.phone} where={job.where} notes={job.notes} pastVisits={job.pastVisits} pastTotal={job.pastTotal} />}
+      aside={<Aside customer={job.customer} customerId={job.customerId} channel={job.contact?.channel} phone={job.phone} where={job.where} notes={job.notes} pastVisits={job.pastVisits} pastTotal={job.pastTotal} />}
       actions={hasFooter(job.footer) ? <Actions plan={job.footer} facts={facts} onDo={route} onMessage={onMessage} intercept={[...intercept, "Send a payment reminder"]} collect={job.collect} handlers={handlers} /> : undefined}
     >
       <SectionCard title="What's included" id="included-h" action={canceled ? undefined : <EditLink />}>

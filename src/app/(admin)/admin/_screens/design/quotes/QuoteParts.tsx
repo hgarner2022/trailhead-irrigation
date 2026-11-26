@@ -1,6 +1,6 @@
 "use client"
 
-import { Banknote, CalendarDays, MapPin, MessageSquare, Receipt, UserRound, Wrench } from "lucide-react"
+import { Banknote, CircleCheck, Receipt, Send } from "lucide-react"
 import { LineItemList } from "@/components/blocks/LineItemList"
 import { RecordFacts, RecordList, RecordRowEnd, RECORD_ROW } from "@/components/blocks/RecordPanel"
 import { SectionCard } from "@/components/blocks/SectionCard"
@@ -50,26 +50,18 @@ export function VisitCard({ visit }: { visit: NonNullable<QuoteRecord["visit"]> 
   )
 }
 
-const contactOf = (q: QuoteRecord) => (q.contact === "text" ? { value: "Text", sub: q.phone } : q.contact === "email" ? { value: "Email", sub: q.email } : { value: "Text and email", sub: `${q.phone}, ${q.email}` })
-
-/** The summary band. A Draft's band holds the quote's own facts (when it was made, what it is for, where and how the customer is contacted): the total and the deposit are the editor card itself. Once the quote is sent it is the total, the deposit, what happened and where. */
+/** The summary band: the same four tiles in every state (Total, Deposit, Sent, Decision; docs/plans/2026-11-25-admin-audit-objects.md, A6), so the eye learns one layout: a Draft reads
+ * "Not sent" where a sent quote has its day. A tile with a chevron scrolls to its section on this page; none leaves the page. What the quote is for is the subtitle, and where and how
+ * the customer is reached is the Customer card. */
 export function quoteBand(q: QuoteRecord): SummaryItem[] {
-  const where = { label: "Where", value: q.street, sub: `${q.town}, CO`, icon: MapPin }
-  if (q.state === "draft") {
-    return [
-      { label: "Created", value: dayOf(q.createdOn), sub: q.requestId ? "From a request" : q.visit ? "From a design visit" : q.replaces ? `Revision of ${q.replaces}` : "By the office", icon: CalendarDays },
-      { label: "For", value: q.service, icon: Wrench },
-      where,
-      { label: "Contact", ...contactOf(q), icon: MessageSquare },
-    ]
-  }
   const go = (id: string) => () => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
   const d = q.deposit
+  const out = q.state !== "draft"
   return [
-    { label: "Total", value: money(quoteTotal(q)), sub: "Frozen in the quote", icon: Receipt, onClick: go("included-h") },
+    { label: "Total", value: money(quoteTotal(q)), sub: out ? "Frozen in the quote" : undefined, icon: Receipt, ...(out ? { onClick: go("included-h") } : {}) },
     { label: "Deposit", value: d ? money(d.amount) : "None", sub: d ? (d.paid ? (d.paid.refundedOn ? "Refunded" : `Paid by ${HOW_WORDS[d.paid.how]}`) : `Due when ${q.first} approves`) : "Not asked for", icon: Banknote },
-    q.state === "archived" ? { label: "Archived", value: dayOf(q.archived!.on), sub: q.archived!.reason, icon: UserRound } : { label: "Sent", value: q.sentOn ? dayOf(q.sentOn) : "Not sent", sub: q.sentVia ? (q.sentVia === "none" ? "Without notifying" : `By ${VIA_WORDS[q.sentVia]}`) : undefined, icon: UserRound, onClick: go("quote-h") },
-    where,
+    { label: "Sent", value: q.sentOn ? dayOf(q.sentOn) : "Not sent", sub: q.sentVia ? (q.sentVia === "none" ? "Without notifying" : `By ${VIA_WORDS[q.sentVia]}`) : undefined, icon: Send, ...(out ? { onClick: go("quote-h") } : {}) },
+    { label: "Decision", value: decisionFact(q), icon: CircleCheck },
   ]
 }
 
@@ -84,19 +76,15 @@ export function QuoteLines({ quote }: { quote: QuoteRecord }) {
   )
 }
 
-/** Quote: its facts with the decision, once it is sent. */
+/** Quote: the facts the band and the lines do not hold, once it is sent (each fact is said once: the status is the header's pill, the number the title, and the total, the day it was sent and the decision are the band). */
 export function QuoteCard({ quote, now }: { quote: QuoteRecord; now: string }) {
   const last = quote.reminders[quote.reminders.length - 1]
   return (
-    <SectionCard title="Quote" id="quote-h" action={<StatusPill status={QUOTE_PILL[quote.state].status} label={QUOTE_PILL[quote.state].label} />}>
+    <SectionCard title="Quote" id="quote-h">
       <RecordFacts
         divided
         rows={[
-          ["Quote", quote.id],
-          ["Sent", quote.sentOn ? `${dayOf(quote.sentOn)}, ${quote.sentVia === "none" ? "without notifying" : `by ${VIA_WORDS[quote.sentVia ?? "none"]}`}` : "Not sent"],
-          ["Total", money(quoteTotal(quote))],
           ["Deposit", depositFact(quote)],
-          ["Decision", decisionFact(quote)],
           ["Reminders", quote.reminders.length ? `${quote.reminders.length} sent, the last ${ago(last!.at, now)}` : "None sent"],
           ...(quote.state === "sent" || quote.state === "approved" || quote.state === "declined" ? ([["Quote page", <TextLink key="l" href={`/quote/${quote.id}`} native>Open the quote page</TextLink>]] as [string, React.ReactNode][]) : []),
         ]}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { RecordChip } from "@/components/blocks/RecordChip"
+import { TextLink } from "@/components/blocks/TextLink"
 import { useToast } from "@/components/blocks/Toast"
 import type { CustomerChoice } from "../../CustomerPicker"
 import { ApprovedJobPage } from "../quotes/ApprovedJobPage"
@@ -43,7 +43,7 @@ export function QuotesRoute({ filter, onNewQuote }: { filter?: "sent"; onNewQuot
 
 const NotInWorld = ({ what, back }: { what: string; back: { name: string; href: string; kind: "job" | "quote" } }) => (
   <Placeholder title="Not in this prototype" line={`${what} is not in the prototype's world. ${back.name} has every record that opens.`}>
-    <RecordChip kind={back.kind} name={`Back to ${back.name}`} href={back.href} />
+    <TextLink href={back.href}>{`Back to ${back.name}`}</TextLink>
   </Placeholder>
 )
 

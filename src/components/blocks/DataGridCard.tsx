@@ -9,8 +9,8 @@ import type { GridTable } from "./data-grid-table"
 // The grid's phone form (docs/DESIGN.md, Tables): below `md` a screen that declares card slots shows each row as one card instead of a
 // sideways table. The row's name is the title line, `state` is the one line that says where it stands (the status pill), `when` is the
 // day or next, `money` is the money word at the right, and `line` is an optional quiet second line (the service, the street). The whole
-// card is the row's open action, the same `onOpen` the table's name link calls, with the same cells rendered, so a card and a table row
-// can never disagree. Search, filters, the count and the pager stay in DataGrid.
+// card is the row's open action: a link to the record when the grid's first column has an `href` (the same address the table's name link has), else a button
+// calling the same `onOpen`, with the same cells rendered, so a card and a table row can never disagree. Search, filters, the count and the pager stay in DataGrid.
 
 export interface GridCardSlots {
   /** column id shown as the title; the grid's first column when left out */
@@ -26,6 +26,8 @@ export interface GridCardSlots {
   /** a column drawn under the card as its quiet action line (links and buttons cannot sit inside the card's own button) */
   actions?: string
 }
+
+const CARD = "flex min-h-16 w-full cursor-pointer items-start justify-between gap-3 rounded-lg border border-border bg-background p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 
 type Row<T extends RowData> = ReturnType<GridTable<T>["getRowModel"]>["rows"][number]
 
@@ -94,22 +96,29 @@ export function DataGridCards<T extends RowData>({ table, rows, slots, nameId, l
           return found ? <FlexRender cell={found} /> : null
         }
         const parts = (ids: string[] | undefined) => (ids ?? []).map((id) => ({ id, node: cell(id) })).filter((p) => p.node !== null)
+        const href = table.getColumn(nameId)?.columnDef.meta?.href?.(row.original as object)
+        const body = (
+          <>
+            <span className="min-w-0 flex-1 space-y-1">
+              <span className="block truncate font-medium text-primary-dark">{cell(slots.title ?? nameId)}</span>
+              <Joined parts={parts(slots.line)} className="block text-sm text-foreground" />
+              {slots.state && <span className="block">{cell(slots.state)}</span>}
+              <Joined parts={parts(slots.when)} className="block text-sm text-muted-foreground" />
+            </span>
+            {slots.money && <span className="shrink-0 text-right text-sm tabular-nums">{cell(slots.money)}</span>}
+          </>
+        )
         return (
           <li key={row.id}>
-            <button
-              type="button"
-              data-slot="data-grid-card"
-              onClick={() => onOpen?.(row.original)}
-              className="flex min-h-16 w-full cursor-pointer items-start justify-between gap-3 rounded-lg border border-border bg-background p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <span className="min-w-0 flex-1 space-y-1">
-                <span className="block truncate font-medium text-primary-dark">{cell(slots.title ?? nameId)}</span>
-                <Joined parts={parts(slots.line)} className="block text-sm text-foreground" />
-                {slots.state && <span className="block">{cell(slots.state)}</span>}
-                <Joined parts={parts(slots.when)} className="block text-sm text-muted-foreground" />
-              </span>
-              {slots.money && <span className="shrink-0 text-right text-sm tabular-nums">{cell(slots.money)}</span>}
-            </button>
+            {href ? (
+              <a href={href} data-slot="data-grid-card" className={CARD}>
+                {body}
+              </a>
+            ) : (
+              <button type="button" data-slot="data-grid-card" onClick={() => onOpen?.(row.original)} className={CARD}>
+                {body}
+              </button>
+            )}
             {slots.actions && <div data-slot="data-grid-card-actions" className="px-4">{cell(slots.actions)}</div>}
           </li>
         )

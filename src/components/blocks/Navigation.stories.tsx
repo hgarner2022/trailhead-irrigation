@@ -6,7 +6,7 @@ import type { AdminData } from "@/lib/admin/types"
 import { SettingsScreen } from "@/app/(admin)/admin/_screens/SettingsScreen"
 import { Button } from "@/components/ui/button"
 import { AdminShell } from "./AdminShell"
-import { AsideCard } from "./AsideCard"
+import { CustomerCard } from "./CustomerCard"
 import { PageHeader } from "./PageHeader"
 import { RecordFooter } from "./RecordFooter"
 import { RecordPage } from "./RecordPage"
@@ -180,7 +180,7 @@ function PageFrom({ from, href }: { from: string; href: string }) {
             ]}
           />
         }
-        aside={<AsideCard name="Andrea Reyes" href="/admin/customers" phone={{ text: "(970) 555-0123", href: "tel:+19705550123" }} address={["480 Briggs St", "Erie, CO"]} />}
+        aside={<CustomerCard customer={{ id: "c-1", name: "Andrea Reyes" }} phone="(970) 555-0123" address={["480 Briggs St", "Erie, CO"]} channel="text" />}
         actions={<RecordFooter primary={{ label: "Mark done", onClick: noop }} more={[{ label: "Edit", onClick: noop }]} destructive={{ label: "Cancel job", onClick: noop }} destructiveInMenu />}
       >
         <SectionCard title="What's included" id="inc">
