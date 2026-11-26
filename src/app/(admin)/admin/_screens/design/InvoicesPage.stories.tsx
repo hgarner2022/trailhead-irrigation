@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { AdminShell } from "@/components/blocks/AdminShell"
+import { expect, within } from "storybook/test"
+import { DesignShell } from "./DesignShell"
 import { InvoicePage } from "./InvoicePanel"
 import { InvoicesPage } from "./InvoicesPage"
 import { expectTablesFitTheirCards } from "./fit-the-card"
@@ -16,9 +17,9 @@ type Story = StoryObj<typeof meta>
 const laptop = { viewport: { value: "laptop", isRotated: false } }
 const phone = { viewport: { value: "phone", isRotated: false } }
 const shell = (children: React.ReactNode) => (
-  <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>
+  <DesignShell current="invoices">
     {children}
-  </AdminShell>
+  </DesignShell>
 )
 
 /** Ryan sees four tiles and every invoice, past due first, with Remind and Collect payment on the rows that are unpaid. Each tile filters the table. */
@@ -28,6 +29,29 @@ export const ListPhone: Story = { name: "List, phone", globals: phone, render: (
 export const ListEmpty: Story = { name: "List empty", globals: laptop, render: () => shell(<InvoicesPage rows={[]} />) }
 /** The filters hide every row: "No invoices match." with Clear filters. */
 export const ListNoMatch: Story = { name: "List no match", globals: laptop, render: () => shell(<InvoicesPage rows={INVOICE_ROWS} initialFilters={[{ column: "status", values: ["canceled"] }, { column: "who", values: ["Hannah Garner"] }]} />) }
+
+/** Cmd+K by number (Hannah, Nov 25 2026, as Jobber's search does): the invoice's number, whole or just its last digits, finds the invoice, titled with the number as its page is, and Invoices is the lit item. */
+export const SearchByNumber: Story = {
+  name: "Cmd+K finds an invoice by its number",
+  globals: laptop,
+  render: () => (
+    <DesignShell current="invoices" defaultSearchOpen defaultSearchQuery="INV-2026-0042">
+      <InvoicesPage rows={INVOICE_ROWS} />
+    </DesignShell>
+  ),
+  play: async ({ canvasElement }) => {
+    const box = within(await within(document.body).findByRole("dialog", { name: "Search" }))
+    const hit = await box.findByRole("option", { name: /INV-2026-0042/ })
+    await expect(hit).toHaveAttribute("data-value", "invoice-i42")
+    await expect(box.getAllByRole("option")).toHaveLength(1)
+    // the rail: nine items in the one order, Invoices lit
+    const rail = canvasElement.querySelector("[data-slot=sidebar]") ?? canvasElement
+    const links = Array.from(rail.querySelectorAll("[data-sidebar=menu-button]"))
+    await expect(links.map((l) => l.textContent?.replace(/\d.*$/, ""))).toEqual(["Home", "Schedule", "Customers", "Requests", "Quotes", "Jobs", "Invoices", "Reports", "Settings"])
+    await expect(links.find((l) => l.getAttribute("aria-current") === "page")?.textContent).toContain("Invoices")
+  },
+}
+export const SearchByNumberPhone: Story = { ...SearchByNumber, name: "Cmd+K finds an invoice by its number, phone", globals: phone, play: undefined }
 
 const page = (which: InvoiceFixture, globals: typeof laptop, initialDialog?: "remind" | "collect" | "cancel"): Story => ({ globals, parameters: { docs: { description: { story: INVOICE_NOTES[which] } } }, ...(globals === laptop && !initialDialog ? { play: ({ canvasElement }: { canvasElement: HTMLElement }) => expectTablesFitTheirCards(canvasElement) } : {}), render: () => shell(<InvoicePage invoice={invoicePageOf(which)} initialDialog={initialDialog} />) })
 

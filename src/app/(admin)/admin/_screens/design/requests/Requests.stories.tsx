@@ -238,7 +238,7 @@ export const ListOrderTest: Story = {
   },
 }
 
-/** On a phone Requests sits under More, first, with its count; the bar's More button carries the count too. */
+/** On a phone Requests sits in the More sheet, first, with its count, then Quotes, Invoices, Reports and Settings in the rail's order; the bar's More button carries the count of new requests too. */
 export const MoreOnAPhoneTest: Story = {
   name: "More on a phone (test)",
   tags: HIDDEN,
@@ -249,9 +249,12 @@ export const MoreOnAPhoneTest: Story = {
     const c = within(canvasElement)
     await expect(canvasElement.querySelector("[data-slot=more-count]")?.textContent).toContain("2")
     await userEvent.click(await c.findByRole("button", { name: /More/ }))
-    const items = await within(document.body).findAllByRole("menuitem")
+    const sheet = within(await within(document.body).findByRole("dialog", { name: "More" }))
+    const items = sheet.getAllByRole("link")
     await expect(items[0]!.textContent).toContain("Requests")
-    await expect(items.map((i) => i.textContent?.replace(/\d+ new|\d$/g, "").trim())).toEqual(["Requests", "Reports", "Settings"])
+    await expect(items[0]!.textContent).toContain("2 new")
+    await expect(items.map((i) => i.getAttribute("href"))).toEqual(["/admin/requests", "/admin/quotes", "/admin/invoices", "/admin/reports", "/admin/settings"])
+    await expect(sheet.getByRole("link", { name: /Requests/ })).toHaveAttribute("aria-current", "page")
   },
 }
 

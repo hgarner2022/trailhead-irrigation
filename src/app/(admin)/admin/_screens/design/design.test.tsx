@@ -20,9 +20,10 @@ beforeAll(() => {
 describe("job page, one trip", () => {
   const PRIMARY: Record<string, string | null> = { unscheduled: "Schedule", scheduled: "Move", today: "On my way", late: "Mark done", "done-unpaid": "Collect payment", "invoice-sent": "Send a payment reminder", "past-due": "Send a payment reminder", "on-the-way": "Mark done", active: "Mark done", "done-paid": null, canceled: null }
   for (const state of JOB_STATES) {
-    it(`renders ${state} with the customer as the title`, () => {
+    it(`renders ${state} titled with the service, the customer under it`, () => {
       render(<JobPage job={jobPageOf(state)} />)
-      expect(screen.getByRole("heading", { level: 1, name: "Andrea Dalton" })).toBeInTheDocument()
+      expect(screen.getByRole("heading", { level: 1, name: "Sprinkler repair" })).toBeInTheDocument()
+      expect(screen.getByText("for Andrea Dalton · Added Nov 18")).toBeInTheDocument()
       expect(screen.getByRole("heading", { name: "Billing" })).toBeInTheDocument()
       const first = document.querySelector("[data-slot=record-footer] button")
       if (state in PRIMARY && PRIMARY[state]) expect(first).toHaveTextContent(PRIMARY[state] as string)
@@ -122,7 +123,7 @@ describe("job page, one trip", () => {
 
   it("shows a refund as its own negative grey row and keeps the payment", () => {
     render(<JobPage job={jobPageOf("refunded")} />)
-    expect(screen.getByRole("heading", { level: 1, name: "Andrea Dalton" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { level: 1, name: "Sprinkler repair" })).toBeInTheDocument()
     expect(screen.getAllByText("Refunded").length).toBeGreaterThan(0)
     expect(screen.queryByText("Unpaid", { selector: "[data-slot=status-pill]" })).toBeNull()
     const head = document.querySelector("[data-slot=record-page-actions]") as HTMLElement
@@ -227,9 +228,10 @@ describe("job page, one trip", () => {
 
 describe("job page, more than one trip", () => {
   for (const state of PASS_STATES) {
-    it(`renders the Season Pass ${state} titled with its number and two rows`, () => {
+    it(`renders the Season Pass ${state} titled with its season and two rows`, () => {
       const { container } = render(<JobPagePass data={passPageOf(state)} />)
-      expect(screen.getByRole("heading", { level: 1, name: "Season Pass TH-2027-0008" })).toBeInTheDocument()
+      expect(screen.getByRole("heading", { level: 1, name: "Season Pass 2027" })).toBeInTheDocument()
+      expect(screen.getByText(/^for Andrea Dalton · Sold /)).toBeInTheDocument()
       expect(container.querySelectorAll("[data-slot=trip-row]")).toHaveLength(2)
     })
   }

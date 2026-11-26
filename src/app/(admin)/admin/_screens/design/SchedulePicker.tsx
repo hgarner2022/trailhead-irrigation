@@ -113,7 +113,7 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
             <p data-slot="crew-text" className="pl-8 text-muted-foreground">{crewText({ day: day.label, time: at === "any" ? "Any time" : time(at), address, service, instructions })}</p>
           </div>
         )}
-        <FormRow label="Instructions for the crew (optional)" hint={`${instructions.length} of ${CREW_LINE_MAX}. In the text to the crew and on the trip.`}>
+        <FormRow label="Instructions for the crew (optional)" hint={`${instructions.length} of ${CREW_LINE_MAX}. In the text to the crew and on the visit.`}>
           <Input value={instructions} maxLength={CREW_LINE_MAX} onChange={(e) => (setInstructions(e.target.value), emit(day, people, at, { instructions: e.target.value }))} className="min-h-11" />
         </FormRow>
       </div>

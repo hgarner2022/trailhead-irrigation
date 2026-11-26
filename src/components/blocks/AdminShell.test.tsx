@@ -53,8 +53,8 @@ describe("AdminShell", () => {
     )
     const nav = within(rail() as HTMLElement)
     const links = nav.getAllByRole("link")
-    expect(links.map((l) => l.textContent)).toEqual(["Home", "Schedule", "Jobs", "Customers", "Reports", "Settings"])
-    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin", "/admin/schedule", "/admin/jobs", "/admin/customers", "/admin/reports", "/admin/settings"])
+    expect(links.map((l) => l.textContent)).toEqual(["Home", "Schedule", "Customers", "Jobs", "Reports", "Settings"])
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin", "/admin/schedule", "/admin/customers", "/admin/jobs", "/admin/reports", "/admin/settings"])
     // Visits is not a destination: its grid is the Schedule's List view
     expect(nav.queryByRole("link", { name: "Visits" })).toBeNull()
     expect(nav.getByRole("link", { name: "Schedule" })).toHaveAttribute("aria-current", "page")
@@ -90,7 +90,7 @@ describe("AdminShell", () => {
     expect(rail()).toHaveAttribute("data-state", "collapsed")
   })
 
-  it("renders the tab bar and not the rail on a phone: Home, Schedule, Jobs, Customers and More, each with its label", () => {
+  it("renders the tab bar and not the rail on a phone: Home, Schedule, Customers, Jobs and More, each with its label", () => {
     stubViewport(375)
     render(
       <AdminShell current="jobs" user={user}>
@@ -101,8 +101,8 @@ describe("AdminShell", () => {
     const bar = tabbar() as HTMLElement
     expect(bar).not.toBeNull()
     expect(screen.getByRole("navigation", { name: "Main" })).toBe(bar)
-    expect(within(bar).getAllByRole("link").map((l) => l.textContent)).toEqual(["Home", "Schedule", "Jobs", "Customers"])
-    expect(within(bar).getAllByRole("link").map((l) => l.getAttribute("href"))).toEqual(["/admin", "/admin/schedule", "/admin/jobs", "/admin/customers"])
+    expect(within(bar).getAllByRole("link").map((l) => l.textContent)).toEqual(["Home", "Schedule", "Customers", "Jobs"])
+    expect(within(bar).getAllByRole("link").map((l) => l.getAttribute("href"))).toEqual(["/admin", "/admin/schedule", "/admin/customers", "/admin/jobs"])
     expect(within(bar).getByRole("button", { name: "More" })).toBeInTheDocument()
     expect(within(bar).getByRole("link", { name: "Jobs" })).toHaveAttribute("aria-current", "page")
     expect(screen.getByText("Phone body")).toBeInTheDocument()
@@ -119,10 +119,11 @@ describe("AdminShell", () => {
     const more = within(tabbar() as HTMLElement).getByRole("button", { name: "More" })
     expect(more).toHaveAttribute("aria-current", "page")
     await userEvent.click(more)
-    const menu = within(await screen.findByRole("menu"))
-    expect(menu.getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Reports", "Settings"])
-    expect(menu.getByRole("menuitem", { name: "Reports" })).toHaveAttribute("href", "/admin/reports")
-    expect(menu.getByRole("menuitem", { name: "Settings" })).toHaveAttribute("href", "/admin/settings")
+    const menu = within(await screen.findByRole("dialog", { name: "More" }))
+    expect(menu.getAllByRole("link").map((i) => i.textContent)).toEqual(["Reports", "Settings"])
+    expect(menu.getByRole("link", { name: "Reports" })).toHaveAttribute("href", "/admin/reports")
+    expect(menu.getByRole("link", { name: "Settings" })).toHaveAttribute("href", "/admin/settings")
+    expect(menu.getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page")
     await userEvent.keyboard("{Escape}")
     // Sign out is in the account menu, on a phone too (the initials in the top bar, no rail)
     expect(document.querySelector("[data-slot=admin-bar]")?.contains(screen.getByRole("button", { name: "Account, Hannah" }))).toBe(true)

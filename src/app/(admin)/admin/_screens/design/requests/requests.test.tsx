@@ -136,7 +136,7 @@ describe("Requests list", () => {
 describe("Request page", () => {
   it("shows New with Send a quote as the way out for a service with no price, Archive beside it, Mark as seen under More, and no Create job", () => {
     render(<RequestPage request={req("rq-rosa")} now={REQUESTS_NOW} markSeenOnOpen={false} />)
-    expect(screen.getByRole("heading", { level: 1, name: "Rosa Delgado" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { level: 1, name: "Request from Rosa Delgado" })).toBeInTheDocument()
     expect(screen.getByText("New", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
     expect(footerButtons().slice(0, 2)).toEqual(["Send a quote", "Archive"])
     expect(screen.queryByRole("button", { name: "Create job" })).toBeNull()

@@ -31,8 +31,8 @@ const preview: Preview = {
           [
             "Walkthrough (clickable)",
             "Jobs grid",
-            "Job page, one trip",
-            "Job page, Season Pass and return trip",
+            "Job page, one visit",
+            "Job page, Season Pass and return visit",
             "Requests",
             "Quotes",
             "Customer page",

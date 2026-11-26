@@ -6,8 +6,8 @@ import type { AdminSection } from "./AdminShell"
 import { TAB_ITEMS } from "./admin-nav"
 import { MoreMenu } from "./MoreMenu"
 
-// The phone's bottom bar (docs/plans/2026-11-18-admin-holistic-design.md, section 4): Home, Schedule, Jobs, Customers and More, five tabs with their
-// labels at 375px. More is a bordered, labelled button (`MoreMenu`) opening Reports and Settings; Sign out is in the account menu. The bar pads
+// The phone's bottom bar (docs/plans/2026-11-18-admin-holistic-design.md, section 4): Home, Schedule, Customers, Jobs and More, five tabs with their
+// labels at 375px, in the rail's order (`TAB_ITEMS`; the reason for these four is beside it). More is a bordered, labelled button (`MoreMenu`) opening a sheet with the rest of the rail; Sign out is in the account menu. The bar pads
 // for `env(safe-area-inset-bottom)`, which the admin root layout enables with `viewport.viewportFit = "cover"`.
 
 export interface AdminTabBarProps {
@@ -16,6 +16,8 @@ export interface AdminTabBarProps {
   requests?: { count: number }
   /** a screen that has Quotes: More holds it too, with the count on its own row */
   quotes?: { count: number }
+  /** a screen that has Invoices: More holds it after Quotes */
+  invoices?: { count: number }
 }
 
 const TAB = "flex w-full flex-col items-center gap-0.5 pb-1.5 pt-1.5 text-xs font-medium leading-tight outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring"
@@ -29,7 +31,7 @@ function Tab({ active, children, icon }: { active: boolean; children: React.Reac
   )
 }
 
-export function AdminTabBar({ current, requests, quotes }: AdminTabBarProps) {
+export function AdminTabBar({ current, requests, quotes, invoices }: AdminTabBarProps) {
   const tone = (active: boolean) => (active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/80")
   return (
     <nav aria-label="Main" data-slot="admin-tabbar" className="fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] text-sidebar-foreground md:hidden">
@@ -47,7 +49,7 @@ export function AdminTabBar({ current, requests, quotes }: AdminTabBarProps) {
           )
         })}
         <li>
-          <MoreMenu current={current} requests={requests} quotes={quotes} />
+          <MoreMenu current={current} requests={requests} quotes={quotes} invoices={invoices} />
         </li>
       </ul>
     </nav>

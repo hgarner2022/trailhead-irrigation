@@ -139,10 +139,10 @@ describe("a customer built from their records", () => {
     expect(p.status).toBe("new")
   })
 
-  it("Tom: a canceled job with its canceled invoice, a job still to schedule, and the Do not service mark", () => {
+  it("Tom: a canceled job with its canceled invoice and the Do not service mark (no job waits on a price: that is a quote)", () => {
     const p = customerPage("other-tom-becker")!
     expect(p.doNotService).toBeTruthy()
-    expect(p.jobs.map((j) => j.statusLabel).sort()).toEqual(["Canceled", "Unscheduled"])
+    expect(p.jobs.map((j) => j.statusLabel).sort()).toEqual(["Canceled"])
     expect(p.billing.invoices[0]).toMatchObject({ statusLabel: "Canceled" })
     expect(p.billing).toMatchObject({ line: "Nothing billed yet", unpaid: "$0" })
   })

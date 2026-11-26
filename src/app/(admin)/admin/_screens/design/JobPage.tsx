@@ -14,6 +14,8 @@ import { Actions, Aside, type CollectHandlers, Badges, EditLink, MessagesCard, b
 import { JobPhotos } from "./JobPhotos"
 import { ReminderDialog } from "./ReminderDialog"
 import { Notice } from "@/components/blocks/Notice"
+import { jobHeading } from "@/lib/admin/record-title"
+import { listCrumb } from "@/components/blocks/admin-nav"
 
 // The job page for a one-trip job (docs/plans/2026-11-19-job-object-design.md) on the page frame of
 // docs/plans/2026-11-19-admin-page-layout-research.md: the header (customer, status badges beside it, the actions at the top right), the
@@ -30,9 +32,8 @@ export function JobPage({ job, onDo, onMessage, intercept = [], handlers }: { jo
   const route = (label: string, variant?: string) => (label === "Send a payment reminder" ? setDialog("remind") : onDo?.(label, variant))
   return (
     <RecordPage
-      crumb={{ label: "Jobs", href: "/admin/jobs" }}
-      title={job.customer}
-      subtitle={job.subtitle}
+      crumb={listCrumb("jobs")}
+      {...jobHeading({ service: job.service, customer: job.customer, detail: job.added })}
       badges={<Badges pills={job.pills} note={job.pillNote} />}
       notice={job.notice ? <Notice tone="page" role="status">{job.notice}</Notice> : undefined}
       band={<SummaryBand items={bandOfJob(job)} />}

@@ -18,6 +18,8 @@ import type { ScheduleResult } from "./ScheduleDialog"
 import type { ConfirmFacts } from "./confirm-copy"
 import { TextLink } from "@/components/blocks/TextLink"
 import { Notice } from "@/components/blocks/Notice"
+import { jobHeading } from "@/lib/admin/record-title"
+import { listCrumb } from "@/components/blocks/admin-nav"
 
 // A job with more than one trip (docs/plans/2026-11-19-job-object-design.md): a Season Pass, or a repair with a return trip, on the same page
 // frame as the one-trip job (docs/plans/2026-11-19-admin-page-layout-research.md). The band reads Next visit, Who, Where, Total; the main
@@ -75,9 +77,8 @@ export function TripsPage({ data, customer, onTripDo, tripHandlers, onDo, onTrip
   const where = data.columns.find((c) => c.heading === "Where")?.rows ?? []
   return (
     <RecordPage
-      crumb={{ label: "Jobs", href: "/admin/jobs" }}
-      title={data.title}
-      subtitle={data.subtitle}
+      crumb={listCrumb("jobs")}
+      {...jobHeading({ service: data.service, customer: customer?.name ?? "Andrea Dalton", detail: data.detail })}
       badges={<Badges pills={data.pills} />}
       notice={data.notice ? <Notice tone="page" role="status">{data.notice}</Notice> : undefined}
       band={<SummaryBand items={bandOf(data)} />}

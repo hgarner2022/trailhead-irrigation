@@ -18,8 +18,8 @@ const meta = {
   globals: LAPTOP,
   args: {
     crumb: { label: "Jobs", href: "/admin/jobs" },
-    title: "Andrea Dalton",
-    subtitle: "Sprinkler repair visit · Added Nov 18",
+    title: "Sprinkler repair",
+    subtitle: "for Andrea Dalton · Added Nov 18",
     badges: <StatusPill status="scheduled" size="lg" />,
     band: (
       <SummaryBand

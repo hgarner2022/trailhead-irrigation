@@ -1,6 +1,6 @@
 import type { AdminSection } from "./AdminShell"
 
-const SECTIONS: readonly AdminSection[] = ["schedule", "requests", "jobs", "quotes", "customers", "reports", "settings"]
+const SECTIONS: readonly AdminSection[] = ["schedule", "customers", "requests", "quotes", "jobs", "invoices", "reports", "settings"]
 
 /** Which rail item a path lights: `/admin` is Home, `/admin/passes/...` (a redirect to Jobs) is Jobs and `/admin/visits` (a redirect to the List) the Schedule, anything else falls back to Home. */
 export function sectionOf(pathname: string | null | undefined): AdminSection {

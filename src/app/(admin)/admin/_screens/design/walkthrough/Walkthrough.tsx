@@ -1,12 +1,11 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react"
-import { Receipt } from "lucide-react"
 import { AdminShell, type AdminSection } from "@/components/blocks/AdminShell"
-import { MORE_ITEMS, NAV } from "@/components/blocks/admin-nav"
 import { useToast } from "@/components/blocks/Toast"
 import { Button } from "@/components/ui/button"
-import { allRows, nameOfRoute, ownerOf, resetExtras, resolveRoute, searchWorld } from "./data"
+import { INVOICES, allRows, nameOfRoute, ownerOf, resetExtras, resolveRoute, searchWorld } from "./data"
+import { pastDueCount } from "../invoice-search"
 import { NewJobSheet, RouteScreen } from "./WalkScreens"
 import { NewQuoteHost } from "./WalkQuotes"
 import { pickOf, type ServicePick } from "../requests/request-catalogue"
@@ -23,32 +22,11 @@ import { TextLink } from "@/components/blocks/TextLink"
 // an in-memory route stack, no Next router and no address changes (Storybook owns the URL). Navigation is by intercepting the links the pages
 // already draw (a record chip's href, the rail, a crumb): one capture-phase click on the root parses the href into a route. A link that leaves
 // the prototype (tel:, mailto:, Stripe, the pay page) opens nowhere and says so in a toast. A table row opens its first record, a Cmd+K hit opens
-// its route. The rail gets an Invoices item here only, by patching `NAV` while the prototype is mounted; the live nav is never edited.
+// its route. The rail is the shell's own nine items in their one order (`NAV`): the walkthrough hands the shell `requests`, `quotes` and `invoices` and patches nothing.
 
 const USER = { initials: "HG", name: "Hannah" }
-const SECTION_OF: Record<Route["screen"], AdminSection> = { home: "home", schedule: "schedule", requests: "requests", request: "requests", jobs: "jobs", job: "jobs", quotes: "quotes", quote: "quotes", customers: "customers", customer: "customers", invoices: "invoices" as AdminSection, invoice: "invoices" as AdminSection, receipt: "jobs", reports: "reports", settings: "settings" }
+const SECTION_OF: Record<Route["screen"], AdminSection> = { home: "home", schedule: "schedule", requests: "requests", request: "requests", jobs: "jobs", job: "jobs", quotes: "quotes", quote: "quotes", customers: "customers", customer: "customers", invoices: "invoices", invoice: "invoices", receipt: "jobs", reports: "reports", settings: "settings" }
 const START: Route = { screen: "jobs" }
-
-/** Invoices in the rail while the walkthrough is mounted: the shell's NAV is patched, then restored. */
-function useInvoicesInNav() {
-  useState(() => {
-    if (!NAV.some((n) => n.id === ("invoices" as AdminSection))) {
-      const at = NAV.findIndex((n) => n.id === "customers") + 1
-      ;(NAV as unknown as unknown[]).splice(at, 0, { id: "invoices", label: "Invoices", href: "/admin/invoices", icon: Receipt })
-      ;(MORE_ITEMS as unknown as unknown[]).unshift({ id: "invoices", label: "Invoices", href: "/admin/invoices", icon: Receipt })
-    }
-    return null
-  })
-  useEffect(
-    () => () => {
-      const i = NAV.findIndex((n) => n.id === ("invoices" as AdminSection))
-      if (i >= 0) (NAV as unknown as unknown[]).splice(i, 1)
-      const j = MORE_ITEMS.findIndex((n) => n.id === ("invoices" as AdminSection))
-      if (j >= 0) (MORE_ITEMS as unknown as unknown[]).splice(j, 1)
-    },
-    [],
-  )
-}
 
 // The shell is keyed by route, so a toast raised while a record is being left would go with the old shell: `later` holds one until the new shell mounts.
 function ToastBridge({ toastRef, later }: { toastRef: { current: (m: string) => void }; later: { current: string | null } }) {
@@ -96,7 +74,6 @@ const KIND_ORDER = ["quote", "invoice", "job", "customer"]
 
 /** `start` is the first screen; `startStack` is a whole way in (so Back has somewhere to go); `startSearch` opens Cmd+K and `startSheet` the New job sheet, so a story can show either with no script. */
 export function Walkthrough({ start = START, startStack, startSearch = false, startSheet }: { start?: Route; startStack?: Route[]; startSearch?: boolean; startSheet?: { customer?: string } }) {
-  useInvoicesInNav()
   // A clean start every time it opens: the requests Ryan answered, the quotes sent and the jobs made in an earlier story are forgotten, so a story opens as it was drawn
   useState(() => (requestStore.reset(), walkQuotes.reset(), resetExtras(), null))
   const [stack, setStack] = useState<Route[]>(startStack ?? [start])
@@ -138,15 +115,13 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
     setStack((s) => {
       const cur = s[s.length - 1]!
       const owner = ownerOf(cur)
-      let r = resolveRoute(parsed, owner)
-      // A bare "Customer" link on a job or an invoice opens that page's customer; on the customer's own page it is the list
-      if (r.screen === "customers" && !r.id && (cur.screen === "job" || cur.screen === "invoice") && owner) r = { screen: "customer", id: owner }
-      return navigate(s, r)
+      // a link to a list is that list, always (a crumb names the parent list and goes to it); a record link opens this world's record
+      return navigate(s, resolveRoute(parsed, owner))
     })
   }, [])
 
-  // A Cmd+K hit: a customer, a job, a request or a quote (its number) opens its own page
-  const goHit = (kind: string, id: string) => go({ screen: kind as "customer" | "job" | "request" | "quote", id })
+  // A Cmd+K hit: a customer, a job, a request, a quote or an invoice (by its number) opens its own page
+  const goHit = (kind: string, id: string) => go({ screen: kind as "customer" | "job" | "request" | "quote" | "invoice", id })
 
   const outside = (href: string) => toastRef.current(`Outside the prototype: ${href}`)
 
@@ -157,7 +132,7 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
     // a Cmd+K hit
     const item = target.closest("[cmdk-item]")
     if (item) {
-      const hit = (item.getAttribute("data-value") ?? "").match(/^(customer|job|request|quote)-(.+)$/)
+      const hit = (item.getAttribute("data-value") ?? "").match(/^(customer|job|request|quote|invoice)-(.+)$/)
       if (hit) goHit(hit[1]!, hit[2]!)
       return
     }
@@ -197,7 +172,7 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
   const onKeyDownCapture = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== "Enter") return
     const item = (e.target as Element).closest("[cmdk-root]")?.querySelector("[cmdk-item][aria-selected=true]")
-    const hit = (item?.getAttribute("data-value") ?? "").match(/^(customer|job|request|quote)-(.+)$/)
+    const hit = (item?.getAttribute("data-value") ?? "").match(/^(customer|job|request|quote|invoice)-(.+)$/)
     if (hit) goHit(hit[1]!, hit[2]!)
   }
 
@@ -219,7 +194,7 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
 
   return (
     <div data-slot="walkthrough" data-route={`${top.screen}${top.id ? `:${top.id}` : ""}`} style={{ display: "contents" }} onClickCapture={onClickCapture} onKeyDownCapture={onKeyDownCapture}>
-      <AdminShell key={`${top.screen}:${top.id ?? ""}`} current={SECTION_OF[top.screen]} user={USER} defaultSearchOpen={startSearch} requests={{ count: newCount(requests) }} quotes={{ count: waitingCount(Object.values(quoteWorld.quotes)) }} onSearch={async (q) => searchWorld(q)} profileHref="/admin/profile" helpHref="/admin/help">
+      <AdminShell key={`${top.screen}:${top.id ?? ""}`} current={SECTION_OF[top.screen]} user={USER} defaultSearchOpen={startSearch} requests={{ count: newCount(requests) }} quotes={{ count: waitingCount(Object.values(quoteWorld.quotes)) }} invoices={{ count: pastDueCount(INVOICES) }} onSearch={async (q) => searchWorld(q)} profileHref="/admin/profile" helpHref="/admin/help">
         <ToastBridge toastRef={toastRef} later={laterToast} />
         <Strip stack={stack} onJump={jump} onStartOver={startOver} />
         <div key={`${epoch}-${top.screen}-${top.id ?? ""}`}>
