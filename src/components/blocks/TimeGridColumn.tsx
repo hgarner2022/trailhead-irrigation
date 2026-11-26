@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 import { TimeBlock } from "./TimeBlock"
 import { TimeOffBand } from "./TimeOffBand"
 import { colKey, type Preview } from "./time-grid-dnd"
-import { clockToMinutes, clockWords, minuteAt, minutesToPx, packLanes, snap, timeOffLabel, type GridBlock, type HourRange, type TimeOff } from "./time-grid-model"
+import { clockToMinutes, clockWords, minuteAt, minutesToPx, packLanes, rangeWords, snap, timeOffLabel, type GridBlock, type HourRange, type TimeOff } from "./time-grid-model"
 import { personStyle, rowLines } from "./time-grid-style"
 import type { CreateAtEvent, TimeOffDragEvent } from "./time-grid-types"
 
@@ -37,6 +37,8 @@ export interface TimeGridColumnProps {
   selectedId?: string
   hoverId?: string
   dragId?: string | null
+  /** the visit just dropped here: it settles into place and skips the glide */
+  settleId?: string | null
   resizingId?: string
   /** false on a phone: no drag, no hover plus */
   interactive?: boolean
@@ -189,11 +191,17 @@ export function TimeGridColumn(p: TimeGridColumnProps) {
           onResizeStart: p.interactive && !b.done && !b.planned ? (e: React.PointerEvent<HTMLElement>) => p.onResizeStart?.(b, e) : undefined,
         }
         return p.interactive && !b.planned ? (
-          <DragBlock key={b.id} block={b}>{(d) => <TimeBlock {...common} rootRef={d.rootRef} handleRef={d.handleRef} dragging={d.dragging} className={cn("z-[2] touch-manipulation", arrived(b.id) && "cal-settle", p.resizingId !== b.id && "cal-glide", cascade && lane > 0 && "outline outline-1 outline-background")} />}</DragBlock>
+          <DragBlock key={b.id} block={b}>{(d) => <TimeBlock {...common} rootRef={d.rootRef} handleRef={d.handleRef} dragging={d.dragging} className={cn("z-[2] touch-manipulation", (arrived(b.id) || p.settleId === b.id) && "cal-settle", p.resizingId !== b.id && p.settleId !== b.id && "cal-glide", cascade && lane > 0 && "outline outline-1 outline-background")} />}</DragBlock>
         ) : (
           <TimeBlock key={b.id} {...common} className="z-[2]" />
         )
       })}
+
+      {p.resizingId && blocks.filter((b) => b.id === p.resizingId && b.start !== null).map((b) => (
+        <div key={`len-${b.id}`} aria-hidden data-slot="resize-label" className="type-admin-dense pointer-events-none absolute left-1 z-[4] whitespace-nowrap rounded-md bg-navy px-1.5 py-0.5 font-semibold tabular-nums text-white shadow-md" style={{ top: minutesToPx(b.start! - top0 + b.minutes, hourPx) + 4 }}>
+          {rangeWords(b.start!, b.minutes)}
+        </div>
+      ))}
 
       {dragPreview && dragPreview.start !== null && (
         <div data-slot="drop-ghost" aria-hidden className={cn("type-admin-dense pointer-events-none absolute inset-x-0.5 z-[3] overflow-hidden rounded-md border border-dashed px-2 py-0.5 font-semibold tabular-nums", dragPreview.conflict ? "border-destructive bg-destructive/10 text-destructive" : cn("text-navy", s.ghost, s.tint))} style={{ top: minutesToPx(dragPreview.start - top0, hourPx), height: minutesToPx(dragPreview.minutes, hourPx) }}>

@@ -5,6 +5,7 @@ import { conflictMap } from "@/components/blocks/time-grid-model"
 import { ExternalJobDraggable } from "@/components/blocks/ExternalJobDraggable"
 import { MapPanel } from "@/components/blocks/MapPanel"
 import { UnscheduledPanel } from "@/components/blocks/UnscheduledPanel"
+import { PeekAnchor } from "@/components/blocks/PeekAnchor"
 import { VisitPeek } from "@/components/blocks/VisitPeek"
 import { hoursWords } from "@/lib/admin/day-fill"
 import { visitWhen } from "./schedule-prototype-model"
@@ -22,22 +23,24 @@ import type { Proto } from "./use-schedule-prototype"
 
 const GRID_HEIGHT = "h-[max(40rem,min(48rem,calc(100dvh-11rem)))]"
 const ASIDE = "h-auto min-h-0 w-full flex-1 basis-0 overflow-hidden border-l-0 border-t first:border-t-0"
-const FLOAT = "cal-enter absolute top-3 z-30 h-auto max-h-[calc(100%-1.5rem)] w-[360px] overflow-hidden rounded-lg border border-border shadow-xl"
+const FLOAT = "cal-enter absolute top-3 right-3 z-30 h-auto max-h-[calc(100%-1.5rem)] w-[360px] overflow-hidden rounded-lg border border-border shadow-xl"
+const ANCHORED = "cal-enter relative h-auto min-h-0 w-full flex-1 overflow-hidden rounded-lg border border-border"
+
+const STAGE = '[data-slot="schedule-stage"]'
+/** The block (or Any time chip) of a visit on the clock, wherever it is drawn now. */
+const findBlock = (id: string) => document.querySelector<HTMLElement>(`${STAGE} :is([data-slot="time-block"],[data-slot="time-chip"])[data-id="${CSS.escape(id)}"]`)
+const gridOf = () => document.querySelector<HTMLElement>(`${STAGE} [data-slot="time-grid"]`)
 
 export function SchedulePeek({ p }: { p: Proto }) {
   const { state, wide } = p
   const visit = p.selectedId ? state.visits.find((b) => b.id === p.selectedId) : undefined
   const id = visit?.id
-  // the card sits at the edge away from the visit, so it never covers the block it describes
-  const [side, setSide] = useState<"left" | "right">("right")
+  // From 1280 the card opens beside the block that was clicked (PeekAnchor); a visit with no block on a clock (the Month, the List, a map pin) keeps the old fixed card at the stage's edge.
+  // `mode` is read once the block is in the page, before it paints, so the card never draws in the wrong place first.
+  const [mode, setMode] = useState<"pending" | "anchored" | "float">("pending")
   useLayoutEffect(() => {
     if (!wide || !id) return
-    const stage = document.querySelector<HTMLElement>('[data-slot="schedule-stage"]')
-    const block = stage?.querySelector<HTMLElement>(`[data-id="${CSS.escape(id)}"]`)
-    if (!stage || !block) return setSide("right")
-    const s = stage.getBoundingClientRect()
-    const b = block.getBoundingClientRect()
-    setSide(b.left + b.width / 2 > s.left + s.width / 2 ? "left" : "right")
+    setMode(findBlock(id) ? "anchored" : "float")
   }, [id, wide, p.view])
   if (!visit) return null
   const names = (personId: string) => firstNameOf(p.people.find((x) => x.id === personId)?.name) ?? "They"
@@ -47,7 +50,7 @@ export function SchedulePeek({ p }: { p: Proto }) {
     // focus goes back to the block that opened it
     if (was) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-id="${CSS.escape(was)}"] [data-slot="time-block-button"]`)?.focus())
   }
-  return (
+  const peek = (className?: string) => (
     <VisitPeek
       customer={state.meta[visit.id]?.customer ?? visit.name}
       service={visit.service}
@@ -60,13 +63,22 @@ export function SchedulePeek({ p }: { p: Proto }) {
       waiting={visit.waiting}
       canMarkDone={visit.day <= p.today && !visit.done}
       conflict={conflictMap(state.visits.filter((b) => b.start !== null && b.day === visit.day), state.timeOff, names).get(visit.id)}
-      className={wide ? `${FLOAT} ${side === "left" ? "left-16" : "right-3"}` : undefined}
+      className={className}
       onEdit={() => p.setDialog({ kind: "schedule", id: visit.id, job: false })}
       onMarkDone={() => p.markDone(visit.id)}
       onOpenJob={() => p.openJob(visit.id)}
       onClose={closePeek}
     />
   )
+  if (!wide) return peek()
+  if (mode === "pending") return null
+  if (mode === "anchored")
+    return (
+      <PeekAnchor anchorId={visit.id} find={findBlock} boundary={gridOf()} onClose={closePeek}>
+        {peek(ANCHORED)}
+      </PeekAnchor>
+    )
+  return peek(FLOAT)
 }
 
 export function ScheduleProtoPanels({ p }: { p: Proto }) {

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect, fn, userEvent, within } from "storybook/test"
+import { expect, fn, userEvent, waitFor, within } from "storybook/test"
 import { DesignShell } from "./DesignShell"
 import { SchedulePrototype } from "./SchedulePrototype"
 import type { ProtoInitial } from "./use-schedule-prototype"
@@ -16,6 +16,7 @@ import { HOUR_PX } from "@/components/blocks/time-grid-model"
 
 const LAPTOP = { viewport: { value: "laptop", isRotated: false } }
 const PHONE = { viewport: { value: "phone", isRotated: false } }
+const WIDE = { viewport: { value: "wide", isRotated: false } }
 
 const meta = {
   title: "Screens/Schedule prototype (Nov 25)",
@@ -136,6 +137,59 @@ export const PeekEscapeReturnsFocus: Story = {
     await expect(body().queryByRole("complementary", { name: "Ravi Shah" })).not.toBeInTheDocument()
     await new Promise((r) => requestAnimationFrame(() => r(null)))
     await expect(block).toHaveFocus()
+  },
+}
+
+/**
+ * The peek opens beside the visit that was clicked, 8 px from it: to its right when there is room, to its left when the block is in the last column, and moved up or down to stay inside
+ * the grid's visible area, never over its own block.
+ */
+async function peekBox(root: HTMLElement, name: RegExp) {
+  const button = (await within(root).findAllByRole("button", { name }))[0]!
+  await userEvent.click(button)
+  const content = await waitFor(() => { const c = document.querySelector<HTMLElement>('[data-slot="peek-anchor"]'); if (!c) throw new Error("no peek"); return c })
+  const block = button.closest<HTMLElement>('[data-slot="time-block"]')!
+  // Radix places the card on the frame after it opens; wait for two equal readings
+  let last = ""
+  await waitFor(() => { const r = JSON.stringify(content.getBoundingClientRect()); const same = r === last; last = r; if (!same || content.getBoundingClientRect().width === 0) throw new Error("moving") })
+  return { content, block: block.getBoundingClientRect(), card: content.getBoundingClientRect(), grid: root.querySelector('[data-slot="time-grid"]')!.getBoundingClientRect() }
+}
+export const PeekBesideLeftColumn: Story = {
+  name: "Peek beside a block in the first column",
+  play: async ({ canvasElement }) => {
+    const { content, block, card } = await peekBox(canvasElement, /^Elm Dr, Repair, Lafayette, 9:00/)
+    await expect(content).toHaveAttribute("data-side", "right")
+    await expect(Math.abs(card.left - block.right - 8)).toBeLessThan(2)
+    await expect(Math.abs(card.top - block.top)).toBeLessThan(2)
+  },
+}
+export const PeekBesideLastColumn: Story = {
+  name: "Peek beside a block in the last column",
+  play: async ({ canvasElement }) => {
+    const { content, block, card } = await peekBox(canvasElement, /^Pine St, Repair, Louisville, 9:00 to 10:00/)
+    await expect(content).toHaveAttribute("data-side", "left")
+    await expect(Math.abs(block.left - card.right - 8)).toBeLessThan(2)
+  },
+}
+export const PeekBesideBottomBlock: Story = {
+  name: "Peek beside a block at the bottom",
+  play: async ({ canvasElement }) => {
+    const { block, card, grid } = await peekBox(canvasElement, /^Pine St, Repair, Louisville, 2:00 to 3:00/)
+    await expect(card.top).toBeGreaterThanOrEqual(grid.top)
+    await expect(card.bottom).toBeLessThanOrEqual(grid.bottom + 1)
+    // it moved up to fit, and still does not cover its own block
+    await expect(card.right <= block.left || card.left >= block.right).toBe(true)
+  },
+}
+export const PeekAnyTimeChip: Story = {
+  name: "Peek beside an Any time chip",
+  play: async ({ canvasElement }) => {
+    const chip = (await within(canvasElement).findAllByRole("button", { name: /^Stop 1, Laurel St/ }))[0]!
+    await userEvent.click(chip)
+    const content = await waitFor(() => { const c = document.querySelector<HTMLElement>('[data-slot="peek-anchor"]'); if (!c) throw new Error("no peek"); return c })
+    await waitFor(() => expect(content.getBoundingClientRect().width).toBeGreaterThan(0))
+    const c = chip.getBoundingClientRect()
+    await waitFor(() => { const r = content.getBoundingClientRect(); expect(r.right <= c.left || r.left >= c.right || r.top >= c.bottom || r.bottom <= c.top).toBe(true) })
   },
 }
 
@@ -354,6 +408,46 @@ export const WeekFifteenPeopleThreeShown: Story = {
   },
 }
 export const DayFivePeople: Story = { name: "Day, five people", args: { world: teamWorld(5), view: "day", day: "2026-11-18" } }
+
+/**
+ * Five people at 1280 and 1440, with and without a panel: a person's column is never under 96 px, so a block shows its time and a whole street word; the Week scrolls sideways INSIDE the
+ * grid (the hour gutter and the day head stay, the page never scrolls sideways, today is in view, a soft fade says there are more days at a side); the Day fits five columns.
+ */
+const five = { world: teamWorld(5), hidden: [] as string[] }
+const pageDoesNotScrollSideways = async () => {
+  await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth)
+  const grid = document.querySelector<HTMLElement>('[data-slot="time-grid"]')!
+  await expect(grid.scrollWidth).toBeGreaterThan(grid.clientWidth)
+  const today = grid.querySelector<HTMLElement>('[data-today="true"]')!.getBoundingClientRect()
+  await expect(today.left).toBeGreaterThanOrEqual(grid.getBoundingClientRect().left)
+  await expect(today.left).toBeLessThan(grid.getBoundingClientRect().right)
+  const column = grid.querySelector('[data-slot="time-grid-column"]')!.getBoundingClientRect()
+  await expect(column.width).toBeGreaterThanOrEqual(95)
+}
+export const WeekFivePeopleScrollsInside: Story = {
+  name: "Week, five people, scrolls inside the grid",
+  args: { ...five, view: "week", day: "2026-11-18" },
+  play: async () => {
+    await waitFor(() => expect(document.querySelector('[data-slot="time-grid"]')).toBeTruthy())
+    await pageDoesNotScrollSideways()
+    await expect(document.querySelector('[data-slot="more-right"]')).toHaveAttribute("data-on")
+  },
+}
+export const WeekFivePeoplePanelOpen: Story = { name: "Week, five people, a panel open", args: { ...five, view: "week", day: "2026-11-18", panels: { unscheduled: true, map: false } }, play: async () => { await waitFor(() => expect(document.querySelector('[data-slot="time-grid"]')).toBeTruthy()); await pageDoesNotScrollSideways() } }
+export const WeekFivePeopleWide: Story = { ...WeekFivePeopleScrollsInside, name: "Week, five people, 1440", globals: WIDE }
+export const WeekFivePeoplePanelOpenWide: Story = { ...WeekFivePeoplePanelOpen, name: "Week, five people, a panel open, 1440", globals: WIDE }
+export const DayFivePeoplePanelOpen: Story = {
+  name: "Day, five people, a panel open",
+  args: { ...five, view: "day", day: "2026-11-18", panels: { unscheduled: true, map: false } },
+  play: async () => {
+    const grid = await waitFor(() => { const g = document.querySelector<HTMLElement>('[data-slot="time-grid"]'); if (!g) throw new Error("no grid"); return g })
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth)
+    const columns = [...grid.querySelectorAll('[data-slot="time-grid-column"]')]
+    await expect(columns).toHaveLength(5)
+    for (const c of columns) await expect(c.getBoundingClientRect().width).toBeGreaterThanOrEqual(95)
+  },
+}
+export const DayFivePeopleWide: Story = { name: "Day, five people, 1440", args: { ...five, view: "day", day: "2026-11-18" }, globals: WIDE }
 
 /** The Week's day head is the day and one chip. Hover or focus it for the towns, open time and driving; press it to open the day. */
 export const WeekHeaderCard: Story = {

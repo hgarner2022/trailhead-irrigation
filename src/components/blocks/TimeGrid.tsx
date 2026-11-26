@@ -10,7 +10,7 @@ import { TimeBlock } from "./TimeBlock"
 import { TimeGridColumn } from "./TimeGridColumn"
 import { DayHead, GUTTER, HourGutter } from "./TimeGridHeader"
 import { TimeGridPhone } from "./TimeGridPhone"
-import { useGridDnd, useGridSensors } from "./time-grid-dnd"
+import { gridPlugins, useGridDnd, useGridSensors } from "./time-grid-dnd"
 import { HOUR_PX, conflictMap, resizeResult, visibleRange, type GridBlock } from "./time-grid-model"
 import type { TimeGridProps } from "./time-grid-types"
 
@@ -30,7 +30,7 @@ export function TimeGridDndProvider({ children }: { children: ReactNode }) {
   const sensors = useGridSensors(stepX)
   return (
     <StepCtx.Provider value={setStepX}>
-      <DragDropProvider sensors={sensors}>{children}</DragDropProvider>
+      <DragDropProvider sensors={sensors} plugins={gridPlugins}>{children}</DragDropProvider>
     </StepCtx.Provider>
   )
 }
@@ -63,11 +63,27 @@ function TimeGridDesktop(props: TimeGridProps) {
   const [resize, setResize] = useState<{ id: string; minutes: number } | null>(null)
   // the head and the gutter sit flat on a hairline; they take a soft shadow only once something has scrolled under them
   const [under, setUnder] = useState({ x: false, y: false })
-  const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const x = e.currentTarget.scrollLeft > 0
-    const y = e.currentTarget.scrollTop > 0
-    if (x !== under.x || y !== under.y) setUnder({ x, y })
-  }
+  // a soft fade at a side says there is more days that way: shown only while the grid can scroll toward it
+  const [more, setMore] = useState({ left: false, right: false })
+  const measure = useCallback(() => {
+    const el = scroller.current
+    if (!el) return
+    const x = el.scrollLeft > 0
+    const y = el.scrollTop > 0
+    setUnder((u) => (u.x === x && u.y === y ? u : { x, y }))
+    const left = el.scrollLeft > 1
+    const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 1
+    setMore((m) => (m.left === left && m.right === right ? m : { left, right }))
+  }, [])
+  useEffect(() => {
+    const el = scroller.current
+    if (!el) return
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    if (el.firstElementChild) ro.observe(el.firstElementChild)
+    return () => ro.disconnect()
+  }, [measure])
 
   const timeOff = useMemo(() => props.timeOff ?? [], [props.timeOff])
   const planned = useMemo(() => props.planned ?? [], [props.planned])
@@ -80,7 +96,7 @@ function TimeGridDesktop(props: TimeGridProps) {
   const conflicts = useMemo(() => conflictMap(timed, timeOff, names), [timed, timeOff, names])
   const all = useMemo(() => [...timed, ...anytime], [timed, anytime])
 
-  const { preview, dragId } = useGridDnd({ blocks: all, timeOff, range, hourPx, names, cols, scroller, onMove: props.onMove, onDropExternal: props.onDropExternal })
+  const { preview, dragId, settleId, said, justDropped } = useGridDnd({ blocks: all, timeOff, range, hourPx, names, cols, scroller, onMove: props.onMove, onDropExternal: props.onDropExternal })
 
   useEffect(() => {
     const first = [...cols.current.values()][0]
@@ -107,26 +123,31 @@ function TimeGridDesktop(props: TimeGridProps) {
 
 
   // a person's column never gets too narrow to read a street: the grid scrolls sideways inside itself instead (a panel beside it, five people)
-  const dayWidth = Math.max(people.length * (people.length > 3 ? 80 : 92), 140)
+  // (96 px a person from four: a block shows its time and a whole street word at least; the page itself never scrolls sideways)
+  const dayWidth = Math.max(people.length * (people.length > 3 ? 96 : 92), 140)
   const todayDay = columns.find((c) => c.today)?.day
   useEffect(() => {
     const el = scroller.current
     const head = el?.querySelector<HTMLElement>('[data-today="true"]')
-    if (!el || !head || el.scrollWidth <= el.clientWidth) return
+    if (!el || el.scrollWidth <= el.clientWidth) return
+    // opens on today; a week that does not hold today opens at its first day
+    if (!head) return void (el.scrollLeft = 0)
     const left = head.offsetLeft - 56
     if (left + head.offsetWidth > el.scrollLeft + el.clientWidth - 56 || left < el.scrollLeft) el.scrollLeft = left
   }, [todayDay, columns.length])
   const dayEdge = (c: { today?: boolean }, i: number) => cn("flex-1", i > 0 && "border-l border-border", c.today && columns.length > 1 && "bg-primary/[0.03]")
   return (
     <>
+    <div className={cn("relative rounded-lg", props.className)}>
     <div
       ref={scroller}
       role="region"
       tabIndex={0}
       aria-label="Schedule"
       data-slot="time-grid"
-      onScroll={onScroll}
-      className={cn("relative max-h-[min(48rem,calc(100dvh-11rem))] overflow-auto rounded-lg border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", props.className)}
+      onScroll={measure}
+      onClickCapture={(e) => { if (justDropped.current) { e.stopPropagation(); e.preventDefault() } }}
+      className={cn("relative max-h-[min(48rem,calc(100dvh-11rem))] overscroll-contain overflow-auto rounded-lg border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", dragId && "select-none")}
     >
       <div className="min-w-full" style={{ width: "max-content" }}>
         <div data-slot="time-grid-head" data-under={under.y || undefined} className={cn("sticky top-0 z-20 border-b border-border bg-background transition-shadow duration-(--motion-fast) motion-reduce:transition-none", under.y && "shadow-sm")}>
@@ -188,6 +209,7 @@ function TimeGridDesktop(props: TimeGridProps) {
                   selectedId={selectedId}
                   hoverId={hoverId}
                   dragId={dragId}
+                  settleId={settleId}
                   resizingId={resize?.id}
                   interactive
                   compact={!showPersonNames}
@@ -206,17 +228,26 @@ function TimeGridDesktop(props: TimeGridProps) {
         </div>
       </div>
     </div>
+    {/* more days to the side: a soft fade over the edge, beside the hour gutter on the left; it never takes a click */}
+    <span aria-hidden data-slot="more-left" data-on={more.left || undefined} className="pointer-events-none absolute inset-y-px left-14 z-30 w-8 bg-gradient-to-r from-background to-transparent opacity-0 transition-opacity duration-(--motion-fast) data-[on]:opacity-100 motion-reduce:transition-none" />
+    <span aria-hidden data-slot="more-right" data-on={more.right || undefined} className="pointer-events-none absolute inset-y-px right-px z-30 w-8 rounded-r-lg bg-gradient-to-l from-background to-transparent opacity-0 transition-opacity duration-(--motion-fast) data-[on]:opacity-100 motion-reduce:transition-none" />
+    </div>
       <DragOverlay dropAnimation={null}>
         {(source) => {
           const b = all.find((x) => x.id === String(source.id))
+          const here = preview && preview.id === String(source.id) ? preview : null
+          // the carried copy says the time it would land on, live, and is outlined red over a place that breaks a rule
           return b ? (
-            <TimeBlock block={b} variant={b.start === null ? "chip" : "block"} personIndex={colourOf(b.personId)} initials={people.find((p) => p.id === b.personId)?.initials} className="cal-lift size-full shadow-lg ring-1 ring-navy/25" />
+            <TimeBlock block={here ? { ...b, start: here.start } : b} conflict={here?.conflict ?? undefined} variant={b.start === null ? "chip" : "block"} compact={!showPersonNames} personIndex={colourOf(b.personId)} initials={people.find((p) => p.id === b.personId)?.initials} className={cn("cal-lift size-full shadow-lg ring-1", here?.conflict ? "ring-2 ring-destructive" : "ring-navy/25")} />
           ) : (
-            <div className="type-admin-dense cal-lift rounded-md bg-navy px-2 py-1 font-semibold text-white shadow-lg">{String(source.data?.label || "Visit")}</div>
+            <div className={cn("type-admin-dense cal-lift rounded-md px-2 py-1 font-semibold text-white shadow-lg", here?.conflict ? "bg-destructive" : "bg-navy")}>
+              {String(source.data?.label || "Visit")}
+              {here && <span className="block font-normal tabular-nums">{here.label}</span>}
+            </div>
           )
         }}
       </DragOverlay>
-      <p aria-live="polite" className="sr-only">{preview ? `${preview.label}${preview.conflict ? `. ${preview.conflict}` : ""}` : ""}</p>
+      <p aria-live="polite" data-slot="drag-said" className="sr-only">{said}</p>
     </>
   )
 }

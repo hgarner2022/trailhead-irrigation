@@ -79,7 +79,9 @@ export function TimeBlock({ block: b, personIndex = 0, who, variant = "block", s
       onPointerEnter={() => onHover?.(b.id)}
       onPointerLeave={() => onHover?.(null)}
       className={cn(
-        "group @container relative min-w-0 overflow-hidden rounded-md bg-background text-left text-navy",
+        "group @container relative min-w-0 select-none overflow-hidden rounded-md bg-background text-left text-navy [-webkit-touch-callout:none]",
+        // pressed: the block lifts a little before it is carried
+        !chip && !touch && "active:scale-[1.02] active:shadow-md motion-reduce:active:scale-100",
         b.planned && "border border-dotted border-navy/60",
         b.done && "text-navy-light",
         chip && (touch ? "min-h-11" : "min-h-6"),

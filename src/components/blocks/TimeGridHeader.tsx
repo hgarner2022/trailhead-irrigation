@@ -88,9 +88,9 @@ export function DayHead({ column, people, colourOf, variant = "week", onOpenDay 
         {people.map((p) => {
           const stat = column.stats?.[p.id]
           return (
-            <span key={p.id} className="type-admin-dense flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-0.5 text-muted-foreground">
-              <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
-              <span className="truncate">
+            <span key={p.id} className="type-admin-dense flex min-w-0 flex-1 items-start justify-center gap-1.5 px-0.5 text-center text-muted-foreground">
+              <span aria-hidden className={cn("mt-[0.3em] size-1.5 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
+              <span className="min-w-0">
                 <span className="font-semibold text-navy">{firstNameOf(p.name)}</span>
                 {stat && ` ${[stat.open, stat.driving && `${stat.driving} drive`].filter(Boolean).join(" · ")}`}
               </span>
