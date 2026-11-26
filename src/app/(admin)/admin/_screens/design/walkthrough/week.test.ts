@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { recommendedId, sortOpenings } from "@/components/blocks/find-a-time-model"
 import { bestTimesFor, suggestionFor } from "../schedule-best-times"
-import { changeWords, notToldList } from "../schedule-prototype-model"
+import { changeWords } from "../schedule-prototype-model"
 import { initialState } from "../schedule-prototype-data"
 import { jobView, rowOf } from "./jobs-data"
 import { WEEK_VISITS, weekFacts } from "./week-visits"
@@ -17,7 +17,6 @@ describe("the walkthrough's week", () => {
     expect(new Set(week.map((v) => v.minutes))).toEqual(new Set([30, 60, 120]))
     expect(week.filter((v) => v.start === null && !v.done).length).toBeGreaterThanOrEqual(2)
     expect(week.filter((v) => v.waiting)).toHaveLength(1)
-    expect(week.filter((v) => v.notTold).length).toBeGreaterThanOrEqual(1)
     expect(week.filter((v) => v.done && v.start !== null).length).toBeGreaterThanOrEqual(1)
   })
   it("every block's job page and Jobs row say the same day, time and who", () => {
@@ -33,7 +32,6 @@ describe("the walkthrough's week", () => {
   it("says where a moved visit was in the app's words, the day once when it did not change", () => {
     expect(changeWords({ day: "2026-11-18", start: 540 }, { day: "2026-11-18", start: 570 })).toBe("Moved from 9:00 am to 9:30 am, Wed, Nov 18")
     expect(changeWords({ day: "2026-11-19", start: 540 }, { day: "2026-11-20", start: 540 })).toBe("Moved from Thu, Nov 19, 9:00 am to Fri, Nov 20, 9:00 am")
-    expect(notToldList(initialState({ visits: world.visits, meta: world.meta, unscheduled: [], timeOff: [], was: world.was })).every((r) => r.change)).toBe(true)
   })
 })
 

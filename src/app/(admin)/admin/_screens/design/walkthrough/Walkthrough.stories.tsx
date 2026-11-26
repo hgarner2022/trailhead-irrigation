@@ -430,14 +430,14 @@ export const HomeRequestRowsTest: Story = {
 }
 
 // ------------------------------------------------------------------------------------------------------------------ the Schedule (Nov 25 2026)
-// The Schedule is the Schedule prototype over a calendar read from the job pages (today is Wed, Nov 18): a visit opens its job page, Schedule and Move there list the best
+// The Schedule is the Schedule prototype over a calendar read from the job pages (today is Wed, Nov 18): a visit opens its peek (Open job goes to its job page), Schedule and Move there list the best
 // times, a drag says "Moved to ..." with Notify the customer and Undo, New job lists the best times under its Day, and Settings > People holds Time off.
 
-/** Starts on the Schedule, this week. Press a visit to land on its job page; press Schedule on a job with no day (open Unscheduled) or Move on a job page to see the best times. */
+/** Starts on the Schedule, this week. Click a visit for its peek and press Open job to land on its job page; press Schedule on a job with no day (open Unscheduled) or Move on a job page to see the best times. */
 export const ScheduleWeek: Story = { name: "Schedule", globals: laptop, args: { start: { screen: "schedule" } } }
 export const ScheduleWeekPhone: Story = { name: "Schedule, phone", globals: phone, args: { start: { screen: "schedule" } } }
 
-/** A visit opens its job page and Move lists the best times; confirming moves it on the calendar and the way back keeps the week. */
+/** A visit opens its peek, Open job its job page, and Move lists the best times; confirming moves it on the calendar and the way back keeps the week. */
 export const ScheduleVisitToJobPageTest: Story = {
   name: "Schedule, visit to job page and Move (test)",
   globals: laptop,
@@ -447,6 +447,7 @@ export const ScheduleVisitToJobPageTest: Story = {
     const c = within(canvasElement)
     const body = within(document.body)
     await userEvent.click((await c.findAllByRole("button", { name: /^Aspen Dr, Repair/ }))[0]!)
+    await userEvent.click(await body.findByRole("button", { name: "Open job" }))
     await waitFor(() => expect(route(canvasElement)).toBe("job:g-sam"))
     await userEvent.click(await c.findByRole("button", { name: "More" }))
     await userEvent.click(await body.findByRole("menuitem", { name: "Move" }))
@@ -475,6 +476,7 @@ export const ScheduleMoveShowsEverywhereTest: Story = {
     await userEvent.click((await c.findAllByRole("link", { name: "Schedule" }))[0]!)
     await waitFor(() => expect(route(canvasElement)).toBe("schedule"))
     await userEvent.click((await c.findAllByRole("button", { name: /^Aspen Dr, Repair/ }))[0]!)
+    await userEvent.click(await body.findByRole("button", { name: "Open job" }))
     await waitFor(() => expect(route(canvasElement)).toBe("job:g-sam"))
     await userEvent.click(await c.findByRole("button", { name: "More" }))
     await userEvent.click(await body.findByRole("menuitem", { name: "Move" }))
@@ -504,7 +506,7 @@ export const ScheduleUnscheduledRowTest: Story = {
     await userEvent.click(await c.findByRole("button", { name: /^Unscheduled \(\d+\)$/ }))
     await expect(await c.findAllByText(/^Suggested: /)).not.toHaveLength(0)
     await userEvent.click(await c.findByRole("button", { name: "Schedule Andrea Dalton" }))
-    const dialog = await body.findByRole("dialog", { name: "Schedule the job" })
+    const dialog = await body.findByRole("dialog", { name: "Schedule visit" })
     await expect(await within(await within(dialog).findByRole("radiogroup", { name: "Openings" })).findAllByRole("radio", { checked: true })).toHaveLength(1)
   },
 }

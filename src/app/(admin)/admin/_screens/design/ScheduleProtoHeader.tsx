@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { PersonToggles } from "@/components/blocks/PersonToggles"
+import { PeopleMenu } from "@/components/blocks/PeopleMenu"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { SegmentedControl } from "@/components/blocks/SegmentedControl"
 import { firstNameOf } from "@/lib/admin/people"
@@ -13,7 +13,7 @@ import type { Proto } from "./use-schedule-prototype"
 
 // The Schedule prototype's header (docs/plans/2026-11-25-scheduler-design.md, 7.1, with the reconciliation of Nov 25): the title and range and the one filled button, New job (the
 // shell's New job sheet, with the best times); on a phone a More menu with the day, week or month arrows and the shortcuts; under it previous, Today and next, Week | Day | Month | List,
-// and at the right "N customers not notified", Unscheduled and Map. Time off is set in Settings, People. Pure view over the hook.
+// and at the right People, Reorder stops, Unscheduled and Map. Time off is set in Settings, People. Pure view over the hook.
 
 const VIEWS = [
   { value: "week", label: "Week" },
@@ -66,25 +66,18 @@ export function ScheduleProtoHeader({ p }: { p: Proto }) {
             <ChevronRight className="size-4" aria-hidden />
           </Button>
         </div>
+        <PeopleMenu people={p.people} hidden={p.hidden} onToggle={p.togglePerson} className="max-md:order-first" />
         <SegmentedControl label="Schedule view" options={VIEWS} value={view} onChange={(v) => p.setView(v as View)} />
         <div className="flex flex-wrap items-center gap-x-1 gap-y-2 md:ml-auto md:gap-x-2">
-          {p.notNotifiedCount > 0 && (
-            <Button type="button" variant="ghost" className="min-h-11 px-2 text-warning-ink hover:bg-warning/14 hover:text-warning-ink" onClick={p.openNotNotified} aria-label={`${p.notNotifiedCount} ${p.notNotifiedCount === 1 ? "customer" : "customers"} not notified`}>
-              {/* the full phrase is the name; on a phone it is a compact chip so Unscheduled and Map stay on the row */}
-              <span aria-hidden className="md:hidden">{`${p.notNotifiedCount} not notified`}</span>
-              <span aria-hidden className="hidden md:inline">{`${p.notNotifiedCount} ${p.notNotifiedCount === 1 ? "customer" : "customers"} not notified`}</span>
-            </Button>
-          )}
-          <PersonToggles people={p.people} hidden={p.hidden} onToggle={p.togglePerson} />
           {p.orderable.length === 1 && (
             <Button type="button" variant="outline" className="min-h-11" onClick={() => p.setDialog({ kind: "order", personId: p.orderable[0]!.id })}>
-              Order the day
+              Reorder stops
             </Button>
           )}
           {p.orderable.length > 1 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" className="min-h-11">Order the day</Button>
+                <Button type="button" variant="outline" className="min-h-11">Reorder stops</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-40">
                 {p.orderable.map((x) => <DropdownMenuItem key={x.id} className="min-h-11" onSelect={() => p.setDialog({ kind: "order", personId: x.id })}>{firstNameOf(x.name)}</DropdownMenuItem>)}

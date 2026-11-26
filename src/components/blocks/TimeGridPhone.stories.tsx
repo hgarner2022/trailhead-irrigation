@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { TimeGridPhone } from "./TimeGridPhone"
 import { NOW, PEOPLE, PLANNED, WEEK_ANYTIME, WEEK_BLOCKS, WEEK_COLUMNS, WEEK_OFF } from "./scheduler-calendar-fixtures"
 
-// The clock on a phone: a swipeable day strip, person chips ("All" first), one day's columns at 88 px an hour. No drag; the block menu is the way.
+// The clock on a phone: a swipeable day strip, person chips ("All" first), one day's columns at 88 px an hour. No drag; a tap opens the visit and Edit visit changes it.
 
 const PHONE = { viewport: { value: "phone", isRotated: false } }
 

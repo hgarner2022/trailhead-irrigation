@@ -41,10 +41,10 @@ export function hoursWords(minutes: number): string {
   return [h ? `${h} h` : "", m ? `${m} min` : ""].filter(Boolean).join(" ") || "0 min"
 }
 
-/** The line under a day's name: "5 stops, 3 h open", "No stops", "Day off" when no one works it, "5 stops, full" when nothing is open. */
+/** The line under a day's name: "5 visits, 3 h open", "No visits", "Day off" when no one works it, "5 visits, full" when nothing is open. */
 export function fillWords(fill: DayFill): string {
-  if (fill.stops === 0) return fill.working === 0 ? "Day off" : "No stops"
-  const count = `${fill.stops} ${fill.stops === 1 ? "stop" : "stops"}`
+  if (fill.stops === 0) return fill.working === 0 ? "Day off" : "No visits"
+  const count = `${fill.stops} ${fill.stops === 1 ? "visit" : "visits"}`
   return fill.openMinutes === 0 ? `${count}, full` : `${count}, ${hoursWords(fill.openMinutes)} open`
 }
 

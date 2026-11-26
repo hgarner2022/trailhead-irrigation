@@ -4,7 +4,8 @@ import { expect, fn, within } from "storybook/test"
 import { Button } from "@/components/ui/button"
 import { ScheduleToast, type ScheduleToastProps } from "./ScheduleToast"
 
-// The confirmation after a visit is moved or scheduled: the app's own toast bar with "Notify the customer" and "Undo". The stories keep it up (seconds 0); the real one closes after ten seconds.
+// The confirmation after a visit is moved or scheduled: the app's own toast bar with "Notify the customer" and "Undo", at the bottom centre. The stories keep it up (seconds 0); the real one closes after
+// ten seconds (four with no action) and waits while the pointer or focus is on it.
 const LAPTOP = { viewport: { value: "laptop", isRotated: false } }
 const PHONE = { viewport: { value: "phone", isRotated: false } }
 
@@ -50,4 +51,10 @@ export const FirstPlacement: Story = { args: { message: "Scheduled for Tue, Dec 
 export const FirstPlacementPhone: Story = { ...FirstPlacement, globals: PHONE }
 
 /** The customer was notified in the Schedule dialog: Undo alone. */
-export const AlreadyNotified: Story = { args: { notified: true } }
+export const AlreadyNotified: Story = { args: { onNotify: undefined } }
+
+/** A length change: the start did not move, so there is nothing to tell. */
+export const LengthChanged: Story = { args: { message: "Now 8:00 to 8:45 am", onNotify: undefined } }
+
+/** After Send in the message: no action, closes by itself in four seconds. */
+export const CustomerNotified: Story = { args: { message: "Customer notified", onNotify: undefined, onUndo: undefined } }

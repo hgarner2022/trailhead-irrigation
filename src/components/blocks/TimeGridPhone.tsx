@@ -4,17 +4,16 @@ import { useCallback, useMemo, useRef, useState } from "react"
 import { firstNameOf } from "@/lib/admin/people"
 import { worksOn } from "@/lib/admin/calendar"
 import { cn } from "@/lib/utils"
+import { PeopleMenu } from "./PeopleMenu"
 import { AnytimeStrip } from "./AnytimeStrip"
 import { TimeGridColumn } from "./TimeGridColumn"
 import { HourGutter } from "./TimeGridHeader"
-import { useBlockActions } from "./time-grid-actions"
 import { PHONE_HOUR_PX, conflictMap, visibleRange } from "./time-grid-model"
 import type { TimeGridProps } from "./time-grid-types"
 
 // The clock on a phone (docs/plans/2026-11-25-scheduler-design.md, 7.2 and 7.13): a swipeable strip of days, a row of person chips ("All" first),
 // then the chosen day for the chosen people on the same clock at 88 px an hour so a 30 minute visit is still a 44 px target. No drag, no hover
-// plus: a tap opens the visit (`onSelect`), the menu on each block does the rest (Move, Set a time, Make it Any time, 15 minutes shorter or
-// longer), and a swipe across the day goes to the next or the last. Every control is 44 px. Pure props.
+// plus: a tap opens the visit (`onSelect`; its peek has Edit visit), and a swipe across the day goes to the next or the last. Every control is 44 px. Pure props.
 
 const CHIP = "flex min-h-11 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
 
@@ -24,10 +23,10 @@ export function TimeGridPhone(props: TimeGridProps) {
   const colourOf = useCallback((id: string) => Math.max(0, colours.findIndex((p) => p.id === id)), [colours])
   const names = useCallback((id: string) => firstNameOf(colours.find((p) => p.id === id)?.name ?? people.find((p) => p.id === id)?.name) ?? "They", [colours, people])
   const [dayIndex, setDayIndex] = useState(() => Math.max(0, columns.findIndex((c) => c.today)))
-  const [who, setWho] = useState<string>("all")
+  const [hidden, setHidden] = useState<readonly string[]>([])
   const swipe = useRef<number | null>(null)
   const column = columns[Math.min(dayIndex, columns.length - 1)]
-  const chosen = who === "all" ? people : people.filter((p) => p.id === who)
+  const chosen = people.filter((p) => !hidden.includes(p.id))
   const timeOff = useMemo(() => props.timeOff ?? [], [props.timeOff])
   const planned = useMemo(() => props.planned ?? [], [props.planned])
   const timed = useMemo(() => [...props.blocks, ...planned].filter((b) => b.day === column?.day), [props.blocks, planned, column])
@@ -35,7 +34,6 @@ export function TimeGridPhone(props: TimeGridProps) {
   const range = useMemo(() => visibleRange(chosen, timed), [chosen, timed])
   const conflicts = useMemo(() => conflictMap(props.blocks.filter((b) => b.day === column?.day), timeOff, names), [props.blocks, column, timeOff, names])
   const all = useMemo(() => [...timed, ...anytime], [timed, anytime])
-  const act = useBlockActions({ all, planned, timeOff, names, range, hourPx: PHONE_HOUR_PX, props })
   if (!column) return null
   const go = (n: number) => setDayIndex((i) => Math.min(columns.length - 1, Math.max(0, i + n)))
 
@@ -53,23 +51,17 @@ export function TimeGridPhone(props: TimeGridProps) {
           Today
         </button>
       </div>
-      {props.personRow !== false && <div role="group" aria-label="Person" className="flex gap-1.5 overflow-x-auto pb-2">
-        {[{ id: "all", name: "All" }, ...people].map((p) => (
-          <button key={p.id} type="button" aria-pressed={who === p.id} onClick={() => setWho(p.id)} className={cn(CHIP, "flex-row gap-2", who === p.id ? "border-navy bg-navy text-white" : "border-border bg-background text-navy")}>
-            {firstNameOf(p.name)}
-          </button>
-        ))}
-      </div>}
-      {(column.caption || column.stats) && (
+      {props.personRow !== false && <div className="pb-2"><PeopleMenu people={people} hidden={hidden} onToggle={(id) => setHidden((h) => (h.includes(id) ? h.filter((x) => x !== id) : people.length - h.length > 1 ? [...h, id] : h))} /></div>}
+      {(column.caption || (props.showPersonNames && column.stats)) && (
         <p data-slot="day-stats" className="mb-2 text-xs text-navy-light">
-          {[column.caption, column.towns, ...chosen.map((p) => { const s = column.stats?.[p.id]; return s ? `${firstNameOf(p.name)}: ${[s.open, s.driving && `${s.driving} drive`].filter(Boolean).join(", ")}` : null })].filter(Boolean).join(" · ")}
+          {(props.showPersonNames ? [column.caption, column.towns, ...chosen.map((p) => { const s = column.stats?.[p.id]; return s ? `${firstNameOf(p.name)}: ${[s.open, s.driving && `${s.driving} drive`].filter(Boolean).join(", ")}` : null })].filter(Boolean).join(" · ") : column.caption ?? "")}
         </p>
       )}
       <div className="mb-2 flex items-start gap-2" data-slot="anytime-row">
         <span className="w-14 shrink-0 pt-1 text-xs font-medium text-navy-light">Any time</span>
         <div className="min-w-0 flex-1 space-y-1">
           {chosen.map((p) => (
-            <AnytimeStrip key={p.id} touch labelled={false} label={`Any time, ${names(p.id)}`} blocks={anytime.filter((b) => b.personId === p.id)} personIndex={colourOf(p.id)} initials={p.initials} who={p.name} selectedId={selectedId} hoverId={hoverId} onSelect={props.onSelect} onAction={act} />
+            <AnytimeStrip key={p.id} touch labelled={false} label={`Any time, ${names(p.id)}`} blocks={anytime.filter((b) => b.personId === p.id)} personIndex={colourOf(p.id)} initials={p.initials} who={p.name} selectedId={selectedId} hoverId={hoverId} onSelect={props.onSelect} />
           ))}
         </div>
       </div>
@@ -91,15 +83,13 @@ export function TimeGridPhone(props: TimeGridProps) {
             blocks={timed.filter((b) => b.personId === p.id)}
             timeOff={timeOff.filter((o) => o.day === column.day && o.personId === p.id)}
             conflicts={conflicts}
-            drives={props.drives}
+            drives={props.showPersonNames ? props.drives : undefined}
             nowMinutes={props.now?.day === column.day ? props.now.minutes : undefined}
             selectedId={selectedId}
             hoverId={hoverId}
-            notToldMark={props.notToldMark}
             touch
             onTimeOffClick={props.onTimeOffClick}
             onSelect={props.onSelect}
-            onAction={act}
           />
         ))}
       </div>

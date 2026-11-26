@@ -15,7 +15,6 @@ export interface MonthDay {
   /** everyone is off all day: the whole cell is hatched */
   allOff?: boolean
   /** a move the customer has not been told about */
-  notTold?: boolean
 }
 
 const pad = (n: number) => String(n).padStart(2, "0")
@@ -54,8 +53,8 @@ export function keyTarget(key: string, day: string): string | null {
   return null
 }
 
-/** "5 stops", "1 stop". */
-export const stopsWords = (n: number) => `${n} ${n === 1 ? "stop" : "stops"}`
+/** "5 visits", "1 visit". */
+export const visitsWords = (n: number) => `${n} ${n === 1 ? "visit" : "visits"}`
 /** Up to two towns, then "+1": "Erie, Lafayette +1". */
 export function townsLine(towns: readonly Town[]): string {
   const shown = towns.slice(0, 2).join(", ")

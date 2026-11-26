@@ -3,7 +3,6 @@
 import { useMemo } from "react"
 import { CalendarLegend } from "@/components/blocks/CalendarLegend"
 import { MonthGrid } from "@/components/blocks/MonthGrid"
-import { NotTold } from "@/components/blocks/NotTold"
 import { TimeGrid } from "@/components/blocks/TimeGrid"
 import { monthOf } from "@/components/blocks/month-grid-model"
 import { columnsFor, monthDays } from "./schedule-prototype-view"
@@ -38,7 +37,6 @@ export function ScheduleProtoCalendar({ p }: { p: Proto }) {
         people={p.shown}
         today={p.today}
         selectedDay={day}
-        notToldMark={<NotTold className="size-4 md:size-5" />}
         onOpenDay={p.openDay}
         onMonthChange={(m) => p.setDay(`${m}-01`)}
       />
@@ -60,7 +58,6 @@ export function ScheduleProtoCalendar({ p }: { p: Proto }) {
       selectedId={p.selectedId}
       hoverId={p.hoverId ?? undefined}
       showPersonNames={view === "day"}
-      notToldMark={(b) => (b.notTold ? <NotTold /> : null)}
       onSelect={p.onSelect}
       onHover={p.setHoverId}
       onMove={p.onMove}
@@ -68,8 +65,8 @@ export function ScheduleProtoCalendar({ p }: { p: Proto }) {
       onDropExternal={p.onDropExternal}
       onTimeOffClick={p.onOpenSettings ? () => p.onOpenSettings?.() : undefined}
       onCreateAt={p.onNewJob ? (at) => p.onNewJob?.(at.day) : undefined}
-      onAction={p.onAction}
       onToday={() => p.setDay(p.today)}
+      onOpenDay={view === "week" ? p.openDay : undefined}
     />
     <CalendarLegend className="mt-1" />
     </>

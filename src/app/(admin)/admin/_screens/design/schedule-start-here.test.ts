@@ -32,6 +32,6 @@ describe("the Scheduler start-here guide", () => {
       expect(line.trim().endsWith(".") || line.trim().endsWith("?")).toBe(true)
       expect(line).not.toMatch(/—|\btruck\b|\brequest\b|\bCancelled\b|\bOverdue\b|\bOwed\b|\bBill\b/i)
     }
-    expect(CHOOSE).toHaveLength(4)
+    expect(CHOOSE).toHaveLength(3)
   })
 })

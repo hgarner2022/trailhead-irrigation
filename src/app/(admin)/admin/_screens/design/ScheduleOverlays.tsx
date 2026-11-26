@@ -8,8 +8,8 @@ import { moveMessage } from "./schedule-message"
 import { useWorldState, type WorldStore } from "./schedule-world-store"
 
 // What follows any move or placement, wherever the person is (the Schedule, or a job page whose Schedule or Move was just confirmed): the confirmation ("Moved to Thu, Nov 26,
-// 9:00 am" with Notify the customer and Undo) and, when Notify the customer is pressed, the one Send a message dialog prefilled with the move's words. Notify all goes through the
-// customers one at a time. Nothing is sent: Send only clears the "not notified" mark. Reads the store the screen and the walkthrough share.
+// 9:00 am" with Notify the customer and Undo) and, when Notify the customer is pressed, the one Send a message dialog prefilled from the date-moved words. Several customers
+// (Schedule all) go through one at a time. Nothing is sent until Send is pressed there, and then "Customer notified" closes by itself. Reads the store the screen and the walkthrough share.
 
 const OPENER = "Trailhead: "
 
@@ -26,7 +26,7 @@ function useHeldOnPhone(): boolean {
   return held
 }
 
-export function ScheduleOverlays({ store, people = [], toastSeconds = 10 }: { store: WorldStore; /** who is on the calendar, so the text says who is coming */ people?: readonly { id: string; name: string }[]; toastSeconds?: number }) {
+export function ScheduleOverlays({ store, people = [], toastSeconds }: { store: WorldStore; /** who is on the calendar, so the text says who is coming */ people?: readonly { id: string; name: string }[]; toastSeconds?: number }) {
   const state = useWorldState(store)
   const held = useHeldOnPhone()
   const toast = held ? null : state.toast
@@ -39,10 +39,9 @@ export function ScheduleOverlays({ store, people = [], toastSeconds = 10 }: { st
         <ScheduleToast
           key={toast.key}
           message={toast.message}
-          notified={toast.notified}
           seconds={toastSeconds}
-          onNotify={() => store.dispatch({ type: "ask-notify", ids: toast.ids })}
-          onUndo={() => store.dispatch({ type: "undo" })}
+          onNotify={toast.offerNotify ? () => store.dispatch({ type: "ask-notify", ids: toast.ids }) : undefined}
+          onUndo={toast.undo ? () => store.dispatch({ type: "undo" }) : undefined}
           onClose={() => store.dispatch({ type: "dismiss-toast" })}
         />
       )}

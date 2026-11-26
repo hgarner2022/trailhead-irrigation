@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { keyTarget, monthTitle, monthWeeks, shiftMonth, stopsWords, townsLine } from "./month-grid-model"
+import { keyTarget, monthTitle, monthWeeks, shiftMonth, visitsWords, townsLine } from "./month-grid-model"
 
 describe("monthWeeks", () => {
   it("starts on Monday and pads with nulls: November 2026 begins on a Sunday", () => {
@@ -29,8 +29,8 @@ describe("keys", () => {
 })
 describe("words", () => {
   it("says stops, towns and the month", () => {
-    expect(stopsWords(1)).toBe("1 stop")
-    expect(stopsWords(5)).toBe("5 stops")
+    expect(visitsWords(1)).toBe("1 visit")
+    expect(visitsWords(5)).toBe("5 visits")
     expect(townsLine(["Erie", "Lafayette", "Longmont", "Firestone"])).toBe("Erie, Lafayette +2")
     expect(townsLine(["Erie"])).toBe("Erie")
     expect(monthTitle("2026-11")).toBe("November 2026")

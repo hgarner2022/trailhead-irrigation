@@ -93,7 +93,7 @@ function weekBlocks(): { visits: GridBlock[]; was: Record<string, Place>; meta: 
     if (!row) continue
     const personId = personIdOf(w.who)!
     const kind = w.service === "Fall blowout" ? "blowout" : "repair"
-    visits.push({ id: w.id, day: w.day, personId, start: w.start, minutes: w.minutes, title: streetOf(row), name: firstOf(row), kind, town: townOf(row), service: w.service === "Fall blowout" ? "Fall blowout" : "Repair", done: w.done || undefined, waiting: w.waiting || undefined, notTold: w.was ? true : undefined })
+    visits.push({ id: w.id, day: w.day, personId, start: w.start, minutes: w.minutes, title: streetOf(row), name: firstOf(row), kind, town: townOf(row), service: w.service === "Fall blowout" ? "Fall blowout" : "Repair", done: w.done || undefined, waiting: w.waiting || undefined })
     if (w.was) was[w.id] = { day: w.was.day, personId, start: w.was.start, minutes: w.minutes }
     meta[w.id] = metaOf(row)
   }

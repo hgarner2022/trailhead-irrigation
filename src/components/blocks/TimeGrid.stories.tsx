@@ -31,9 +31,7 @@ export const WeekOnePerson: Story = { name: "Week, one person", args: { people: 
 export const Empty: Story = { name: "Empty week", args: { columns: WEEK_EMPTY, blocks: [], anytime: [], timeOff: [], now: undefined } }
 export const DayTwoPeople: Story = { name: "Day, two people", args: { columns: DAY_COLUMNS, showPersonNames: true } }
 export const OverlapAndConflict: Story = { name: "Overlap and conflict", args: { columns: dayColumns(["2026-11-26"]), blocks: CONFLICT_BLOCKS, anytime: [], timeOff: [], showPersonNames: true } }
-export const NotToldAndWaiting: Story = { name: "Not told and waiting",
-  args: { columns: dayColumns(["2026-11-24", "2026-11-25"]), notToldMark: () => <span className="block size-2.5 rounded-full bg-warning" title="Customer not notified" /> },
-}
+export const Waiting: Story = { name: "Waiting on the customer", args: { columns: dayColumns(["2026-11-24", "2026-11-25"]) } }
 export const TimeOff: Story = { name: "Time off", args: { columns: dayColumns(["2026-11-25", "2026-11-26"]), showPersonNames: true } }
 export const PlannedMoves: Story = { name: "Planned moves", args: { planned: PLANNED } }
 export const Selected: Story = { args: { selectedId: "v7", hoverId: "v10" } }
@@ -74,7 +72,6 @@ function Playground(args: TimeGridProps) {
         onResize={(r) => set(r.id, { minutes: r.minutes }, `${first(r.id)} now ${r.minutes} minutes.`)}
         onCreateAt={(c) => setSaid({ text: `New job on ${day(c.day)} at ${clockWords(c.start)}. Nothing is added in this story.` })}
         onTimeOffDrag={(t) => { setOff((o) => [...o, { id: `off${o.length + 1}`, personId: t.personId, day: t.day, start: t.start, end: t.end }]); setSaid({ text: `Time off ${day(t.day)}, ${rangeWords(t.start, t.end - t.start)}.` }) }}
-        onAction={(id, a) => setSaid({ text: a === "move" ? `${first(id)}: Move opens the Move dialog.` : `${first(id)}: ${a}.` })}
       />
       <p role="status" className="text-sm text-navy">
         {said.text}

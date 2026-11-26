@@ -74,8 +74,6 @@ export interface GridBlock {
   /** the service in words: "Spring turn-on" */
   service: string
   done?: boolean
-  /** the customer has not been told about a move (a dashed left edge) */
-  notTold?: boolean
   waiting?: boolean
   /** an Any time stop's place in the day's order: it follows this timed stop (null: it comes first). Absent: it is driven last. Order the day sets it; a time is never given */
   afterId?: string | null
@@ -90,7 +88,7 @@ export interface GridBlock {
 const SERVICE: Record<VisitKind, string> = { "turn-on": "Spring turn-on", inspection: "Mid-season inspection", blowout: "Fall blowout", repair: "Repair", install: "Installation", other: "Visit" }
 
 /** A block from a visit that has a day and a person; null otherwise. The street is the caller's (a visit does not carry it). */
-export function blockOf(v: Visit, extra: { title: string } & Partial<Pick<GridBlock, "notTold" | "conflict" | "planned">>): GridBlock | null {
+export function blockOf(v: Visit, extra: { title: string } & Partial<Pick<GridBlock, "conflict" | "planned">>): GridBlock | null {
   if (!v.scheduledOn || !v.personId || v.status === "cancelled") return null
   return {
     id: v.id, day: v.scheduledOn, personId: v.personId, start: clockToMinutes(v.startTime), minutes: v.minutes ?? defaultMinutes(v.kind),

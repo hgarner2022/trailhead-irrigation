@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useCalendarKeys } from "@/components/blocks/use-calendar-keys"
 import { useMedia } from "@/components/blocks/use-media"
-import type { BlockAction } from "@/components/blocks/TimeBlock"
 import type { ExternalDrop, MoveEvent, ResizeEvent } from "@/components/blocks/time-grid-types"
 import type { UnscheduledJob } from "@/components/blocks/scheduler-panels-types"
 import type { MoneyOf } from "./schedule-admin-data"
@@ -17,9 +16,9 @@ import type { ScheduleResult } from "./ScheduleDialog"
 import { startFromWords, buildWalkWorld } from "./walkthrough/visits-data"
 
 // The Schedule prototype's one hook: the calendar's data in a store (the walkthrough holds one for the session, a story makes its own), and state for what is open (the view and
-// day, the two panels, the dialogs). Every route that moves a visit (drag, resize, the keyboard, a block's menu, a row dropped from Unscheduled, the Schedule dialog) ends in
-// `commit` or `schedule`: no problem with the place and it goes through; a problem opens "Move the visit" first. Moving by anything but "Schedule and notify the customer" leaves
-// the customer not notified. A click on a block goes to `onOpenJob` (the job page); without it the block is only selected. Nothing is sent.
+// day, the two panels, the dialogs). Every route that moves a visit (drag, resize, the keyboard, a row dropped from Unscheduled, Edit visit) ends in
+// `commit` or `schedule`: no problem with the place and it goes through; a problem opens "Move anyway?" first. A click on a block opens the peek (`peekId`); its Open job goes to
+// `onOpenJob` (the job page). Nothing is sent.
 
 export type Dialog =
   | { kind: "confirm"; action: Action; problems: string[] }
@@ -34,7 +33,6 @@ export interface ProtoInitial {
   view?: View
   day?: string
   panels?: { unscheduled?: boolean; map?: boolean }
-  tab?: "unscheduled" | "not-notified"
   selectedId?: string
   dialog?: Dialog
   /** the calendar's world; the walkthrough's by default */
@@ -55,7 +53,7 @@ export interface ProtoInitial {
   hidden?: string[]
   /** what a visit is worth and what was paid, for the List; the walkthrough reads its Jobs rows */
   moneyOf?: MoneyOf
-  /** toast seconds: 0 keeps it up (the stories); the prototype closes it after 10 */
+  /** toast seconds: 0 keeps it up (the stories); the prototype closes it after 10, or 4 with no action */
   toastSeconds?: number
 }
 
@@ -80,7 +78,6 @@ export function useScheduleProto(init: ProtoInitial = {}) {
   const [view, setView] = useState<View>(init.view ?? "week")
   const [day, setDay] = useState(init.day ?? world.today)
   const [panels, setPanels] = useState({ unscheduled: init.panels?.unscheduled ?? false, map: init.panels?.map ?? false })
-  const [tab, setTab] = useState<{ tab: "unscheduled" | "not-notified"; key: number }>({ tab: init.tab ?? "unscheduled", key: 0 })
   const [mapPick, setMapPick] = useState<string | null>(null)
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | undefined>(init.selectedId)
@@ -119,17 +116,18 @@ export function useScheduleProto(init: ProtoInitial = {}) {
     const job = state.unscheduled.find((j) => j.id === d.id)
     if (job) commit({ type: "place", jobId: job.id, to: { day: d.day, personId: d.personId, start: d.start } }, { id: job.id, day: d.day, personId: d.personId, start: d.start, minutes: job.minutes, town: job.town, kind: job.kind, point: typeof job.lat === "number" && typeof job.lng === "number" ? { lat: job.lat, lng: job.lng } : null })
   }
-  /** a block's menu: Move and Set a time are the one Schedule dialog */
-  const onAction = (id: string, a: BlockAction) => { if (a === "move") setDialog({ kind: "schedule", id, job: false }) }
-  const onSelect = (id: string) => (init.onOpenJob ? init.onOpenJob(id, id) : setSelectedId(id))
+  /** a click or Enter on a block opens the peek; another block swaps its content; Esc or Close shuts it */
+  const onSelect = (id: string) => (setSelectedId(id), wide || setPanels({ unscheduled: false, map: false }))
+  const closePeek = () => setSelectedId(undefined)
+  const openJob = (id: string) => init.onOpenJob?.(id, id)
+  /** Mark done: the walkthrough's visits have a job page with the reviewed flow (Done on, then How is this paid?), so it opens there; a standalone Schedule marks it in place */
+  const markDone = (id: string) => (init.onOpenJob ? init.onOpenJob(id, id) : dispatch({ type: "mark-done", id }))
 
   const setPanel = (k: "unscheduled" | "map", open: boolean) => setPanels((p) => (wide ? { ...p, [k]: open } : { unscheduled: k === "unscheduled" && open, map: k === "map" && open }))
   const togglePanel = (k: "unscheduled" | "map") => setPanel(k, !panels[k])
-  const openNotNotified = () => { setPanels((p) => (wide ? { ...p, unscheduled: true } : { unscheduled: true, map: false })); setTab((t) => ({ tab: "not-notified", key: t.key + 1 })) }
   const openDay = (d: string) => { setDay(d); setView("day") }
 
   const notify = (ids: string[]) => dispatch({ type: "ask-notify", ids })
-  const dontNotify = (ids: string[]) => dispatch({ type: "told", ids })
 
   /** the best times for a job with no day or a visit being moved, over the calendar as it stands */
   const bestFor = useCallback((s: Omit<Parameters<typeof bestTimesFor>[0], "state" | "people" | "today">) => bestTimesFor({ state, people, today, ...s }), [state, people, today])
@@ -148,7 +146,9 @@ export function useScheduleProto(init: ProtoInitial = {}) {
     const personId = personIdOf(people, r.person)
     if (!personId || !r.dayIso) return
     const to: Target = { day: r.dayIso, personId, start: startFromWords(r.time) }
-    dispatch(d.job ? { type: "place", jobId: d.id, to, notified: r.notify } : { type: "move", id: d.id, to, notified: r.notify })
+    dispatch(d.job ? { type: "place", jobId: d.id, to, notified: r.notify, minutes: r.minutes } : { type: "move", id: d.id, to, notified: r.notify, minutes: r.minutes })
+    // on a phone the full-screen peek would cover the result and hold the toast back, so it closes when the change is saved
+    if (!wide) setSelectedId(undefined)
   }
 
   /** the people whose day in view has an Any time stop to order (Day view only) */
@@ -156,10 +156,9 @@ export function useScheduleProto(init: ProtoInitial = {}) {
 
   return {
     shown, hidden, togglePerson, orderable, mapPick, setMapPick,
-    state, store, dispatch, people, wide, view, setView, day, setDay, panels, setPanel, togglePanel, tab, openNotNotified, hoverId, setHoverId, selectedId, setSelectedId, dialog, setDialog,
-    moneyOf: init.moneyOf, keys, openDay, notify, dontNotify, now: world.now, today, toastSeconds: init.toastSeconds ?? 10, jobs, bestFor, schedule,
-    commit, move, onMove, onResize, onDropExternal, onAction, onSelect, onNewJob: init.onNewJob, onOpenSettings: init.onOpenSettings,
-    notNotifiedCount: useMemo(() => state.visits.filter((b) => b.notTold).length, [state.visits]),
+    state, store, dispatch, people, wide, view, setView, day, setDay, panels, setPanel, togglePanel, hoverId, setHoverId, selectedId, setSelectedId, dialog, setDialog,
+    moneyOf: init.moneyOf, keys, openDay, notify, now: world.now, today, toastSeconds: init.toastSeconds, jobs, bestFor, schedule,
+    commit, move, onMove, onResize, onDropExternal, onSelect, closePeek, openJob, markDone, onNewJob: init.onNewJob, onOpenSettings: init.onOpenSettings,
   }
 }
 

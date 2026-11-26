@@ -37,7 +37,7 @@ export interface DayMapProps {
   className?: string
 }
 
-const STYLE = "https://tiles.openfreemap.org/styles/liberty"
+const STYLE = "https://tiles.openfreemap.org/styles/positron"
 /** Used when the tile style cannot be fetched (offline, blocked): a plain background, so the pins and route lines still draw. */
 const BLANK_STYLE = { version: 8 as const, sources: {}, layers: [{ id: "background", type: "background" as const, paint: { "background-color": "#f5f5f4" } }] }
 const STYLE_WAIT_MS = 4000

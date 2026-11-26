@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { JOBS, PEOPLE, RYAN, TECH, initialState } from "./schedule-prototype-data"
 import { openingsFor } from "./schedule-prototype-find"
-import { notToldList, placementProblems, reduce, whenWords, type ProtoState } from "./schedule-prototype-model"
+import { placementProblems, reduce, whenWords, type ProtoState } from "./schedule-prototype-model"
 import { columnsFor, mondayOf, monthDays, rangeWords, shift } from "./schedule-prototype-view"
 
 const start = () => initialState()
@@ -10,10 +10,10 @@ const at = (s: ProtoState, id: string) => s.visits.find((b) => b.id === id)!
 const data = ({ visits, was, unscheduled, meta, timeOff }: ProtoState) => ({ visits, was, unscheduled, meta, timeOff })
 
 describe("a move by any route", () => {
-  it("moves the visit, marks the customer not notified, and says so in one toast with Undo", () => {
+  it("moves the visit and says so in one toast that offers Notify the customer and Undo", () => {
     const s = reduce(start(), { type: "move", id: "v4", to: { day: "2026-11-26", personId: RYAN, start: 9 * 60 } })
-    expect(at(s, "v4")).toMatchObject({ day: "2026-11-26", start: 540, notTold: true })
-    expect(s.toast).toMatchObject({ message: "Moved to Thu, Nov 26, 9:00 am", notified: false, ids: ["v4"] })
+    expect(at(s, "v4")).toMatchObject({ day: "2026-11-26", start: 540 })
+    expect(s.toast).toMatchObject({ message: "Moved to Thu, Nov 26, 9:00 am", offerNotify: true, ids: ["v4"] })
     expect(s.was.v4).toMatchObject({ day: "2026-11-24", start: 480 })
   })
 
@@ -25,29 +25,30 @@ describe("a move by any route", () => {
     expect(undone.toast).toBeNull()
   })
 
-  it("a drop where the visit already is makes no toast and marks nothing", () => {
+  it("a drop where the visit already is makes no toast", () => {
     const same = reduce(start(), { type: "move", id: "v4", to: { day: "2026-11-24", personId: RYAN, start: 480 } })
     expect(same).toEqual(start())
     expect(reduce(start(), { type: "resize", id: "v4", minutes: 60 })).toEqual(start())
   })
 
-  it("keeps the first place a not-told visit came from", () => {
+  it("remembers where the visit was before its last move, for the words of the message", () => {
     const a = reduce(start(), { type: "move", id: "v4", to: { day: "2026-11-25", personId: RYAN, start: 8 * 60 } })
     const b = reduce(a, { type: "move", id: "v4", to: { day: "2026-11-26", personId: RYAN, start: 8 * 60 } })
-    expect(b.was.v4).toMatchObject({ day: "2026-11-24", start: 480 })
+    expect(b.was.v4).toMatchObject({ day: "2026-11-25", start: 480 })
   })
 
-  it("a resize is a move: the new length is in the toast and the visit is not told", () => {
+  it("a resize says the new time in its toast with Undo and no Notify, because the start did not move", () => {
     const s = reduce(start(), { type: "resize", id: "v4", minutes: 90 })
-    expect(at(s, "v4")).toMatchObject({ minutes: 90, notTold: true })
-    expect(s.toast?.message).toBe("Changed to 8:00 to 9:30 am")
+    expect(at(s, "v4")).toMatchObject({ minutes: 90 })
+    expect(s.toast).toMatchObject({ message: "Now 8:00 to 9:30 am", offerNotify: false })
+    expect(s.was.v4).toBeUndefined()
   })
 
-  it("a first placement says Visit scheduled, takes the job out of Unscheduled and puts the visit not told", () => {
+  it("a first placement says Visit scheduled, takes the job out of Unscheduled and puts the visit on the calendar", () => {
     const s = reduce(start(), { type: "place", jobId: "u-1", to: { day: "2026-11-26", personId: RYAN, start: 10 * 60 } })
     expect(s.toast?.message).toBe("Scheduled for Thu, Nov 26, 10:00 am")
     expect(s.unscheduled.map((j) => j.id)).not.toContain("u-1")
-    expect(at(s, "u-1")).toMatchObject({ title: "Kenosha Dr", notTold: true, start: 600 })
+    expect(at(s, "u-1")).toMatchObject({ title: "Kenosha Dr", start: 600 })
     expect(reduce(s, { type: "undo" }).unscheduled).toHaveLength(JOBS.length)
   })
 
@@ -58,49 +59,43 @@ describe("a move by any route", () => {
   })
 })
 
-describe("not notified", () => {
-  it("starts with three visits and lists where each was and is", () => {
-    const list = notToldList(start())
-    expect(list).toHaveLength(3)
-    expect(list.find((v) => v.id === "v5")).toMatchObject({ was: "Mon, Nov 23, 9:15 am", now: "Tue, Nov 24, 9:15 am" })
-  })
-  it("a customer with no phone or email is still listed, with no way to reach them", () => {
-    const hal = notToldList(start()).find((v) => v.id === "v5")!
-    expect(hal.phone).toBeUndefined()
-    expect(hal.email).toBeUndefined()
-  })
-  it("told clears the mark for the ids given, and only those", () => {
-    const s = reduce(start(), { type: "told", ids: ["v5"] })
-    expect(notToldList(s).map((v) => v.id)).toEqual(["v8", "v18"])
-    expect(s.was.v5).toBeUndefined()
-    expect(s.toast).toBeNull()
-  })
-})
-
 describe("Schedule and notify the customer", () => {
-  it("a move the dialog notified is not marked, and its toast offers Undo alone", () => {
+  it("a move the dialog notified has a toast that offers Undo alone", () => {
     const s = reduce(start(), { type: "move", id: "v5", to: { day: "2026-11-26", personId: RYAN, start: 9 * 60 }, notified: true })
-    expect(at(s, "v5").notTold).toBe(false)
-    expect(s.was.v5).toBeUndefined()
-    expect(s.toast).toMatchObject({ message: "Moved to Thu, Nov 26, 9:00 am", notified: true })
+    expect(s.toast).toMatchObject({ message: "Moved to Thu, Nov 26, 9:00 am", offerNotify: false })
   })
-  it("a job placed with notifying says Scheduled for and is not marked", () => {
+  it("a job placed with notifying says Scheduled for and offers Undo alone", () => {
     const s = reduce(start(), { type: "place", jobId: "u-1", to: { day: "2026-11-26", personId: RYAN, start: null }, notified: true })
-    expect(s.toast?.message).toBe("Scheduled for Thu, Nov 26")
-    expect(at(s, "u-1").notTold).toBe(false)
+    expect(s.toast).toMatchObject({ message: "Scheduled for Thu, Nov 26", offerNotify: false })
+  })
+  it("Edit visit moves the day and the length in one move", () => {
+    const s = reduce(start(), { type: "move", id: "v4", to: { day: "2026-11-26", personId: RYAN, start: 9 * 60 }, minutes: 90 })
+    expect(at(s, "v4")).toMatchObject({ day: "2026-11-26", start: 540, minutes: 90 })
+    expect(s.toast?.message).toBe("Moved to Thu, Nov 26, 9:00 am")
+  })
+  it("Edit visit with only a new length is a length change", () => {
+    const b = at(start(), "v4")
+    const s = reduce(start(), { type: "move", id: "v4", to: { day: b.day, personId: b.personId, start: b.start }, minutes: 90 })
+    expect(s.toast?.message).toBe("Now 8:00 to 9:30 am")
   })
 })
 
 describe("Notify the customer", () => {
-  it("queues the customers, one message at a time; Send clears each mark, Cancel leaves the rest marked", () => {
+  it("queues the customers, one message at a time; Send says Customer notified with no action, Close leaves nothing behind", () => {
     let s = reduce(start(), { type: "ask-notify", ids: ["v5", "v8"] })
     expect(s.notify).toEqual(["v5", "v8"])
     s = reduce(s, { type: "notify-next", sent: true })
-    expect(at(s, "v5").notTold).toBe(false)
     expect(s.notify).toEqual(["v8"])
-    s = reduce(s, { type: "notify-close" })
+    s = reduce(s, { type: "notify-next", sent: true })
     expect(s.notify).toEqual([])
-    expect(at(s, "v8").notTold).toBe(true)
+    expect(s.toast).toMatchObject({ message: "Customer notified", offerNotify: false, undo: null })
+    s = reduce(s, { type: "undo" })
+    expect(s.toast).not.toBeNull()
+    s = reduce(s, { type: "dismiss-toast" })
+    expect(s.toast).toBeNull()
+    s = reduce(reduce(start(), { type: "ask-notify", ids: ["v5"] }), { type: "notify-close" })
+    expect(s.notify).toEqual([])
+    expect(s.toast).toBeNull()
   })
 })
 
@@ -168,12 +163,12 @@ describe("the view", () => {
   it("a Week shows Monday to Saturday (Tech Two works Saturday, a visit sits on it); a Day carries its fill", () => {
     const s = start()
     expect(columnsFor("week", "2026-11-25", PEOPLE, s.visits, s.meta, "2026-11-25").map((c) => c.day)).toEqual(["2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27", "2026-11-28"])
-    expect(columnsFor("day", "2026-11-25", PEOPLE, s.visits, s.meta, "2026-11-25")[0]?.caption).toMatch(/^\d stops/)
+    expect(columnsFor("day", "2026-11-25", PEOPLE, s.visits, s.meta, "2026-11-25")[0]?.caption).toMatch(/^\d visits/)
   })
   it("a head carries each person's open time and driving, the towns, and a day nobody has room for reads full", () => {
     const s = start()
     const head = columnsFor("day", "2026-11-24", PEOPLE, s.visits, s.meta, "2026-11-25", s.timeOff)[0]!
-    expect(head.caption).toMatch(/^\d+ stops?$/)
+    expect(head.caption).toMatch(/^\d+ visits?$/)
     expect(head.towns).toMatch(/\w+ \d/)
     expect(head.stats?.[RYAN]?.open).toMatch(/ open$|^Full$/)
     const crowded = s.visits.filter((b) => b.day === "2026-11-24").map((b) => ({ ...b, minutes: 9 * 60 }))

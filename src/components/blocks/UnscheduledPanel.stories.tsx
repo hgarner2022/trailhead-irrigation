@@ -2,7 +2,7 @@ import { useState } from "react"
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, fn } from "storybook/test"
 import { UnscheduledPanel, type UnscheduledPanelProps } from "./UnscheduledPanel"
-import { NOT_TOLD, UNSCHEDULED } from "./scheduler-panels-fixtures"
+import { UNSCHEDULED } from "./scheduler-panels-fixtures"
 
 // The Schedule's Unscheduled list, docked at the right from 1280 (the week narrows, nothing is covered) and a sheet from the bottom on a phone. Each state has a 1280 story and a 375 twin.
 const LAPTOP = { viewport: { value: "laptop", isRotated: false } }
@@ -23,7 +23,7 @@ const meta = {
   component: UnscheduledPanel,
   parameters: { layout: "fullscreen" },
   globals: LAPTOP,
-  args: { open: true, onOpenChange: () => {}, jobs: UNSCHEDULED, notTold: NOT_TOLD, onSchedule: fn(), onHover: fn(), onNotify: fn(), onDontTell: fn(), onNotifyAll: fn() },
+  args: { open: true, onOpenChange: () => {}, jobs: UNSCHEDULED, onSchedule: fn(), onHover: fn(), onScheduleAll: fn() },
   render: (args) => <Docked {...args} />,
 } satisfies Meta<typeof UnscheduledPanel>
 export default meta
@@ -42,7 +42,7 @@ export const Default: Story = {
 export const Phone: Story = { globals: PHONE }
 
 /** Nothing waits for a day. */
-export const Empty: Story = { args: { jobs: [], notTold: [] } }
+export const Empty: Story = { args: { jobs: [] } }
 export const EmptyPhone: Story = { ...Empty, globals: PHONE }
 
 export const SortedNewest: Story = { args: { defaultSort: "newest" } }
@@ -57,10 +57,3 @@ export const RowLitFromOutsidePhone: Story = { ...RowLitFromOutside, globals: PH
 /** The calendar's drag library hands each row its props; the row is marked draggable and shows a grip. */
 export const DraggableRows: Story = { args: { dragProps: (id) => ({ "aria-roledescription": "draggable", id: `drag-${id}` }) } }
 export const DraggableRowsPhone: Story = { ...DraggableRows, globals: PHONE }
-
-/** The second tab: moved visits whose customer has not been notified, each with Notify the customer and Don't notify, and Notify all in the footer. */
-export const NotToldTab: Story = { args: { defaultTab: "not-notified" } }
-export const NotToldTabPhone: Story = { ...NotToldTab, globals: PHONE }
-
-export const NotToldEmpty: Story = { args: { defaultTab: "not-notified", notTold: [] } }
-export const NotToldEmptyPhone: Story = { ...NotToldEmpty, globals: PHONE }

@@ -1,5 +1,5 @@
 import { addDays, weekdayOf, WEEKDAYS, worksOn } from "@/lib/admin/calendar"
-import { dayFill, fillWords, hoursWords, townsWords } from "@/lib/admin/day-fill"
+import { dayFill, hoursWords, townsWords } from "@/lib/admin/day-fill"
 import type { Person, Visit } from "@/lib/admin/types"
 import { shortDate } from "@/lib/admin/format"
 import { longDay } from "@/lib/portal/words"
@@ -66,8 +66,8 @@ export function columnsFor(view: View, day: string, people: readonly Person[], b
     const days = people.filter((p) => worksOn(p, d)).map((p) => personDay(cal, p, d))
     const stats: Record<string, ColumnStat> = {}
     for (const pd of days) stats[pd.personId] = { open: pd.full ? "Full" : `${compactHours(pd.openMinutes)} open`, driving: pd.driving > 0 ? hoursWords(pd.driving) : undefined }
-    // "3 stops" over everyone; "Full" takes the count's place only when every person who works the day is full
-    const caption = fill.stops === 0 ? fillWords(fill) : days.length && days.every((x) => x.full) ? "Full" : `${fill.stops} ${fill.stops === 1 ? "stop" : "stops"}`
+    // "3 visits" over everyone; "Full" takes the count's place only when every person who works the day is full; an empty day has no chip
+    const caption = fill.stops === 0 ? undefined : days.length && days.every((x) => x.full) ? "Full" : `${fill.stops} ${fill.stops === 1 ? "visit" : "visits"}`
     return { caption, towns: townsWords(fill) || undefined, stats }
   }
   if (view === "day") return dayColumns([day]).map((c) => ({ ...c, today: day === today, count: undefined, ...head(day) }))
@@ -87,7 +87,7 @@ export function monthDays(blocks: readonly GridBlock[], timeOff: readonly TimeOf
     const wholeOff = new Set(off.filter((o) => o.start === null || o.end === null).map((o) => o.personId))
     return {
       day, stops: mine.length, towns: [...counts].sort((a, b) => b[1] - a[1]).map(([t]) => t), personIds: [...new Set(mine.map((b) => b.personId))],
-      offIds: [...new Set(off.map((o) => o.personId))], allOff: working.length > 0 && working.every((p) => wholeOff.has(p.id)), notTold: mine.some((b) => b.notTold),
+      offIds: [...new Set(off.map((o) => o.personId))], allOff: working.length > 0 && working.every((p) => wholeOff.has(p.id)),
     }
   })
 }

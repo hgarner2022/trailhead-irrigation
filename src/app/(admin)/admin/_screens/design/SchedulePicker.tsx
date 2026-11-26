@@ -86,15 +86,16 @@ export interface SchedulePickerProps {
 }
 
 export function SchedulePicker({ minutes = 60, firstName, channel = "text", onChange, signedIn = "Ryan Garner", address = "480 Briggs St", service = "Sprinkler repair", initialPeople = [PEOPLE[0]], initialCrewText = false, best }: SchedulePickerProps) {
-  const first = best ? [...best.rows, ...(best.forced ?? [])].find((r) => r.id === (best.initialPickId ?? recommendedId(best.rows))) : undefined
-  const [dayIso, setDayIso] = useState(first?.day ?? "2026-11-24")
+  const first = best ? [...best.rows, ...(best.forced ?? [])].find((r) => r.id === (best.initialPickId ?? (best.current ? undefined : recommendedId(best.rows)))) : undefined
+  const own = best?.current && !first ? best.current : undefined
+  const [dayIso, setDayIso] = useState(first?.day ?? own?.day ?? "2026-11-24")
   const [sort, setSort] = useState<OpeningSort>("recommended")
   const [pickedId, setPickedId] = useState<string | null>(first?.id ?? null)
-  const [people, setPeople] = useState<string[]>(best && first ? [first.personName] : initialPeople)
+  const [people, setPeople] = useState<string[]>(best && first ? [first.personName] : own ? [own.personName] : initialPeople)
   const [crew, setCrew] = useState(initialCrewText)
   const [instructions, setInstructions] = useState("")
   const person = people[0]!
-  const [at, setAt] = useState<number | "any">(first ? toMinutes(first.start) : "any")
+  const [at, setAt] = useState<number | "any">(first ? toMinutes(first.start) : own?.start ? toMinutes(own.start) : "any")
   const day = best ? { ...dayOf(dayIso), stops: best.stopsOf(dayIso).map((x) => ({ ...x, person: x.person as Stop["person"] })) } : dayOf(dayIso)
   const names = best ? best.people : [...PEOPLE]
   const { starts, stops } = slotsOf(day, person, minutes)

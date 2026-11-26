@@ -1,6 +1,4 @@
-import type { ReactNode } from "react"
 import type { Person } from "@/lib/admin/types"
-import type { BlockAction } from "./TimeBlock"
 import type { GridBlock, Target, TimeOff } from "./time-grid-model"
 
 /** One day of the clock; the people shown are split inside it (Week: seven of these; Day: one, with a column per person). */
@@ -12,7 +10,7 @@ export interface GridColumn {
   today?: boolean
   /** "2 visits": the small count chip under the day */
   count?: string
-  /** a line under the label, such as the day's fill ("5 stops, 3 h open"); Day view */
+  /** a line under the label, such as the day's fill ("5 visits, 3 h open"); Day view */
   caption?: string
   /** "Erie 3, Lafayette 2": the towns in the day, under the caption */
   towns?: string
@@ -53,8 +51,6 @@ export interface TimeGridProps {
   drives?: ReadonlyMap<string, number>
   /** show each person's name over their column (Day) instead of their initials (Week) */
   showPersonNames?: boolean
-  /** the mark for a customer not told; the other agent's bell goes here */
-  notToldMark?: (block: GridBlock) => ReactNode
   /** a draggable row from outside the grid dropped on the clock */
   onDropExternal?: (drop: ExternalDrop) => void
   onSelect?: (id: string) => void
@@ -65,10 +61,10 @@ export interface TimeGridProps {
   onTimeOffDrag?: (span: TimeOffDragEvent) => void
   /** a time off band's label was pressed: the host opens it to edit or remove it */
   onTimeOffClick?: (id: string) => void
+  /** a Week day's head was pressed: the host shows that day (the Day view) */
+  onOpenDay?: (day: string) => void
   /** the phone's Today chip at the end of the day strip: the host goes to today's week */
   onToday?: () => void
-  /** the block menu's "Move" and "Set a time" (the host opens its dialog or picker); the others are handled here */
-  onAction?: (id: string, action: BlockAction) => void
   /** the phone's own All / person chips; the Schedule draws one person control in its toolbar and turns this off */
   personRow?: boolean
   className?: string

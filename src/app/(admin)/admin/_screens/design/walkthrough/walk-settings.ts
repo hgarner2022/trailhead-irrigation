@@ -31,5 +31,5 @@ export function datesWords(kind: string): string | null {
 /** The note for a day outside the kind's dates; null inside them. A note, not a refusal: the office may book any day. */
 export const outsideDates = (kind: string, day: string): string | null => {
   const words = datesWords(kind)
-  return words && !inBookableWindow(datesOf(kind), day) ? `Outside this service's dates, ${words}.` : null
+  return words && !inBookableWindow(datesOf(kind), day) ? `Outside the dates for this service, ${words}.` : null
 }

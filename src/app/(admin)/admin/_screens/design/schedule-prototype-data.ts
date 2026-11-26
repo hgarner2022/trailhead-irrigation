@@ -36,12 +36,6 @@ function metaOf(b: GridBlock, i: number): Meta {
   return { customer, phone, email, ...pin }
 }
 
-const SEED_NOT_TOLD: Record<string, { day: string; personId: string; start: number | null; minutes: number }> = {
-  v5: { day: WEEK_START, personId: RYAN, start: 9 * 60 + 15, minutes: 60 },
-  v8: { day: addDays(WEEK_START, 1), personId: RYAN, start: 13 * 60 + 30, minutes: 60 },
-  v18: { day: addDays(WEEK_START, 1), personId: RYAN, start: 11 * 60, minutes: 60 },
-}
-
 export const JOBS: ProtoJob[] = [
   { id: "u-1", customer: "Andrea Reyes", town: "Erie", service: "Spring turn-on", length: "1 h", minutes: 60, kind: "turn-on", street: "Kenosha Dr", addedOn: "2026-11-09", phone: "(970) 555-0142", ...pointNear("Erie", "u-1") },
   { id: "u-2", customer: "Ben Alder", town: "Lafayette", service: "Repair", length: "1 h 30 min", minutes: 90, kind: "repair", street: "Mulberry St", addedOn: "2026-11-16", email: "ben@example.com", ...pointNear("Lafayette", "u-2") },
@@ -49,13 +43,13 @@ export const JOBS: ProtoJob[] = [
   { id: "u-4", customer: "Dev Patel", town: "Erie", service: "Mid-season inspection", length: "1 h 30 min", minutes: 90, kind: "inspection", street: "Sherman St", addedOn: "2026-11-23", phone: "(970) 555-0188", ...pointNear("Erie", "u-4") },
 ]
 
-/** The state a story starts from: the whole week, three visits not told, four jobs with no day. */
+/** The state a story starts from: the whole week, four jobs with no day. */
 export function initialState(over: Partial<Pick<ProtoState, "timeOff" | "visits" | "unscheduled" | "meta" | "was">> = {}): ProtoState {
-  const all: GridBlock[] = [...WEEK_BLOCKS, SATURDAY, ...WEEK_ANYTIME].map((b) => (SEED_NOT_TOLD[b.id] ? { ...b, notTold: true } : b))
+  const all: GridBlock[] = [...WEEK_BLOCKS, SATURDAY, ...WEEK_ANYTIME]
   const visits = over.visits ?? all
   const meta: Record<string, Meta> = over.meta ?? {}
   if (!over.meta) visits.forEach((b, i) => (meta[b.id] = metaOf(b, i)))
-  const was = over.was ?? (over.meta ? {} : Object.fromEntries(Object.entries(SEED_NOT_TOLD).filter(([id]) => visits.some((b) => b.id === id))))
+  const was = over.was ?? {}
   return { visits, was, unscheduled: over.unscheduled ?? JOBS, meta, timeOff: over.timeOff ?? WEEK_OFF, toast: null, seq: 0, notify: [] }
 }
 

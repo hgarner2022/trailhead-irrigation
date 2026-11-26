@@ -6,7 +6,7 @@ import { CalendarLegend } from "./CalendarLegend"
 describe("CalendarLegend", () => {
   it("names every mark in the product's words, and folds to its button", async () => {
     render(<CalendarLegend />)
-    for (const word of ["Done", "Customer not notified", "Waiting on customer", "Overlaps", "Time off"]) expect(screen.getByText(word)).toBeInTheDocument()
+    for (const word of ["Done", "Waiting on customer", "Overlaps", "Time off"]) expect(screen.getByText(word)).toBeInTheDocument()
     const button = screen.getByRole("button", { name: "Legend" })
     expect(button).toHaveAttribute("aria-expanded", "true")
     await userEvent.click(button)

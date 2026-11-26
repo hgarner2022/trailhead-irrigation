@@ -6,7 +6,7 @@ const meta = {
   title: "Blocks/DayHeader",
   component: DayHeader,
   parameters: { layout: "padded" },
-  args: { label: "Tue 24", day: "2026-11-24", fill: "5 stops, 3 h open", towns: "Erie 3, Lafayette 2", onNewJob: fn() },
+  args: { label: "Tue 24", day: "2026-11-24", fill: "5 visits, 3 h open", towns: "Erie 3, Lafayette 2", onNewJob: fn() },
   decorators: [(Story) => <div className="max-w-44 rounded-lg border border-border p-2"><Story /></div>],
 } satisfies Meta<typeof DayHeader>
 export default meta
@@ -19,7 +19,7 @@ export const Default: Story = {}
 export const Today: Story = { args: { today: true } }
 
 /** An empty day and a day off carry no towns line. */
-export const Empty: Story = { args: { fill: "No stops", towns: "" } }
+export const Empty: Story = { args: { fill: "No visits", towns: "" } }
 
 export const DayOff: Story = { args: { fill: "Day off", towns: "" } }
 

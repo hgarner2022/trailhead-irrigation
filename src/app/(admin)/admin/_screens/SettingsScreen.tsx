@@ -145,7 +145,7 @@ export function SettingsScreen({ data, today, defaultTab, who = "Hannah", keys, 
 
   return (
     <div data-slot="settings-screen" className="space-y-6">
-      <PageHeader title="Settings" context={readOnly ? "You can read the settings. A manager changes them." : "A change applies to the next opening offered."} />
+      <PageHeader title="Settings" context={readOnly ? "You can read the settings. A manager changes them." : "Applies to new openings only. Booked visits don't move."} />
       <Tabs value={open} onValueChange={(v) => setTab(v as SettingsTab)} orientation="vertical" className="flex-col gap-6 md:flex-row md:items-start md:gap-8">
         <TabsList
           variant="line"

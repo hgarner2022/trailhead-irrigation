@@ -13,7 +13,7 @@ const meta = {
   component: AnytimeStrip,
   parameters: { layout: "padded" },
   globals: LAPTOP,
-  args: { blocks: three, onSelect: () => {}, onAction: () => {} },
+  args: { blocks: three, onSelect: () => {} },
   decorators: [(Story) => <div className="max-w-xl rounded-lg border border-border bg-background p-2"><Story /></div>],
 } satisfies Meta<typeof AnytimeStrip>
 export default meta

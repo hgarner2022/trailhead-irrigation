@@ -30,11 +30,11 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Two people, each in their own colour, with a chip each. */
+/** Two people, each in their own colour, with the People control. */
 export const Default: Story = {}
 export const Phone: Story = { globals: PHONE }
 
-/** No stops on the day. */
+/** No visits on the day. */
 export const Empty: Story = { args: { stops: [] } }
 export const EmptyPhone: Story = { ...Empty, globals: PHONE }
 

@@ -1,5 +1,6 @@
 import type { Person, Town } from "@/lib/admin/types"
 import { shortDay } from "@/emails/format"
+import { firstNameOf } from "@/lib/admin/people"
 import { recommendedId } from "@/components/blocks/find-a-time-model"
 import { clockWords } from "@/components/blocks/time-grid-model"
 import type { BestTimes } from "@/components/blocks/best-times"
@@ -12,7 +13,7 @@ import { placementProblems, type ProtoJob, type ProtoState } from "./schedule-pr
 // dialog, each with the engine's reason line and the minutes of driving it adds, the ones that break a rule, the day's booked stops, one chosen day's own openings, and the words
 // of what a chosen place breaks. Pure.
 
-export interface BestInput { state: Pick<ProtoState, "visits" | "timeOff"> & Partial<Pick<ProtoState, "meta">>; people: readonly Person[]; today: string; town: Town; minutes: number; kind?: string; point?: { lat: number; lng: number } | null; /** the visit being moved: its own place does not count */ excludeId?: string; initialPickId?: string; currentDay?: string; dates?: { bookableFrom?: string | null; bookableTo?: string | null } }
+export interface BestInput { /** Edit visit: the visit's own place, the dialog opens on it */ current?: BestTimes["current"]; state: Pick<ProtoState, "visits" | "timeOff"> & Partial<Pick<ProtoState, "meta">>; people: readonly Person[]; today: string; town: Town; minutes: number; kind?: string; point?: { lat: number; lng: number } | null; /** the visit being moved: its own place does not count */ excludeId?: string; initialPickId?: string; currentDay?: string; dates?: { bookableFrom?: string | null; bookableTo?: string | null } }
 
 export function bestTimesFor(i: BestInput): BestTimes {
   const state = { visits: i.state.visits.filter((b) => b.id !== i.excludeId), timeOff: i.state.timeOff, meta: i.state.meta }
@@ -27,6 +28,7 @@ export function bestTimesFor(i: BestInput): BestTimes {
     forced: found.forced,
     initialPickId: i.initialPickId,
     currentDay: i.currentDay,
+    current: i.current,
     stopsOf: (iso) => state.visits.filter((b) => b.day === iso && b.start !== null).map((b) => ({ start: b.start!, minutes: b.minutes, name: b.name, town: b.town, person: nameOf(b.personId) })),
     dayRows: (iso) => { const d = dayOpenings(find, iso); return { rows: d.openings, forced: d.forced } },
     notes: (day) => { const n = i.kind ? outsideDates(i.kind, day) : null; return [...(n && !i.dates ? [n] : []), ...windowLines(i.today, { old: i.currentDay, next: day })] },
@@ -34,11 +36,11 @@ export function bestTimesFor(i: BestInput): BestTimes {
   }
 }
 
-/** The one line an Unscheduled row shows for its job: "Suggested: Thu, Nov 26, 9:00 am, Ryan Garner", with the row it names. Null when nothing is open. */
+/** The one line an Unscheduled row shows for its job: "Suggested: Thu, Nov 26, 9:00 am with Ryan", with the row it names. Null when nothing is open. */
 export function suggestionFor(job: Pick<ProtoJob, "town" | "minutes" | "kind" | "lat" | "lng">, i: Omit<BestInput, "town" | "minutes" | "kind" | "point">): { rowId: string; words: string } | null {
   const best = bestTimesFor({ ...i, town: job.town, minutes: job.minutes, kind: job.kind, point: typeof job.lat === "number" && typeof job.lng === "number" ? { lat: job.lat, lng: job.lng } : null })
   const row = best.rows.find((r) => r.id === recommendedId(best.rows))
   if (!row) return null
   const [h, m] = row.start.split(":").map(Number) as [number, number]
-  return { rowId: row.id, words: `Suggested: ${shortDay(row.day)}, ${clockWords(h * 60 + m)}, ${row.personName}` }
+  return { rowId: row.id, words: `Suggested: ${shortDay(row.day)}, ${clockWords(h * 60 + m)} with ${firstNameOf(row.personName) ?? row.personName}` }
 }

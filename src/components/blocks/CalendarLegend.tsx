@@ -3,16 +3,14 @@
 import { useState } from "react"
 import { Check, ChevronDown, Clock3 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { NotTold } from "./NotTold"
 import { HATCH_STYLE } from "./time-grid-style"
 
-// One line under the calendar that names every mark a visit can carry, in the words the rest of the product uses (docs/plans/2026-11-25-scheduler-holistic-audit.md, row 17): Done, Customer not
-// notified, Waiting on customer, Overlaps, Time off. The same on a laptop and a phone, and it folds to its one button when it is in the way. A person's colour is named by the head of each day, so
+// One line under the calendar that names every mark a visit can carry, in the words the rest of the product uses (docs/plans/2026-11-25-scheduler-holistic-audit.md, row 17): Done, Waiting
+// on customer, Overlaps, Time off. The same on a laptop and a phone, and it folds to its one button when it is in the way. A person's colour is named by the head of each day, so
 // it is not repeated here. Pure render; the open state is its own.
 
 const MARKS: { key: string; mark: React.ReactNode; word: string }[] = [
   { key: "done", mark: <Check aria-hidden className="size-3.5 text-positive-deep" />, word: "Done" },
-  { key: "not-notified", mark: <NotTold className="size-4" />, word: "Customer not notified" },
   { key: "waiting", mark: <Clock3 aria-hidden className="size-3.5 text-warning-ink" />, word: "Waiting on customer" },
   { key: "overlaps", mark: <span aria-hidden className="size-3.5 rounded-sm outline outline-2 -outline-offset-1 outline-destructive" />, word: "Overlaps" },
   { key: "off", mark: <span aria-hidden className="size-3.5 rounded-sm border border-border [--hatch:var(--color-navy)]" style={HATCH_STYLE} />, word: "Time off" },

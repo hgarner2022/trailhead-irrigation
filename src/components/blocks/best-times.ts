@@ -16,11 +16,13 @@ export interface BestTimes {
   stopsOf: (iso: string) => BestStop[]
   /** a chosen day's own openings, ranked the same way, and the times of that day that break a rule (greyed, with their words) */
   dayRows?: (iso: string) => { rows: readonly Opening[]; forced: readonly Opening[] }
-  /** quiet notes for a chosen day that do not stop it: "Outside this service's dates, Oct 1 to Oct 31." */
+  /** quiet notes for a chosen day that do not stop it: "Outside the dates for this service, Oct 1 to Oct 31." */
   notes?: (day: string) => string[]
   problems?: (place: { day: string; person: string; start: number | null }) => string[]
   /** a row already picked: the dialog opens on it (a row's suggestion, or the recommended time behind Schedule) */
   initialPickId?: string
   /** the day the visit being moved has now: the dialog opens "Another day" when it is not one of the rows */
   currentDay?: string
+  /** Edit visit opens on the visit's own place, with no row picked, so a change of length alone does not move it ("HH:MM", null for Any time) */
+  current?: { day: string; start: string | null; personName: string }
 }

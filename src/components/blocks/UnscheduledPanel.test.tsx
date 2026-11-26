@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { UnscheduledPanel } from "./UnscheduledPanel"
 import { sortJobs } from "./unscheduled-model"
-import { NOT_TOLD, UNSCHEDULED } from "./scheduler-panels-fixtures"
+import { UNSCHEDULED } from "./scheduler-panels-fixtures"
 
 const XL = "(min-width: 1280px)"
 function stub(wide: boolean) {
@@ -26,7 +26,7 @@ describe("sortJobs", () => {
 describe("UnscheduledPanel docked", () => {
   it("is a non-modal aside with the count in its heading and a row per job", () => {
     stub(true)
-    render(<UnscheduledPanel open onOpenChange={() => {}} jobs={UNSCHEDULED} notTold={NOT_TOLD} onSchedule={() => {}} />)
+    render(<UnscheduledPanel open onOpenChange={() => {}} jobs={UNSCHEDULED} onSchedule={() => {}} />)
     const aside = screen.getByRole("complementary", { name: "Unscheduled (4)" })
     expect(aside).toHaveAttribute("data-mode", "docked")
     expect(screen.queryByRole("dialog")).toBeNull()
@@ -74,25 +74,11 @@ describe("UnscheduledPanel docked", () => {
     render(<UnscheduledPanel open onOpenChange={() => {}} jobs={[]} onSchedule={() => {}} />)
     expect(screen.getByText("Every job has a day.")).toBeInTheDocument()
   })
-  it("lists the visits not notified with Notify the customer, Don't notify and Notify all", async () => {
+  it("is a plain list: no tabs, no Not notified", () => {
     stub(true)
-    const onNotify = vi.fn()
-    const onDontTell = vi.fn()
-    const onAll = vi.fn()
-    render(<UnscheduledPanel open onOpenChange={() => {}} jobs={UNSCHEDULED} notTold={NOT_TOLD} defaultTab="not-notified" onSchedule={() => {}} onNotify={onNotify} onDontTell={onDontTell} onNotifyAll={onAll} />)
-    expect(screen.getByRole("tab", { name: "Not notified" })).toHaveAttribute("aria-selected", "true")
-    await userEvent.click(screen.getByRole("button", { name: "Notify the customer Dana Reed" }))
-    expect(onNotify).toHaveBeenCalledWith(expect.objectContaining({ id: "n-2" }))
-    await userEvent.click(screen.getByRole("button", { name: "Don't notify Percy Lund" }))
-    expect(onDontTell).toHaveBeenCalledWith(expect.objectContaining({ id: "n-3" }))
-    await userEvent.click(screen.getByRole("button", { name: "Notify all" }))
-    expect(onAll).toHaveBeenCalledOnce()
-  })
-  it("has no Notify all with nothing to tell", () => {
-    stub(true)
-    render(<UnscheduledPanel open onOpenChange={() => {}} jobs={UNSCHEDULED} notTold={[]} defaultTab="not-notified" onSchedule={() => {}} onNotifyAll={() => {}} />)
-    expect(screen.queryByRole("button", { name: "Notify all" })).toBeNull()
-    expect(screen.getByText("Every customer has been notified.")).toBeInTheDocument()
+    render(<UnscheduledPanel open onOpenChange={() => {}} jobs={UNSCHEDULED} onSchedule={() => {}} />)
+    expect(screen.queryByRole("tab")).toBeNull()
+    expect(screen.queryByText(/Not notified|Notify all/)).toBeNull()
   })
 })
 

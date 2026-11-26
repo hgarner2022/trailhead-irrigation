@@ -1,15 +1,15 @@
 "use client"
 
-import { useRef, useState, type KeyboardEvent, type ReactNode } from "react"
+import { useRef, useState, type KeyboardEvent } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { weekdayName } from "@/lib/admin/calendar"
 import { firstNameOf } from "@/lib/admin/people"
 import type { Person } from "@/lib/admin/types"
 import { cn } from "@/lib/utils"
-import { keyTarget, monthOf, monthTitle, monthWeeks, shiftMonth, stopsWords, townsLine, type MonthDay } from "./month-grid-model"
+import { keyTarget, monthOf, monthTitle, monthWeeks, shiftMonth, visitsWords, townsLine, type MonthDay } from "./month-grid-model"
 import { HATCH_STYLE, personStyle } from "./time-grid-style"
 
-// The Month view (docs/plans/2026-11-25-scheduler-design.md, 7.4): each day a button with its stop count, up to two towns then "+1", a dot for each
+// The Month view (docs/plans/2026-11-25-scheduler-design.md, 7.4): each day a button with its visit count, up to two towns then "+1", a dot for each
 // person working it in their colour, a hatch when someone is off (the whole cell when everyone is), a small mark when the day holds a move the customer
 // has not been told about, and today marked. A cell opens that day (`onOpenDay`; the screen goes to Day). A real grid for keyboard and screen readers,
 // as DayCalendar is: one cell in the Tab order, arrows by day and week, Home and End to the ends of the week, Page Up and Page Down by month.
@@ -23,8 +23,6 @@ export interface MonthGridProps {
   people: readonly Person[]
   today?: string
   selectedDay?: string
-  /** the other agent's bell for a not-told day; a small gold dot when absent */
-  notToldMark?: ReactNode
   onOpenDay?: (day: string) => void
   onMonthChange?: (month: string) => void
   className?: string
@@ -32,7 +30,7 @@ export interface MonthGridProps {
 
 const WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
-export function MonthGrid({ month, days, people, today, selectedDay, notToldMark, onOpenDay, onMonthChange, className }: MonthGridProps) {
+export function MonthGrid({ month, days, people, today, selectedDay, onOpenDay, onMonthChange, className }: MonthGridProps) {
   const grid = useRef<HTMLDivElement>(null)
   const [focus, setFocus] = useState<string | null>(null)
   const by = new Map(days.map((d) => [d.day, d]))
@@ -71,8 +69,8 @@ export function MonthGrid({ month, days, people, today, selectedDay, notToldMark
               const isToday = day === today
               const off = d?.offIds ?? []
               const label = [
-                `${weekdayName(day)}, ${Number(day.slice(8))}`, isToday && "today", stops ? `${stopsWords(stops)}${d?.towns.length ? ` in ${townsLine(d.towns)}` : ""}` : "no stops",
-                d?.allOff ? "everyone off" : off.length ? `${off.map(nameOf).join(" and ")} off` : false, d?.notTold && "a move the customer has not been notified about",
+                `${weekdayName(day)}, ${Number(day.slice(8))}`, isToday && "today", stops ? `${visitsWords(stops)}${d?.towns.length ? ` in ${townsLine(d.towns)}` : ""}` : "no visits",
+                d?.allOff ? "everyone off" : off.length ? `${off.map(nameOf).join(" and ")} off` : false,
               ].filter(Boolean).join(", ")
               return (
                 <div key={day} role="gridcell" aria-selected={selectedDay === day} className="relative bg-background">
@@ -88,7 +86,7 @@ export function MonthGrid({ month, days, people, today, selectedDay, notToldMark
                     className={cn("relative flex min-h-14 w-full cursor-pointer flex-col items-start gap-0.5 p-1.5 text-left transition-colors hover:bg-cream focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy md:min-h-24", selectedDay === day && "bg-cream ring-2 ring-inset ring-navy")}
                   >
                     <span aria-hidden className={cn("flex size-6 items-center justify-center rounded-full text-sm tabular-nums", isToday ? "bg-navy font-semibold text-white" : "text-navy")}>{Number(day.slice(8))}</span>
-                    {stops > 0 && <span aria-hidden className="font-display text-xl leading-none text-navy md:text-lg">{stops}<span className="hidden text-xs font-sans text-navy-light md:inline">{stops === 1 ? " stop" : " stops"}</span></span>}
+                    {stops > 0 && <span aria-hidden className="font-display text-xl leading-none text-navy md:text-lg">{stops}<span className="hidden text-xs font-sans text-navy-light md:inline">{stops === 1 ? " visit" : " visits"}</span></span>}
                     {d && d.towns.length > 0 && <span aria-hidden className="hidden max-w-full truncate text-xs text-navy-light md:block">{townsLine(d.towns)}</span>}
                     {d && d.personIds.length > 0 && (
                       <span aria-hidden className="mt-auto hidden gap-1 md:flex">
@@ -99,7 +97,6 @@ export function MonthGrid({ month, days, people, today, selectedDay, notToldMark
                   {off.length > 0 && !d?.allOff && (
                     <span aria-hidden data-slot="month-off" className={cn("pointer-events-none absolute inset-x-0 bottom-0 h-2 border-t border-border/60", personStyle(Math.max(0, people.findIndex((p) => p.id === off[0]))).hatch)} style={HATCH_STYLE} />
                   )}
-                  {d?.notTold && <span data-slot="month-not-told" aria-hidden className="pointer-events-none absolute right-0.5 top-0.5">{notToldMark ?? <span className="block size-2 rounded-full bg-warning" />}</span>}
                 </div>
               )
             })}
@@ -108,7 +105,6 @@ export function MonthGrid({ month, days, people, today, selectedDay, notToldMark
       </div>
       <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-navy-light">
         {people.map((p, i) => <span key={p.id} className="inline-flex items-center gap-1.5"><span aria-hidden className={cn("size-2 rounded-full", personStyle(i).dot)} />{p.name}</span>)}
-        <span className="inline-flex items-center gap-1.5">{notToldMark ?? <span aria-hidden className="size-2 rounded-full bg-warning" />}Customer not notified</span>
       </p>
     </div>
   )

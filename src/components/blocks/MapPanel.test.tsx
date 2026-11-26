@@ -20,18 +20,18 @@ afterEach(() => {
 })
 
 describe("MapPanel", () => {
-  it("is a docked aside named Map with a chip per person", () => {
+  it("is a docked aside named Map with the People control", () => {
     render(<MapPanel open onOpenChange={() => {}} stops={STOPS} people={PEOPLE} day="Tue, Nov 24" />)
     expect(screen.getByRole("complementary", { name: "Map, Tue, Nov 24" })).toHaveAttribute("data-mode", "docked")
-    expect(screen.getByRole("button", { name: "Ryan Garner" })).toHaveAttribute("aria-pressed", "true")
-    expect(screen.getByRole("button", { name: "Tech Two" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "People: Everyone" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Unscheduled" })).toBeNull()
     expect(last?.stops).toHaveLength(5)
   })
-  it("hides one person's stops when their chip is pressed, and keeps everyone's colour by passing every person", async () => {
+  it("hides one person's stops when they are unticked in People, and keeps everyone's colour by passing every person", async () => {
     render(<MapPanel open onOpenChange={() => {}} stops={STOPS} people={PEOPLE} />)
-    await userEvent.click(screen.getByRole("button", { name: "Tech Two" }))
-    expect(screen.getByRole("button", { name: "Tech Two" })).toHaveAttribute("aria-pressed", "false")
+    await userEvent.click(screen.getByRole("button", { name: "People: Everyone" }))
+    await userEvent.click(await screen.findByRole("checkbox", { name: "Tech Two" }))
+    expect(screen.getByRole("checkbox", { name: "Tech Two" })).not.toBeChecked()
     expect(last?.stops.every((s) => s.personId === "person_truck-1")).toBe(true)
     expect(last?.people).toHaveLength(2)
   })
@@ -60,12 +60,12 @@ describe("MapPanel", () => {
     await userEvent.click(screen.getByRole("button", { name: "Tue 24" }))
     expect(onDay).toHaveBeenCalledWith("2026-11-24")
   })
-  it("has no person chips for one person", () => {
+  it("has no People control for one person", () => {
     render(<MapPanel open onOpenChange={() => {}} stops={STOPS} people={PEOPLE.slice(0, 1)} />)
-    expect(screen.queryByRole("button", { name: "Ryan Garner" })).toBeNull()
+    expect(screen.queryByRole("button", { name: /^People:/ })).toBeNull()
   })
   it("says so when there is nothing to draw", () => {
     render(<MapPanel open onOpenChange={() => {}} stops={[]} people={PEOPLE} />)
-    expect(screen.getByRole("status")).toHaveTextContent("No stops on this day.")
+    expect(screen.getByRole("status")).toHaveTextContent("No visits on this day.")
   })
 })

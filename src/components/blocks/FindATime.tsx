@@ -78,7 +78,7 @@ function Row({ row, picked, recommended, forced, index, focusable, onPick, onKey
         </span>
         {row.conflict ? <span className="text-sm">{row.conflict}</span> : row.nextTo ? <span className="text-sm text-muted-foreground">{row.nextTo}</span> : null}
       </span>
-      {!forced && <span className="shrink-0 tabular-nums text-foreground">{`adds ${row.addedMinutes} min driving`}</span>}
+      {!forced && <span className="shrink-0 tabular-nums text-foreground">{row.addedMinutes > 0 ? `+${row.addedMinutes} min driving` : "No extra driving"}</span>}
       {picked && <Check className="hidden size-4 shrink-0 text-navy sm:block" aria-hidden />}
     </button>
   )
@@ -114,7 +114,7 @@ export function FindATime({ state, openings = [], forced = [], sort, onSort, sel
             <SegmentedControl label="Sort" options={SORTS} value={sort} onChange={(v) => onSort(v as OpeningSort)} />
           </div>
         )}
-        {state === "results" && estimated && <p className="text-sm text-muted-foreground">Estimated drive times</p>}
+        {state === "results" && estimated && <p className="text-sm text-muted-foreground">Drive times are estimates.</p>}
       </div>
 
       {state === "no-address" && <p className="text-sm text-muted-foreground">Add an address to find a time</p>}

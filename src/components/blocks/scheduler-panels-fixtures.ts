@@ -1,6 +1,6 @@
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, Person, Visit } from "@/lib/admin/types"
-import type { NotToldVisit, Opening, PlanMove, UnscheduledJob } from "./scheduler-panels-types"
+import type { Opening, PlanMove, UnscheduledJob } from "./scheduler-panels-types"
 
 // Fixtures for the scheduler's side panels: the week of Monday, Nov 23 2026, Ryan Garner and Tech Two (the snapshot's two people), customers with
 // first names and Erie, Lafayette and Longmont streets. The points are near each town's centre, so the map has something to draw.
@@ -43,12 +43,6 @@ export const UNSCHEDULED: UnscheduledJob[] = [
   { id: "u-2", customer: "Ben Alder", town: "Lafayette", service: "Repair", length: "1 h 30 min", addedOn: "2026-11-16", lat: 39.9987, lng: -105.0932 },
   { id: "u-3", customer: "Carla Voss", town: "Longmont", service: "Fall blowout", length: "45 min", addedOn: "2026-11-20", lat: 40.1704, lng: -105.1121 },
   { id: "u-4", customer: "Dev Patel", town: "Erie", service: "Mid-season inspection", length: "1 h", addedOn: "2026-11-23", lat: 40.0432, lng: -105.0554 },
-]
-
-export const NOT_TOLD: NotToldVisit[] = [
-  { id: "n-1", customer: "Cassie Hart", town: "Erie", service: "Spring turn-on", was: "Mon, Nov 23, 9:00 am", now: "Tue, Nov 24, 9:00 am", phone: "(970) 555-0142", email: "cassie@example.com" },
-  { id: "n-2", customer: "Dana Reed", town: "Erie", service: "Repair", was: "Tue, Nov 24, 1:00 pm", now: "Wed, Nov 25, 10:30 am", email: "dana@example.com" },
-  { id: "n-3", customer: "Percy Lund", town: "Lafayette", service: "Fall blowout", was: "Wed, Nov 25, 8:00 am", now: "Thu, Nov 26, 8:00 am", phone: "(970) 555-0177" },
 ]
 
 /** Openings for Andrea's turn-on: the least driving is not the soonest, which is the point of the three sorts. */

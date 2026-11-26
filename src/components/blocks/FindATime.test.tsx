@@ -23,13 +23,13 @@ describe("FindATime", () => {
     expect(rows()).toHaveLength(5)
     expect(rows()[0]).toHaveTextContent("Wed, Dec 2")
     expect(rows()[0]).toHaveTextContent("1:00 to 2:00 pm")
-    expect(rows()[0]).toHaveTextContent("adds 3 min driving")
+    expect(rows()[0]).toHaveTextContent("+3 min driving")
     expect(rows()[0]).toHaveTextContent("Next to a Longmont visit")
     expect(screen.getAllByText("Recommended").filter((el) => el.tagName === "SPAN" && el.className.includes("rounded-full"))).toHaveLength(1)
   })
   it("says what the added minutes are of, and a forced row has none", () => {
     render(<FindATime {...base} oneDay />)
-    expect(rows()[0]).toHaveTextContent("adds 3 min driving")
+    expect(rows()[0]).toHaveTextContent("+3 min driving")
     const forced = rows().filter((r) => r.hasAttribute("data-forced"))
     expect(forced.length).toBeGreaterThan(0)
     expect(forced[0]).not.toHaveTextContent("adds")
@@ -73,9 +73,9 @@ describe("FindATime", () => {
   })
   it("shows the grey note only for estimated drive times", () => {
     const { rerender } = render(<FindATime {...base} estimated />)
-    expect(screen.getByText("Estimated drive times")).toBeInTheDocument()
+    expect(screen.getByText("Drive times are estimates.")).toBeInTheDocument()
     rerender(<FindATime {...base} estimated={false} />)
-    expect(screen.queryByText("Estimated drive times")).toBeNull()
+    expect(screen.queryByText("Drive times are estimates.")).toBeNull()
   })
   it("says when nothing is open and when the address is outside the six towns", () => {
     const { rerender } = render(<FindATime {...base} state="none" noneBefore="Nov 30" />)

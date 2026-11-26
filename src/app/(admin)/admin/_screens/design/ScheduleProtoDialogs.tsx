@@ -5,7 +5,6 @@ import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { firstNameOf } from "@/lib/admin/people"
 import { useState } from "react"
 import { hoursWords } from "@/lib/admin/day-fill"
-import { shortDay } from "@/emails/format"
 import { OrderDayDialog } from "./OrderDayDialog"
 import { ScheduleAllDialog } from "./ScheduleAllDialog"
 import { ScheduleDialog } from "./ScheduleDialog"
@@ -14,8 +13,8 @@ import { scheduleAllPlan } from "./schedule-all"
 import { orderDay } from "./schedule-order"
 import type { Dialog, Proto } from "./use-schedule-prototype"
 
-// The dialogs the Schedule prototype opens, one at a time: the one Schedule dialog (Move for a visit on the calendar, Schedule for a job with no day, the best times inside), "Move the
-// visit" listing what a drop or a keyboard move breaks, and the shortcuts list. Send a message (Notify the customer) is `ScheduleOverlays`, which also holds the moved confirmation, so it works from a job page too.
+// The dialogs the Schedule prototype opens, one at a time: the one Schedule dialog (Edit visit for a visit on the calendar, Schedule for a job with no day, the best times inside), "Move anyway?"
+// listing what a drop or a keyboard move breaks, and the shortcuts list. Send a message (Notify the customer) is `ScheduleOverlays`, which also holds the moved confirmation, so it works from a job page too.
 
 export function ScheduleProtoDialogs({ p }: { p: Proto }) {
   const d = p.dialog
@@ -33,11 +32,13 @@ export function ScheduleProtoDialogs({ p }: { p: Proto }) {
         const minutes = visit ? visit.minutes : job!.minutes
         const service = visit ? visit.service : job!.service
         const point = meta ? { lat: meta.lat, lng: meta.lng } : null
-        const best = p.bestFor({ town, minutes, kind: who.kind, point, excludeId: visit?.id, initialPickId: d.pickId, currentDay: visit?.day })
+        const best = p.bestFor({ town, minutes, kind: who.kind, point, excludeId: visit?.id, initialPickId: d.pickId, currentDay: visit?.day, current: visit ? { day: visit.day, start: visit.start === null ? null : `${String(Math.floor(visit.start / 60)).padStart(2, "0")}:${String(visit.start % 60).padStart(2, "0")}`, personName: p.people.find((x) => x.id === visit.personId)?.name ?? "" } : undefined })
         return (
           <ScheduleDialog
             key={d.id}
             verb={d.job ? "Schedule" : "Move"}
+            title={d.job || !visit?.day ? "Schedule visit" : "Edit visit"}
+            lengthField
             first={firstNameOf(meta.customer) ?? meta.customer}
             service={service}
             address={visit ? `${visit.title}, ${visit.town}` : `${job!.street}, ${job!.town}`}
@@ -50,10 +51,10 @@ export function ScheduleProtoDialogs({ p }: { p: Proto }) {
       })()}
       {d?.kind === "confirm" && (
         <ConfirmDialog
-          title="Move the visit"
+          title="Move anyway?"
           open
           onOpenChange={close("confirm")}
-          confirmLabel="Move the visit"
+          confirmLabel="Move anyway"
           slot="move-anyway-dialog"
           onConfirm={async () => {
             p.dispatch(d.action)
@@ -77,15 +78,15 @@ export function ScheduleProtoDialogs({ p }: { p: Proto }) {
   )
 }
 
-/** Order the day for one person's day in view: the plan is read from the calendar as it stands, the confirm is one change with one Undo. */
+/** Reorder stops for one person's day in view: the plan is read from the calendar as it stands, the confirm is one change with one Undo. */
 function OrderDay({ p, personId }: { p: Proto; personId: string }) {
   const { state } = p
   const person = p.people.find((x) => x.id === personId)
   if (!person) return null
   const cal = { people: p.people, visits: state.visits, meta: state.meta, timeOff: state.timeOff }
   const plan = orderDay(cal, person, p.day)
-  const message = `Ordered ${shortDay(p.day)}${plan.saved > 0 ? `, saves ${hoursWords(plan.saved)} of driving` : ""}`
-  return <OrderDayDialog plan={plan} meta={state.meta} who={firstNameOf(person.name) ?? person.name} onClose={() => p.setDialog(null)} onConfirm={() => p.dispatch({ type: "order-day", moves: plan.moves, message })} />
+  const message = plan.saved > 0 ? `Stops reordered. ${hoursWords(plan.saved)} less driving.` : "Stops reordered."
+  return <OrderDayDialog plan={plan} meta={state.meta} who={firstNameOf(person.name) ?? person.name} onClose={() => p.setDialog(null)} onConfirm={() => p.dispatch({ type: "order-day", moves: plan.moves, message })} onAnotherDay={(id) => p.setDialog({ kind: "schedule", id, job: false })} />
 }
 
 /** Schedule all N: where each job with no day would go, planned again whenever a row is removed. */

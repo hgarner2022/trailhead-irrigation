@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect } from "storybook/test"
 import { CalendarLegend } from "./CalendarLegend"
 
-// The one line under the calendar that names each mark (Done, Customer not notified, Waiting on customer, Overlaps, Time off); the same on a laptop and a phone, folded by its button.
+// The one line under the calendar that names each mark (Done, Waiting on customer, Overlaps, Time off); the same on a laptop and a phone, folded by its button.
 const LAPTOP = { viewport: { value: "laptop", isRotated: false } }
 const PHONE = { viewport: { value: "phone", isRotated: false } }
 

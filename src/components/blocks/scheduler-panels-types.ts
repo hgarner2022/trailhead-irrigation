@@ -16,24 +16,8 @@ export interface UnscheduledJob {
   addedOn: string
   lat?: number
   lng?: number
-  /** the one quiet line of the best day and time, "Suggested: Thu, Nov 26, 9:00 am, Ryan Garner"; the row's Schedule button opens the Schedule dialog on it */
+  /** the one quiet line of the best day and time, "Suggested: Thu, Nov 26, 9:00 am with Ryan"; the row's Schedule button opens the Schedule dialog on it */
   suggestion?: string
-}
-
-/** A visit that moved and whose customer has not been notified. */
-export interface NotToldVisit {
-  id: string
-  customer: string
-  town: Town
-  service: string
-  /** "Tue, Nov 24, 9:00 am" */
-  was: string
-  /** "Thu, Nov 26, 9:00 am" */
-  now: string
-  /** the move in the app's words, "Moved from 9:00 am to 9:30 am, Wed, Nov 18"; read before `was` and `now` when given */
-  change?: string
-  phone?: string
-  email?: string
 }
 
 /** One opening Find a time offers. `conflict` is set on a forced row: the engine's words for the first rule it breaks. */

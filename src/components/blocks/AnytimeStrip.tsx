@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { TimeBlock, type BlockAction } from "./TimeBlock"
+import { TimeBlock } from "./TimeBlock"
 import type { GridBlock } from "./time-grid-model"
 
 // The Any time strip (docs/plans/2026-11-25-scheduler-design.md, 7.5): a visit with a day and no start time sits above the clock as a short chip,
@@ -27,11 +27,10 @@ export interface AnytimeStripProps {
   wrap?: (block: GridBlock, chip: React.ReactElement) => React.ReactNode
   onSelect?: (id: string) => void
   onHover?: (id: string | null) => void
-  onAction?: (id: string, action: BlockAction) => void
   className?: string
 }
 
-export function AnytimeStrip({ blocks, personIndex = 0, initials, who, selectedId, hoverId, label = "Any time", labelled = true, touch, draggingId, wrap, onSelect, onHover, onAction, className }: AnytimeStripProps) {
+export function AnytimeStrip({ blocks, personIndex = 0, initials, who, selectedId, hoverId, label = "Any time", labelled = true, touch, draggingId, wrap, onSelect, onHover, className }: AnytimeStripProps) {
   const empty = blocks.length === 0
   return (
     <div role="group" aria-label={label} data-slot="anytime-strip" data-empty={empty || undefined} className={cn("flex min-w-0 items-center gap-1.5", empty ? "min-h-5" : "flex-wrap py-1", className)}>
@@ -39,7 +38,7 @@ export function AnytimeStrip({ blocks, personIndex = 0, initials, who, selectedI
       {empty && labelled && <span aria-hidden className="h-px min-w-6 flex-1 bg-border" />}
       {blocks.map((b, i) => {
         const chip = (
-          <TimeBlock key={b.id} block={b} variant="chip" order={i + 1} personIndex={personIndex} initials={initials} who={who} touch={touch} selected={selectedId === b.id} hovered={hoverId === b.id} dragging={draggingId === b.id} onSelect={onSelect} onHover={onHover} onAction={onAction} className="min-w-0 max-w-full flex-1 basis-32" />
+          <TimeBlock key={b.id} block={b} variant="chip" order={i + 1} personIndex={personIndex} initials={initials} who={who} touch={touch} selected={selectedId === b.id} hovered={hoverId === b.id} dragging={draggingId === b.id} onSelect={onSelect} onHover={onHover} className="min-w-0 max-w-full flex-1 basis-32" />
         )
         return wrap ? wrap(b, chip) : chip
       })}

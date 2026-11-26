@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { MonthGrid, type MonthGridProps } from "./MonthGrid"
 import { MONTH_OFF, PEOPLE, TODAY, monthFixture } from "./scheduler-calendar-fixtures"
 
-// The Month view: stop count, up to two towns, a dot per person, a hatch for time off, a mark for a move not told. A cell opens that day.
+// The Month view: visit count, up to two towns, a dot per person, a hatch for time off. A cell opens that day.
 
 const LAPTOP = { viewport: { value: "laptop", isRotated: false } }
 const PHONE = { viewport: { value: "phone", isRotated: false } }

@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { Bell } from "lucide-react"
-import { expect, within } from "storybook/test"
+import { expect } from "storybook/test"
 import { TimeBlock } from "./TimeBlock"
 import { minutesToPx, type GridBlock } from "./time-grid-model"
 
@@ -20,15 +19,15 @@ const meta = {
   component: TimeBlock,
   parameters: { layout: "padded" },
   globals: LAPTOP,
-  args: { block: B, personIndex: 0, initials: "RG", onSelect: () => {}, onAction: () => {} },
+  args: { block: B, personIndex: 0, initials: "RG", onSelect: () => {} },
   render: (args) => frame(args.block, args),
 } satisfies Meta<typeof TimeBlock>
 export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
-/** No actions menu, nothing to press: a block with no callbacks. */
-export const Empty: Story = { args: { onSelect: undefined, onAction: undefined, block: { ...B, minutes: 30 } } }
+/** Nothing to press: a block with no callbacks. */
+export const Empty: Story = { args: { onSelect: undefined, block: { ...B, minutes: 30 } } }
 export const Phone: Story = { globals: PHONE, args: { touch: true } }
 
 export const Sizes: Story = {
@@ -44,7 +43,6 @@ export const States: Story = {
       {frame(B, { selected: true })}
       {frame(B, { hovered: true })}
       {frame(B, { conflict: "Ryan has Dry Creek Rd at 3:00 pm." })}
-      {frame({ ...B, notTold: true }, { notToldMark: <Bell aria-label="Customer not notified" className="size-3.5 text-warning-ink" /> })}
       {frame({ ...B, waiting: true })}
       {frame({ ...B, done: true })}
       {frame({ ...B, planned: { day: "2026-11-23", personId: "p", start: 600 } })}
@@ -56,21 +54,19 @@ export const States: Story = {
 export const Chips: Story = {
   render: () => (
     <div className="flex w-72 flex-col gap-2">
-      <TimeBlock block={{ ...B, start: null, minutes: 60, title: "Cheesman St" }} variant="chip" onSelect={() => {}} onAction={() => {}} />
+      <TimeBlock block={{ ...B, start: null, minutes: 60, title: "Cheesman St" }} variant="chip" onSelect={() => {}} />
       <TimeBlock block={{ ...B, start: null, minutes: 120, title: "Dry Creek Rd", service: "Repair" }} variant="chip" personIndex={1} onSelect={() => {}} />
     </div>
   ),
 }
 
-/** A clash is said in words by tapping the block's menu (a phone has no tooltip), and the block names who it is with. */
-export const ConflictInTheMenu: Story = {
+/** A clash is said in words for a screen reader (a phone has no tooltip), and the block names who it is with. */
+export const ConflictInWords: Story = {
   globals: PHONE,
   args: { touch: true, who: "Ryan Garner", conflict: "Ryan has Dry Creek Rd at 3:00 pm." },
-  play: async ({ canvas, userEvent }) => {
+  play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: /with Ryan Garner/ })).toBeInTheDocument()
-    await userEvent.click(canvas.getByRole("button", { name: "Actions for Briggs St" }))
-    await expect(await within(document.body).findByText("Ryan has Dry Creek Rd at 3:00 pm.")).toBeInTheDocument()
-    await userEvent.keyboard("{Escape}")
+    await expect(canvas.getByText("Clash: Ryan has Dry Creek Rd at 3:00 pm.")).toBeInTheDocument()
   },
 }
 /** An Any time chip carries its place in the order the day is driven. */

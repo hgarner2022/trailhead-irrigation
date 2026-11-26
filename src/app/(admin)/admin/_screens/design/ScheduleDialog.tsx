@@ -1,6 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { Minus, Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { hoursWords } from "@/lib/admin/day-fill"
 import { shortDay as dayLabel } from "@/emails/format"
 import { clockLabel } from "../visit-panel-model"
 import { recommendedId } from "@/components/blocks/find-a-time-model"
@@ -20,7 +23,13 @@ import { SchedulePicker, type Pick } from "./SchedulePicker"
 export interface ScheduleResult extends Pick {
   /** the customer is texted or emailed the day and time */
   notify: boolean
+  /** the visit's length, only when the dialog was opened with the Length field */
+  minutes?: number
 }
+
+const LENGTH_STEP = 15
+const LENGTH_MIN = 15
+const LENGTH_MAX = 240
 
 export interface ScheduleDialogProps {
   verb: "Schedule" | "Move"
@@ -37,28 +46,46 @@ export interface ScheduleDialogProps {
   minutes?: number
   /** the ranked best times above the calendar; the walkthrough supplies them through context, a screen through this prop. Absent, the dialog is the reviewed one */
   best?: BestTimes
+  /** another title than the reviewed one: the Schedule's "Edit visit" and "Schedule visit" (docs/plans/2026-11-26-scheduler-review-research.md, point 2) */
+  title?: string
+  /** adds a Length field (15 minute steps) above the day, and the open times follow it; absent, the dialog is the reviewed one */
+  lengthField?: boolean
 }
 
-export function ScheduleDialog({ verb, first, channel = "text", address, service, signedIn = "Ryan Garner", onClose, onConfirm: confirmed, initialPeople = ["Ryan Garner"], initialCrewText = false, minutes, best: bestProp }: ScheduleDialogProps) {
+export function ScheduleDialog({ verb, first, channel = "text", address, service, signedIn = "Ryan Garner", onClose, onConfirm: confirmed, initialPeople = ["Ryan Garner"], initialCrewText = false, minutes, best: bestProp, title, lengthField }: ScheduleDialogProps) {
   const ctx = useBestTimesContext()
   const best = bestProp ?? ctx?.best
   const onConfirm = (r: ScheduleResult) => (ctx && !bestProp ? ctx.record(r, verb) : undefined, confirmed(r))
-  const start = best ? [...best.rows, ...(best.forced ?? [])].find((r) => r.id === (best.initialPickId ?? recommendedId(best.rows))) : undefined
-  const people0 = best && start ? [start.personName] : initialPeople
-  const [pick, setPick] = useState<Pick>({ dayIso: start?.day, day: start ? dayLabel(start.day) : "Tue, Nov 24", time: start ? clockLabel(start.start) : "Any time", person: people0[0]!, people: people0, crewText: initialCrewText && people0.some((p) => p !== signedIn), instructions: "" })
+  const start = best ? [...best.rows, ...(best.forced ?? [])].find((r) => r.id === (best.initialPickId ?? (best.current ? undefined : recommendedId(best.rows)))) : undefined
+  const own = best?.current && !start ? best.current : undefined
+  const people0 = best && start ? [start.personName] : own ? [own.personName] : initialPeople
+  const [length, setLength] = useState(minutes ?? 60)
+  const [pick, setPick] = useState<Pick>({ dayIso: start?.day ?? own?.day, day: start ? dayLabel(start.day) : own ? dayLabel(own.day) : "Tue, Nov 24", time: start ? clockLabel(start.start) : own?.start ? clockLabel(own.start) : "Any time", person: people0[0]!, people: people0, crewText: initialCrewText && people0.some((p) => p !== signedIn), instructions: "" })
   return (
     <ConfirmDialog
       open
       size="md"
       onOpenChange={(o) => !o && onClose()}
-      title={verb === "Schedule" ? "Schedule the job" : "Move the visit"}
+      title={title ?? (verb === "Schedule" ? "Schedule the job" : "Move the visit")}
       slot="flow-schedule"
-      onConfirm={async (variant) => (onConfirm({ ...pick, notify: variant !== "quiet" }), { ok: true })}
+      onConfirm={async (variant) => (onConfirm({ ...pick, notify: variant !== "quiet", ...(lengthField ? { minutes: length } : {}) }), { ok: true })}
       renderConfirm={({ confirm, pending }) => (
         <SplitButton label={`${verb} and notify the customer`} onClick={() => confirm("text")} disabled={pending} menuLabel={`More ways to ${verb.toLowerCase()}`} menu={[{ label: `${verb} without notifying`, disabled: pick.time !== "Any time", onSelect: () => confirm("quiet") }]} />
       )}
     >
-      <SchedulePicker firstName={first} channel={channel} signedIn={signedIn} address={address} service={service} minutes={minutes} initialPeople={initialPeople} initialCrewText={initialCrewText} onChange={setPick} best={best} />
+      {lengthField && (
+        <div data-slot="length-field" role="group" aria-label="Length" className="flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium text-foreground">Length</span>
+          <Button type="button" variant="outline" size="icon" className="size-11" aria-label="15 minutes shorter" disabled={length <= LENGTH_MIN} onClick={() => setLength((l) => Math.max(LENGTH_MIN, l - LENGTH_STEP))}>
+            <Minus className="size-4" aria-hidden />
+          </Button>
+          <span aria-live="polite" className="min-w-16 text-center text-sm tabular-nums text-foreground">{hoursWords(length)}</span>
+          <Button type="button" variant="outline" size="icon" className="size-11" aria-label="15 minutes longer" disabled={length >= LENGTH_MAX} onClick={() => setLength((l) => Math.min(LENGTH_MAX, l + LENGTH_STEP))}>
+            <Plus className="size-4" aria-hidden />
+          </Button>
+        </div>
+      )}
+      <SchedulePicker firstName={first} channel={channel} signedIn={signedIn} address={address} service={service} minutes={lengthField ? length : minutes} initialPeople={initialPeople} initialCrewText={initialCrewText} onChange={setPick} best={best} />
     </ConfirmDialog>
   )
 }

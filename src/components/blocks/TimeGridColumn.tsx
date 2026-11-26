@@ -6,7 +6,7 @@ import { Plus } from "lucide-react"
 import { hoursOf } from "@/lib/admin/people"
 import type { Person } from "@/lib/admin/types"
 import { cn } from "@/lib/utils"
-import { TimeBlock, type BlockAction } from "./TimeBlock"
+import { TimeBlock } from "./TimeBlock"
 import { TimeOffBand } from "./TimeOffBand"
 import { colKey, type Preview } from "./time-grid-dnd"
 import { clockToMinutes, clockWords, minuteAt, minutesToPx, packLanes, snap, timeOffLabel, type GridBlock, type HourRange, type TimeOff } from "./time-grid-model"
@@ -38,7 +38,6 @@ export interface TimeGridColumnProps {
   hoverId?: string
   dragId?: string | null
   resizingId?: string
-  notToldMark?: (b: GridBlock) => ReactNode
   /** false on a phone: no drag, no hover plus */
   interactive?: boolean
   touch?: boolean
@@ -46,7 +45,6 @@ export interface TimeGridColumnProps {
   register?: (key: string, el: HTMLElement | null) => void
   onSelect?: (id: string) => void
   onHover?: (id: string | null) => void
-  onAction?: (id: string, action: BlockAction) => void
   onCreateAt?: (at: CreateAtEvent) => void
   onTimeOffDrag?: (span: TimeOffDragEvent) => void
   /** a band's label was pressed: the host opens that time off to edit it */
@@ -173,7 +171,7 @@ export function TimeGridColumn(p: TimeGridColumnProps) {
         const style = p.touch && lanes > 1 ? { top, height: h, left: `${lane * 12 + 2}px`, width: `calc(100% - ${(lanes - 1) * 12 + 4}px)`, zIndex: lane + 1 } : { top, height: h, left: `calc(${(lane * 100) / lanes}% + 2px)`, width: `calc(${100 / lanes}% - 4px)` }
         const common = {
           block: b, personIndex, initials: person.initials, who: person.name, selected: p.selectedId === b.id, hovered: p.hoverId === b.id, conflict: p.conflicts.get(b.id), touch: p.touch, compact: p.compact || (p.touch && lanes > 1),
-          notToldMark: b.notTold ? p.notToldMark?.(b) : undefined, style: { ...style, position: "absolute" as const }, onSelect: p.onSelect, onHover: p.onHover, onAction: p.onAction,
+          style: { ...style, position: "absolute" as const }, onSelect: p.onSelect, onHover: p.onHover,
           onResizeStart: p.interactive && !b.done && !b.planned ? (e: React.PointerEvent<HTMLElement>) => p.onResizeStart?.(b, e) : undefined,
         }
         return p.interactive && !b.planned ? (

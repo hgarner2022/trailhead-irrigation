@@ -10,7 +10,6 @@ import { TimeBlock } from "./TimeBlock"
 import { TimeGridColumn } from "./TimeGridColumn"
 import { DayHead, GUTTER, HourGutter } from "./TimeGridHeader"
 import { TimeGridPhone } from "./TimeGridPhone"
-import { useBlockActions } from "./time-grid-actions"
 import { useGridDnd, useGridSensors } from "./time-grid-dnd"
 import { HOUR_PX, conflictMap, resizeResult, visibleRange, type GridBlock } from "./time-grid-model"
 import type { TimeGridProps } from "./time-grid-types"
@@ -19,8 +18,8 @@ import type { TimeGridProps } from "./time-grid-types"
 // hour, a sticky day head and hour gutter inside one scrolling area, an Any time strip under the head, time off, a now line on today. Week
 // passes seven days; Day passes one (and `showPersonNames`). Drag a block to another day, time or person; drag its bottom edge for its length;
 // drag a chip between the strip and the clock; drop a row from the Unscheduled panel on it (`onDropExternal`). Every drag has a way without
-// dragging: Tab to a block, Space lifts it, the arrows move it 15 minutes or one column, Enter drops, Escape cancels; and each block's menu
-// has Move, Set a time or Make it Any time, and 15 minutes shorter or longer. Below `md` the Week is a day strip and one day's column
+// dragging: Tab to a block, Space lifts it, the arrows move it 15 minutes or one column, Enter drops, Escape cancels; a click or Enter opens the visit's
+// peek, where Edit visit sets the day, time, person and length. Below `md` the Week is a day strip and one day's column
 // (TimeGridPhone) with no drag. The grid moves nothing itself: it reports `onMove`, `onResize` and `onCreateAt`, and the screen decides.
 
 const StepCtx = createContext<(w: number) => void>(() => {})
@@ -99,7 +98,6 @@ function TimeGridDesktop(props: TimeGridProps) {
     window.addEventListener("pointerup", up)
   }
 
-  const act = useBlockActions({ all, planned, timeOff, names, range, hourPx, props })
 
   const dayWidth = Math.max(people.length * 76, 120)
   return (
@@ -118,7 +116,7 @@ function TimeGridDesktop(props: TimeGridProps) {
             <div className={cn("sticky left-0 z-10 border-r border-border bg-background", GUTTER)} />
             {columns.map((c) => (
               <div key={c.day} className="flex-1 border-l border-border/60" style={{ minWidth: dayWidth }}>
-                <DayHead column={c} people={people} colourOf={colourOf} names={showPersonNames} />
+                <DayHead column={c} people={people} colourOf={colourOf} variant={showPersonNames ? "day" : "week"} onOpenDay={showPersonNames ? undefined : props.onOpenDay} />
               </div>
             ))}
           </div>
@@ -140,7 +138,6 @@ function TimeGridDesktop(props: TimeGridProps) {
                       draggingId={dragId ?? undefined}
                       onSelect={props.onSelect}
                       onHover={props.onHover}
-                      onAction={act}
                       wrap={(b, chip) => <ChipDrag key={b.id} block={b}>{chip}</ChipDrag>}
                     />
                   </div>
@@ -165,7 +162,7 @@ function TimeGridDesktop(props: TimeGridProps) {
                   working={worksOn(p, c.day)}
                   blocks={[...timed, ...planned].filter((b) => b.day === c.day && b.personId === p.id)}
                   timeOff={timeOff.filter((o) => o.day === c.day && o.personId === p.id)}
-                  drives={props.drives}
+                  drives={showPersonNames ? props.drives : undefined}
                   oldPlaces={planned.filter((b) => b.planned?.day === c.day && b.planned.personId === p.id)}
                   conflicts={conflicts}
                   preview={preview}
@@ -173,13 +170,11 @@ function TimeGridDesktop(props: TimeGridProps) {
                   selectedId={selectedId}
                   hoverId={hoverId}
                   dragId={dragId}
-                  notToldMark={props.notToldMark}
                   interactive
                   compact={!showPersonNames}
                   register={register}
                   onSelect={props.onSelect}
                   onHover={props.onHover}
-                  onAction={act}
                   onCreateAt={props.onCreateAt}
                   onTimeOffDrag={props.onTimeOffDrag}
                   onTimeOffClick={props.onTimeOffClick}

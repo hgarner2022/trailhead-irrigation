@@ -4,7 +4,6 @@ import { useId, useRef, useState, type KeyboardEvent } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { FormRow } from "@/components/blocks/FormRow"
 import { Textarea } from "@/components/ui/textarea"
-import type { RecommendedLook } from "@/components/blocks/RecommendedMark"
 import { TimeChips } from "@/components/blocks/TimeChips"
 import { DAYS_FULL, type DayTimeOffer, type DayTimePick, type StartOption } from "@/lib/booking/day-time"
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
@@ -58,7 +57,6 @@ export interface DayCalendarProps {
   /** the ONE time to mark as recommended, on `recommendedDay` when given (the Schedule's pick; no reason shown). Nothing is chosen for the customer. */
   recommendedStart?: string | null
   recommendedDay?: string | null
-  recommendedLook?: RecommendedLook
 }
 
 const WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -81,7 +79,7 @@ function weeksOf(ym: string, yearless = false): (string | null)[][] {
 
 const LINK = "inline-flex min-h-11 items-center font-semibold text-primary-deep underline underline-offset-2"
 
-export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2, note = "", onNote, error, className, timed = true, current: yourDay = null, currentLabel = "Your day", free, anyTime = false, timesHint, density = "page", autoFocusDay = false, yearless = false, recommendedStart = null, recommendedDay = null, recommendedLook }: DayCalendarProps) {
+export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2, note = "", onNote, error, className, timed = true, current: yourDay = null, currentLabel = "Your day", free, anyTime = false, timesHint, density = "page", autoFocusDay = false, yearless = false, recommendedStart = null, recommendedDay = null }: DayCalendarProps) {
   const Month = headingLevel === 2 ? "h2" : "h3"
   const id = useId()
   const grid = useRef<HTMLTableElement>(null)
@@ -235,7 +233,7 @@ export function DayCalendar({ offers, value, onChange, legend, headingLevel = 2,
 
       {showTimes && held && (
         <div key={held}>
-          <TimeChips options={heldTimes} value={value.start} onChange={(start) => onChange({ day: held, start })} anyTime={anyTime} legend={longDay(held)} hint={timesHint} density={density} error={error} recommendedStart={!recommendedDay || recommendedDay === held ? recommendedStart : null} recommendedLook={recommendedLook} />
+          <TimeChips options={heldTimes} value={value.start} onChange={(start) => onChange({ day: held, start })} anyTime={anyTime} legend={longDay(held)} hint={timesHint} density={density} error={error} recommendedStart={!recommendedDay || recommendedDay === held ? recommendedStart : null} />
           {heldTimes.length === 0 && !anyTime && <p className="mt-3 text-base text-muted-foreground">No times are left on this day. Pick another day.</p>}
         </div>
       )}

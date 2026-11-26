@@ -29,7 +29,7 @@ export const dayColumns = (days: readonly string[] = DAYS, counts: Record<string
     return { day, label: `${Number(day.slice(8))} ${weekdayOf(day).replace(/^./, (c) => c.toUpperCase())}`, today: day === TODAY, count: n === undefined ? undefined : `${n} ${n === 1 ? "visit" : "visits"}` }
   })
 
-type Row = { id: string; day: string; who: string; at: string | null; min: number; kind: VisitKind; street: string; name: string; town: Town; done?: boolean; notTold?: boolean; waiting?: boolean }
+type Row = { id: string; day: string; who: string; at: string | null; min: number; kind: VisitKind; street: string; name: string; town: Town; done?: boolean; waiting?: boolean }
 const R = (id: string, day: string, who: string, at: string | null, min: number, kind: VisitKind, street: string, name: string, town: Town = "Erie", more: Partial<Row> = {}): Row => ({ id, day, who, at, min, kind, street, name, town, ...more })
 
 const ROWS: Row[] = [
@@ -37,7 +37,7 @@ const ROWS: Row[] = [
   R("v2", MON, RYAN, "10:30", 120, "repair", "Moffat Ave", "Marcus", "Louisville", { done: true }),
   R("v3", MON, TECH, "09:30", 30, "blowout", "Main St", "Dale", "Lafayette", { done: true }),
   R("v4", TUE, RYAN, "08:00", 60, "turn-on", "Cheesman St", "Priya"),
-  R("v5", TUE, RYAN, "09:15", 60, "turn-on", "Dry Creek Rd", "Hal", "Erie", { notTold: true }),
+  R("v5", TUE, RYAN, "09:15", 60, "turn-on", "Dry Creek Rd", "Hal", "Erie"),
   R("v6", TUE, RYAN, "10:30", 90, "inspection", "Briggs St", "Ivy"),
   R("v7", TUE, RYAN, "12:00", 120, "repair", "Vista Pkwy", "Gus"),
   R("v8", TUE, RYAN, "14:30", 60, "turn-on", "Telleen Ave", "Rosa"),
@@ -50,7 +50,7 @@ const ROWS: Row[] = [
   R("v15", WED, RYAN, "09:00", 120, "repair", "Spruce Ct", "Jan", "Erie"),
   R("v16", WED, TECH, "09:00", 30, "blowout", "Lark Bunting Dr", "Pete", "Erie"),
   R("v17", WED, TECH, "11:00", 60, "turn-on", "Poplar St", "Cora", "Lafayette", { waiting: true }),
-  R("v18", WED, RYAN, "14:30", 60, "turn-on", "Telleen Ave", "Wes", "Erie", { notTold: true }),
+  R("v18", WED, RYAN, "14:30", 60, "turn-on", "Telleen Ave", "Wes", "Erie"),
   R("v19", THU, RYAN, "14:00", 60, "turn-on", "Dry Creek Rd", "Hal"),
   R("v20", THU, RYAN, "14:30", 60, "inspection", "Cheesman St", "Priya"),
   R("v21", THU, RYAN, "09:00", 60, "turn-on", "Zuni Way", "Faye", "Firestone"),
@@ -67,7 +67,7 @@ const visitOf = (r: Row): Visit => ({
   id: r.id, clientId: `client_${r.id}`, clientName: `${r.name} Reyes`, town: r.town, kind: r.kind, status: r.done ? "completed" : "scheduled", isPass: r.kind !== "repair",
   jobberUrl: "", scheduledOn: r.day, startTime: r.at ?? undefined, personId: r.who, minutes: r.min, waiting: r.waiting,
 })
-const blocksOf = (rows: Row[]): GridBlock[] => rows.flatMap((r) => { const b = blockOf(visitOf(r), { title: r.street, notTold: r.notTold }); return b ? [b] : [] })
+const blocksOf = (rows: Row[]): GridBlock[] => rows.flatMap((r) => { const b = blockOf(visitOf(r), { title: r.street }); return b ? [b] : [] })
 
 /** Every visit of the week with a time. */
 export const WEEK_BLOCKS: GridBlock[] = blocksOf(ROWS.filter((r) => r.at))
@@ -82,7 +82,7 @@ export const WEEK_OFF: TimeOff[] = [
 
 export const WEEK_COUNTS: Record<string, number> = Object.fromEntries(DAYS.map((d) => [d, ROWS.filter((r) => r.day === d).length]))
 export const WEEK_COLUMNS: GridColumn[] = dayColumns(DAYS, WEEK_COUNTS)
-export const DAY_COLUMNS: GridColumn[] = dayColumns([WED], { [WED]: WEEK_COUNTS[WED] ?? 0 }).map((c) => ({ ...c, caption: "4 stops, 5 h open" }))
+export const DAY_COLUMNS: GridColumn[] = dayColumns([WED], { [WED]: WEEK_COUNTS[WED] ?? 0 }).map((c) => ({ ...c, caption: "4 visits", towns: "Erie 3, Lafayette 1", stats: { [RYAN]: { open: "4 h open", driving: "38 min" }, [TECH]: { open: "7 h open", driving: "12 min" } } }))
 
 /** A conflict on Thursday: Ryan's 2:00 and 2:30 overlap (found by the rules). */
 export const CONFLICT_BLOCKS = WEEK_BLOCKS.filter((b) => b.day === THU)
@@ -99,7 +99,7 @@ export function monthFixture(): MonthDay[] {
     const rows = ROWS.filter((r) => r.day === day)
     const towns = [...rows.reduce((m, r) => m.set(r.town, (m.get(r.town) ?? 0) + 1), new Map<Town, number>())].sort((a, b) => b[1] - a[1]).map(([t]) => t)
     const off = WEEK_OFF.filter((o) => o.day === day)
-    return [day, { day, stops: rows.length, towns, personIds: [...new Set(rows.map((r) => r.who))], offIds: off.map((o) => o.personId), allOff: false, notTold: rows.some((r) => r.notTold) } satisfies MonthDay]
+    return [day, { day, stops: rows.length, towns, personIds: [...new Set(rows.map((r) => r.who))], offIds: off.map((o) => o.personId), allOff: false } satisfies MonthDay]
   }))
   const cycle: Town[][] = [["Erie"], ["Lafayette", "Louisville"], ["Longmont", "Erie", "Firestone"], ["Broomfield"], ["Erie", "Lafayette"]]
   const out: MonthDay[] = []
@@ -109,7 +109,7 @@ export function monthFixture(): MonthDay[] {
     const r = real.get(day)
     if (r) out.push(r)
     else if (wd < 5 && day < TODAY) out.push({ day, stops: 3 + ((i * 3) % 5), towns: cycle[i % cycle.length] ?? [], personIds: [RYAN, TECH] })
-    else if (wd < 5 && day > FRI) out.push({ day, stops: (i * 2) % 4, towns: cycle[(i + 1) % cycle.length] ?? [], personIds: i % 3 ? [RYAN] : [RYAN, TECH], notTold: day === "2026-11-30" })
+    else if (wd < 5 && day > FRI) out.push({ day, stops: (i * 2) % 4, towns: cycle[(i + 1) % cycle.length] ?? [], personIds: i % 3 ? [RYAN] : [RYAN, TECH] })
   })
   return out
 }

@@ -53,10 +53,10 @@ function PersonStops({ person, index, day, stops, areas, selectedId, onSelect, o
       <h3 className="flex items-center gap-2 text-sm font-medium text-navy">
         <span aria-hidden data-slot="person-colour" className={cn("size-2.5 shrink-0 rounded-full", personClass(index))} />
         {person.name}
-        <span className="font-normal text-muted-foreground">{stops.length === 1 ? "1 stop" : `${stops.length} stops`}</span>
+        <span className="font-normal text-muted-foreground">{stops.length === 1 ? "1 visit" : `${stops.length} visits`}</span>
       </h3>
       {stops.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{working ? "No stops." : "Not a working day."}</p>
+        <p className="text-sm text-muted-foreground">{working ? "No visits." : "Not a working day."}</p>
       ) : (
         <ol className="divide-y divide-border overflow-hidden rounded-lg border border-border">
           {stops.map((v, i) => (

@@ -4,12 +4,14 @@ import { AdminShell } from "@/components/blocks/AdminShell"
 import { SchedulePrototype } from "./SchedulePrototype"
 import type { ProtoInitial } from "./use-schedule-prototype"
 import { orderStory } from "./schedule-order-fixture"
+import { teamWorld } from "./schedule-team-fixture"
 
-// The Schedule prototype (docs/plans/2026-11-25-scheduler-design.md, sections 7 and 9) over the walkthrough's calendar: Ryan Garner and Hannah Garner, today Wednesday, Nov 18 2026, every
-// visit read from its job page. The walkthrough's own Schedule is the way in (Admin walkthrough, clickable); these stories keep the states it cannot open directly: Week with both panels,
-// Just moved, Not notified list, the Schedule dialog with the best times, Month, Empty week and the phone twins. A click on a block only selects it here (the walkthrough opens the job page).
-// Each story opens in its state by doing what a person would do (a keyboard move, a click); the "toast stays" ones hold "Moved to ..." up (it closes after 10 seconds on its own).
-// Phone stories are the same screen at 375: the day strip and one day's column, panels as sheets, no drag. Nothing is sent and nothing is saved.
+// The Schedule prototype (docs/plans/2026-11-25-scheduler-design.md, sections 7 and 9, and the second review, docs/plans/2026-11-26-scheduler-review-research.md) over the walkthrough's calendar:
+// Ryan Garner and Hannah Garner, today Wednesday, Nov 18 2026, every visit read from its job page. The walkthrough's own Schedule is the way in (Admin walkthrough, clickable); these stories
+// keep the states it cannot open directly: Week with both panels, a visit's peek, Edit visit with its Length, Just moved, the People menu with five people, the Week header's card, Day with its
+// driving lines, Reorder stops, Month, Empty week and the phone twins. A click on a block opens its peek here and in the walkthrough (Open job goes to the job page there). Each story opens in its
+// state by doing what a person would do (a keyboard move, a click); the "toast stays" ones hold "Moved to ..." up (it closes after 10 seconds on its own). Phone stories are the same screen at
+// 375: the day strip and one day's column, panels as sheets, no drag. Nothing is sent and nothing is saved.
 
 const LAPTOP = { viewport: { value: "laptop", isRotated: false } }
 const PHONE = { viewport: { value: "phone", isRotated: false } }
@@ -37,10 +39,17 @@ async function keyboardMove(root: HTMLElement, name: RegExp, rows: number) {
   for (let i = 0; i < rows; i++) await userEvent.keyboard("{ArrowDown}")
   await userEvent.keyboard("{Enter}")
 }
-/** The phone has no drag: the block's menu is the way. */
-async function menuAction(label: string, item: string) {
-  await userEvent.click((await body().findAllByRole("button", { name: label }))[0]!)
-  await userEvent.click(await body().findByRole("menuitem", { name: item }))
+/** A tap or click on a block opens its peek. */
+async function openPeek(root: HTMLElement, name: RegExp) {
+  await userEvent.click((await within(root).findAllByRole("button", { name }))[0]!)
+  return await body().findByRole("complementary", { name: "Ravi Shah" }).catch(async () => await body().findByRole("dialog", { name: "Ravi Shah" }))
+}
+/** The phone has no drag: peek, Edit visit, 15 minutes longer, confirm. */
+async function editLonger(root: HTMLElement) {
+  await openPeek(root, /^Willow Dr, Fall blowout/)
+  await userEvent.click(await body().findByRole("button", { name: "Edit visit" }))
+  await userEvent.click(await body().findByRole("button", { name: "15 minutes longer" }))
+  await userEvent.click(await body().findByRole("button", { name: "Move and notify the customer" }))
 }
 const held: ProtoInitial = { toastSeconds: 0 }
 const phone = (s: Story): Story => ({ ...s, name: `${s.name ?? ""}, phone`, globals: PHONE })
@@ -58,7 +67,7 @@ export const DayTwoPeoplePhone: Story = phone(DayTwoPeople)
 export const Month: Story = { name: "Month", args: { view: "month" } }
 export const MonthPhone: Story = phone(Month)
 
-/** Willow Dr is lifted with Space, moved down one row (15 minutes) and dropped with Enter: "Moved to Wed, Nov 18, 8:15 am" with Notify the customer and Undo, and the visit is marked not notified. */
+/** Willow Dr is lifted with Space, moved down one row (15 minutes) and dropped with Enter: "Moved to Wed, Nov 18, 8:15 am" with Notify the customer and Undo. Nothing else stays on screen. */
 export const JustMoved: Story = {
   name: "Just moved (toast showing)",
   args: held,
@@ -66,17 +75,19 @@ export const JustMoved: Story = {
     await keyboardMove(canvasElement, /^Willow Dr, Fall blowout/, 1)
     await expect(await body().findByText("Moved to Wed, Nov 18, 8:15 am")).toBeInTheDocument()
     await expect(await body().findByRole("button", { name: "Notify the customer" })).toBeInTheDocument()
+    await expect(body().queryByText(/not notified/i)).not.toBeInTheDocument()
   },
 }
+/** On a phone there is no drag: the peek's Edit visit, one step longer, and the toast says "Now 8:00 to 8:45 am" with Undo alone. */
 export const JustMovedPhone: Story = {
   ...phone(JustMoved),
-  play: async () => {
-    await menuAction("Actions for Willow Dr", "15 minutes longer")
-    await expect(await body().findByText(/^Changed to 8:00 to 8:45 am/)).toBeInTheDocument()
+  play: async ({ canvasElement }) => {
+    await editLonger(canvasElement)
+    await expect(await body().findByText(/^Now 8:00 to 8:45 am/)).toBeInTheDocument()
   },
 }
 
-/** Notify the customer opens the one Send a message dialog, prefilled; nothing is sent until Send. */
+/** Notify the customer opens the one Send a message dialog, prefilled from the date-moved text; nothing is sent until Send, and then "Customer notified" closes by itself. */
 export const MessageOpen: Story = {
   name: "Send a message open (Notify the customer)",
   args: held,
@@ -86,39 +97,73 @@ export const MessageOpen: Story = {
     await expect(await body().findByRole("dialog", { name: "Send a message" })).toBeInTheDocument()
   },
 }
-export const MessageOpenPhone: Story = {
-  ...phone(MessageOpen),
-  play: async () => {
-    await menuAction("Actions for Willow Dr", "15 minutes longer")
-    await userEvent.click(await body().findByRole("button", { name: "Notify the customer" }))
-    await expect(await body().findByRole("dialog", { name: "Send a message" })).toBeInTheDocument()
-  },
-}
 
-/** A move, then "1 customer not notified" opens the Unscheduled panel on its Not notified tab, with Notify the customer, Don't notify and Notify all. */
-export const NotNotifiedList: Story = {
-  name: "Not notified list",
+/** A click on a visit opens its peek: docked at the right on a laptop, the grid stays usable. Edit visit, Mark done (today or earlier) and Open job. */
+export const VisitPeekOpen: Story = {
+  name: "A visit clicked, peek open",
   play: async ({ canvasElement }) => {
-    await keyboardMove(canvasElement, /^Willow Dr, Fall blowout/, 1)
-    await userEvent.click(await body().findByRole("button", { name: /^\d+ customers? not notified$/ }))
-    await expect(await body().findByRole("button", { name: "Notify all" })).toBeInTheDocument()
+    const peek = await openPeek(canvasElement, /^Willow Dr, Fall blowout/)
+    await expect(peek).toBeInTheDocument()
+    await expect(within(peek).getByRole("button", { name: "Edit visit" })).toBeInTheDocument()
+    await expect(within(peek).getByRole("button", { name: "Open job" })).toBeInTheDocument()
+    await expect(within(peek).getByRole("button", { name: "Mark done" })).toBeInTheDocument()
+    await expect(within(peek).getByText("Length")).toBeInTheDocument()
+    await expect(body().queryByRole("button", { name: /^Actions for/ })).not.toBeInTheDocument()
   },
 }
-export const NotNotifiedListPhone: Story = {
-  ...phone(NotNotifiedList),
-  play: async () => {
-    await menuAction("Actions for Willow Dr", "15 minutes longer")
-    await userEvent.click(await body().findByRole("button", { name: /^\d+ customers? not notified$/ }))
-    await expect(await body().findByRole("button", { name: "Notify all" })).toBeInTheDocument()
+export const VisitPeekOpenPhone: Story = {
+  ...phone(VisitPeekOpen),
+  play: async ({ canvasElement }) => {
+    await expect(await openPeek(canvasElement, /^Willow Dr, Fall blowout/)).toBeInTheDocument()
   },
 }
 
-/** A block's menu, Move: the one Schedule dialog with the best times above its calendar. */
+/** Enter opens the peek, and Escape closes it and gives the focus back to the block. */
+export const PeekEscapeReturnsFocus: Story = {
+  name: "Peek: Escape returns focus to the block",
+  play: async ({ canvasElement }) => {
+    const block = (await within(canvasElement).findAllByRole("button", { name: /^Willow Dr, Fall blowout/ }))[0]!
+    block.focus()
+    await userEvent.keyboard("{Enter}")
+    await expect(await body().findByRole("complementary", { name: "Ravi Shah" })).toBeInTheDocument()
+    await userEvent.keyboard("{Escape}")
+    await expect(body().queryByRole("complementary", { name: "Ravi Shah" })).not.toBeInTheDocument()
+    await new Promise((r) => requestAnimationFrame(() => r(null)))
+    await expect(block).toHaveFocus()
+  },
+}
+
+/** Edit visit from the peek: the one reviewed dialog, with a Length field in 15 minute steps. */
+export const EditVisitWithLength: Story = {
+  name: "Edit visit, with Length",
+  play: async ({ canvasElement }) => {
+    await openPeek(canvasElement, /^Willow Dr, Fall blowout/)
+    await userEvent.click(await body().findByRole("button", { name: "Edit visit" }))
+    const dialog = within(await body().findByRole("dialog", { name: "Edit visit" }))
+    await expect(dialog.getByRole("group", { name: "Length" })).toBeInTheDocument()
+    await userEvent.click(dialog.getByRole("button", { name: "15 minutes longer" }))
+    await expect(dialog.getByText("45 min")).toBeInTheDocument()
+  },
+}
+export const EditVisitWithLengthPhone: Story = { ...phone(EditVisitWithLength) }
+
+/** The peek holds one visit at a time: another block swaps its content. */
+export const PeekSwapsVisit: Story = {
+  name: "Peek swaps to another visit",
+  play: async ({ canvasElement }) => {
+    await openPeek(canvasElement, /^Willow Dr, Fall blowout/)
+    await userEvent.click((await within(canvasElement).findAllByRole("button", { name: /^(?!Willow Dr)\S.*, (Spring turn-on|Repair)/ }))[0]!)
+    await expect(body().queryByRole("complementary", { name: "Ravi Shah" })).not.toBeInTheDocument()
+    await expect(document.querySelectorAll("aside.visit-peek")).toHaveLength(1)
+  },
+}
+
+/** Edit visit from a block: the one Schedule dialog with the best times above its calendar. */
 export const ScheduleDialogFromBlock: Story = {
-  name: "Schedule dialog with best times (Move from a block)",
+  name: "Schedule dialog with best times (Edit visit from a block)",
   args: { dialog: { kind: "schedule", id: "g-sam", job: false } },
   play: async () => {
-    await expect(await body().findByRole("dialog", { name: "Move the visit" })).toBeInTheDocument()
+    await expect(await body().findByRole("dialog", { name: "Edit visit" })).toBeInTheDocument()
     await expect(await body().findByRole("radiogroup", { name: "Openings" })).toBeInTheDocument()
   },
 }
@@ -130,7 +175,7 @@ export const ScheduleFromUnscheduledRow: Story = {
   args: { panels: { unscheduled: true } },
   play: async () => {
     await userEvent.click(await body().findByRole("button", { name: "Schedule Andrea Dalton" }))
-    await expect(await body().findByRole("dialog", { name: "Schedule the job" })).toBeInTheDocument()
+    await expect(await body().findByRole("dialog", { name: "Schedule visit" })).toBeInTheDocument()
     await expect(await within(await body().findByRole("radiogroup", { name: "Openings" })).findAllByRole("radio", { checked: true })).toHaveLength(1)
   },
 }
@@ -139,12 +184,14 @@ export const ScheduleFromUnscheduledRowPhone: Story = {
   args: { panels: { unscheduled: true } },
 }
 
-/** Dropped on a place that breaks a rule: "Move the visit" lists what it breaks. */
+/** Dropped on a place that breaks a rule: "Move anyway?" lists what it breaks. */
 export const MoveTheVisitDialog: Story = {
-  name: "Move the visit (a place that breaks a rule)",
+  name: "Move anyway? (a place that breaks a rule)",
   args: { dialog: { kind: "confirm", action: { type: "move", id: "g-sam", to: { day: "2026-11-20", personId: "person_hannah", start: 13 * 60 } }, problems: ["Hannah is off 12 to 2 pm.", "Adds 25 min of driving."] } },
   play: async () => {
-    await expect(await body().findByRole("dialog", { name: "Move the visit" })).toBeInTheDocument()
+    const dialog = await body().findByRole("dialog", { name: "Move anyway?" })
+    await expect(within(dialog).getByRole("button", { name: "Move anyway" })).toBeInTheDocument()
+    await expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument()
   },
 }
 export const MoveTheVisitDialogPhone: Story = phone(MoveTheVisitDialog)
@@ -162,7 +209,7 @@ const pointer = (type: string, target: EventTarget, x: number, y: number, button
   target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 1, isPrimary: true, pointerType: "mouse", button: 0, buttons, clientX: x, clientY: y }))
 const pause = () => new Promise((r) => setTimeout(r, 60))
 
-/** The first Unscheduled row is dragged onto Ryan's Thursday at 11:00: "Scheduled for Thu, Nov 19, 11:00 am", a bell on the new block, and the job leaves Unscheduled. */
+/** The first Unscheduled row is dragged onto Ryan's Thursday at 11:00: "Scheduled for Thu, Nov 19, 11:00 am" and the job leaves Unscheduled. */
 export const DropFromUnscheduled: Story = {
   name: "Drop a row from Unscheduled",
   args: { panels: { unscheduled: true }, toastSeconds: 0 },
@@ -191,22 +238,22 @@ export const ShortcutsHelp: Story = {
   },
 }
 
-/** Thursday has a stop with no set time: Order the day previews where each stop would go and the driving it saves, then one change with Undo and no message to anyone. */
-export const OrderTheDay: Story = {
-  name: "Order the day",
+/** Thursday has a stop with no set time: Reorder stops previews where each stop would go and the driving it saves, then one change with Undo and no message to anyone. */
+export const ReorderStops: Story = {
+  name: "Reorder stops",
   // Ryan has three stops with no set time on Thursday in a poor order (Longmont, Broomfield, Firestone): ordering slots them into the gaps and saves driving
   args: { view: "day", day: "2026-11-19", toastSeconds: 0, state: orderStory() },
   play: async () => {
-    await userEvent.click(await body().findByRole("button", { name: "Order the day" }))
-    const dialog = within(await body().findByRole("dialog", { name: "Order the day" }))
+    await userEvent.click(await body().findByRole("button", { name: "Reorder stops" }))
+    const dialog = within(await body().findByRole("dialog", { name: "Reorder stops to save driving" }))
     await expect(dialog.getByRole("region", { name: "Now" })).toBeInTheDocument()
-    await expect(dialog.getByRole("region", { name: "Ordered" })).toBeInTheDocument()
-    await userEvent.click(dialog.getByRole("button", { name: "Order the day" }))
-    await expect(await body().findByText(/^Ordered Thu, Nov 19, saves/)).toBeInTheDocument()
+    await expect(dialog.getByRole("region", { name: "Reordered" })).toBeInTheDocument()
+    await userEvent.click(dialog.getByRole("button", { name: "Reorder stops" }))
+    await expect(await body().findByText(/^Stops reordered\. .* less driving\.$/)).toBeInTheDocument()
     await expect(body().queryByRole("button", { name: "Notify the customer" })).not.toBeInTheDocument()
   },
 }
-export const OrderTheDayPhone: Story = phone(OrderTheDay)
+export const ReorderStopsPhone: Story = phone(ReorderStops)
 
 /** Schedule all N: where each job with no day would go, from the same rule; each row can be removed and the rest are planned again. */
 export const ScheduleAll: Story = {
@@ -219,7 +266,7 @@ export const ScheduleAll: Story = {
     await userEvent.click(dialog.getByRole("button", { name: "Remove Andrea Dalton" }))
     await expect(await body().findByRole("dialog", { name: "Schedule all 3" })).toBeInTheDocument()
     await userEvent.click(await body().findByRole("button", { name: "Schedule and notify the customer" }))
-    await expect(await body().findByText(/^Scheduled 3 jobs/, undefined, { timeout: 4000 })).toBeInTheDocument()
+    await expect(await body().findByText(/^3 visits scheduled/, undefined, { timeout: 4000 })).toBeInTheDocument()
   },
 }
 // on a phone the Unscheduled sheet is open, so the toast waits for it: the phone twin stops at the preview
@@ -246,42 +293,104 @@ export const AnotherDayRanked: Story = {
   name: "Schedule dialog, another day ranked",
   args: { dialog: { kind: "schedule", id: "g-sam", job: false } },
   play: async () => {
-    await expect(await body().findByRole("dialog", { name: "Move the visit" })).toBeInTheDocument()
+    await expect(await body().findByRole("dialog", { name: "Edit visit" })).toBeInTheDocument()
     await expect(document.querySelector('[data-slot="day-times"] [role="radiogroup"]')).not.toBeNull()
   },
 }
 
-/** One person hidden with the control in the toolbar: Week and Day lose their column, Month's counts, the Map and the List follow, and the other chip cannot be turned off. */
+/** One person hidden with the People menu in the toolbar: Week and Day lose their column, Month's counts, the Map and the List follow, and the last person shown cannot be turned off. */
 export const OnePersonHidden: Story = {
   name: "One person hidden",
   args: { hidden: ["person_hannah"], panels: { map: true } },
   play: async () => {
-    const hannah = await body().findByRole("button", { name: "Show Hannah Garner's visits" })
-    await expect(hannah).toHaveAttribute("aria-pressed", "false")
-    await expect(await body().findByRole("button", { name: "Show Ryan Garner's visits" })).toHaveAttribute("aria-disabled", "true")
+    await expect(await body().findByRole("button", { name: "People: Ryan" })).toBeInTheDocument()
     await expect(document.querySelectorAll('[data-slot="day-head"]').length).toBeGreaterThan(0)
     await expect(document.querySelector('[data-slot="day-head"]')).not.toHaveTextContent("Hannah")
   },
 }
 export const OnePersonHiddenPhone: Story = { ...phone(OnePersonHidden), args: { hidden: ["person_hannah"] }, play: async () => {
-  await expect(await body().findByRole("button", { name: "Show Hannah Garner's visits" })).toHaveAttribute("aria-pressed", "false")
+  await expect(await body().findByRole("button", { name: "People: Ryan" })).toBeInTheDocument()
 } }
 export const TwoPeopleShown: Story = {
-  name: "Two people shown",
+  name: "People menu, two people",
   play: async () => {
-    await userEvent.click(await body().findByRole("button", { name: "Show Hannah Garner's visits" }))
-    await expect(await body().findByRole("button", { name: "Show Hannah Garner's visits" })).toHaveAttribute("aria-pressed", "false")
-    await userEvent.click(await body().findByRole("button", { name: "Show Hannah Garner's visits" }))
+    await userEvent.click(await body().findByRole("button", { name: "People: Everyone" }))
+    await userEvent.click(await body().findByRole("checkbox", { name: "Hannah Garner" }))
+    await expect(await body().findByRole("button", { name: "People: Ryan" })).toBeInTheDocument()
+    await expect(await body().findByRole("checkbox", { name: "Ryan Garner" })).toHaveAttribute("aria-disabled", "true")
+    await userEvent.click(await body().findByRole("checkbox", { name: "Hannah Garner" }))
   },
 }
-export const TwoPeopleShownPhone: Story = phone(TwoPeopleShown)
+export const TwoPeopleShownPhone: Story = {
+  ...phone(TwoPeopleShown),
+  play: async () => {
+    await userEvent.click(await body().findByRole("button", { name: "People: Everyone" }))
+    await expect(await body().findByRole("dialog", { name: "People" })).toBeInTheDocument()
+  },
+}
 
-/** Nothing to reorder: Thursday's one stop with no set time already comes last in the best order, so there is no Order the day button. */
-export const OrderTheDayNothingToReorder: Story = {
-  name: "Order the day, nothing would change so no button",
+/** Five people: the People button says "3 of 5", the Week gets narrow columns and scrolls sideways inside the grid only, with the hour gutter kept in view. */
+export const WeekFivePeople: Story = {
+  name: "Week, five people",
+  args: { world: teamWorld(5), hidden: [] },
+  play: async () => {
+    await expect(await body().findByRole("button", { name: "People: Everyone" })).toBeInTheDocument()
+  },
+}
+export const WeekFivePeoplePhone: Story = phone({ ...WeekFivePeople, name: "Week, five people" })
+/** Fifteen people, three shown. The menu has a search box. */
+export const WeekFifteenPeopleThreeShown: Story = {
+  name: "Week, fifteen people, three shown",
+  args: { world: teamWorld(15), hidden: Array.from({ length: 12 }, (_, i) => `person_${["sam", "ola", "wes", "cora", "ivy", "gus", "mina", "tom", "ana", "dev", "eli", "fay"][i]}`) },
+  play: async () => {
+    await expect(await body().findByRole("button", { name: "People: 3 of 15" })).toBeInTheDocument()
+  },
+}
+export const DayFivePeople: Story = { name: "Day, five people", args: { world: teamWorld(5), view: "day", day: "2026-11-18" } }
+
+/** The Week's day head is the day and one chip. Hover or focus it for the towns, open time and driving; press it to open the day. */
+export const WeekHeaderCard: Story = {
+  name: "Week header card",
+  play: async ({ canvasElement }) => {
+    const head = (await within(canvasElement).findAllByRole("button", { name: /Open the day$/ }))[2]!
+    await userEvent.hover(head)
+    await expect(await body().findAllByText(/open\./)).not.toHaveLength(0)
+    await expect(document.querySelectorAll('[data-slot="day-head"] [data-slot="day-count"]').length).toBeGreaterThan(0)
+  },
+}
+
+/** Day shows the towns and each person's open time and driving in its head, and "N min drive" between stops. Week shows neither. */
+export const DayDriveLines: Story = {
+  name: "Day: head and drive lines",
+  args: { view: "day", day: "2026-11-18" },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelectorAll('[data-slot="drive-line"]').length).toBeGreaterThan(0)
+    await expect(canvasElement.querySelector('[data-slot="day-head"][data-variant="day"]')).toHaveTextContent(/open/)
+  },
+}
+export const WeekHasNoDriveLines: Story = {
+  name: "Week: no drive lines",
+  play: async ({ canvasElement }) => {
+    await expect(await within(canvasElement).findAllByRole("button", { name: /Open the day$/ })).not.toHaveLength(0)
+    await expect(canvasElement.querySelectorAll('[data-slot="drive-line"]')).toHaveLength(0)
+  },
+}
+
+/** The Map's panel ends with each person's driving for the day shown. */
+export const MapWithDriving: Story = {
+  name: "Map with the day's driving",
+  args: { panels: { map: true } },
+  play: async () => {
+    await expect(await body().findByRole("list", { name: "Driving" })).toBeInTheDocument()
+  },
+}
+
+/** Nothing to reorder: Thursday's one stop with no set time already comes last in the best order, so there is no Reorder stops button. */
+export const ReorderStopsNothingToReorder: Story = {
+  name: "Reorder stops, nothing would change so no button",
   args: { view: "day", day: "2026-11-19" },
   play: async () => {
-    await expect(await body().findByRole("button", { name: "Show Hannah Garner's visits" })).toBeInTheDocument()
-    await expect(body().queryByRole("button", { name: "Order the day" })).not.toBeInTheDocument()
+    await expect(await body().findByRole("button", { name: "People: Everyone" })).toBeInTheDocument()
+    await expect(body().queryByRole("button", { name: "Reorder stops" })).not.toBeInTheDocument()
   },
 }

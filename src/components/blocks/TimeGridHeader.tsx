@@ -1,48 +1,79 @@
-import type { ReactNode } from "react"
 import { firstNameOf } from "@/lib/admin/people"
 import type { Person } from "@/lib/admin/types"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { cn } from "@/lib/utils"
 import { hourWords, minutesToPx, type HourRange } from "./time-grid-model"
 import { personStyle } from "./time-grid-style"
 import type { GridColumn } from "./time-grid-types"
 
-// The two fixed edges of the clock: the head of a day (Jobber's "23 Mon" with today as a filled pill, a small count chip, an optional
-// caption such as the day's fill, and each person under it as a small initials avatar in their colour, or their name in the Day view)
-// and the hour gutter at the left (a label on each hour, the now dot on today). The grid keeps both stuck while it scrolls.
-// Pure props.
+// The two fixed edges of the clock: the head of a day and the hour gutter at the left (a label on each hour, the now dot on today). The grid keeps both stuck while it scrolls.
+// The Week's head is the day and one chip, "3 visits" or "Full", and nothing else (docs/plans/2026-11-26-scheduler-review-research.md, point 4); the day is a button that opens that
+// day, and hovering or focusing it opens a small card with the towns, each person's open time and driving. The Day's head carries all of that in view: the day, the count, the towns
+// and each person's name with their open time and driving. Pure props.
 
 export const GUTTER = "w-14 shrink-0"
 
-export function DayHead({ column, people, colourOf, action }: { column: GridColumn; people: readonly Person[]; colourOf: (id: string) => number; /** no longer chooses between a name and initials: the first name is always shown */ names?: boolean; action?: ReactNode }) {
-  // Three lines at most, whatever the width: the day and its stop count ("Full" in the count's place), the towns, and one line per person (name, then "7 h 30 open · 24 min drive"). The head asks
-  // its own width (a container query): narrower, the towns go first, then the line shortens to the driving figure alone ("24 min drive", then "24 min"). The Day view's head is wide enough for it all.
-  return (
-    <div data-slot="day-head" className="@container flex min-w-0 flex-col items-stretch gap-0.5 px-1 py-1.5">
-      <div className="flex min-w-0 items-center justify-center gap-1.5">
-        <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-sm font-semibold", column.today ? "bg-navy text-white" : "text-navy")}>
-          {column.label}
-          {column.today && <span className="sr-only">, today</span>}
-        </span>
-        {column.caption && <span className={cn("truncate text-xs", column.caption === "Full" ? "font-medium text-warning-ink" : "text-navy-light")}>{`· ${column.caption}`}</span>}
-        {action}
+/** What the Week head's card says, line by line: "Erie 2, Lafayette 1", "Ryan 4 h open. 38 min driving.". Empty when there is nothing to say. */
+export function dayDetailLines(column: GridColumn, people: readonly Person[]): string[] {
+  const lines: string[] = []
+  if (column.towns) lines.push(column.towns)
+  for (const p of people) {
+    const stat = column.stats?.[p.id]
+    if (!stat) continue
+    const parts = [stat.open && `${stat.open}.`, stat.driving && `${stat.driving} driving.`].filter(Boolean)
+    if (parts.length) lines.push(`${firstNameOf(p.name)} ${parts.join(" ")}`)
+  }
+  return lines
+}
+
+export function DayHead({ column, people, colourOf, variant = "week", onOpenDay }: { column: GridColumn; people: readonly Person[]; colourOf: (id: string) => number; variant?: "week" | "day"; /** the Week's day opens that day */ onOpenDay?: (day: string) => void }) {
+  const chip = column.caption ?? column.count
+  const label = (
+    <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-sm font-semibold", column.today ? "bg-navy text-white" : "text-navy")}>
+      {column.label}
+      {column.today && <span className="sr-only">, today</span>}
+    </span>
+  )
+  const chipEl = chip && <span data-slot="day-count" className={cn("truncate text-xs", chip === "Full" ? "font-medium text-warning-ink" : "text-navy-light")}>{chip}</span>
+  if (variant === "week") {
+    const lines = dayDetailLines(column, people)
+    const trigger = onOpenDay ? (
+      <button type="button" aria-label={`${column.label}${column.today ? ", today" : ""}${chip ? `, ${chip}` : ""}. Open the day`} onClick={() => onOpenDay(column.day)} className="inline-flex min-h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+        {label}
+        {chipEl}
+      </button>
+    ) : (
+      <span className="inline-flex items-center gap-1.5">{label}{chipEl}</span>
+    )
+    return (
+      <div data-slot="day-head" data-variant="week" className="flex min-w-0 items-center justify-center px-1 py-1.5">
+        {lines.length ? (
+          <HoverCard openDelay={250} closeDelay={80}>
+            <HoverCardTrigger asChild>{trigger}</HoverCardTrigger>
+            <HoverCardContent data-slot="day-detail" side="bottom" align="center" className="w-auto max-w-72 p-3 text-sm">
+              <ul className="space-y-0.5 text-navy">{lines.map((l) => <li key={l}>{l}</li>)}</ul>
+            </HoverCardContent>
+          </HoverCard>
+        ) : trigger}
       </div>
-      {column.towns && <span className="hidden truncate text-center text-xs text-navy-light @[170px]:block">{column.towns}</span>}
+    )
+  }
+  return (
+    <div data-slot="day-head" data-variant="day" className="flex min-w-0 flex-col items-stretch gap-0.5 px-1 py-1.5">
+      <div className="flex min-w-0 items-center justify-center gap-1.5">
+        {label}
+        {chipEl}
+      </div>
+      {column.towns && <span className="truncate text-center text-xs text-navy-light">{column.towns}</span>}
       <div className="flex">
         {people.map((p) => {
           const stat = column.stats?.[p.id]
-          const full = stat?.open === "Full"
           return (
-            <span key={p.id} className="flex min-w-0 flex-1 items-center justify-center gap-1 whitespace-nowrap px-0.5 text-[11px] leading-tight text-navy-light">
+            <span key={p.id} className="flex min-w-0 flex-1 items-center justify-center gap-1 whitespace-nowrap px-0.5 text-xs leading-tight text-navy-light">
               <span aria-hidden className={cn("size-2 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
               <span className="truncate">
                 <span className="font-medium text-navy">{firstNameOf(p.name)}</span>
-                {stat && (
-                  <>
-                    <span className="hidden @[320px]:inline">{` ${[stat.open, stat.driving && `${stat.driving} drive`].filter(Boolean).join(" · ")}`}</span>
-                    <span className="hidden @[230px]:inline @[320px]:hidden">{` ${[full && "Full", stat.driving && `${stat.driving} drive`].filter(Boolean).join(" · ")}`}</span>
-                    <span className="@[230px]:hidden">{` ${[full && "Full", stat.driving].filter(Boolean).join(" · ")}`}</span>
-                  </>
-                )}
+                {stat && ` ${[stat.open, stat.driving && `${stat.driving} drive`].filter(Boolean).join(" · ")}`}
               </span>
             </span>
           )
