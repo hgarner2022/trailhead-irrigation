@@ -62,7 +62,7 @@ export function PassImage({ model, art }: { model: PassImageModel; art: string }
           <div style={{ display: "flex", flex: 1 }}>
             {model.cells.map((cell) => (
               <div key={cell.label} style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-                <div style={{ display: "flex", fontSize: 21, textTransform: "uppercase", letterSpacing: 2, opacity: 0.7 }}>{cell.preferred ? `${cell.label} · Preferred` : cell.label}</div>
+                <div style={{ display: "flex", fontSize: 21, textTransform: "uppercase", letterSpacing: 2, opacity: 0.7 }}>{cell.preferred ? `${cell.label} · Preference` : cell.label}</div>
                 <div style={{ marginTop: 6, fontSize: 32, fontWeight: cell.lit ? 700 : 500, color: cell.lit ? LIGHT : "#FFFFFF" }}>{cell.value}</div>
               </div>
             ))}

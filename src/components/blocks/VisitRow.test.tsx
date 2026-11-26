@@ -14,9 +14,9 @@ describe("VisitRow", () => {
     expect(screen.getByText("Booked")).toBeInTheDocument()
   })
 
-  it("carries the Season Pass label, the street and who is coming when it is given them", () => {
+  it("carries the street and who is coming when it is given them, and no pass chip", () => {
     inList(<VisitRow {...booked} label="Season Pass 2027" street="412 Briggs Street" who="Ryan" />)
-    expect(screen.getByText("Season Pass 2027")).toBeInTheDocument()
+    expect(screen.queryByText("Season Pass 2027")).toBeNull()
     expect(screen.getByText("412 Briggs Street")).toBeInTheDocument()
     expect(screen.getByText("Spring turn-on · Ryan")).toBeInTheDocument()
   })
@@ -33,10 +33,10 @@ describe("VisitRow", () => {
     expect(screen.getByText("Canceled")).toBeInTheDocument()
   })
 
-  it("says its preference and that we schedule it for a visit with no day, never a prompt to pick one", () => {
+  it("says its preference for a visit with no day, without the long scheduling line, never a prompt to pick one", () => {
     inList(<VisitRow {...booked} dayWords="Our recommended, mid October" note="We'll schedule it about two weeks before and tell you the day." pill={{ status: "needs-a-day", label: "Not scheduled yet" }} />)
     expect(screen.getByText("Our recommended, mid October")).toBeInTheDocument()
-    expect(screen.getByText("We'll schedule it about two weeks before and tell you the day.")).toBeInTheDocument()
+    expect(screen.queryByText("We'll schedule it about two weeks before and tell you the day.")).toBeNull()
     expect(screen.queryByText(/pick a day|coming soon/i)).toBeNull()
   })
 })

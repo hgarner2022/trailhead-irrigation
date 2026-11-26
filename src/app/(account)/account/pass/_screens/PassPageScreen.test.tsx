@@ -16,7 +16,7 @@ describe("PassPageScreen", () => {
     expect(rows().map((r) => r.textContent)).toEqual([
       "Spring turn-on · $145May 3Done",
       "Mid-season inspection · $145July",
-      "Fall blowout · $95Preference: Our recommended, mid OctoberChange",
+      "Fall blowout · $95Preference: Our recommended, mid October Change",
     ])
     // the sentence about when we schedule is said once under the list, not on every line
     expect(screen.getAllByText("We'll schedule it about two weeks before and tell you the day.")).toHaveLength(1)

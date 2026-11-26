@@ -83,13 +83,13 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   const [where, setWhere] = useState<Where>(start)
   const [placeholder, setPlaceholder] = useState<{ title: string; path: string } | null>(null)
   const [booked, setBooked] = useState<Booked | null>(null)
-  const [channel, setChannel] = useState<ContactChannel>("text")
-  // Tips and offers by email start off for the run and are given by booking (no box), withdrawn in Details or by the unsubscribe link. The admin walkthrough reads the same choice.
+  const [channel, setChannel] = useState<ContactChannel>("both")
+  // Tips and offers by email are ON from the start: an account only exists once someone has booked, and the booking is the opt-in (no box). Details withdraws it, so does the unsubscribe link. The admin walkthrough reads the same choice.
   const [marketing, setMarketing] = useState<{ email: boolean; text: boolean }>(() => {
-    writeChoice({})
+    writeChoice({ email: true, emailSource: "booking form" })
     // a request sent from the booking form on an earlier run is forgotten with the rest
     clearSent()
-    return { email: false, text: false }
+    return { email: true, text: false }
   })
   // Tips and offers by email: given by booking, withdrawn by the Details switch or the unsubscribe link, each written to the consent history with where it happened. Marketing texts do not exist.
   const choose = (kind: "email", on: boolean, source: "booking form" | "account" | "unsubscribe link") => {

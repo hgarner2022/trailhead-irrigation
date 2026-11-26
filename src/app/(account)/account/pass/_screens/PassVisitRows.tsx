@@ -41,10 +41,19 @@ export function PassVisitRows({ pass, onChangePreference, times, note = true }: 
                   <span className="sr-only">{" · "}</span>
                   <span className="type-value text-foreground">{info.price}</span>
                 </span>
-                {when !== row.label && <span className="block type-meta text-muted-foreground">{when}</span>}
+                {when !== row.label && (
+                  <span className="block type-meta text-muted-foreground">
+                    {when}
+                    {preference && canChange(visit) && (
+                      <>
+                        {" "}
+                        <TimingDialog kind={visit.kind} value={preference} onSave={onChangePreference} />
+                      </>
+                    )}
+                  </span>
+                )}
               </span>
               <span className="flex flex-wrap items-center gap-3">
-                {preference && canChange(visit) && <TimingDialog kind={visit.kind} value={preference} onSave={onChangePreference} />}
                 {row.label !== "Preferred" && <StatusPill status={row.status} label={row.label} />}
                 <AddToCalendar pass={pass} visit={visit} name={row.name} />
               </span>

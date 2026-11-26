@@ -63,7 +63,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
   const [picks, setPicks] = useState<Record<string, DayTimePick>>(initial.picks ?? {})
   const [when, setWhen] = useState(initial.when ?? "")
   const [prefs, setPrefs] = useState<Record<string, TimingPreference>>(initial.prefs ?? {})
-  const [channel, setChannel] = useState<ContactChannel>(initial.channel ?? "text")
+  const [channel, setChannel] = useState<ContactChannel>(initial.channel ?? "both")
   const [photos, setPhotos] = useState<PickedPhoto[]>(initial.photos ?? [])
   const [extras, setExtras] = useState<Extras>({ ...NO_EXTRAS, ...initial.extras })
   const [leaving, setLeaving] = useState(initial.leaving ?? false)
