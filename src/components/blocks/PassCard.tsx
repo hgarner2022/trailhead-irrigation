@@ -47,7 +47,7 @@ function describeVisit(visit: PassVisit, pass: Pass): string | null {
   if (visit.completedAt) return `${name} done on ${writtenDate(visit.completedAt)}`
   if (visit.scheduledAt) return `${name} on ${writtenDate(visit.scheduledAt)}`
   const preference = preferenceOf(pass, visit.kind)
-  return preference && visit.kind !== "inspection" ? `${name} preferred ${lower(preferenceLabel(visit.kind, preference))}` : null
+  return preference && visit.kind !== "inspection" ? `${name} preference ${lower(preferenceLabel(visit.kind, preference))}` : null
 }
 
 function describe(pass: Pass): string {
@@ -70,7 +70,7 @@ function VisitCell({ visit, pass }: { visit: PassVisit; pass: Pass }) {
         <span className={cn(preferred && "@max-[440px]:hidden")}>{VISIT_NAMES[visit.kind]}</span>
         {preferred && (
           <span className="rounded-full bg-primary-light/20 px-1.5 py-px text-[9px] font-semibold tracking-wider text-primary-light @max-[440px]:bg-transparent @max-[440px]:px-0 @max-[440px]:text-[10px] @max-[440px]:font-normal @max-[440px]:tracking-wide">
-            Preferred
+            Preference
           </span>
         )}
       </div>

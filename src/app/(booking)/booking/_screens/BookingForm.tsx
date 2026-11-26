@@ -10,7 +10,6 @@ import { fixtureCalendarDays, type DayTimeOffer, type DayTimePick } from "@/lib/
 import { bookingEntries } from "@/lib/booking/pass-entry"
 import { passPlanFor, preferenceVisits } from "@/lib/booking/pass-visits"
 import { TERMS_VERSION } from "@/lib/season-pass"
-import { OnFileMark } from "@/components/blocks/OnFileMark"
 import { accessOf, emailDiffers, fixtureKnown } from "@/lib/booking/known-address"
 import { CATALOGUE, bookableOf, quotableOf } from "@/lib/booking/services"
 import type { TimingPreference } from "@/lib/admin/types"
@@ -29,11 +28,12 @@ import { dayGroups, heldPicksOf, heldPrefsOf, type OffersFor } from "./booking-g
 import { bookedPassOf, upsellPrices } from "./booking-pass-model"
 import { PreferenceGroups, preferenceQuestion } from "./booking-preference"
 import { LeaveDialog } from "./booking-leave"
-import { StepField, StepProblems } from "./booking-problems"
+import { StepField } from "./booking-problems"
+import { KnownAddress } from "./known-address"
 import type { BookingFormProps } from "./booking-form-types"
 import { useKnownProperty } from "./use-known-property"
 import { useStepHistory } from "./use-step-history"
-import { ACTIONS, CONFIRM_BOOK, CONFIRM_PASS, NO_EXTRAS, QUESTIONS, QUOTE_QUESTIONS, SEND_REQUEST, areaState, callbackMode, canContinue, cardWords, hasEntries, happensWords, problemList, reviewRows, stepTotal, stepsFor, townOf, type CardChoice, type Extras, type FormStep } from "./booking-form-model"
+import { ACTIONS, CONFIRM_BOOK, CONFIRM_PASS, NO_EXTRAS, PICK_ADDRESS_PROBLEM, QUESTIONS, QUOTE_QUESTIONS, SEND_REQUEST, areaState, callbackMode, canContinue, cardWords, hasEntries, happensWords, problemList, reviewRows, stepTotal, stepsFor, townOf, type CardChoice, type Extras, type FormStep } from "./booking-form-model"
 
 // The customer's booking form (docs/plans/2026-11-19-booking-form-design.md), one question per screen on the FlowShell, every heading a plain name: Address, Service, Day, Contact, Card, Review. The address is the
 // type-ahead (the ZIP decides the area; a repeat customer is recognised by it alone, with no sign-in and nothing personal shown), then the service: one card per service that opens in place and holds what is
@@ -63,7 +63,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
   const [picks, setPicks] = useState<Record<string, DayTimePick>>(initial.picks ?? {})
   const [when, setWhen] = useState(initial.when ?? "")
   const [prefs, setPrefs] = useState<Record<string, TimingPreference>>(initial.prefs ?? {})
-  const [channel, setChannel] = useState<ContactChannel>(initial.channel ?? "text")
+  const [channel, setChannel] = useState<ContactChannel>(initial.channel ?? "both")
   const [photos, setPhotos] = useState<PickedPhoto[]>(initial.photos ?? [])
   const [extras, setExtras] = useState<Extras>({ ...NO_EXTRAS, ...initial.extras })
   const [leaving, setLeaving] = useState(initial.leaving ?? false)
@@ -77,7 +77,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
   const town = townOf(fields)
   // A repeat customer is recognised by the address alone (Hannah, Nov 23 2026): nothing personal is shown, the yard's zone count and controller prefill, and the card on file is offered on the card step to the email on file only.
-  const { property, offered, otherCard, setOtherCard, prefillOnce } = useKnownProperty({ place: fields.place, email: fields.email, known, other: initial.other, contactStep: step === "contact" && !quote, fields, setField: (f, v) => set(f, v) })
+  const { property, welcomeName, offered, otherCard, setOtherCard, prefillOnce } = useKnownProperty({ place: fields.place, email: fields.email, known, other: initial.other, contactStep: step === "contact" && !quote, fields, setField: (f, v) => set(f, v) })
   const cardNow: CardChoice = card === "file" && !offered ? null : card
   const first = useRef(true)
 
@@ -236,7 +236,12 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
       body = (
         <>
           <AddressStep state={fields} attempted={attempted} places={places} showAccess={false} onTypedChange={setAddressTyped} onTypedValues={setTyped} onType={(text) => dispatch({ type: "typeAddress", text })} onPick={(place) => dispatch({ type: "pickPlace", place })} set={set} />
-          {property && <OnFileMark className="mt-2" />}
+          {stepError === PICK_ADDRESS_PROBLEM && (
+            <p data-slot="address-problem" className="mt-3 text-sm text-destructive">
+              {stepError}
+            </p>
+          )}
+          {property && <KnownAddress />}
           {deadEnd && (
             <p data-slot="address-help" className="mt-4 text-base text-muted-foreground">
               {"Not sure? Call Ryan at "}
@@ -270,6 +275,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
             channel={channel}
             onChannel={setChannel}
             attempted={attempted}
+            welcome={welcomeName}
           />
           {quote && <p data-slot="quote-happens" className="mt-8 text-base text-foreground">{happensWords({ channel, phone: fields.phone, email: fields.email, quote: true, callback: false })}</p>}
         </>
@@ -284,7 +290,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
 
   return (
     <div onKeyDown={onKeyDown}>
-      <FlowShell question={heading} step={Math.min(at + 1, total)} total={total} notice={<StepProblems problems={problems} />} onBack={back} onNext={next} nextLabel={label} legal={step === "contact" && !quote ? <TermsLine /> : undefined} done={done} onClose={dirty && !done ? () => setLeaving(true) : undefined}>
+      <FlowShell question={heading} step={Math.min(at + 1, total)} total={total} onBack={back} onNext={next} nextLabel={label} legal={step === "contact" && !quote ? <TermsLine /> : undefined} done={done} onClose={dirty && !done ? () => setLeaving(true) : undefined}>
         {body}
       </FlowShell>
       <LeaveDialog open={leaving} onOpenChange={setLeaving} />

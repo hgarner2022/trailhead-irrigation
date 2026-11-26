@@ -86,7 +86,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
   const [more, setMore] = useState(false)
   const [reference, setReference] = useState("")
   const [amount, setAmount] = useState("")
-  const [problem, setProblem] = useState(plan.declined ? "The card didn't go through. Choose another way." : "")
+  const [problem, setProblem] = useState(plan.declined ? "The card didn't go through. Pick another way." : "")
   const [result, setResult] = useState<{ title: string; line: string } | null>(null)
   const [pending, start] = useTransition()
   const [report, setReport] = useState(true)

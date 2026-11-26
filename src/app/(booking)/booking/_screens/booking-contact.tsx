@@ -29,6 +29,8 @@ export interface BookingContactProps {
   channel: ContactChannel
   onChannel: (c: ContactChannel) => void
   attempted: boolean
+  /** the first name on file, only once the typed email is the one on file for the address (never before): the form says "Welcome back, Andrea." under the email */
+  welcome?: string | null
 }
 
 /** The one line above the Back and Continue bar on the contact step of a booking: agreement is pressing Continue. Never a box, never an error. */
@@ -48,7 +50,7 @@ export function TermsLine() {
   )
 }
 
-export function BookingContact({ fields, set, channel, onChannel, attempted }: BookingContactProps) {
+export function BookingContact({ fields, set, channel, onChannel, attempted, welcome = null }: BookingContactProps) {
   const id = useId()
   const [touched, setTouched] = useState<Set<string>>(() => new Set())
   return (
@@ -73,6 +75,11 @@ export function BookingContact({ fields, set, channel, onChannel, attempted }: B
                   className={cn(FIELD, shown && "border-destructive")}
                 />
               </FormRow>
+              {field.key === "email" && welcome && !slip && (
+                <p data-slot="welcome-back" className="mt-1 text-sm text-foreground">
+                  {`Welcome back, ${welcome}.`}
+                </p>
+              )}
               {slip && (
                 <p data-slot="email-slip" className="mt-1 text-sm text-muted-foreground">
                   Did you mean{" "}

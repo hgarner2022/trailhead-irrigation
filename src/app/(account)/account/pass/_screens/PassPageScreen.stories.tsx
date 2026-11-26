@@ -13,15 +13,17 @@ import { PassPageScreen } from "./PassPageScreen"
 const passes = snapshot.passes as Pass[]
 // each visit carries what it includes, as the pass page reads it from the visit's line
 const withDescriptions = (p: Pass): Pass => ({ ...p, visits: p.visits.map((v) => ({ ...v, description: serviceFor(v.kind, p.zones)?.description })) })
-const active = withDescriptions(passes[0])
+// passes[0] bought the July inspection; the default customer pass is the usual two visits, and the inspection stays an add-on (Hannah, Nov 12 2026), shown by WithInspection only.
+const threeVisit = withDescriptions(passes[0])
+const active: Pass = { ...threeVisit, visits: threeVisit.visits.filter((v) => v.kind !== "inspection") }
 const fresh = withDescriptions(passes[2])
 const allDone: Pass = {
   ...active,
   visits: active.visits.map((v, i) => ({
     ...v,
-    scheduledAt: v.scheduledAt ?? ["2027-05-03T16:00:00Z", "2027-07-13T15:00:00Z", "2027-10-05T16:00:00Z"][i],
-    completedAt: ["2027-05-03T17:10:00Z", "2027-07-13T16:05:00Z", "2027-10-05T16:40:00Z"][i],
-    payments: [{ id: `pay-${i}`, amount: v.amount, method: "card_on_file", status: "succeeded", paidOn: ["2027-05-03", "2027-07-13", "2027-10-05"][i] }],
+    scheduledAt: v.scheduledAt ?? ["2027-05-03T16:00:00Z", "2027-10-05T16:00:00Z"][i],
+    completedAt: ["2027-05-03T17:10:00Z", "2027-10-05T16:40:00Z"][i],
+    payments: [{ id: `pay-${i}`, amount: v.amount, method: "card_on_file", status: "succeeded", paidOn: ["2027-05-03", "2027-10-05"][i] }],
   })),
 }
 const cancelled: Pass = { ...active, status: "cancelled" }
@@ -60,6 +62,8 @@ export const Active: Story = { globals: wide }
 export const Phone: Story = { globals: phone }
 
 /** Bought, nothing placed yet: both timings in the plan lines. */
+/** The customer added the July inspection: it is a third row and a third cell on the card. */
+export const WithInspection: Story = { args: { pass: threeVisit }, globals: wide }
 export const BeforeSeason: Story = { args: { pass: fresh }, globals: wide }
 
 /** We are asking for the blowout's timing: the quiet banner over the card, the same choice behind its button. */
@@ -131,7 +135,7 @@ export const AskingPlay: Story = {
   args: { pass: active, today: "2027-09-10", ask: "blowout" },
   globals: phone,
   play: async ({ canvas, userEvent, args }) => {
-    await userEvent.click(await canvas.findByRole("button", { name: /Choose when/ }))
+    await userEvent.click(await canvas.findByRole("button", { name: /Pick when/ }))
     await userEvent.click(await screen.findByRole("radio", { name: /Early season/ }))
     await userEvent.click(await screen.findByRole("button", { name: "Save" }))
     await expect(args.onChangePreference).toHaveBeenCalledWith("blowout", "earlier")

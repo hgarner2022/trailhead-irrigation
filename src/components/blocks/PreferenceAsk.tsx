@@ -88,7 +88,7 @@ export function PreferenceAsk({ kind, value, onSave, className }: PreferenceAskP
           <p className="text-base font-semibold text-foreground">{timingQuestion(kind)}</p>
           <p className="text-base text-foreground">{TIMING_NEXT}</p>
         </div>
-        <TimingDialog kind={kind} value={value} onSave={onSave} label="Choose when" asButton />
+        <TimingDialog kind={kind} value={value} onSave={onSave} label="Pick when" asButton />
       </div>
     </section>
   )

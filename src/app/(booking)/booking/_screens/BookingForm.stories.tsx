@@ -88,7 +88,7 @@ export const AddressOutsideAreaTest: Story = {
     await expect(await canvas.findByText(/We don't serve Boulder yet/)).toBeInTheDocument()
     await expect(canvas.getByRole("link", { name: /\(970\) 692-7270/ })).toBeInTheDocument()
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await expect((await canvas.findAllByText(/We don't serve Boulder yet/)).length).toBeGreaterThan(1)
+    await expect((await canvas.findAllByText(/We don't serve Boulder yet/)).length).toBe(1)
   },
 }
 /** The search found nothing: "We can't find it. Enter it here." with Street, City and a required ZIP, filled in. */
@@ -127,13 +127,13 @@ export const AddressTypedOutsideTest: Story = {
     await userEvent.type(canvas.getByLabelText("ZIP"), "80302")
     await expect((await canvas.findAllByText(/We don't serve Boulder yet/)).length).toBeGreaterThan(0)
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await expect((await canvas.findAllByText(/We don't serve Boulder yet/)).length).toBeGreaterThan(1)
+    await expect((await canvas.findAllByText(/We don't serve Boulder yet/)).length).toBe(1)
   },
 }
 /** A typed city that is not the town of its ZIP: a quiet line under the city, and Continue does not pass. */
 const addressMismatch = on({ initial: { fields: mismatch, attempted: true } }, "Address, city and ZIP disagree", {
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByText("ZIP 80516 is in Erie.")).length).toBe(2)
+    await expect((await canvas.findAllByText("ZIP 80516 is in Erie.")).length).toBe(1)
   },
 })
 export const AddressMismatchPhone: Story = { ...addressMismatch.phone, name: "Address, city and ZIP disagree, phone" }
@@ -264,7 +264,7 @@ export const DetailsUpsellTest: Story = {
 /** Continue pressed with the access question unanswered. */
 const accessMissing = on({ initial: { step: "details", service: "repair", fields: home, attempted: true } }, "Details, access not answered", {
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByText("Tell us whether we can get to the system without you.")).length).toBe(2)
+    await expect((await canvas.findAllByText("Tell us whether we can get to the system without you.")).length).toBe(1)
   },
 })
 export const DetailsAccessMissingPhone: Story = { ...accessMissing.phone, name: "Details, access not answered, phone" }
@@ -337,13 +337,14 @@ const quoteDetails = on({ initial: { step: "details", quote: true, service: "lig
 export const QuotePathDetailsPhone: Story = { ...quoteDetails.phone, name: "Request a quote, details, phone" }
 export const QuotePathDetailsLaptop: Story = { ...quoteDetails.laptop, name: "Request a quote, details, laptop" }
 
-/** 3. Day: a month calendar. The soonest open day is chosen and marked, every open day carries a quiet dot, days with nothing open are plain, and the times of the chosen day are under it, none chosen. */
+/** 3. Day: a month calendar. The soonest open day is chosen and marked, every open day carries a quiet dot, days with nothing open are plain, and the times of the chosen day are under it, none chosen, with the word Recommended under the one best time. */
 const day = on({ initial: { step: "day", service: "repair", fields: details } }, "Day", {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Day" })).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: /Thursday, April 15, soonest/ })).toHaveAttribute("aria-pressed", "true")
     await expect(canvas.getByRole("button", { name: "Monday, April 19" })).toBeInTheDocument()
-    await expect(canvas.queryByText(/Recommended|Best fit/)).toBeNull()
+    await expect(canvas.getAllByText("Recommended")).toHaveLength(1)
+    await expect(canvas.queryByText(/Best fit/)).toBeNull()
     await expect(canvas.getByRole("button", { name: /Wednesday, April 21, no times open/ })).toHaveAttribute("aria-disabled", "true")
     await expect(canvas.queryByText(/Tuesdays|texts you the day before|already in Erie|Show more days/)).toBeNull()
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeEnabled()
@@ -390,7 +391,7 @@ export const AddressNothingPhone: Story = { ...addressNothing.phone, name: "Addr
 const serviceNothing = on({ initial: { step: "service", fields: home, attempted: true } }, "Service, nothing chosen", {
   play: async ({ canvas }) => {
     await noHint(canvas)
-    await expect((await canvas.findAllByText("Choose a service.")).length).toBe(2)
+    await expect((await canvas.findAllByText("Pick a service.")).length).toBe(1)
     await expect(canvas.queryByText("Pick a service to continue.")).toBeNull()
   },
 })
@@ -399,7 +400,7 @@ export const ServiceNothingLaptop: Story = { ...serviceNothing.laptop, name: "Se
 const dayNoTime = on({ initial: { step: "day", service: "repair", fields: details, attempted: true } }, "Day, no time chosen", {
   play: async ({ canvas }) => {
     await noHint(canvas)
-    await expect((await canvas.findAllByText("Pick a time.")).length).toBe(2)
+    await expect((await canvas.findAllByText("Pick a time.")).length).toBe(1)
   },
 })
 export const DayNoTimePhone: Story = { ...dayNoTime.phone, name: "Day, Continue pressed with no time, phone" }
@@ -410,9 +411,9 @@ export const ServiceNothingClearsTest: Story = {
   tags: HIDDEN,
   args: { initial: { step: "service", fields: home, attempted: true } },
   play: async ({ canvas, userEvent }) => {
-    await expect((await canvas.findAllByText("Choose a service.")).length).toBe(2)
+    await expect((await canvas.findAllByText("Pick a service.")).length).toBe(1)
     await userEvent.click(canvas.getByRole("button", { name: /^Sprinkler repair/ }))
-    await waitFor(() => expect(canvas.queryAllByText("Choose a service.")).toHaveLength(0))
+    await waitFor(() => expect(canvas.queryAllByText("Pick a service.")).toHaveLength(0))
   },
 }
 /** The prototype helpers show only when a story asks for them: the note that the card form is drawn, and Add 2 sample photos. Off, as here, the customer screen has neither. */
@@ -454,7 +455,7 @@ export const ContactFilledPhone: Story = { ...contactFilled.phone, name: "Contac
 /** Continue pressed with nothing filled in: each problem is written as help under its field. */
 const contactMissing = on({ initial: { step: "contact", service: "repair", fields: { ...details, firstName: "Andrea", lastName: "Dalton", email: "andrea.dalton@example.org" }, picks: picked, attempted: true } }, "Contact, missing phone and terms", {
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByText("Add your phone number.")).length).toBe(2)
+    await expect((await canvas.findAllByText("Add your phone number.")).length).toBe(1)
     await expect(canvas.queryByText(/Tick the box|Terms/)).toBeNull()
   },
 })
@@ -716,14 +717,15 @@ export const CloseWithNothingEntered: Story = {
   },
 }
 
-/** A failed Continue puts the summary at the top of the step and focus on the first field that is wrong. */
+/** A failed Continue puts each message under its own field and focus on the first field that is wrong. No summary box. */
 export const ProblemsFocusPhone: Story = {
   ...phone,
-  name: "Missing details, summary and focus, phone",
+  name: "Missing details, messages under the fields and focus, phone",
   args: { initial: { step: "contact", service: "repair", fields: details, picks: picked } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await expect(await canvas.findByText("Check these before you continue")).toBeInTheDocument()
+    await expect(await canvas.findByText("Add your first name.")).toBeInTheDocument()
+    await expect(canvas.queryByText("Check these before you continue")).toBeNull()
     await expect(canvas.getByLabelText("First name")).toHaveFocus()
   },
 }

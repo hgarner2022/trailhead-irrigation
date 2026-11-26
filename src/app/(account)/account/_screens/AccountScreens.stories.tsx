@@ -58,7 +58,7 @@ export const HomeAskingPlay: Story = {
   ...phone,
   render: () => <HomeScreen customer={andreaCustomer} jobs={[passJobAsking, repairJob]} today="2027-09-10" pass={pass} ask="blowout" onSavePreference={onSavePreference} {...actions} />,
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole("button", { name: /Choose when/ }))
+    await userEvent.click(await canvas.findByRole("button", { name: /Pick when/ }))
     await userEvent.click(await screen.findByRole("radio", { name: /Late season/ }))
     await userEvent.click(await screen.findByRole("button", { name: "Save" }))
     await expect(onSavePreference).toHaveBeenCalledWith("blowout", "later")

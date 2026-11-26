@@ -54,7 +54,7 @@ function describeVisit(v: PassVisit, preferences: Preferences): string {
   if (v.completedAt) return `${v.kind} done on ${writtenDate(v.completedAt)}`
   if (v.scheduledAt) return `${v.kind} scheduled for ${writtenDate(v.scheduledAt)}`
   const preference = waitingPreference(v, preferences)
-  if (preference && v.kind !== "inspection") return `${v.kind} preferred ${lower(preferenceLabel(v.kind, preference))}`
+  if (preference && v.kind !== "inspection") return `${v.kind} preference ${lower(preferenceLabel(v.kind, preference))}`
   return `${v.kind} in ${v.window}`
 }
 

@@ -50,10 +50,11 @@ const on = (args: Story["args"], name: string, extra: Partial<Story> = {}): { ph
 })
 
 // ------------------------------------------------------------------------------------------------ 1. same email
-/** 1a. The address is a property we hold: it is marked On file, and nothing about the customer shows. */
+/** 1a. The address is a property we hold: it says so ("We have worked at this address before.") and is marked On file, and nothing about the customer shows, no name until the email matches. */
 const sameAddress = on({ initial: { step: "address", fields: known } }, "Same email, 1 Address", {
   play: async ({ canvas }) => {
     await expect(canvas.getByText("On file")).toBeInTheDocument()
+    await expect(canvas.getByText("We have worked at this address before.")).toBeInTheDocument()
     await expect(canvas.queryByText(/Andrea|Dalton|4242|\(970\)/)).toBeNull()
   },
 })
@@ -77,6 +78,7 @@ const sameContact = on({ initial: { step: "contact", service: "repair", fields: 
     await waitFor(() => expect(canvas.getByLabelText("First name")).toHaveValue("Andrea"))
     await expect(canvas.getByLabelText("Last name")).toHaveValue("Dalton")
     await expect(canvas.getByLabelText("Phone")).toHaveValue("")
+    await expect(canvas.getByText("Welcome back, Andrea.")).toBeInTheDocument()
   },
 })
 export const SameEmailContactPhone: Story = { ...sameContact.phone }
@@ -110,6 +112,7 @@ const otherContact = on({ initial: { step: "contact", service: "repair", fields:
   play: async ({ canvas }) => {
     await expect(canvas.getByLabelText("First name")).toHaveValue("")
     await expect(canvas.getByLabelText("Phone")).toHaveValue("")
+    await expect(canvas.queryByText(/Welcome back/)).toBeNull()
   },
 })
 export const DifferentEmailContactPhone: Story = { ...otherContact.phone }

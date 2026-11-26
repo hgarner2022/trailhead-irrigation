@@ -14,14 +14,16 @@ describe("day and time words", () => {
 })
 
 describe("the fixture offer", () => {
-  it("starts on the soonest open day, marks nothing and sizes the times to the service", () => {
+  it("starts on the soonest open day, flags one best time per day and sizes the times to the service", () => {
     const offers = fixtureDayTimes(120)
     expect(startDay(offers)).toBe("2027-04-15")
     expect(startDay([{ day: "2027-04-14", times: [] }, ...offers])).toBe("2027-04-15")
     expect(startDay([])).toBeNull()
     // the days are soonest-first working days, not fixed weekdays, and no day or time carries a label of the engine's
     expect(offers.map((o) => o.day)).toEqual(["2027-04-15", "2027-04-16", "2027-04-20", "2027-04-21", "2027-04-23"])
-    expect(offers.some((o) => o.note || o.best || o.times.some((t) => t.best))).toBe(false)
+    // no day carries a note or a day-level mark; every day flags exactly one best start (the one the forms call Recommended), and none is ever the default
+    expect(offers.some((o) => o.note || o.best)).toBe(false)
+    expect(offers.every((o) => o.times.filter((t) => t.best).length === 1)).toBe(true)
     const last = (m: number) => fixtureDayTimes(m)[4]!.times.at(-1)!.start
     expect(last(120)).toBe("15:00")
     expect(last(60)).toBe("16:00")

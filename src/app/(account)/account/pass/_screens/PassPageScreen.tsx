@@ -99,12 +99,12 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
             <CardContent className="space-y-4">
               <PassVisitRows pass={pass} onChangePreference={onChangePreference} times={times} note={!ask} />
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-border pt-4">
-                <p data-slot="charge-line" className="text-base text-muted-foreground">
+                <p data-slot="charge-line" className="type-meta text-muted-foreground">
                   {chargeLine(pass)}
                 </p>
                 {!pass.cardLast4 && <UpdateCardButton onUpdateCard={onUpdateCard} variant="outline" label={cardAction(pass)} />}
               </div>
-              <p data-slot="renew-line" className="text-base text-muted-foreground">
+              <p data-slot="renew-line" className="-mt-2 type-meta text-muted-foreground">
                 Your pass renews by itself each year, and we email you about it.
               </p>
               <div data-slot="plan-actions" className="flex flex-wrap items-center gap-x-4 gap-y-1">

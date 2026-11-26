@@ -125,13 +125,14 @@ export const Contact: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** Continue pressed with nothing typed: every problem beside its field, a summary naming them, and focus on the first. */
+/** Continue pressed with nothing typed: every problem under its field, in its own words, and focus on the first. No summary box. */
 export const ContactErrors: Story = {
   args: { initialStep: 5, prefill: { ...answers, firstName: "", lastName: "", email: "", phone: "", termsAccepted: true } },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await expect(await canvas.findByRole("alert")).toHaveTextContent("Check these before you continue: First name, Last name, Email, Phone.")
+    await expect(await canvas.findByText("We need a last name so Ryan knows who to ask for.")).toBeInTheDocument()
+    await expect(canvas.queryByText(/Check these before you continue/)).toBeNull()
     await expect(canvas.getByLabelText("First name")).toHaveFocus()
   },
 }
@@ -264,13 +265,14 @@ export const PhoneDays: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 
-/** Contact with every error showing at 375px: the sticky bar keeps Continue on screen under the summary. */
+/** Contact with every error showing at 375px, each under its own field: the sticky bar keeps Continue on screen. */
 export const PhoneContactErrors: Story = {
   args: { initialStep: 5, prefill: { ...answers, firstName: "", lastName: "", email: "", phone: "", termsAccepted: true } },
   globals: { viewport: { value: "phone", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await expect(await canvas.findByRole("alert")).toBeInTheDocument()
+    await expect(await canvas.findByText("We need a last name so Ryan knows who to ask for.")).toBeInTheDocument()
+    await expect(canvas.queryByRole("alert")).toBeNull()
     await expect(canvas.getByRole("button", { name: "Continue" })).toBeVisible()
   },
 }

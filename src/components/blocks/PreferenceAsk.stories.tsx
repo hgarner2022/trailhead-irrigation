@@ -22,7 +22,7 @@ export const Phone: Story = { globals: { viewport: { value: "phone", isRotated: 
 export const ChooseWhenPlay: Story = {
   tags: ["!dev", "!autodocs"],
   play: async ({ canvas, userEvent, args }) => {
-    await userEvent.click(await canvas.findByRole("button", { name: /Choose when/ }))
+    await userEvent.click(await canvas.findByRole("button", { name: /Pick when/ }))
     await expect(await screen.findByRole("dialog", { name: "When would you like your fall blowout?" })).toBeInTheDocument()
     await userEvent.click(await screen.findByRole("radio", { name: /Late season/ }))
     await userEvent.click(await screen.findByRole("button", { name: "Save" }))

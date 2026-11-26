@@ -38,7 +38,8 @@ import { LiveScreen } from "./LiveScreens"
 // checkout, and Details. The real screens run over fixtures; a link to another of them is caught and opens it here, a link that leaves the
 // prototype says so in the strip. Nothing is sent.
 
-const pass = (snapshot.passes[0] as Pass) && ({ ...(snapshot.passes[0] as Pass), visits: (snapshot.passes[0] as Pass).visits.map((v) => ({ ...v, description: serviceFor(v.kind, (snapshot.passes[0] as Pass).zones)?.description })) } as Pass)
+// the July inspection is an add-on the customer chooses, so the walkthrough's pass has the usual two visits
+const pass = (snapshot.passes[0] as Pass) && ({ ...(snapshot.passes[0] as Pass), visits: (snapshot.passes[0] as Pass).visits.filter((v) => v.kind !== "inspection").map((v) => ({ ...v, description: serviceFor(v.kind, (snapshot.passes[0] as Pass).zones)?.description })) } as Pass)
 const offers = { v1: fixtureCalendarDays(60, "2027-04-15", "2027-05-14") }
 const receiptOf = {
   id: "pay_9",
@@ -83,13 +84,13 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   const [where, setWhere] = useState<Where>(start)
   const [placeholder, setPlaceholder] = useState<{ title: string; path: string } | null>(null)
   const [booked, setBooked] = useState<Booked | null>(null)
-  const [channel, setChannel] = useState<ContactChannel>("text")
-  // Tips and offers by email start off for the run and are given by booking (no box), withdrawn in Details or by the unsubscribe link. The admin walkthrough reads the same choice.
+  const [channel, setChannel] = useState<ContactChannel>("both")
+  // Tips and offers by email are ON from the start: an account only exists once someone has booked, and the booking is the opt-in (no box). Details withdraws it, so does the unsubscribe link. The admin walkthrough reads the same choice.
   const [marketing, setMarketing] = useState<{ email: boolean; text: boolean }>(() => {
-    writeChoice({})
+    writeChoice({ email: true, emailSource: "booking form" })
     // a request sent from the booking form on an earlier run is forgotten with the rest
     clearSent()
-    return { email: false, text: false }
+    return { email: true, text: false }
   })
   // Tips and offers by email: given by booking, withdrawn by the Details switch or the unsubscribe link, each written to the consent history with where it happened. Marketing texts do not exist.
   const choose = (kind: "email", on: boolean, source: "booking form" | "account" | "unsubscribe link") => {

@@ -99,9 +99,9 @@ describe("SeasonLine in customer mode", () => {
     expect(screen.getByText("Early")).toBeInTheDocument()
     expect(screen.getByText("Mid")).toBeInTheDocument()
     const label = screen.getByRole("img").getAttribute("aria-label") ?? ""
-    expect(label).toContain("turn-on preferred early May")
+    expect(label).toContain("turn-on preference early May")
     expect(label).toContain("inspection in July")
-    expect(label).toContain("blowout preferred mid October")
+    expect(label).toContain("blowout preference mid October")
   })
 
   it("shows no preference word without the preferences", () => {
@@ -155,6 +155,6 @@ describe("SeasonLine in customer mode", () => {
     expect(label).toContain("Your 2027 season")
     expect(label).toContain("turn-on done on May 3")
     expect(label).toContain("inspection scheduled for July 14")
-    expect(label).toContain("blowout preferred mid October")
+    expect(label).toContain("blowout preference mid October")
   })
 })

@@ -8,7 +8,7 @@ const d = PREFERENCE_REQUEST
 
 describe("the preference request text", () => {
   it("says what is asked and the one sentence Hannah allowed, then one link, and nothing else", () => {
-    expect(preferenceRequestText(d, { optOut: false })).toBe("Trailhead: tell us when you'd like your fall blowout at 412 Briggs Street. We'll schedule it about two weeks before and tell you the day. Choose when: https://www.trailheadirrigation.com/account/visits/v3?t=def")
+    expect(preferenceRequestText(d, { optOut: false })).toBe("Trailhead: tell us when you'd like your fall blowout at 412 Briggs Street. We'll schedule it about two weeks before and tell you the day. Pick when: https://www.trailheadirrigation.com/account/visits/v3?t=def")
   })
   it("ends with the opt-out line only when it is the first text a number gets", () => {
     expect(preferenceRequestText(d, { optOut: true }).endsWith("Reply STOP to opt out.")).toBe(true)
