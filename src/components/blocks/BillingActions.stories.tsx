@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect, within } from "storybook/test"
+import { expect, userEvent, within } from "storybook/test"
 import { RowActions } from "./BillingActions"
 
 // The buttons of a Billing row: icons with a label and a tooltip on a laptop ("View receipt", "Open in Stripe", "Open invoice"), Remind as a word,
@@ -23,13 +23,18 @@ export const PaidInvoice: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement)
     await expect(await c.findByRole("link", { name: "View receipt" })).toBeInTheDocument()
-    await expect(await c.findByRole("link", { name: /Open in Stripe/ })).toBeInTheDocument()
-    await expect(await c.findByRole("link", { name: "Open invoice" })).toBeInTheDocument()
-    await expect(await c.findByRole("button", { name: /More for the \$145 payment/ })).toBeInTheDocument()
+    // one action in words; Open in Stripe and Refund are under More, and there is no Open invoice button (the invoice's number in the row is its link)
+    await expect(c.queryByRole("link", { name: /Open in Stripe/ })).toBeNull()
+    await expect(c.queryByRole("link", { name: "Open invoice" })).toBeNull()
+    await userEvent.click(await c.findByRole("button", { name: /More for the \$145 payment/ }))
+    const menu = within(document.body)
+    await expect(await menu.findByRole("menuitem", { name: /Open in Stripe/ })).toBeVisible()
+    await expect(menu.getByRole("menuitem", { name: "Refund $145" })).toBeVisible()
+    await userEvent.keyboard("{Escape}")
   },
 }
 
-/** An invoice still out: Remind as a word, and Open invoice. */
+/** An invoice still out: Remind as a word, the row's one action. */
 export const InvoiceOut: Story = { args: { spec: { onRemind: noop, invoiceHref: "/admin/invoices?invoice=i1" } } }
 
 /** On a phone the same actions are a quiet line of words. */

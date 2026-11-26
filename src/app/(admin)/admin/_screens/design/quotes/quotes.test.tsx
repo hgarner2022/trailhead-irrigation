@@ -184,13 +184,20 @@ describe("the customer's words", () => {
 describe("the quote's own page", () => {
   const stage = (id: string, store = createQuoteStore()) => ({ store, ...render(<QuotePage store={store} quoteId={id} now={QUOTES_NOW} />) })
   const sendButtons = () => screen.getAllByRole("button", { name: "Send a quote" })
-  it("is built like the invoice page: the number as the title with its pill and the customer chip, the Customer and the Property in the aside, the crumb back to Quotes", () => {
+  it("is built like the invoice page: the number as the title with its pill, the customer linked once in the Customer card, no Property card, the crumb back to Quotes", () => {
     stage(BETH)
     expect(screen.getByRole("heading", { level: 1, name: BETH })).toBeInTheDocument()
     expect(screen.getAllByText("Sent").length).toBeGreaterThan(0)
     expect(screen.getByRole("link", { name: /Quotes/ })).toHaveAttribute("href", "/admin/quotes")
-    expect(screen.getAllByRole("link", { name: /Beth Orr/ }).length).toBeGreaterThan(0)
-    expect(screen.getByText("Property")).toBeInTheDocument()
+    expect(screen.getAllByRole("link", { name: /Beth Orr/ })).toHaveLength(1)
+    expect(document.querySelectorAll("a[href^='/admin/customers']")).toHaveLength(1)
+    expect(within(document.querySelector("[data-slot=record-page-badges]") as HTMLElement).queryByRole("link")).toBeNull()
+    expect(screen.queryByText("Property")).toBeNull()
+    // each fact once: one status pill (the header's), and the band holds Total, Deposit, Sent and Decision
+    expect(screen.getAllByText("Sent", { selector: "[data-slot=status-pill]" })).toHaveLength(1)
+    const band = document.querySelector("[data-slot=summary-band]") as HTMLElement
+    for (const label of ["Total", "Deposit", "Sent", "Decision"]) expect(within(band).getByText(label)).toBeInTheDocument()
+    expect(band.querySelectorAll("a")).toHaveLength(0)
     expect(screen.getByText("Notes and history")).toBeInTheDocument()
   })
   it("changes the service on a Draft: the service line is replaced, the notes and other lines stay, and the history says so", async () => {

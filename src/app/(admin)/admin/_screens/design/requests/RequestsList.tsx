@@ -4,17 +4,14 @@ import { useMemo } from "react"
 import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
 import type { GridCardSlots } from "@/components/blocks/DataGridCard"
 import { PageHeader } from "@/components/blocks/PageHeader"
-import { RecordChip } from "@/components/blocks/RecordChip"
-import { recordHref } from "@/components/blocks/record-preview-model"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { REQUEST_PILL, REQUEST_STATES, SERVICE_FILTER, cameIn, fullName, listOrder, matchOf, newCount, openRequests, serviceWords, stateOf, type RequestData, type RequestState } from "./request-model"
 
 // The Requests list (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.2; Hannah's answers 1 and 2 of Nov 20 2026): one DataGrid shaped like Jobs,
-// New first. A request is a held record of someone who is not a customer yet, so the row says who asked, which customer they match (a chip, or "No
-// match"), what they asked for, the town, when it came in and a status pill: New, Seen or Archived. A request that became a job has left the list (Hannah, Nov 20 2026: it moves into the job). Search is by name, street, phone or
-// service; Status and Service are the filters. The name opens the request. Pure props.
+// New first. A request is a held record of someone who is not a customer yet, so the row says who asked, which customer they match (the name as text, or "No
+// match"; the request's page links the customer, once), what they asked for, the town, when it came in and a status pill: New, Seen or Archived. A request that became a job has left the list (Hannah, Nov 20 2026: it moves into the job). Search is by name, street, phone or
+// service; Status and Service are the filters. The name is the row's one link and the whole row opens the request. Pure props.
 
-const CHIP = "text-sm font-medium md:min-h-8"
 const STATE_WORDS: Record<RequestState, string> = { new: "New", seen: "Seen", archived: "Archived" }
 
 interface Row extends RequestData {
@@ -30,7 +27,7 @@ const columns: GridColumnDef<Row>[] = [
     id: "match",
     accessorFn: (r) => r.matchName,
     header: "Customer",
-    cell: ({ row }) => (row.original.matchId ? <RecordChip kind="customer" name={row.original.matchName} href={recordHref.customer(row.original.matchId)} className={CHIP} /> : <span className="text-muted-foreground">No match</span>),
+    cell: ({ row }) => (row.original.matchId ? row.original.matchName : <span className="text-muted-foreground">No match</span>),
     meta: { csv: (r) => (r as Row).matchName || "No match" },
   },
   { id: "service", accessorFn: (r) => serviceWords(r), header: "Asked for" },
@@ -77,6 +74,7 @@ export function RequestsList({ requests, now, onOpen, defaultFilters }: Requests
         ]}
         defaultFilters={defaultFilters}
         onOpen={(r) => onOpen(r)}
+        rowOpens
         exportName="requests"
         pageSize={25}
         noMatchTitle="No requests match."

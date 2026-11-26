@@ -6,8 +6,7 @@ import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
 import type { GridCardSlots } from "@/components/blocks/DataGridCard"
 import { MoneyCell } from "@/components/blocks/MoneyCell"
 import { PageHeader } from "@/components/blocks/PageHeader"
-import { RecordChip } from "@/components/blocks/RecordChip"
-import { recordHref } from "@/components/blocks/record-preview-model"
+import { TextLink } from "@/components/blocks/TextLink"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { DoNotServiceTag } from "@/components/blocks/DoNotServiceTag"
 import { CUSTOMER_STATUS_WORDS, type CustomerStatus } from "@/lib/customers/status"
@@ -19,7 +18,7 @@ import { InvoicesPage } from "../InvoicesPage"
 import { JobFlow } from "../JobFlow"
 import { JobPage } from "../JobPage"
 import { JobPagePass } from "../JobPageTrips"
-import { BILLING_WORDS, GRID_WORDS, SERVICE_OPTIONS, WHO_OPTIONS, jobGridCard, jobGridColumns, type BillingState, type GridJob, type GridStatus } from "../JobsGridDesign"
+import { BILLING_WORDS, GRID_WORDS, JOB_GRID_HIDDEN, SERVICE_OPTIONS, WHO_OPTIONS, jobGridCard, jobGridColumns, type BillingState, type GridJob, type GridStatus } from "../JobsGridDesign"
 import { allRows, customerRows, customerIdOf, INVOICES, customerPage, invoicePage, jobView, type CustomerListRow } from "./data"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
@@ -40,11 +39,8 @@ import { money } from "@/lib/admin/format"
 
 // The screens of the walkthrough, each one of the design pages over the walkthrough's data (docs/plans/2026-11-19-prototype-walkthrough-spec.md,
 // section 2). Records open through the links the pages already draw; the two grids pass the router to their `onOpen`. No page component is edited.
+// A row has one link, its own name, and the whole row opens it (Hannah, Nov 25 2026); the customer's "New job" is the row's one action.
 
-// The property chip opens that customer's property, not the list: the grid's own cell links to /admin/customers.
-const jobsColumns: GridColumnDef<GridJob>[] = jobGridColumns.map((c) =>
-  "id" in c && c.id === "property" ? { ...c, cell: ({ row }) => (row.original.property ? <RecordChip kind="property" name={row.original.property} href={`${recordHref.customer(customerIdOf(row.original.name))}#property-h`} className="text-sm font-medium md:min-h-8" /> : null) } : c,
-)
 // Home, Schedule, Reports and Settings are the live screens over the repo's own fixture (the catalogue stories use the same); they are not re-keyed to this world's customers.
 const LIVE = snapshot as AdminData
 const LIVE_TODAY = "2026-11-12T19:56:30Z"
@@ -56,7 +52,7 @@ export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen:
     <div data-slot="jobs-grid-design">
       <PageHeader title="Jobs" context={`${rows.length} jobs. ${out} invoices out.`} primary={<Button size="touch" type="button" onClick={onNew}>New job</Button>} />
       <DataGrid
-        columns={jobsColumns}
+        columns={jobGridColumns}
         card={jobGridCard}
         data={rows}
         getRowId={(r: GridJob) => r.id}
@@ -67,8 +63,9 @@ export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen:
           { column: "billing", label: "Billing", options: (Object.keys(BILLING_WORDS) as BillingState[]).map((value) => ({ value, label: BILLING_WORDS[value] })) },
           { column: "service", label: "Job", options: SERVICE_OPTIONS },
         ]}
-        hiddenColumns={["who", "jobName"]}
+        hiddenColumns={JOB_GRID_HIDDEN}
         onOpen={(r) => onOpen(r.id)}
+        rowOpens
         exportName="jobs"
         pageSize={50}
         noMatchTitle="No jobs match."
@@ -98,7 +95,7 @@ type ListRow = CustomerListRow & { status: CustomerStatus; dns?: { reason?: stri
 const customerColumns: GridColumnDef<ListRow>[] = [
   { id: "name", accessorFn: (r) => `${r.name} ${r.street}`, header: "Customer", cell: ({ row }) => <span className="inline-flex items-center gap-2">{row.original.name}{row.original.dns && <DoNotServiceTag size="sm" reason={row.original.dns.reason} />}</span>, meta: { csv: (r) => (r as CustomerListRow).name } },
   { id: "status", accessorFn: (r) => r.status, header: "Status", cell: ({ row }) => <StatusPill status={STATUS_PILL[row.original.status].status} label={STATUS_PILL[row.original.status].label} />, meta: { csv: (r) => CUSTOMER_STATUS_WORDS[(r as ListRow).status] } },
-  { id: "street", accessorKey: "street", header: "Property", cell: ({ row }) => <RecordChip kind="property" name={row.original.street} href={`/admin/customers?customer=${row.original.id}#property-h`} className="text-sm font-medium md:min-h-8" /> },
+  { id: "street", accessorKey: "street", header: "Property" },
   { id: "next", accessorKey: "next", header: "Next visit" },
   { id: "unpaid", accessorKey: "unpaid", header: "Unpaid", cell: ({ row }) => <MoneyCell end text={row.original.unpaid ? money(row.original.unpaid) : null} />, meta: { align: "right", csv: (r) => String((r as CustomerListRow).unpaid) } },
   { id: "pass", accessorKey: "pass", header: "Season Pass", cell: ({ row }) => (row.original.pass ? <StatusPill status="active" label={row.original.pass} /> : null) },
@@ -127,6 +124,7 @@ export function CustomersList({ onOpen }: { onOpen: (id: string) => void }) {
         filters={[{ column: "status", label: "Status", options: STATUS_OPTIONS }]}
         defaultFilters={showArchived ? [] : [{ column: "status", values: SHOWN_BY_DEFAULT }]}
         onOpen={(r) => onOpen(r.id)}
+        rowOpens
         noMatchTitle="No customers match."
         emptyTitle="No customers yet"
         emptyLine="Customers appear as they book or as you add them."
@@ -144,7 +142,7 @@ function StaticJob({ id }: { id: string }) {
 
 const NotFound = ({ what }: { what: string }) => (
   <Placeholder title="Not in this prototype" line={`${what} is not in the prototype's world. Jobs has every record that opens.`}>
-    <RecordChip kind="job" name="Back to Jobs" href="/admin/jobs" />
+    <TextLink href="/admin/jobs">Back to Jobs</TextLink>
   </Placeholder>
 )
 

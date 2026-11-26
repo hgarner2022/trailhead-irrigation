@@ -1,6 +1,5 @@
 "use client"
 
-import { Banknote, FileText, MapPin, Receipt } from "lucide-react"
 import { BillingBody, type BillingLine } from "@/components/blocks/BillingBody"
 import type { PaymentRowData } from "@/components/blocks/BillingTables"
 import { RecordList, RecordRowEnd, RECORD_ROW } from "@/components/blocks/RecordPanel"
@@ -8,26 +7,29 @@ import { SectionCard } from "@/components/blocks/SectionCard"
 import type { SummaryItem } from "@/components/blocks/SummaryBand"
 import { TextLink } from "@/components/blocks/TextLink"
 import { cn } from "@/lib/utils"
-import { QuoteChip } from "../RecordChips"
+import { bandItems } from "../JobPageParts"
+import { QuoteChip, receiptHref } from "../RecordChips"
 import { approvedTotal, currentTotal, isApproved, untoldChange } from "./price-change"
-import { HOW_WORDS } from "./QuoteParts"
 import { dayOf, lineTotal, money, type ApprovedJob } from "./quote-model"
 
 // The cards of the page of a job made from an approved quote (ApprovedJobPage.tsx; Hannah, Nov 22 2026: the job has no quote state, it only says which quote it came from): What's
-// included (the approved lines, Ryan's to change), Billing (once a deposit is paid) and the summary band. Pure props.
+// included (the approved lines, Ryan's to change), Billing (once a deposit is paid), From quote (the aside's one link to the quote) and the summary band every job has. Pure props.
 
-/** The summary band: where the job came from, the total with what was approved, the deposit and where. */
+/** The summary band every job has (`bandItems`: When, Who, Where, Total with its money word). A job made from a quote has no day yet; the deposit already paid shows as what is still unpaid, and in Billing. */
 export function jobBand(job: ApprovedJob): SummaryItem[] {
   const total = currentTotal(job)
-  const was = approvedTotal(job)
-  const go = (id: string) => () => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
-  const d = job.deposit
-  return [
-    { label: "From quote", value: job.quoteId, sub: `Sold ${dayOf(job.soldOn)}`, icon: FileText, onClick: go("from-quote-h") },
-    { label: "Total", value: money(total), sub: was !== undefined ? `Was ${money(was)}` : "From the lines", icon: Receipt, onClick: go("included-h") },
-    { label: "Deposit", value: d ? money(d.amount) : "None", sub: d ? (d.paid ? (d.paid.refundedOn ? "Refunded" : `Paid by ${HOW_WORDS[d.paid.how]}`) : "Not paid") : "Not asked for", icon: Banknote },
-    { label: "Where", value: job.street, sub: `${job.town}, CO`, icon: MapPin },
-  ]
+  const dep = job.deposit?.paid && !job.deposit.paid.refundedOn ? job.deposit.amount : 0
+  const billed = Boolean(job.deposit?.paid) || approvedTotal(job) !== undefined
+  return bandItems({
+    when: { label: "When", value: job.canceled ? "None" : "No day yet", sub: job.canceled ? undefined : "Any time" },
+    who: job.canceled ? "No one" : "No one yet",
+    address: `${job.street}, ${job.town}`,
+    total: money(total),
+    pills: [],
+    statusText: billed && !job.canceled ? `${money(total - dep)} unpaid` : undefined,
+    canceled: Boolean(job.canceled),
+    billingCard: billed,
+  })
 }
 
 /** The deposit as the Payments table shows it, and its refund row when Ryan refunded it. */
@@ -41,7 +43,7 @@ export function depositPayments(job: ApprovedJob): PaymentRowData[] {
     methodLabel: p.how === "card" ? "Visa ending 4242" : p.how === "check" ? `Check #${p.reference ?? ""}`.trim() : p.how === "venmo" ? `Venmo ${p.reference ?? ""}`.trim() : "Cash",
     amount: money(job.deposit.amount),
     by: job.decidedBy === "customer" ? `${job.first}, online` : "Ryan",
-    receiptHref: `/account/receipts/dep-${job.quoteId}`,
+    receiptHref: receiptHref(`dep-${job.quoteId}`),
     ...(p.how === "card" ? { stripeHref: "https://dashboard.stripe.com/payments/pi_3QxK1042" } : {}),
     canRefund: !p.refundedOn,
   }

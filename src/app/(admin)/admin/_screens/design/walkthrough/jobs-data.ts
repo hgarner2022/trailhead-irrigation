@@ -142,7 +142,7 @@ export function jobView(id: string): JobView {
     const d = passPageOf("both-done", { kind: "as", number: "TH-2027-0008" })
     return { kind: "trips", data: { ...d, title: "Season Pass TH-2026-0021", subtitle: "Andrea Dalton · Sold Mar 2, website", notes: d.notes.map((n) => ({ ...n, what: n.what.replace("TH-2027-0008", "TH-2026-0021") })), messages: d.messages.map((m) => ({ ...m, body: m.body.replace("TH-2027-0008", "TH-2026-0021") })) } }
   }
-  if (id.startsWith("dale-pass")) return { kind: "trips", data: dalePass(id === "dale-pass-2027"), customer: { name: "Dale Whitaker", phone: { text: "(970) 555-0140", href: "tel:+19705550140" } } }
+  if (id.startsWith("dale-pass")) return { kind: "trips", data: dalePass(id === "dale-pass-2027"), customer: { id: "dale", name: "Dale Whitaker", phone: { text: "(970) 555-0140", href: "tel:+19705550140" } } }
   const c = contactOf(row.name)
   const data = jobPageOf(STATE_OF(row))
   const [street, town] = row.property.split(", ")
@@ -167,6 +167,7 @@ export function jobView(id: string): JobView {
     data: {
       ...data,
       customer: row.name,
+      customerId: customerIdOf(row.name),
       phone: { text: c.text, href: c.href },
       where,
       billing,

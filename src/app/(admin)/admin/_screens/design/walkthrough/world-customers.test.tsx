@@ -207,7 +207,7 @@ describe("the page renders", () => {
     expect(screen.getByRole("heading", { name: "Beth Orr" })).toBeInTheDocument()
     expect(screen.getByText("No messages yet")).toBeInTheDocument()
     expect(screen.getByText(/No invoice or payment yet/)).toBeInTheDocument()
-    // her quote is on her page, as a chip, and is not a job
+    // her quote is on her page, its number the row's link, and is not a job
     expect(screen.getByText("Quotes")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Quote: Q-2026-0007" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "New quote" })).toHaveAttribute("href", "/admin/quotes?new=1&customer=other-beth-orr")

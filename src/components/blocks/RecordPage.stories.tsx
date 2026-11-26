@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { AsideCard } from "./AsideCard"
+import { CustomerCard } from "./CustomerCard"
 import { RecordFooter } from "./RecordFooter"
 import { RecordFacts } from "./RecordPanel"
 import { RecordPage } from "./RecordPage"
@@ -33,7 +33,7 @@ const meta = {
     ),
     aside: (
       <>
-        <AsideCard name="Andrea Dalton" href="/admin/customers" phone={{ text: "(970) 555-0123", href: "tel:+19705550123" }} address={["480 Briggs St", "Erie, CO"]} />
+        <CustomerCard customer={{ id: "c-1", name: "Andrea Dalton" }} phone="(970) 555-0123" address={["480 Briggs St", "Erie, CO"]} channel="text" />
         <SectionCard title="Property" id="p">
           <RecordFacts divided rows={[["Gate code", "4417"], ["Must be home", "No"]]} />
         </SectionCard>

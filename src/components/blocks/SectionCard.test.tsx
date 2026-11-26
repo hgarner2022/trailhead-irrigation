@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest"
 import { render, screen } from "@testing-library/react"
 import { SectionCard } from "./SectionCard"
 import { SummaryBand } from "./SummaryBand"
-import { AsideCard } from "./AsideCard"
 import { RecordFacts } from "./RecordPanel"
 import { Calendar } from "lucide-react"
 import { StatusPill } from "./StatusPill"
@@ -36,16 +35,6 @@ describe("SummaryBand", () => {
     const icons = container.querySelectorAll("[data-slot=summary-icon]")
     expect(icons).toHaveLength(1)
     expect(icons[0]).toHaveClass("rounded-full", "bg-cream")
-  })
-})
-
-describe("AsideCard", () => {
-  it("has the name as the one link, the phone as a tel link and the address", () => {
-    render(<AsideCard name="Andrea Dalton" href="/admin/customers/1" phone={{ text: "(970) 555-0123", href: "tel:+19705550123" }} address={["480 Briggs St", "Erie, CO"]} />)
-    expect(screen.getByRole("link", { name: "Customer: Andrea Dalton" })).toHaveAttribute("href", "/admin/customers/1")
-    expect(screen.getByRole("link", { name: "(970) 555-0123" })).toHaveAttribute("href", "tel:+19705550123")
-    expect(screen.getByText("480 Briggs St")).toBeInTheDocument()
-    expect(screen.getByText("AD")).toBeInTheDocument()
   })
 })
 
