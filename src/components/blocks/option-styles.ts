@@ -7,10 +7,11 @@
 import { cn } from "@/lib/utils"
 
 const BASE = "opt cursor-pointer rounded-lg border"
-/** where the focus ring comes from: the element itself (a button) or a hidden input before it (`peer`) */
+/** where the focus ring comes from: the element itself (a button), a hidden input before it (`peer`), or a hidden input inside it (a label) */
 const FOCUS = {
   self: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
   peer: "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
+  has: "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2",
 } as const
 
 /** The same ring round a container whose control is inside it and fills it (the service card: the ring follows the card's own corners), drawn ONLY while the keyboard holds the focus: the
