@@ -24,7 +24,7 @@ export function CustomerQuotes({ quotes, customerId }: { quotes: readonly Custom
             <li key={q.id} className={cn("flex items-center", RECORD_ROW)}>
               <span className="block min-w-0 flex-1">
                 <TextLink href={recordHref.quote(q.id)} weight="medium">
-                  <span className="sr-only">Quote: </span>
+                  <span className="sr-only">Quote:</span>{" "}
                   {q.id}
                 </TextLink>
                 <span className="block text-muted-foreground">{`${q.service}, ${q.amount}`}</span>

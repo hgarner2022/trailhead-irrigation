@@ -128,7 +128,7 @@ export function PastVisitsCard({ street, visits, total, customerId }: { street: 
               <li key={v.id} data-slot="past-visit" className="py-3 first:pt-0 last:pb-0">
                 <p className="text-sm">
                   <TextLink href={recordHref.job(v.jobId)} touch="inline" underline="hover" weight="medium">
-                    <span className="sr-only">Job: </span>
+                    <span className="sr-only">Job:</span>{" "}
                     {v.service}
                   </TextLink>
                   <span className="text-muted-foreground">{` · ${v.date} · ${v.who}`}</span>

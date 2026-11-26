@@ -1,6 +1,6 @@
 "use client"
 
-import { Banknote, CircleCheck, Receipt, Send } from "lucide-react"
+import { Banknote, CalendarDays, CircleCheck, MapPin, MessageSquare, Receipt, Send, Wrench } from "lucide-react"
 import { LineItemList } from "@/components/blocks/LineItemList"
 import { RecordFacts, RecordList, RecordRowEnd, RECORD_ROW } from "@/components/blocks/RecordPanel"
 import { SectionCard } from "@/components/blocks/SectionCard"
@@ -50,17 +50,26 @@ export function VisitCard({ visit }: { visit: NonNullable<QuoteRecord["visit"]> 
   )
 }
 
-/** The summary band: the same four tiles in every state (Total, Deposit, Sent, Decision; docs/plans/2026-11-25-admin-audit-objects.md, A6), so the eye learns one layout: a Draft reads
- * "Not sent" where a sent quote has its day. A tile with a chevron scrolls to its section on this page; none leaves the page. What the quote is for is the subtitle, and where and how
- * the customer is reached is the Customer card. */
+const contactOf = (q: QuoteRecord) => (q.contact === "text" ? { value: "Text", sub: q.phone } : q.contact === "email" ? { value: "Email", sub: q.email } : { value: "Text and email", sub: `${q.phone}, ${q.email}` })
+
+/** The summary band. Once the quote is sent it is the same four tiles in every state (Total, Deposit, Sent, Decision; docs/plans/2026-11-25-admin-audit-objects.md, A6 and Q1): a tile with a
+ * chevron scrolls to its section on this page and none leaves the page; where the customer is lives in the Customer card, once. A Draft's band keeps the quote's own facts (when it was made,
+ * what it is for, where and how the customer is contacted), because the total and the deposit are the editor card itself and no tile repeats the card (the earlier rule; the audit's Q6). */
 export function quoteBand(q: QuoteRecord): SummaryItem[] {
+  if (q.state === "draft") {
+    return [
+      { label: "Created", value: dayOf(q.createdOn), sub: q.requestId ? "From a request" : q.visit ? "From a design visit" : q.replaces ? `Revision of ${q.replaces}` : "By the office", icon: CalendarDays },
+      { label: "For", value: q.service, icon: Wrench },
+      { label: "Where", value: q.street, sub: `${q.town}, CO`, icon: MapPin },
+      { label: "Contact", ...contactOf(q), icon: MessageSquare },
+    ]
+  }
   const go = (id: string) => () => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
   const d = q.deposit
-  const out = q.state !== "draft"
   return [
-    { label: "Total", value: money(quoteTotal(q)), sub: out ? "Frozen in the quote" : undefined, icon: Receipt, ...(out ? { onClick: go("included-h") } : {}) },
+    { label: "Total", value: money(quoteTotal(q)), sub: "Frozen in the quote", icon: Receipt, onClick: go("included-h") },
     { label: "Deposit", value: d ? money(d.amount) : "None", sub: d ? (d.paid ? (d.paid.refundedOn ? "Refunded" : `Paid by ${HOW_WORDS[d.paid.how]}`) : `Due when ${q.first} approves`) : "Not asked for", icon: Banknote },
-    { label: "Sent", value: q.sentOn ? dayOf(q.sentOn) : "Not sent", sub: q.sentVia ? (q.sentVia === "none" ? "Without notifying" : `By ${VIA_WORDS[q.sentVia]}`) : undefined, icon: Send, ...(out ? { onClick: go("quote-h") } : {}) },
+    { label: "Sent", value: q.sentOn ? dayOf(q.sentOn) : "Not sent", sub: q.sentVia ? (q.sentVia === "none" ? "Without notifying" : `By ${VIA_WORDS[q.sentVia]}`) : undefined, icon: Send, onClick: go("quote-h") },
     { label: "Decision", value: decisionFact(q), icon: CircleCheck },
   ]
 }

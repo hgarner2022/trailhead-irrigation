@@ -24,7 +24,7 @@ import { useQuoteWorld, type QuoteStore } from "./quote-store"
 import { Notice } from "@/components/blocks/Notice"
 
 // A quote as a page of its own (Hannah, Nov 22 2026: "A quote probably should be [its own thing] until it's approved"), built like the invoice page: the quote number as the title with its
-// status pill (no chip in the header), the band (Total, Deposit, Sent, Decision in every state), the one Quote editor while it is a Draft (price the lines in their rows, an optional deposit, then Send a quote) or its facts once it is out,
+// status pill (no chip in the header), the band (Total, Deposit, Sent, Decision once it is sent), the one Quote editor while it is a Draft (price the lines in their rows, an optional deposit, then Send a quote) or its facts once it is out,
 // What's included, Job (once approved: "Job created" with the job's chip), Revisions, and in the aside the one `CustomerCard` (the page's only link to the customer, with the address as text) and Notes and history. A quote has no Property card. While a quote is out its lines are
 // locked; Revise marks it Replaced and makes a new Draft from it; Mark approved takes a deposit by check, cash or Venmo and creates the job. Archive asks why and archives the request the
 // quote came from. Every action that reaches the customer confirms and states its effect; a result is a toast and the page changes state, never a message in a section. Pure props over a store.

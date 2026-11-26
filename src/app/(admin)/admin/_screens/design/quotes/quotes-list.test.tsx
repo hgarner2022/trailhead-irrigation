@@ -143,11 +143,12 @@ describe("the Quotes list", () => {
     await userEvent.click(screen.getByRole("tab", { name: /^All/ }))
     expect(screen.getAllByRole("row")).toHaveLength(8)
   })
-  it("has a row per quote with the quote and the customer as chips, what it is for and the sent day with its age", () => {
+  it("has a row per quote with ONE link (its number), the customer as text, what it is for and the sent day with its age", () => {
     render(<QuotesList quotes={ALL} now={QUOTES_NOW} />)
     const first = screen.getAllByRole("row")[1]!
-    expect(within(first).getByRole("link", { name: "Quote: Q-2026-0007" })).toHaveAttribute("href", "/admin/quotes?quote=Q-2026-0007")
-    expect(within(first).getByRole("link", { name: /Customer: Beth Orr/ })).toBeInTheDocument()
+    expect(within(first).getAllByRole("link")).toHaveLength(1)
+    expect(within(first).getByRole("link", { name: "Q-2026-0007" })).toHaveAttribute("href", "/admin/quotes?quote=Q-2026-0007")
+    expect(within(first).getByText("Beth Orr").closest("a")).toBeNull()
     // no job chip: a quote is not a job
     expect(within(first).queryByRole("link", { name: /Job:/ })).toBeNull()
     expect(within(first).getByText("Christmas lights")).toBeInTheDocument()
@@ -165,7 +166,7 @@ describe("the Quotes list", () => {
     expect(within(dana).getByText("Not sent")).toBeInTheDocument()
     for (const label of ["Draft", "Approved", "Declined", "Replaced"]) expect(screen.getAllByText(label, { selector: "[data-slot=status-pill]" }).length).toBeGreaterThan(0)
   })
-  it("has Remind as the Next action of a Sent quote and Open on the others", () => {
+  it("has Remind as the Next action of a Sent quote and none on the others: the row opens the quote", () => {
     const onRemind = vi.fn()
     render(<QuotesList quotes={ALL} now={QUOTES_NOW} onRemind={onRemind} />)
     expect(screen.getByRole("columnheader", { name: "Next action" })).toBeInTheDocument()
@@ -176,7 +177,9 @@ describe("the Quotes list", () => {
     for (const n of ["Q-2026-0004", "Q-2026-0005", "Q-2026-0006", "Q-2026-0002"]) {
       const row = rows.find((r) => r.textContent?.includes(n))!
       expect(within(row).queryByRole("button", { name: "Remind" })).toBeNull()
-      expect(within(row).getByRole("link", { name: `Open quote ${n}` })).toHaveAttribute("href", `/admin/quotes?quote=${n}`)
+      expect(within(row).queryByRole("button")).toBeNull()
+      expect(within(row).getAllByRole("link")).toHaveLength(1)
+      expect(within(row).getByRole("link", { name: n })).toHaveAttribute("href", `/admin/quotes?quote=${n}`)
     }
     fireEvent.click(within(sent).getByRole("button", { name: "Remind" }))
     expect(screen.getByRole("dialog", { name: "Send a quote reminder" })).toBeInTheDocument()

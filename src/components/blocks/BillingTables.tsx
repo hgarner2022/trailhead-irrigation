@@ -146,7 +146,7 @@ export function InvoiceTable({ rows, onRemind, onRefund }: { rows: InvoiceRowDat
           ) : (
             <span className="flex min-w-0 flex-col items-start gap-0.5">
               <TextLink href={hrefOf(r.invoice)} touch="inline" underline="hover" weight="medium" data-grid-name="" className="whitespace-nowrap">
-                <span className="sr-only">Invoice: </span>
+                <span className="sr-only">Invoice:</span>{" "}
                 {r.invoice.number}
               </TextLink>
               <span className={QUIET}>{rowDetail(r)}</span>

@@ -24,20 +24,42 @@ describe("Invoices page", () => {
     expect(sortInvoiceRows(INVOICE_ROWS)[0]!.number).toBe("INV-2026-0035")
   })
 
-  it("lists every invoice with the invoice, customer and job as chips and the row's actions on one line", () => {
+  it("lists every invoice with ONE link a row (its number), the customer and the job as text, and one action with the rest under More", async () => {
     render(<InvoicesPage rows={INVOICE_ROWS} />)
     expect(screen.getAllByRole("row")).toHaveLength(10)
     const first = screen.getAllByRole("row")[1]!
-    expect(within(first).getByRole("link", { name: "Invoice: INV-2026-0035" })).toBeInTheDocument()
-    expect(within(first).getByRole("link", { name: /Customer: Joe Alvarez/ })).toBeInTheDocument()
-    expect(within(first).getByRole("link", { name: /Job: Sprinkler repair/ })).toBeInTheDocument()
+    // the number is the row's one link, to the invoice's own page; the customer and the job are text
+    const links = within(first).getAllByRole("link")
+    expect(links).toHaveLength(1)
+    expect(links[0]).toHaveTextContent("INV-2026-0035")
+    expect(links[0]).toHaveAttribute("href", expect.stringContaining("invoice=i35"))
+    expect(within(first).getByText("Joe Alvarez").closest("a")).toBeNull()
+    expect(within(first).getByText("Sprinkler repair").closest("a")).toBeNull()
+    expect(document.querySelectorAll("[data-slot=record-chip]")).toHaveLength(0)
     expect(within(first).getByText("Past due", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
-    for (const name of ["Remind", "Collect payment"]) expect(within(first).getByRole("button", { name })).toBeInTheDocument()
-    expect(within(first).getByRole("link", { name: "Open invoice" })).toHaveAttribute("href", expect.stringContaining("invoice=i35"))
+    // one visible action; Collect payment is under the row's More
     expect(within(first).getByRole("button", { name: "Remind" }).parentElement).toHaveClass("flex-nowrap")
+    expect(within(first).queryByRole("button", { name: "Collect payment" })).toBeNull()
     const paid = screen.getAllByRole("row").find((r) => r.textContent?.includes("INV-2026-0040"))!
-    expect(within(paid).queryByRole("button", { name: "Remind" })).toBeNull()
-    expect(within(paid).getByRole("link", { name: "Open invoice" })).toBeInTheDocument()
+    expect(within(paid).queryByRole("button")).toBeNull()
+    expect(within(paid).getAllByRole("link")).toHaveLength(1)
+    const more = within(first).getByRole("button", { name: "More for INV-2026-0035" })
+    fireEvent.pointerDown(more, { button: 0, ctrlKey: false })
+    fireEvent.click(more)
+    expect(await screen.findByRole("menuitem", { name: "Collect payment" })).toBeInTheDocument()
+  })
+
+  it("opens the invoice from a click anywhere on its row, and not from a click on the row's own button", () => {
+    render(<InvoicesPage rows={INVOICE_ROWS} />)
+    const first = screen.getAllByRole("row")[1]!
+    const opened = vi.fn((e: Event) => e.preventDefault())
+    within(first).getByRole("link").addEventListener("click", opened)
+    fireEvent.click(within(first).getByText("Joe Alvarez"))
+    expect(opened).toHaveBeenCalledTimes(1)
+    fireEvent.click(within(first).getByRole("button", { name: "Remind" }))
+    expect(opened).toHaveBeenCalledTimes(1)
+    // a Do not service customer keeps the mark beside the name
+    expect(document.querySelectorAll("[data-slot=do-not-service-dot]").length).toBeGreaterThan(0)
   })
 
   it("has one toolbar row, Status and Who chips and a search, and filters from a tile", () => {
@@ -68,11 +90,19 @@ describe("Invoices page", () => {
 
 describe("Invoice page", () => {
   for (const which of INVOICE_FIXTURES) {
-    it(`renders ${which} with the number as the title, its pill and the customer chip`, () => {
+    it(`renders ${which} with the number as the title and its pill, and the customer linked once, in the Customer card`, () => {
       render(<InvoicePage invoice={invoicePageOf(which)} />)
       expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/^INV-2026-\d{4}$/)
-      expect(within(document.querySelector("[data-slot=record-page-badges]") as HTMLElement).getByRole("link", { name: /Customer:/ })).toBeInTheDocument()
-      for (const name of ["Lines", "Payments", "Reminders", "Messages", "Notes and history", "Customer", "Job", "Property"]) expect(screen.getByRole("heading", { name })).toBeInTheDocument()
+      // no chip in the header; the one link to the customer is the Customer card's, and the address is text
+      expect(within(document.querySelector("[data-slot=record-page-badges]") as HTMLElement).queryByRole("link")).toBeNull()
+      expect(Array.from(document.querySelectorAll("a[href^='/admin/customers']"))).toHaveLength(1)
+      expect(within(screen.getByRole("region", { name: "Customer" })).getByRole("link", { name: /Customer:/ })).toBeInTheDocument()
+      expect(document.querySelector("[data-slot=customer-address] a")).toBeNull()
+      for (const name of ["Lines", "Payments", "Reminders", "Messages", "Notes and history", "Customer", "Job"]) expect(screen.getByRole("heading", { name })).toBeInTheDocument()
+      expect(screen.queryByRole("heading", { name: "Property" })).toBeNull()
+      // Notes and history is the last card of the aside, as on every record page
+      const aside = document.querySelector("[data-slot=record-page-aside]") as HTMLElement
+      expect(Array.from(aside.querySelectorAll("h2")).at(-1)).toHaveTextContent("Notes and history")
       expect(document.querySelectorAll("[data-slot=summary-icon]")).toHaveLength(4)
     })
   }
@@ -121,14 +151,16 @@ describe("Invoice page", () => {
     })
   })
 
-  it("makes the band's tiles links and leaves Paid on plain, with no chevron, while unpaid", () => {
+  it("makes each band tile scroll to its section on this page (none leaves it) and leaves Paid on plain, with no chevron, while unpaid", () => {
     render(<InvoicePage invoice={invoicePageOf("sent")} />)
     const paidOn = Array.from(document.querySelectorAll("[data-slot=summary-cell]")).find((c) => c.textContent?.includes("Paid on"))!
     expect(paidOn).not.toHaveAttribute("data-link")
     expect(paidOn.querySelector("svg.lucide-chevron-right")).toBeNull()
     expect(document.querySelectorAll("[data-slot=summary-cell][data-link]")).toHaveLength(3)
+    expect(document.querySelectorAll("a[data-slot=summary-cell]")).toHaveLength(0)
     const { unmount } = render(<InvoicePage invoice={invoicePageOf("paid-card")} />)
-    expect(screen.getAllByRole("link", { name: /Paid on/ }).length).toBe(1)
+    expect(screen.getAllByRole("button", { name: /Paid on/ }).length).toBe(1)
+    expect(document.querySelectorAll("a[data-slot=summary-cell]")).toHaveLength(0)
     unmount()
   })
 
@@ -139,7 +171,8 @@ describe("Invoice page", () => {
     unmount()
     render(<InvoicePage invoice={invoicePageOf("paid-card")} />)
     expect(screen.getByText(/Visa ending 4242, kept on file/)).toBeInTheDocument()
-    expect(screen.getAllByRole("link", { name: /Open in Stripe/ }).length).toBeGreaterThan(0)
+    // Open in Stripe is under the payment row's More
+    expect(within(document.querySelector("[data-slot=payment-table]") as HTMLElement).getByRole("button", { name: "More" })).toBeInTheDocument()
   })
 
   it("reads Refunded, never Past due, with both payment rows and no reminder or Collect payment", () => {
