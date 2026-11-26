@@ -1,7 +1,7 @@
 import { useState } from "react"
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, userEvent, within } from "storybook/test"
-import { AdminShell } from "@/components/blocks/AdminShell"
+import { DesignShell } from "../DesignShell"
 import { InvoicePage } from "../InvoicePanel"
 import { WALK_DATA } from "../walkthrough/walk-new-job"
 import { ApprovedJobPage, type ApprovedJobPageProps } from "./ApprovedJobPage"
@@ -48,18 +48,18 @@ const NORA_JOB = "qj-0005"
 function QuoteStage({ make, id, ...rest }: { make: () => QuoteStore; id: string } & Omit<QuotePageProps, "store" | "quoteId">) {
   const [store] = useState(make)
   return (
-    <AdminShell current="quotes" user={{ initials: "HG", name: "Hannah" }}>
+    <DesignShell current="quotes">
       <QuotePage store={store} quoteId={id} now={QUOTES_NOW} {...rest} />
-    </AdminShell>
+    </DesignShell>
   )
 }
 
 function JobStage({ make, id, ...rest }: { make: () => QuoteStore; id: string } & Omit<ApprovedJobPageProps, "store" | "jobId">) {
   const [store] = useState(make)
   return (
-    <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>
+    <DesignShell current="jobs">
       <ApprovedJobPage store={store} jobId={id} now={QUOTES_NOW} {...rest} />
-    </AdminShell>
+    </DesignShell>
   )
 }
 
@@ -260,9 +260,9 @@ export const FinalInvoiceAfterChange: Story = {
   args,
   globals: laptop,
   render: () => (
-    <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>
+    <DesignShell current="jobs">
       <InvoicePage invoice={finalInvoiceOf(afterPriceChange("email")().getSnapshot().jobs["qj-0007"]!, { number: "INV-2026-0045", sentOn: "2026-11-24", dueOn: "2026-12-08" })} />
-    </AdminShell>
+    </DesignShell>
   ),
 }
 export const FinalInvoiceAfterChangePhone: Story = { ...FinalInvoiceAfterChange, name: "Final invoice after a price change, phone", globals: phone }
@@ -443,7 +443,7 @@ function NewQuoteFlow() {
   const [made, setMade] = useState<string | null>(null)
   const quotes = Object.values(store.getSnapshot().quotes)
   return (
-    <AdminShell current="quotes" user={{ initials: "HG", name: "Hannah" }} quotes={{ count: 2 }}>
+    <DesignShell current="quotes">
       {made ? <QuotePage store={store} quoteId={made} now={QUOTES_NOW} autoFocusPrice /> : <QuotesList quotes={quotes} now={QUOTES_NOW} onNewQuote={() => setOpen(true)} />}
       <NewQuoteSheet
         data={WALK_DATA}
@@ -454,7 +454,7 @@ function NewQuoteFlow() {
           setMade(store.createByHand({ customerId: c.id, customer: `${c.firstName} ${c.lastName}`, first: c.firstName, phone: c.phone ?? "", email: c.email ?? "", contact: "text", service: service.name, street: c.address ?? "", town: c.town ?? "", at: QUOTES_NOW, price: service.price }))
         }}
       />
-    </AdminShell>
+    </DesignShell>
   )
 }
 export const NewQuoteTest: Story = {

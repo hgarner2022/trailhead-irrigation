@@ -15,6 +15,7 @@ import { buildWorldCustomer, quoteRowsFor } from "./customer-build"
 import { worldCustomerIds } from "./world-customers"
 import { shortDate, money } from "@/lib/admin/format"
 import { passService, requestHeading } from "@/lib/admin/record-title"
+import { invoiceHits, pastDueCount as countPastDue } from "../invoice-search"
 export * from "./jobs-data"
 
 // One consistent world for the walkthrough (docs/plans/2026-11-19-prototype-walkthrough-spec.md, section 2), built from the design fixtures and
@@ -298,5 +299,9 @@ export function searchWorld(query: string): SearchHit[] {
   const quotes: SearchHit[] = quoteRowsOf(Object.values(walkQuotes.getSnapshot().quotes), QUOTES_NOW)
     .filter((r) => `${r.id} ${r.customer} ${r.street}`.toLowerCase().includes(q))
     .map((r) => ({ kind: "quote" as const, id: r.id, title: r.id, detail: `${r.customer}, ${r.service}, ${quoteMoney(r.amount)} · ${QUOTE_PILL[r.state].label}`, href: recordHref.quote(r.id) }))
-  return [...requests, ...customers, ...jobs, ...quotes]
+  // an invoice is found by its number, its customer's name or the street, and opens its own page
+  return [...requests, ...customers, ...jobs, ...quotes, ...invoiceHits(INVOICES, q)]
 }
+
+/** The count beside Invoices in the rail: the invoices past due. */
+export const pastDueCount = () => countPastDue(INVOICES)

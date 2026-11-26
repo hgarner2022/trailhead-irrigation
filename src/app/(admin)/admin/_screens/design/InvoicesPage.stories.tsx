@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { AdminShell } from "@/components/blocks/AdminShell"
+import { DesignShell } from "./DesignShell"
 import { InvoicePage } from "./InvoicePanel"
 import { InvoicesPage } from "./InvoicesPage"
 import { expectTablesFitTheirCards } from "./fit-the-card"
@@ -16,9 +16,9 @@ type Story = StoryObj<typeof meta>
 const laptop = { viewport: { value: "laptop", isRotated: false } }
 const phone = { viewport: { value: "phone", isRotated: false } }
 const shell = (children: React.ReactNode) => (
-  <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>
+  <DesignShell current="invoices">
     {children}
-  </AdminShell>
+  </DesignShell>
 )
 
 /** Ryan sees four tiles and every invoice, past due first, with Remind and Collect payment on the rows that are unpaid. Each tile filters the table. */

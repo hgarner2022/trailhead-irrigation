@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, userEvent, waitFor, within } from "storybook/test"
-import { AdminShell } from "@/components/blocks/AdminShell"
+import { DesignShell } from "./DesignShell"
 import { JobFlow } from "./JobFlow"
 import { expectTablesFitTheirCards } from "./fit-the-card"
 import { JobPage } from "./JobPage"
@@ -15,9 +15,9 @@ const meta = {
   parameters: { layout: "fullscreen", docs: { description: { component: "Every state of a one-trip job on its page: the header with its badges and actions, the summary band, What's included, Billing and Messages. Click through the states; the clickable one is Admin / Walkthrough (clickable)." } } },
   args: { job: jobPageOf("scheduled") },
   render: (args) => (
-    <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>
+    <DesignShell current="jobs">
       <JobPage {...args} />
-    </AdminShell>
+    </DesignShell>
   ),
 } satisfies Meta<typeof JobPage>
 export default meta
@@ -120,7 +120,7 @@ export const Canceled: Story = { ...story("canceled", laptop), name: "Canceled" 
 export const CanceledPhone: Story = { ...story("canceled", phone), name: "Canceled, phone" }
 
 
-const shell = (node: React.ReactNode) => <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>{node}</AdminShell>
+const shell = (node: React.ReactNode) => <DesignShell current="jobs">{node}</DesignShell>
 
 /** The same flow for a customer who wants email: the dialogs say email and the sentences name the channel. The same flow is clickable inside the admin walkthrough. */
 export const FlowEmailCustomer: Story = { name: "Flow, email customer", globals: laptop, render: () => shell(<JobFlow channel="email" />) }

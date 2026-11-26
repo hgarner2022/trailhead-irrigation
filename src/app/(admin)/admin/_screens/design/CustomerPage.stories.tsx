@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { AdminShell } from "@/components/blocks/AdminShell"
+import { DesignShell } from "./DesignShell"
 import { CustomerPage, type CustomerDialog } from "./CustomerPage"
 import { expectTablesFitTheirCards } from "./fit-the-card"
 import { STATE_NOTES, customerPageOf, type CustomerState } from "./customer-fixtures"
@@ -14,9 +14,9 @@ const meta = {
   parameters: { layout: "fullscreen", docs: { description: { component: "The customer page for a pass holder, two seasons, a one-off customer and a customer with nothing yet, with its dialogs. Every tile and record name is a link." } } },
   args: { customer: customerPageOf("pass-holder") },
   render: (args) => (
-    <AdminShell current="customers" user={{ initials: "HG", name: "Hannah" }}>
+    <DesignShell current="customers">
       <CustomerPage {...args} />
-    </AdminShell>
+    </DesignShell>
   ),
 } satisfies Meta<typeof CustomerPage>
 export default meta

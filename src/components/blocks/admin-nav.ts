@@ -1,8 +1,10 @@
-import { Briefcase, CalendarDays, FileText, Inbox, LayoutDashboard, Settings2, TrendingUp, Users, type LucideIcon } from "lucide-react"
+import { Briefcase, CalendarDays, FileText, Inbox, LayoutDashboard, Receipt, Settings2, TrendingUp, Users, type LucideIcon } from "lucide-react"
 import type { AdminSection } from "./AdminShell"
 
-// The admin's navigation, once (docs/plans/2026-11-18-admin-holistic-design.md, section 4): the rail on a laptop is all six; the phone's bottom bar is
-// the first four and More. A customer has jobs, a job is done in visits and the Schedule says when, so Visits is not a destination: its grid is
+// The admin's navigation, once, in ONE order (Hannah, Nov 25 2026): Home, Schedule, Customers, Requests, Quotes, Jobs, Invoices, Reports,
+// Settings. Who, then the work in the order it happens (a request becomes a quote, a quote a job, a job an invoice), then the two back-office
+// screens. The rail on a laptop, the phone's bottom bar and its More sheet, the prototype walkthrough and every story read this list and nothing
+// else; nobody patches it. A customer has jobs, a job is done in visits and the Schedule says when, so Visits is not a destination: its grid is
 // the Schedule's List view and `/admin/visits` redirects there.
 
 export interface NavItem {
@@ -15,39 +17,40 @@ export interface NavItem {
 export const NAV: readonly NavItem[] = [
   { id: "home", label: "Home", href: "/admin", icon: LayoutDashboard },
   { id: "schedule", label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
-  { id: "jobs", label: "Jobs", href: "/admin/jobs", icon: Briefcase },
   { id: "customers", label: "Customers", href: "/admin/customers", icon: Users },
+  { id: "requests", label: "Requests", href: "/admin/requests", icon: Inbox },
+  { id: "quotes", label: "Quotes", href: "/admin/quotes", icon: FileText },
+  { id: "jobs", label: "Jobs", href: "/admin/jobs", icon: Briefcase },
+  { id: "invoices", label: "Invoices", href: "/admin/invoices", icon: Receipt },
   { id: "reports", label: "Reports", href: "/admin/reports", icon: TrendingUp },
   { id: "settings", label: "Settings", href: "/admin/settings", icon: Settings2 },
 ]
 
-/** The phone's bottom bar: four tabs, then More with Reports, Settings and Sign out. */
-export const TAB_ITEMS: readonly NavItem[] = NAV.slice(0, 4)
-export const MORE_ITEMS: readonly NavItem[] = NAV.slice(4)
-
 /**
- * Requests (Hannah, Nov 20 2026: one item after Schedule with a count badge; on a phone it sits under More and Home carries the entry).
- * It is not in `NAV` because nothing in the live app has a Requests page yet: a screen that has one passes `requests` to `AdminShell`, which then
- * draws this item after Schedule in the rail and first in More, with the count of new requests.
+ * Requests, Quotes and Invoices have a page in the prototype and not yet in the live app, so an item is drawn only by a shell that was given it
+ * (`AdminShell`'s `requests`, `quotes` and `invoices`). The order never changes: the live rail is the same list with those three left out.
  */
-export const REQUESTS_ITEM: NavItem = { id: "requests", label: "Requests", href: "/admin/requests", icon: Inbox }
+export interface NavHas {
+  requests?: boolean
+  quotes?: boolean
+  invoices?: boolean
+}
+const OPTIONAL: readonly AdminSection[] = ["requests", "quotes", "invoices"]
 
-/**
- * Quotes (Hannah, Nov 20 2026: a Quotes item was added after all, after Jobs, with a count of the quotes still waiting for an answer). A quote is its own record
- * (Nov 22 2026: a job is made only when it is approved), so Jobs has no Needs a quote or Quote sent; this is the one list of every quote. Not in `NAV` for the same reason as Requests: a screen
- * that has the list passes `quotes` to `AdminShell`, which draws it after Jobs in the rail and in More after Requests.
- */
-export const QUOTES_ITEM: NavItem = { id: "quotes", label: "Quotes", href: "/admin/quotes", icon: FileText }
-
-/** The rail's items: `NAV`, with Requests after Schedule and Quotes after Jobs when the shell was given `requests` and `quotes`. */
-export function railItems(withRequests: boolean, withQuotes = false): readonly NavItem[] {
-  const items = [...NAV]
-  if (withRequests) items.splice(items.findIndex((n) => n.id === "schedule") + 1, 0, REQUESTS_ITEM)
-  if (withQuotes) items.splice(items.findIndex((n) => n.id === "jobs") + 1, 0, QUOTES_ITEM)
-  return items
+/** The rail's items: `NAV` in its one order, without the pages this shell does not have. */
+export function railItems(has: NavHas = {}): readonly NavItem[] {
+  return NAV.filter((n) => !OPTIONAL.includes(n.id) || Boolean(has[n.id as keyof NavHas]))
 }
 
-/** The phone's More: Requests and Quotes first when the shell has them, then Reports and Settings (and whatever a prototype patches in). */
-export function moreItems(withRequests: boolean, withQuotes = false): readonly NavItem[] {
-  return [...(withRequests ? [REQUESTS_ITEM] : []), ...(withQuotes ? [QUOTES_ITEM] : []), ...MORE_ITEMS]
+/**
+ * The phone's bottom bar: Home, Schedule, Customers, Jobs, then More. Five places is what fits with labels at 375px, and these four are what is
+ * opened from a truck: today, the week, a person, the work. Requests, Quotes and Invoices are desk work done a few times a day, so they are one
+ * tap further, in More, with their counts (the count of new requests is also on the More button, so nothing new is hidden).
+ */
+const TAB_IDS: readonly AdminSection[] = ["home", "schedule", "customers", "jobs"]
+export const TAB_ITEMS: readonly NavItem[] = NAV.filter((n) => TAB_IDS.includes(n.id))
+
+/** The phone's More sheet: everything of the rail that is not a tab, in the rail's order. */
+export function moreItems(has: NavHas = {}): readonly NavItem[] {
+  return railItems(has).filter((n) => !TAB_IDS.includes(n.id))
 }

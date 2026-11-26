@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { moreItems, railItems } from "@/components/blocks/admin-nav"
+import { NAV, TAB_ITEMS, moreItems, railItems } from "@/components/blocks/admin-nav"
 import { QuotesList } from "./QuotesList"
 import { searchQuotes } from "./QuotesShell"
 import { ALL_QUOTE_FIXTURES, QUOTE_FIXTURES } from "./quote-fixtures"
@@ -76,14 +76,19 @@ describe("the rows and the count", () => {
 })
 
 describe("the rail and the phone's More", () => {
-  it("draws Quotes after Jobs when the shell has it, and Requests after Schedule", () => {
-    expect(railItems(false, false).map((n) => n.id)).toEqual(["home", "schedule", "jobs", "customers", "reports", "settings"])
-    expect(railItems(true, true).map((n) => n.id)).toEqual(["home", "schedule", "requests", "jobs", "quotes", "customers", "reports", "settings"])
-    expect(railItems(false, true).map((n) => n.id)).toEqual(["home", "schedule", "jobs", "quotes", "customers", "reports", "settings"])
+  const all = { requests: true, quotes: true, invoices: true }
+  it("is one order, Hannah's: Home, Schedule, Customers, Requests, Quotes, Jobs, Invoices, Reports, Settings", () => {
+    expect(NAV.map((n) => n.label)).toEqual(["Home", "Schedule", "Customers", "Requests", "Quotes", "Jobs", "Invoices", "Reports", "Settings"])
+    expect(railItems(all).map((n) => n.id)).toEqual(NAV.map((n) => n.id))
   })
-  it("puts Quotes in More after Requests", () => {
-    expect(moreItems(true, true).map((n) => n.id)).toEqual(["requests", "quotes", "reports", "settings"])
-    expect(moreItems(false, false).map((n) => n.id)).toEqual(["reports", "settings"])
+  it("leaves out the pages a shell does not have, and never changes the order of the rest", () => {
+    expect(railItems().map((n) => n.id)).toEqual(["home", "schedule", "customers", "jobs", "reports", "settings"])
+    expect(railItems({ quotes: true }).map((n) => n.id)).toEqual(["home", "schedule", "customers", "quotes", "jobs", "reports", "settings"])
+  })
+  it("gives the phone four tabs in the rail's order and puts the rest in More, in the rail's order", () => {
+    expect(TAB_ITEMS.map((n) => n.id)).toEqual(["home", "schedule", "customers", "jobs"])
+    expect(moreItems(all).map((n) => n.id)).toEqual(["requests", "quotes", "invoices", "reports", "settings"])
+    expect(moreItems().map((n) => n.id)).toEqual(["reports", "settings"])
   })
 })
 

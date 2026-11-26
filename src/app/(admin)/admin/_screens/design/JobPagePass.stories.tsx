@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, userEvent, waitFor, within } from "storybook/test"
-import { AdminShell } from "@/components/blocks/AdminShell"
+import { DesignShell } from "./DesignShell"
 import { PassFlow } from "./PassFlow"
 import { JobPagePass, JobPageReturnTrip } from "./JobPageTrips"
 import { passPageBoughtOf, passPageOf, returnTripOf, type PassState } from "./trip-fixtures"
@@ -15,9 +15,9 @@ const meta = {
   parameters: { layout: "fullscreen", docs: { description: { component: "A Season Pass job and a repair with a return trip: the Visits card with one row per trip, each with its own badge, money word and Move or Mark done. Compare the four pass states and the renewal link." } } },
   args: { data: passPageOf("ahead") },
   render: (args) => (
-    <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>
+    <DesignShell current="jobs">
       <JobPagePass {...args} />
-    </AdminShell>
+    </DesignShell>
   ),
 } satisfies Meta<typeof JobPagePass>
 export default meta
@@ -33,9 +33,9 @@ const back = (globals: typeof laptop): Story => ({
   args: { data: returnTripOf() },
   globals,
   render: (args) => (
-    <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>
+    <DesignShell current="jobs">
       <JobPageReturnTrip data={args.data} />
-    </AdminShell>
+    </DesignShell>
   ),
 })
 
@@ -91,9 +91,9 @@ export const ReturnTrip: Story = { ...back(laptop), name: "Return trip" }
 export const ReturnTripPhone: Story = { ...back(phone), name: "Return trip, phone" }
 
 const flowShell = () => (
-  <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>
+  <DesignShell current="jobs">
     <PassFlow />
-  </AdminShell>
+  </DesignShell>
 )
 
 /** The Season Pass branch, clickable: trip 1 goes Scheduled, Today, Active, Done and Charged ("Charge the card as agreed"), then trip 2 is next ahead and opens by itself. */

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { AdminShell } from "@/components/blocks/AdminShell"
+import { DesignShell } from "./DesignShell"
 import { JobsGridDesign, type GridJob } from "./JobsGridDesign"
 
 // D of the job object design (docs/plans/2026-11-19-job-object-design.md): the Jobs grid with its Billing column, at 1280 (Laptop) and 375 (Phone).
@@ -11,7 +11,7 @@ type Story = StoryObj<typeof meta>
 
 const laptop = { viewport: { value: "laptop", isRotated: false } }
 const phone = { viewport: { value: "phone", isRotated: false } }
-const shell = (children: React.ReactNode) => <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}>{children}</AdminShell>
+const shell = (children: React.ReactNode) => <DesignShell current="jobs">{children}</DesignShell>
 
 const job = (id: string, name: string, service: string, title: string, property: string, stage: GridJob["stage"], visits: string, total: number, billingState: GridJob["billingState"], billing: string, next: string, who: string, season = ""): GridJob =>
   ({ id, name, service, title, property, stage, visits, total, billingState, billing, next, who, season })
