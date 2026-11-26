@@ -143,6 +143,15 @@ The rules: the display face is always 600 and names things; the body face says t
 
 `variant="destructive"` is the colour of something hard to take back. A customer screen and an admin screen use the same sizes; only the choice of size differs.
 
+### Shared blocks: text link, notice, select (Nov 26 2026, `docs/plans/2026-11-25-admin-audit-patterns.md` B1, B4, B7)
+
+One block each; nothing types these classes again.
+
+- **`TextLink`** (`blocks/TextLink.tsx`): orange text (`text-primary-dark`), the shared solid focus ring (`focusRingClass` in `option-styles.ts`). With an `href` it is a link, without one a button. `touch="lone"` (default) is a 44px target on its own line or in a cell; `touch="inline"` sits inside a sentence and is underlined always (axe requires it); a lone link is underlined on hover. `icon` is a square 44px target for an icon-only link (give it an `aria-label`). `textLinkClass` is the class alone, for an element a block must draw itself (`RecordChip`).
+- **`Notice`** (`blocks/Notice.tsx`): a line that stays while it is true, tinted `info`, `warning`, `error`, `success`, `neutral` (the status pill's tones) or `page` (the white card in a record page's notice slot), with an optional icon and an optional action at the right. A result is a toast, not a notice.
+- **`SelectField`** (`blocks/SelectField.tsx`): the native select, 44px high, 16px text on a phone, the shared focus ring (the browser's blue one is gone); `density="compact"` is 36 from `md` for Settings rows. Use it inside `FormRow`.
+- A choice in a form is `optionClass` (navy when chosen): the payment ways, the Schedule dialog's Who and the message channel use it.
+
 ### Marks: chosen, and included or done (customer)
 
 Decided Nov 26 2026 (Hannah, of the orange badge on a chosen service: "I just hate the check, it looks tacky"; research, sources and before and after pictures in `docs/review/2026-11-26-check-redesign/`). Two meanings, two marks, and neither is a coloured badge:

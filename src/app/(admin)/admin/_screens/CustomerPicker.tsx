@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { emailProblem, emailSuggestion } from "@/lib/email-check"
 import { formatPhone } from "@/lib/format/contact"
 import type { AdminData, Client, Town } from "@/lib/admin/types"
+import { SelectField } from "@/components/blocks/SelectField"
 
 // The customer block New visit and New pass share: find one of the app's customers by name, street or phone, or add a new
 // one (name, street, town, phone, email, access note). The email gets the same slip check as the checkout ("gmail.con"
@@ -145,11 +146,11 @@ export function CustomerPicker({ data, customerId, value, onChange, emailRequire
           <div className="col-span-2">
             <Input aria-label="Street" placeholder="Street" value={person.address} onChange={(e) => setPerson({ address: e.target.value })} className="min-h-11" />
           </div>
-          <select aria-label="Town" value={person.town} onChange={(e) => setPerson({ town: e.target.value as Town })} className={FIELD}>
+          <SelectField aria-label="Town" value={person.town} onChange={(e) => setPerson({ town: e.target.value as Town })}>
             {TOWNS.map((t) => (
               <option key={t}>{t}</option>
             ))}
-          </select>
+          </SelectField>
           <Input aria-label="Phone" inputMode="tel" placeholder="Phone" value={person.phone} onChange={(e) => setPerson({ phone: e.target.value })} className="min-h-11" />
           <EmailField id={`${idPrefix}-new-email`} value={person.email} onChange={(email) => setPerson({ email })} required={emailRequired} className="col-span-2" />
           <div className="col-span-2">

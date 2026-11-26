@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { FormRow } from "@/components/blocks/FormRow"
 import { SegmentedControl } from "@/components/blocks/SegmentedControl"
 import { Textarea } from "@/components/ui/textarea"
 import { REMINDER_LINE_MAX, reminderBody, reminderSubject, type Reach } from "./confirm-copy"
+import { TextLink } from "@/components/blocks/TextLink"
 
 // "Send a payment reminder" (Hannah, Nov 19 2026): a channel choice under the heading (Text, Email or Both, preselected from the customer's
 // contact preference; a customer with no mobile or no email has that choice greyed with the reason), the sentence that follows it, a preview
@@ -63,9 +63,9 @@ export function ReminderDialog({ who, invoice, onClose, onSend }: ReminderDialog
               <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{email.split("\n").slice(0, FIRST_LINES).join("\n")}</p>
             </div>
           )}
-          <Link href="/admin/settings?tab=messages" className="inline-flex min-h-11 items-center self-start rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <TextLink href="/admin/settings?tab=messages" className="self-start">
             Edit the wording in Settings
-          </Link>
+          </TextLink>
         </div>
         <FormRow label="Add a line (optional)" hint={`${line.length} of ${REMINDER_LINE_MAX}`}>
           <Textarea value={line} maxLength={REMINDER_LINE_MAX} rows={2} onChange={(e) => setLine(e.target.value)} placeholder="A line after the words, if you want one" />

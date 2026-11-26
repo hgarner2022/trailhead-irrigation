@@ -26,3 +26,6 @@ export function optionClass({ selected, error = false, focus = "self", settle = 
 
 /** The quiet second line inside an option: muted, and light on the navy of a chosen one. */
 export const optionDetailClass = (selected: boolean) => (selected ? "text-white/85" : "text-muted-foreground")
+
+/** The keyboard focus ring of any control that is not an option (a text link, a select): the same solid ring and offset an option draws, so the product has one ring. */
+export const focusRingClass = FOCUS.self

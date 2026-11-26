@@ -7,6 +7,7 @@ import { FormRow } from "@/components/blocks/FormRow"
 import { TimeChips } from "@/components/blocks/TimeChips"
 import { Input } from "@/components/ui/input"
 import { CREW_LINE_MAX, crewText, notices } from "./crew-copy"
+import { optionClass } from "@/components/blocks/option-styles"
 
 // The Schedule and Move dialog's body (docs/plans/2026-11-18-scheduling-engine-design.md section 4, the offer rule, and the customer's
 // day-and-time choice): the one calendar (`DayCalendar`, the office's mode: any day from today may be chosen, the days with an opening
@@ -130,7 +131,7 @@ function PersonAndTimes({ day, people, setPeople, stops, starts, at, minutes, pi
           {PEOPLE.map((p) => {
             const on = people.includes(p)
             return (
-              <button key={p} type="button" role="checkbox" aria-checked={on} onClick={() => setPeople(on ? (people.length > 1 ? people.filter((x) => x !== p) : people) : [...people, p])} className={cn("min-h-11 rounded-full border px-3 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", on ? "border-primary bg-primary/10" : "border-input text-muted-foreground")}>
+              <button key={p} type="button" role="checkbox" aria-checked={on} onClick={() => setPeople(on ? (people.length > 1 ? people.filter((x) => x !== p) : people) : [...people, p])} className={cn(optionClass({ selected: on }), "min-h-11 px-3 font-medium")}>
                 {p}
               </button>
             )

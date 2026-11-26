@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input"
 import { useUndoToast } from "@/components/blocks/UndoToast"
 import { NOT_DONE_LABEL, NOT_DONE_REASONS, type NotDoneReason } from "@/lib/admin/visit-defaults"
 import type { Visit } from "@/lib/admin/types"
-import { FIELD } from "./CustomerPicker"
 import type { VisitActions, Where } from "./visit-actions-types"
+import { SelectField } from "@/components/blocks/SelectField"
 
 // Not done: the routine action of a visit that did not happen (Done is the footer's Mark done, `VisitFooter`; Move is `VisitMove`). A footer button
 // that opens ONE `ConfirmDialog`, acts at once and offers Undo for ten seconds (docs/UX_PATTERNS.md); a refusal shows in the API's words in the dialog. Client component.
@@ -32,13 +32,13 @@ export function NotDoneDialog({ visit, actions, open, onOpenChange }: { visit: V
   return (
     <ConfirmDialog slot="visit-not-done" title="Not done" message="It goes back to Unscheduled, and the reason is kept." confirmLabel="Mark not done" open={open} onOpenChange={onOpenChange} onConfirm={submit}>
       <FormRow label="Why">
-        <select value={reason} onChange={(e) => setReason(e.target.value as NotDoneReason)} className={FIELD}>
+        <SelectField value={reason} onChange={(e) => setReason(e.target.value as NotDoneReason)}>
           {NOT_DONE_REASONS.map((r) => (
             <option key={r} value={r}>
               {NOT_DONE_LABEL[r]}
             </option>
           ))}
-        </select>
+        </SelectField>
       </FormRow>
       {reason === "other" && <Input aria-label="What happened" value={note} onChange={(e) => setNote(e.target.value)} placeholder="What happened" className="min-h-11" />}
     </ConfirmDialog>

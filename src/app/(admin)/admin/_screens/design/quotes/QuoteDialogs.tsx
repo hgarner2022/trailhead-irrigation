@@ -11,13 +11,14 @@ import { quoteLink, quoteReminderText, quoteText, quoteSubject, quoteReminderSub
 import { REMINDER_LINE_MAX } from "../confirm-copy"
 import { QUOTE_ARCHIVE_REASONS, type QuoteArchiveReason } from "../requests/request-model"
 import { depositOf, linesTotal, money, type Channel, type DepositHow, type Party, type QuoteLine, type QuoteRecord } from "./quote-model"
+import { TextLink } from "@/components/blocks/TextLink"
+import { SelectField } from "@/components/blocks/SelectField"
 
 // The questions of the quote (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.6; Hannah's answers 3 to 8 of Nov 20 2026; the quote is its own record from Nov 22 2026).
 // Every action that reaches the customer confirms in a dialog that states its exact effect and the channel from their contact preference, with a "without notifying" caret on a send;
 // a reminder has none, because the reminder is the notification. A deposit is none by default, typed as dollars or a percent, frozen as dollars and never above the total. Approving
 // makes the job, and the dialog says so. Archiving names its effect on the request. Pure props: the page keeps the state.
 
-const SELECT = "min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
 export const CHANNEL_OPTIONS = (job: Party) => [
   { value: "text", label: "Text", disabled: !job.phone, reason: "No mobile number on file" },
   { value: "email", label: "Email", disabled: !job.email, reason: "No email on file" },
@@ -163,11 +164,11 @@ export function ArchiveQuoteDialog({ quote, onClose, onArchive }: { quote: Quote
       onConfirm={async () => (onArchive(reason), { ok: true })}
     >
       <FormRow label="Reason">
-        <select value={reason} onChange={(e) => setReason(e.target.value as QuoteArchiveReason)} className={SELECT}>
+        <SelectField value={reason} onChange={(e) => setReason(e.target.value as QuoteArchiveReason)}>
           {QUOTE_ARCHIVE_REASONS.map((r) => (
             <option key={r}>{r}</option>
           ))}
-        </select>
+        </SelectField>
       </FormRow>
     </ConfirmDialog>
   )
@@ -213,14 +214,14 @@ export function ApproveByHandDialog({ quote, onClose, onApprove }: ApproveByHand
       {dep ? (
         <div className="flex flex-col gap-3 text-sm">
           <FormRow label={`How was the ${money(dep)} deposit paid?`}>
-            <select value={how} onChange={(e) => (setHow(e.target.value as DepositHow | ""), setRef(""))} className={SELECT}>
+            <SelectField value={how} onChange={(e) => (setHow(e.target.value as DepositHow | ""), setRef(""))}>
               <option value="">Choose how it was paid</option>
               {HOW.map((h) => (
                 <option key={h.value} value={h.value}>
                   {h.label}
                 </option>
               ))}
-            </select>
+            </SelectField>
           </FormRow>
           {refLabel && (
             <FormRow label={`${refLabel} (optional)`}>
@@ -279,9 +280,9 @@ export function LineDialog({ line, onClose, onSave, onRemove, approved }: LineDi
           <Input inputMode="numeric" autoComplete="off" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-24" />
         </FormRow>
         {onRemove && (
-          <button type="button" onClick={onRemove} className="min-h-11 self-start rounded-sm text-destructive underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <TextLink tone="destructive" onClick={onRemove} className="self-start">
             {approved ? "Cancel this line" : "Remove this line"}
-          </button>
+          </TextLink>
         )}
       </div>
     </ConfirmDialog>

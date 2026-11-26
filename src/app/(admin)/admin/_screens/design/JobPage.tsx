@@ -10,9 +10,10 @@ import { SummaryBand } from "@/components/blocks/SummaryBand"
 import { BillingCard } from "./BillingCard"
 import { footerConfirms } from "./confirm-copy"
 import type { JobPageData } from "./job-fixtures"
-import { Actions, Aside, type CollectHandlers, Badges, EditLink, MessagesCard, Notice, bandOfJob, factsOfJob, hasFooter } from "./JobPageParts"
+import { Actions, Aside, type CollectHandlers, Badges, EditLink, MessagesCard, bandOfJob, factsOfJob, hasFooter } from "./JobPageParts"
 import { JobPhotos } from "./JobPhotos"
 import { ReminderDialog } from "./ReminderDialog"
+import { Notice } from "@/components/blocks/Notice"
 
 // The job page for a one-trip job (docs/plans/2026-11-19-job-object-design.md) on the page frame of
 // docs/plans/2026-11-19-admin-page-layout-research.md: the header (customer, status badges beside it, the actions at the top right), the
@@ -33,7 +34,7 @@ export function JobPage({ job, onDo, onMessage, intercept = [], handlers }: { jo
       title={job.customer}
       subtitle={job.subtitle}
       badges={<Badges pills={job.pills} note={job.pillNote} />}
-      notice={job.notice ? <Notice>{job.notice}</Notice> : undefined}
+      notice={job.notice ? <Notice tone="page" role="status">{job.notice}</Notice> : undefined}
       band={<SummaryBand items={bandOfJob(job)} />}
       aside={<Aside customer={job.customer} phone={job.phone} where={job.where} notes={job.notes} pastVisits={job.pastVisits} pastTotal={job.pastTotal} />}
       actions={hasFooter(job.footer) ? <Actions plan={job.footer} facts={facts} onDo={route} onMessage={onMessage} intercept={[...intercept, "Send a payment reminder"]} collect={job.collect} handlers={handlers} /> : undefined}

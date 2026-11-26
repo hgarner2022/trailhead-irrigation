@@ -8,6 +8,7 @@ import { ONLINE_WORDS, hasZoneRule, onlineOf, priceIsFixed, setServiceField, typ
 import { bandWords, groupServices, renameGroup, setGroupField, type ServiceGroup } from "../settings-services"
 import { CommitInput, CommitTextarea, TAP_TARGET, type Apply } from "./fields"
 import { MonthDayField } from "./MonthDayField"
+import { SelectField } from "@/components/blocks/SelectField"
 
 // The catalogue is rows of a SettingsList, one per service: what it is called, what the visit includes (the text the New job sheet and
 // the pass page show, with no price in it), the price and the zone rule, the minutes the visit holds on the schedule, how it is offered
@@ -16,7 +17,6 @@ import { MonthDayField } from "./MonthDayField"
 // minutes). A band that does not follow the one zones rule stays its own row. Prices are whole dollars. A tech reads it and changes
 // nothing (the screen disables the fieldset).
 
-const SELECT = "min-h-11 w-full rounded-lg border border-input bg-background px-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 md:min-h-9"
 
 /** "$145 up to 8 zones, then $10 a zone", "$145", "Quoted". */
 export function priceWords(g: ServiceGroup): string {
@@ -37,13 +37,13 @@ function ServiceFacts({ group, set, apply }: { group: ServiceGroup; set: (field:
         <CommitInput label={`${name} name`} value={name} onCommit={(v) => apply((s, a) => renameGroup(s, group, v, a))} />
       </FormRow>
       <FormRow label="Online" inline hint="A day to book, a quote, or not offered online">
-        <select aria-label={`${name} online`} value={onlineOf(first)} onChange={(e) => set("online", e.target.value as Online)} className={SELECT}>
+        <SelectField density="compact" aria-label={`${name} online`} value={onlineOf(first)} onChange={(e) => set("online", e.target.value as Online)}>
           {(Object.keys(ONLINE_WORDS) as Online[]).map((o) => (
             <option key={o} value={o}>
               {ONLINE_WORDS[o]}
             </option>
           ))}
-        </select>
+        </SelectField>
       </FormRow>
       <FormRow label="What's included" inline className="lg:col-span-2" hint="What the visit includes, with no price in it">
         <CommitTextarea label={`${name} what's included`} value={first.description ?? ""} onCommit={(v) => set("description", v)} />

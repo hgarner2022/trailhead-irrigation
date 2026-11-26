@@ -1,13 +1,13 @@
 "use client"
 
 import { useMemo, useState, type ReactNode } from "react"
-import Link from "next/link"
 import { CircleCheck, CircleX, Clock, Percent, TrendingUp } from "lucide-react"
 import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
 import type { GridCardSlots } from "@/components/blocks/DataGridCard"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { SummaryBand } from "@/components/blocks/SummaryBand"
+import { TextLink } from "@/components/blocks/TextLink"
 import { recordHref } from "@/components/blocks/record-preview-model"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -23,7 +23,8 @@ import { QUOTE_PILL, ago, dayOf, money, type Channel, type QuoteRecord } from ".
 // dollar figure or a dash), the day it was sent with its age, the status pill and a Next action: Remind on a Sent quote (the quote's own reminder dialog, once a day), Open on the others.
 // The waiting ones come first. A click on the row or the quote chip opens the quote's page. On a phone the table is cards, the tiles two by two and the tabs a row that scrolls sideways. Pure props.
 
-const TEXT_BUTTON = "inline-flex min-h-11 items-center whitespace-nowrap rounded-sm px-2 text-sm font-medium text-primary-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:text-muted-foreground disabled:no-underline"
+/** a row action: a quiet text link that never wraps (Remind, Open) */
+const ROW_ACTION = "whitespace-nowrap px-2 text-sm"
 const CARD: GridCardSlots = { title: "label", line: ["customerText", "serviceText"], state: "status", when: ["datesText"], money: "amount", actions: "next" }
 const TAB_WORDS: Record<QuoteTab, string> = { all: "All", draft: QUOTE_PILL.draft.label, sent: QUOTE_PILL.sent.label, approved: QUOTE_PILL.approved.label, declined: QUOTE_PILL.declined.label, replaced: QUOTE_PILL.replaced.label, archived: QUOTE_PILL.archived.label }
 const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`
@@ -33,13 +34,13 @@ function NextAction({ row, onRemind }: { row: QuoteListRow; onRemind: (r: QuoteL
   return (
     <span className="flex flex-nowrap items-center justify-end">
       {row.state === "sent" ? (
-        <button type="button" className={TEXT_BUTTON} disabled={row.remindedToday} onClick={() => onRemind(row)}>
+        <TextLink weight="medium" className={ROW_ACTION} disabled={row.remindedToday} onClick={() => onRemind(row)}>
           {row.remindedToday ? "Reminded today" : "Remind"}
-        </button>
+        </TextLink>
       ) : (
-        <Link href={recordHref.quote(row.id)} aria-label={`Open quote ${row.id}`} className={TEXT_BUTTON}>
+        <TextLink href={recordHref.quote(row.id)} aria-label={`Open quote ${row.id}`} weight="medium" className={ROW_ACTION}>
           Open
-        </Link>
+        </TextLink>
       )}
     </span>
   )

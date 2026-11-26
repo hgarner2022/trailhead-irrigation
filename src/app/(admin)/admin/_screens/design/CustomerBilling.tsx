@@ -5,6 +5,7 @@ import { ExternalLink } from "lucide-react"
 import { BillingBody, type BillingLine } from "@/components/blocks/BillingBody"
 import type { InvoiceRowData, PaymentRowData } from "@/components/blocks/BillingTables"
 import { SectionCard } from "@/components/blocks/SectionCard"
+import { TextLink } from "@/components/blocks/TextLink"
 import { recordHref } from "@/components/blocks/record-preview-model"
 import { sortInvoices, toInvoiceRows, toPaymentRows } from "./CustomerTables"
 import type { CustomerBillingData } from "./customer-fixtures"
@@ -14,8 +15,6 @@ import type { CustomerBillingData } from "./customer-fixtures"
 // figures only when they add something, the customer's card row (it is managed here, so it stays: Update card sends the customer the card link,
 // Open in Stripe leaves the app), then "Invoices and payments" (a paid invoice and its payment are one row) and "Payments" for the ones with no
 // invoice. Refund is under More on a payment row. Nothing here shows a result: an action's result is a toast and the table gains a row. Pure props.
-
-const LINK = "inline-flex min-h-11 items-center gap-1 rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 
 export interface CustomerBillingProps {
   billing: CustomerBillingData
@@ -49,21 +48,17 @@ export function CustomerBilling({ billing, customerName, onUpdateCard, onRefund,
       <span>
         {card.brand} ending {card.last4}, expires {card.expires}
       </span>
-      <button type="button" onClick={onUpdateCard} className={LINK}>
-        Update card
-      </button>
-      <a href={card.stripeUrl} target="_blank" rel="noreferrer" className={LINK}>
+      <TextLink onClick={onUpdateCard}>Update card</TextLink>
+      <TextLink href={card.stripeUrl} target="_blank" rel="noreferrer">
         Open in Stripe
         <ExternalLink className="size-3.5" aria-hidden />
         <span className="sr-only"> (opens in a new tab)</span>
-      </a>
+      </TextLink>
     </span>
   ) : (
     <span id="card-row" className="flex flex-wrap items-center gap-x-4">
       <span className="text-muted-foreground">No card yet</span>
-      <button type="button" onClick={onUpdateCard} className={LINK}>
-        Send card link
-      </button>
+      <TextLink onClick={onUpdateCard}>Send card link</TextLink>
     </span>
   )
   return (

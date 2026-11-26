@@ -1,9 +1,9 @@
-import Link from "next/link"
 import type { MouseEvent } from "react"
 import { Briefcase, CalendarCheck, CalendarDays, CreditCard, FileText, Inbox, MapPin, Receipt, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { StatusPill } from "./StatusPill"
 import { KIND_WORD, type RecordKind, type RecordPreviewData } from "./record-preview-model"
+import { TextLink } from "./TextLink"
 
 // The card a RecordChip shows on hover, focus or long-press (docs/plans/2026-11-19-record-links-research.md, rule 4): the kind, the name,
 // one status pill, at most four facts and Open. It is also the summary a Cmd+K hit can show, because it only reads `RecordPreviewData`.
@@ -83,9 +83,9 @@ export function RecordPreview({ data, onOpen, className }: RecordPreviewProps) {
           ))}
         </dl>
       )}
-      <Link href={data.href} onClick={open} className="mt-2 flex min-h-11 items-center rounded-sm text-sm font-semibold text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <TextLink href={data.href} onClick={open} weight="semibold" className="mt-2 flex text-sm">
         {data.openLabel}
-      </Link>
+      </TextLink>
     </section>
   )
 }
