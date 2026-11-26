@@ -25,6 +25,8 @@ export interface PeopleMenuProps {
   /** the ids that are hidden */
   hidden: readonly string[]
   onToggle: (personId: string) => void
+  /** on a phone, the icon and the number showing, 44 px, for a toolbar row that must fit (the summary stays in the name read aloud) */
+  compact?: boolean
   className?: string
 }
 
@@ -53,19 +55,20 @@ function List({ people, hidden, onToggle }: Pick<PeopleMenuProps, "people" | "hi
   )
 }
 
-export function PeopleMenu({ people, hidden, onToggle, className }: PeopleMenuProps) {
+export function PeopleMenu({ people, hidden, onToggle, compact, className }: PeopleMenuProps) {
   const [open, setOpen] = useState(false)
   const phone = useMedia("(max-width: 767px)")
   if (people.length < 2) return null
   const summary = peopleSummary(people, hidden)
   const trigger = (
-    <Button type="button" variant="outline" data-slot="people-menu" aria-haspopup="dialog" aria-expanded={open} aria-label={`People: ${summary}`} onClick={phone ? () => setOpen(true) : undefined} className={cn("min-h-11 justify-start gap-2 max-md:w-full", className)}>
+    <Button type="button" variant="outline" data-slot="people-menu" aria-haspopup="dialog" aria-expanded={open} aria-label={`People: ${summary}`} onClick={phone ? () => setOpen(true) : undefined} className={cn("min-h-11 justify-start gap-2", compact ? "max-md:min-w-11 max-md:justify-center max-md:gap-1 max-md:px-2" : "max-md:w-full", className)}>
       <Users aria-hidden className="size-4 shrink-0" />
-      <span className="min-w-0 truncate">
+      {compact && <span aria-hidden className="text-sm font-medium tabular-nums md:hidden">{people.length - hidden.length}</span>}
+      <span className={cn("min-w-0 truncate", compact && "max-md:hidden")}>
         <span className="font-normal text-muted-foreground">People: </span>
         <span className="font-medium">{summary}</span>
       </span>
-      <ChevronDown aria-hidden className="ml-auto size-4 shrink-0" />
+      <ChevronDown aria-hidden className={cn("ml-auto size-4 shrink-0", compact && "max-md:hidden")} />
     </Button>
   )
   if (phone)

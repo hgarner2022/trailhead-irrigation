@@ -60,4 +60,13 @@ describe("VisitPeek", () => {
     render(<VisitPeek {...base} />)
     expect(screen.getByRole("heading", { name: "Willow Dr" })).toHaveFocus()
   })
+  it("links Directions to the maps app for the address, named with the street", () => {
+    media(true)
+    render(<VisitPeek {...base} address="480 Briggs St, Erie" />)
+    const link = screen.getByRole("link", { name: /480 Briggs St/ })
+    expect(link).toHaveTextContent("Directions")
+    expect(link).toHaveAttribute("href", "https://www.google.com/maps/dir/?api=1&destination=480%20Briggs%20St%2C%20Erie")
+    expect(link).toHaveAttribute("target", "_blank")
+    expect(link).toHaveAttribute("rel", "noopener noreferrer")
+  })
 })

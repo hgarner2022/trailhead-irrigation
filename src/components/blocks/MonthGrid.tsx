@@ -25,12 +25,14 @@ export interface MonthGridProps {
   selectedDay?: string
   onOpenDay?: (day: string) => void
   onMonthChange?: (month: string) => void
+  /** false on a phone when the screen's own header already names the month and has the arrows (the Schedule) */
+  phoneHead?: boolean
   className?: string
 }
 
 const WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
-export function MonthGrid({ month, days, people, today, selectedDay, onOpenDay, onMonthChange, className }: MonthGridProps) {
+export function MonthGrid({ month, days, people, today, selectedDay, onOpenDay, onMonthChange, phoneHead = true, className }: MonthGridProps) {
   const grid = useRef<HTMLDivElement>(null)
   const [focus, setFocus] = useState<string | null>(null)
   const by = new Map(days.map((d) => [d.day, d]))
@@ -51,7 +53,7 @@ export function MonthGrid({ month, days, people, today, selectedDay, onOpenDay, 
 
   return (
     <div data-slot="month-grid" className={cn("min-w-0", className)}>
-      <div className="mb-2 flex items-center justify-between gap-2">
+      <div className={cn("mb-2 flex items-center justify-between gap-2", !phoneHead && "max-md:hidden")}>
         <button type="button" aria-label="Previous month" onClick={() => onMonthChange?.(shiftMonth(month, -1))} className="flex size-11 cursor-pointer items-center justify-center rounded-lg border border-border text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"><ChevronLeft aria-hidden className="size-5" /></button>
         <h2 aria-live="polite" className="font-display text-2xl leading-none text-navy">{monthTitle(month)}</h2>
         <button type="button" aria-label="Next month" onClick={() => onMonthChange?.(shiftMonth(month, 1))} className="flex size-11 cursor-pointer items-center justify-center rounded-lg border border-border text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"><ChevronRight aria-hidden className="size-5" /></button>

@@ -19,7 +19,11 @@ export const LOOK: GuideLink[] = [
   { id: `${P}schedule-all`, label: "Schedule all", look: "Press Schedule all 4 in Unscheduled. Each job goes on the next open day with the first person who has room, and each row has Remove." },
   { id: `${P}month`, label: "Month", look: "Each day shows its visits and towns. Press a day to open it." },
   { id: "blocks-scheduler-recommendedmark--default", label: "The recommended time", look: "In the customer's booking step the one recommended time says Recommended under it." },
-  { id: `${P}week-phone`, label: "Week on a phone", look: "A day strip and one day's column. Tap a visit to open it full screen, then Edit visit." },
+  { id: `${P}visit-peek-open-phone`, label: "Directions in a visit's facts", look: "Open a visit and press Directions beside Where. It opens your maps app at that address." },
+  { id: `${P}opens-on-the-day-phone`, label: "A phone opens on the day", look: "The Schedule opens on today as a list: Any time visits first, then each visit in order with the drive between. Tap one to open it full screen." },
+  { id: `${P}day-two-people-phone`, label: "The day with two people, phone", look: "The same list under each person's name with their open time and driving." },
+  { id: `${P}week-one-person-overlap-phone`, label: "Two overlapping visits, phone", look: "In the Week with one person, two visits that overlap sit side by side in two lanes with the red outline." },
+  { id: `${P}week-phone`, label: "Week on a phone", look: "A day strip and one day's list. Tap a visit to open it full screen, then Edit visit." },
 ]
 
 export const TRY: string[] = [
@@ -33,6 +37,7 @@ export const TRY: string[] = [
   "Open Unscheduled and press Schedule all, remove one row, and confirm.",
   "Hover a day's header in the Week to see its towns and driving.",
   "Open Settings, then People, change Hours or Most per day for Ryan, press Save, and open the Schedule.",
+  "On a phone width, open a visit and press Directions. In Edit visit, press 15 minutes longer and see the times that no longer fit leave the list.",
   "Press the question mark key for the list of keyboard shortcuts.",
 ]
 
@@ -43,6 +48,8 @@ export const CHANGED: string[] = [
   "The week's day header is simpler: the day and how many visits, or Full.",
   "Driving between stops shows in the Day view only, and each person's driving for the day is under the Map.",
   "The new words are Reorder stops, Stops reordered, No room today, +3 min driving, Drive times are estimates, 3 visits scheduled, Suggested with a first name, and Move anyway.",
+  "A visit's facts have a Directions link. Changing Length in Edit visit ranks the times again.",
+  "On a phone the Schedule opens on today as a list, with the date and arrows in one row and the view, People, Unscheduled and Map in the next.",
   "The customer's recommended time says Recommended under it, and the map is the quiet grey style.",
 ]
 

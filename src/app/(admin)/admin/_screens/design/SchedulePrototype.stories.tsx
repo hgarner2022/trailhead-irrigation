@@ -55,7 +55,7 @@ const held: ProtoInitial = { toastSeconds: 0 }
 const phone = (s: Story): Story => ({ ...s, name: `${s.name ?? ""}, phone`, globals: PHONE })
 
 export const Week: Story = { name: "Week" }
-export const WeekPhone: Story = phone(Week)
+export const WeekPhone: Story = { ...phone(Week), args: { view: "week" } }
 
 export const WeekBothPanelsOpen: Story = { name: "Week with both panels open", args: { panels: { unscheduled: true, map: true } } }
 // on a phone the panels are sheets, one at a time: the last one opened is the one shown
@@ -108,13 +108,18 @@ export const VisitPeekOpen: Story = {
     await expect(within(peek).getByRole("button", { name: "Open job" })).toBeInTheDocument()
     await expect(within(peek).getByRole("button", { name: "Mark done" })).toBeInTheDocument()
     await expect(within(peek).getByText("Length")).toBeInTheDocument()
+    const directions = within(peek).getByRole("link", { name: /^Directions to Willow Dr/ })
+    await expect(directions).toHaveAttribute("href", expect.stringContaining("https://www.google.com/maps/dir/?api=1&destination=Willow%20Dr"))
+    await expect(directions).toHaveAttribute("target", "_blank")
     await expect(body().queryByRole("button", { name: /^Actions for/ })).not.toBeInTheDocument()
   },
 }
 export const VisitPeekOpenPhone: Story = {
   ...phone(VisitPeekOpen),
   play: async ({ canvasElement }) => {
-    await expect(await openPeek(canvasElement, /^Willow Dr, Fall blowout/)).toBeInTheDocument()
+    const peek = await openPeek(canvasElement, /^Willow Dr, Fall blowout/)
+    await expect(peek).toBeInTheDocument()
+    await expect(within(peek).getByRole("link", { name: /^Directions to Willow Dr/ })).toBeInTheDocument()
   },
 }
 
@@ -228,7 +233,7 @@ export const DropFromUnscheduled: Story = {
 }
 
 export const EmptyWeek: Story = { name: "Empty week", args: { day: "2026-12-28" } }
-export const EmptyWeekPhone: Story = phone(EmptyWeek)
+export const EmptyWeekPhone: Story = { ...phone(EmptyWeek), args: { day: "2026-12-28", view: "week" } }
 
 export const ShortcutsHelp: Story = {
   name: "Shortcuts help",
@@ -337,7 +342,7 @@ export const WeekFivePeople: Story = {
     await expect(await body().findByRole("button", { name: "People: Everyone" })).toBeInTheDocument()
   },
 }
-export const WeekFivePeoplePhone: Story = phone({ ...WeekFivePeople, name: "Week, five people" })
+export const WeekFivePeoplePhone: Story = { ...phone({ ...WeekFivePeople, name: "Week, five people" }), args: { world: teamWorld(5), hidden: [], view: "week" } }
 /** Fifteen people, three shown. The menu has a search box. */
 export const WeekFifteenPeopleThreeShown: Story = {
   name: "Week, fifteen people, three shown",
@@ -392,5 +397,35 @@ export const ReorderStopsNothingToReorder: Story = {
   play: async () => {
     await expect(await body().findByRole("button", { name: "People: Everyone" })).toBeInTheDocument()
     await expect(body().queryByRole("button", { name: "Reorder stops" })).not.toBeInTheDocument()
+  },
+}
+
+// The phone pass (docs/plans/2026-11-26-scheduler-review-research.md): a phone opens on Day for today, as an agenda; Week keeps the clock for one person; two overlapping visits sit side by side.
+export const DayOnePersonPhone: Story = {
+  name: "Day, one person, agenda, phone",
+  globals: PHONE,
+  args: { hidden: ["person_hannah"], view: "day" },
+  play: async () => {
+    await expect(document.querySelector('[data-slot="day-agenda"]')).not.toBeNull()
+    for (const row of document.querySelectorAll<HTMLElement>('[data-slot="agenda-row"] button')) await expect(row.getBoundingClientRect().height).toBeGreaterThanOrEqual(56)
+  },
+}
+export const OpensOnTheDayPhone: Story = {
+  name: "Opens on the day, phone",
+  globals: PHONE,
+  play: async () => {
+    await expect(await body().findByRole("radio", { name: "Day" })).toBeChecked()
+    await expect(document.querySelector('[data-slot="day-agenda"]')).not.toBeNull()
+  },
+}
+export const WeekOnePersonOverlapPhone: Story = {
+  name: "Week, one person, two overlapping visits side by side, phone",
+  globals: PHONE,
+  args: { hidden: ["person_hannah"], view: "week" },
+  play: async () => {
+    const [a, b] = [await body().findByRole("button", { name: /^Aspen Dr/ }), await body().findByRole("button", { name: /^Birch Ln/ })]
+    const [ra, rb] = [a.getBoundingClientRect(), b.getBoundingClientRect()]
+    await expect(Math.abs(ra.top - rb.top)).toBeLessThan(ra.height)
+    await expect(ra.right <= rb.left + 1 || rb.right <= ra.left + 1).toBe(true)
   },
 }

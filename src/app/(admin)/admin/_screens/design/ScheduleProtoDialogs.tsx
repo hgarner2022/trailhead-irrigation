@@ -32,7 +32,8 @@ export function ScheduleProtoDialogs({ p }: { p: Proto }) {
         const minutes = visit ? visit.minutes : job!.minutes
         const service = visit ? visit.service : job!.service
         const point = meta ? { lat: meta.lat, lng: meta.lng } : null
-        const best = p.bestFor({ town, minutes, kind: who.kind, point, excludeId: visit?.id, initialPickId: d.pickId, currentDay: visit?.day, current: visit ? { day: visit.day, start: visit.start === null ? null : `${String(Math.floor(visit.start / 60)).padStart(2, "0")}:${String(visit.start % 60).padStart(2, "0")}`, personName: p.people.find((x) => x.id === visit.personId)?.name ?? "" } : undefined })
+        const bestFor = (m: number) => p.bestFor({ town, minutes: m, kind: who.kind, point, excludeId: visit?.id, initialPickId: d.pickId, currentDay: visit?.day, current: visit ? { day: visit.day, start: visit.start === null ? null : `${String(Math.floor(visit.start / 60)).padStart(2, "0")}:${String(visit.start % 60).padStart(2, "0")}`, personName: p.people.find((x) => x.id === visit.personId)?.name ?? "" } : undefined })
+        const best = bestFor(minutes)
         return (
           <ScheduleDialog
             key={d.id}
@@ -44,6 +45,7 @@ export function ScheduleProtoDialogs({ p }: { p: Proto }) {
             address={visit ? `${visit.title}, ${visit.town}` : `${job!.street}, ${job!.town}`}
             minutes={minutes}
             best={best}
+            bestFor={bestFor}
             onClose={() => p.setDialog(null)}
             onConfirm={(r) => p.schedule(d, r)}
           />

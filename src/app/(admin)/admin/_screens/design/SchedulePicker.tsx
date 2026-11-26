@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { DayCalendar } from "@/components/blocks/DayCalendar"
 import { FormRow } from "@/components/blocks/FormRow"
@@ -118,6 +118,17 @@ export function SchedulePicker({ minutes = 60, firstName, channel = "text", onCh
     setAt("any")
     emit(d, people, "any")
   }
+  // The Length field ranks the times again: a chosen row that no longer fits is cleared (the dialog's own state with no time picked), one that still fits is kept
+  const rowKey = best ? [...best.rows, ...(best.forced ?? [])].map((r) => r.id).join("|") : ""
+  useEffect(() => {
+    if (!best || pickedId === null) return
+    if (![...best.rows, ...(best.forced ?? [])].some((r) => r.id === pickedId)) {
+      setPickedId(null)
+      setAt("any")
+      emit(day, people, "any")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowKey])
   return (
     <div data-slot="schedule-picker" className="flex flex-col gap-4 text-sm">
       {best && (

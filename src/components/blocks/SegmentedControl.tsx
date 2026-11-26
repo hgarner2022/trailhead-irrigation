@@ -22,10 +22,12 @@ export interface SegmentedControlProps {
   onChange: (value: string) => void
   /** what the group chooses, read aloud: "View" */
   label: string
+  /** on a phone the options shrink to their words so a toolbar row fits */
+  dense?: boolean
   className?: string
 }
 
-export function SegmentedControl({ options, value, onChange, label, className }: SegmentedControlProps) {
+export function SegmentedControl({ options, value, onChange, label, dense, className }: SegmentedControlProps) {
   const refs = useRef<(HTMLButtonElement | null)[]>([])
   const move = (event: KeyboardEvent<HTMLButtonElement>, from: number) => {
     const step = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 0
@@ -58,6 +60,7 @@ export function SegmentedControl({ options, value, onChange, label, className }:
             onKeyDown={(e) => move(e, i)}
             className={cn(
               "min-h-11 min-w-16 rounded-md px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              dense && "max-md:min-w-0 max-md:flex-1 max-md:px-2",
               o.disabled ? "cursor-not-allowed text-muted-foreground opacity-50" : "cursor-pointer",
               on ? "bg-navy text-white" : o.disabled ? "" : "text-muted-foreground hover:bg-stone hover:text-foreground",
             )}

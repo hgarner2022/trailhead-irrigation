@@ -37,6 +37,8 @@ export interface TimeBlockProps {
   touch?: boolean
   /** a narrow column (the Week): no avatar, the start time alone */
   compact?: boolean
+  /** two overlapping blocks side by side on a phone: street over time, always two lines */
+  narrow?: boolean
   /** an Any time chip's place in the order the day is driven: 1, 2, 3 */
   order?: number
   onSelect?: (id: string) => void
@@ -50,10 +52,10 @@ export function blockLabel(b: GridBlock, conflict?: string, who?: string): strin
   return [b.title, b.service, b.town, when, who && `with ${who}`, b.done && "done", b.waiting && "waiting on customer", b.planned && "proposed", conflict].filter(Boolean).join(", ")
 }
 
-export function TimeBlock({ block: b, personIndex = 0, initials, who, variant = "block", selected, hovered, conflict, dragging, style, className, rootRef, handleRef, touch, compact, order, onSelect, onHover, onResizeStart }: TimeBlockProps) {
+export function TimeBlock({ block: b, personIndex = 0, initials, who, variant = "block", selected, hovered, conflict, dragging, style, className, rootRef, handleRef, touch, compact, narrow, order, onSelect, onHover, onResizeStart }: TimeBlockProps) {
   const s = personStyle(personIndex)
   const chip = variant === "chip"
-  const detail = detailFor(b.minutes)
+  const detail = narrow ? "two" : detailFor(b.minutes)
   const time = b.start === null ? "Any time" : rangeWords(b.start, b.minutes)
   const lead = b.start === null ? "" : clockWords(b.start, true)
   return (
@@ -105,7 +107,7 @@ export function TimeBlock({ block: b, personIndex = 0, initials, who, variant = 
               {initials && !compact && <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-card text-[10px] font-semibold leading-none text-navy ring-1 ring-navy/20">{initials}</span>}
               <span className="truncate text-xs font-semibold leading-tight">{b.title}</span>
             </span>
-            <span className="mt-0.5 block truncate text-xs tabular-nums text-navy-light">{`${compact && b.start !== null ? clockWords(b.start) : time}${detail === "two" ? `, ${b.town}` : ""}`}</span>
+            <span className="mt-0.5 block truncate text-xs tabular-nums text-navy-light">{`${compact && b.start !== null ? clockWords(b.start) : time}${detail === "two" && !narrow ? `, ${b.town}` : ""}`}</span>
             {detail === "full" && <span className="block truncate text-xs text-navy-light">{`${b.service}, ${b.town}`}</span>}
           </span>
         )}

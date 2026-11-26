@@ -50,16 +50,18 @@ export interface ScheduleDialogProps {
   title?: string
   /** adds a Length field (15 minute steps) above the day, and the open times follow it; absent, the dialog is the reviewed one */
   lengthField?: boolean
+  /** the best times for a given length: with the Length field, the list is ranked again for the new length (rows that no longer fit drop out) */
+  bestFor?: (minutes: number) => BestTimes
 }
 
-export function ScheduleDialog({ verb, first, channel = "text", address, service, signedIn = "Ryan Garner", onClose, onConfirm: confirmed, initialPeople = ["Ryan Garner"], initialCrewText = false, minutes, best: bestProp, title, lengthField }: ScheduleDialogProps) {
+export function ScheduleDialog({ verb, first, channel = "text", address, service, signedIn = "Ryan Garner", onClose, onConfirm: confirmed, initialPeople = ["Ryan Garner"], initialCrewText = false, minutes, best: bestProp, title, lengthField, bestFor }: ScheduleDialogProps) {
   const ctx = useBestTimesContext()
-  const best = bestProp ?? ctx?.best
+  const [length, setLength] = useState(minutes ?? 60)
+  const best = lengthField && bestFor ? bestFor(length) : (bestProp ?? ctx?.best)
   const onConfirm = (r: ScheduleResult) => (ctx && !bestProp ? ctx.record(r, verb) : undefined, confirmed(r))
   const start = best ? [...best.rows, ...(best.forced ?? [])].find((r) => r.id === (best.initialPickId ?? (best.current ? undefined : recommendedId(best.rows)))) : undefined
   const own = best?.current && !start ? best.current : undefined
   const people0 = best && start ? [start.personName] : own ? [own.personName] : initialPeople
-  const [length, setLength] = useState(minutes ?? 60)
   const [pick, setPick] = useState<Pick>({ dayIso: start?.day ?? own?.day, day: start ? dayLabel(start.day) : own ? dayLabel(own.day) : "Tue, Nov 24", time: start ? clockLabel(start.start) : own?.start ? clockLabel(own.start) : "Any time", person: people0[0]!, people: people0, crewText: initialCrewText && people0.some((p) => p !== signedIn), instructions: "" })
   return (
     <ConfirmDialog

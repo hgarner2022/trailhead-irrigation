@@ -53,6 +53,8 @@ export function VisitPeek({ customer, service, when, length, who, address, job, 
     }
   }, [customer, when])
   const facts: [string, string][] = [["Service", service], ["When", when], ["Length", length], ["Who", who], ["Where", address], ["Job", job]]
+  // A plain link out to the device's maps app, not an API call
+  const directions = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
   const primary = canMarkDone && !done
   return (
     <SidePanel
@@ -74,7 +76,21 @@ export function VisitPeek({ customer, service, when, length, who, address, job, 
         {facts.map(([label, value]) => (
           <div key={label} className="contents">
             <dt className="text-muted-foreground">{label}</dt>
-            <dd className="min-w-0 break-words text-foreground">{value}</dd>
+            <dd className="min-w-0 break-words text-foreground">
+              {value}
+              {label === "Where" && (
+                <a
+                  href={directions}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Directions to ${address}`}
+                  data-slot="peek-directions"
+                  className="mt-1 flex min-h-11 w-fit items-center font-medium text-primary-dark underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 md:mt-0 md:inline-flex md:min-h-0 md:pl-3"
+                >
+                  Directions
+                </a>
+              )}
+            </dd>
           </div>
         ))}
       </dl>

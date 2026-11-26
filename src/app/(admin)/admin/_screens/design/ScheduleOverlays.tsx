@@ -13,11 +13,11 @@ import { useWorldState, type WorldStore } from "./schedule-world-store"
 
 const OPENER = "Trailhead: "
 
-/** On a phone a sheet or dialog is open: the toast waits until it closes, so it never covers a row or a button. */
+/** Below 1280 the peek and the sheets are dialogs: the toast waits until it closes, so it never covers a row or a button. */
 function useHeldOnPhone(): boolean {
   const [held, setHeld] = useState(false)
   useEffect(() => {
-    const check = () => setHeld(window.matchMedia("(max-width: 767px)").matches && Boolean(document.querySelector("[role=dialog]")))
+    const check = () => setHeld(window.matchMedia("(max-width: 1279px)").matches && Boolean(document.querySelector("[role=dialog]")))
     check()
     const o = new MutationObserver(check)
     o.observe(document.body, { childList: true, subtree: true })

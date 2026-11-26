@@ -6,6 +6,7 @@ import { worksOn } from "@/lib/admin/calendar"
 import { cn } from "@/lib/utils"
 import { PeopleMenu } from "./PeopleMenu"
 import { AnytimeStrip } from "./AnytimeStrip"
+import { DayAgenda } from "./DayAgenda"
 import { TimeGridColumn } from "./TimeGridColumn"
 import { HourGutter, PersonSubRow, GUTTER } from "./TimeGridHeader"
 import { PHONE_HOUR_PX, conflictMap, visibleRange } from "./time-grid-model"
@@ -35,11 +36,13 @@ export function TimeGridPhone(props: TimeGridProps) {
   const conflicts = useMemo(() => conflictMap(props.blocks.filter((b) => b.day === column?.day), timeOff, names), [props.blocks, column, timeOff, names])
   const all = useMemo(() => [...timed, ...anytime], [timed, anytime])
   if (!column) return null
+  // a Day on a phone is an agenda, and so is a Week day with two or more people (two columns of a clock would be under 150 px each)
+  const agenda = columns.length === 1 || chosen.length > 1
   const go = (n: number) => setDayIndex((i) => Math.min(columns.length - 1, Math.max(0, i + n)))
 
   return (
     <div data-slot="time-grid" data-form="phone" className={cn("min-w-0", props.className)}>
-      <div role="group" aria-label="Day" className="-mx-1 flex snap-x gap-1.5 overflow-x-auto px-1 pb-2">
+      <div role="group" aria-label="Day" className={cn("-mx-1 flex snap-x gap-1.5 overflow-x-auto px-1 pb-2", columns.length === 1 && "hidden")}>
         {columns.map((c, i) => (
           <button key={c.day} type="button" aria-pressed={i === dayIndex} onClick={() => setDayIndex(i)} className={cn(CHIP, "min-w-16 snap-start", i === dayIndex ? "border-navy bg-navy text-white" : "border-border bg-background text-navy")}>
             <span className="font-semibold">{c.label}</span>
@@ -54,9 +57,25 @@ export function TimeGridPhone(props: TimeGridProps) {
       {props.personRow !== false && <div className="pb-2"><PeopleMenu people={people} hidden={hidden} onToggle={(id) => setHidden((h) => (h.includes(id) ? h.filter((x) => x !== id) : people.length - h.length > 1 ? [...h, id] : h))} /></div>}
       {(column.caption || (props.showPersonNames && column.stats)) && (
         <p data-slot="day-stats" className="mb-2 text-xs text-navy-light">
-          {(props.showPersonNames ? [column.caption, column.towns, ...chosen.map((p) => { const s = column.stats?.[p.id]; return s ? `${firstNameOf(p.name)}: ${[s.open, s.driving && `${s.driving} drive`].filter(Boolean).join(", ")}` : null })].filter(Boolean).join(" · ") : column.caption ?? "")}
+          {(props.showPersonNames ? [column.caption, column.towns, ...(agenda ? [] : chosen).map((p) => { const s = column.stats?.[p.id]; return s ? `${firstNameOf(p.name)}: ${[s.open, s.driving && `${s.driving} drive`].filter(Boolean).join(", ")}` : null })].filter(Boolean).join(" · ") : column.caption ?? "")}
         </p>
       )}
+      {agenda ? (
+        <DayAgenda
+          day={column.day}
+          people={chosen.map((p) => ({ id: p.id, name: p.name, first: names(p.id), colour: colourOf(p.id) }))}
+          blocks={all.filter((b) => !b.planned)}
+          timeOff={timeOff.filter((o) => o.day === column.day)}
+          stats={column.stats}
+          drives={props.drives}
+          now={props.now}
+          conflicts={conflicts}
+          selectedId={selectedId}
+          onSelect={props.onSelect}
+          onTimeOffClick={props.onTimeOffClick}
+        />
+      ) : (
+        <>
       <div className="mb-2 flex items-start gap-2" data-slot="anytime-row">
         <span className="w-14 shrink-0 pt-1 text-xs font-medium text-navy-light">Any time</span>
         <div className="min-w-0 flex-1 space-y-1">
@@ -94,6 +113,8 @@ export function TimeGridPhone(props: TimeGridProps) {
           />
         ))}
       </div>
+        </>
+      )}
     </div>
   )
 }

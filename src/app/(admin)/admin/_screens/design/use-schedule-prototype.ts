@@ -75,7 +75,7 @@ export function useScheduleProto(init: ProtoInitial = {}) {
   const [store] = useState<WorldStore>(() => init.store ?? createWorldStore(() => initialState({ visits: world.visits, unscheduled: world.unscheduled, meta: world.meta, timeOff: world.timeOff, was: world.was, ...init.state })))
   const state = useWorldState(store)
   const dispatch = store.dispatch
-  const [view, setView] = useState<View>(init.view ?? "week")
+  const [view, setView] = useState<View>(init.view ?? (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches ? "day" : "week"))  // a phone opens on the day: "what is my day"
   const [day, setDay] = useState(init.day ?? world.today)
   const [panels, setPanels] = useState({ unscheduled: init.panels?.unscheduled ?? false, map: init.panels?.map ?? false })
   const [mapPick, setMapPick] = useState<string | null>(null)

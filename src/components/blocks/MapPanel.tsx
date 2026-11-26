@@ -55,9 +55,9 @@ export function MapPanel({ open, onOpenChange, stops, people, unscheduled, ghost
     <SidePanel variant="docked" open={open} onOpenChange={onOpenChange} title={day ? `Map, ${day}` : "Map"} className={className}>
       <div className="flex flex-col gap-3">
         {days && days.length > 0 && (
-          <div role="group" aria-label="Day on the map" data-slot="map-days" className="flex flex-wrap gap-2">
+          <div role="group" aria-label="Day on the map" data-slot="map-days" className="-mx-1 flex gap-2 overflow-x-auto px-1 md:flex-wrap md:overflow-visible">
             {days.map((d) => (
-              <button key={d.day} type="button" aria-pressed={d.day === dayValue} onClick={() => onDayChange?.(d.day)} className={cn(CHIP, "px-3", d.day === dayValue ? "border-navy bg-navy text-white" : "border-border bg-background text-navy")}>
+              <button key={d.day} type="button" aria-pressed={d.day === dayValue} onClick={() => onDayChange?.(d.day)} className={cn(CHIP, "shrink-0 px-3", d.day === dayValue ? "border-navy bg-navy text-white" : "border-border bg-background text-navy")}>
                 {d.label}
               </button>
             ))}
@@ -80,7 +80,7 @@ export function MapPanel({ open, onOpenChange, stops, people, unscheduled, ghost
           onHover={(id) => onHover?.(id ?? null)}
           selectedId={selectedId}
           onSelect={(id) => onSelect?.(id)}
-          className="h-72 lg:h-80"
+          className="h-[60dvh] min-h-72 lg:h-80"
         />
         {driving && driving.some((d) => d.minutes > 0) && (
           <ul data-slot="map-driving" aria-label="Driving" className="space-y-0.5 text-sm text-navy-light">

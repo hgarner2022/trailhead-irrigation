@@ -37,6 +37,7 @@ export function ScheduleProtoCalendar({ p }: { p: Proto }) {
         people={p.shown}
         today={p.today}
         selectedDay={day}
+        phoneHead={false}
         onOpenDay={p.openDay}
         onMonthChange={(m) => p.setDay(`${m}-01`)}
       />

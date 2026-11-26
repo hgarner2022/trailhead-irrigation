@@ -167,10 +167,10 @@ export function TimeGridColumn(p: TimeGridColumnProps) {
       ))}
 
       {packLanes(blocks, range, hourPx).map(({ block: b, top, height: h, lane, lanes }) => {
-        // on a phone, blocks that overlap step across the column instead of splitting it: each keeps nearly the full width, so its street and time stay readable, and a later block sits over the lower part of the one before
-        const style = p.touch && lanes > 1 ? { top, height: h, left: `${lane * 12 + 2}px`, width: `calc(100% - ${(lanes - 1) * 12 + 4}px)`, zIndex: lane + 1 } : { top, height: h, left: `calc(${(lane * 100) / lanes}% + 2px)`, width: `calc(${100 / lanes}% - 4px)` }
+        // on a phone, blocks that overlap sit side by side in their person's column (the desktop split), each with its time and street on two lines; the overlap outline stays
+        const style = { top, height: h, left: `calc(${(lane * 100) / lanes}% + 2px)`, width: `calc(${100 / lanes}% - 4px)` }
         const common = {
-          block: b, personIndex, initials: person.initials, who: person.name, selected: p.selectedId === b.id, hovered: p.hoverId === b.id, conflict: p.conflicts.get(b.id), touch: p.touch, compact: p.compact || (p.touch && lanes > 1),
+          block: b, personIndex, initials: person.initials, who: person.name, selected: p.selectedId === b.id, hovered: p.hoverId === b.id, conflict: p.conflicts.get(b.id), touch: p.touch, compact: p.compact || (p.touch && lanes > 1), narrow: p.touch && lanes > 1,
           style: { ...style, position: "absolute" as const }, onSelect: p.onSelect, onHover: p.onHover,
           onResizeStart: p.interactive && !b.done && !b.planned ? (e: React.PointerEvent<HTMLElement>) => p.onResizeStart?.(b, e) : undefined,
         }
