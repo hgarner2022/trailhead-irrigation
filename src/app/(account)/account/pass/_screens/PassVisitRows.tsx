@@ -53,7 +53,7 @@ export function PassVisitRows({ pass, onChangePreference, times, note = true }: 
                   </span>
                 )}
               </span>
-              <span className="flex flex-wrap items-center gap-3">
+              <span className="flex flex-wrap items-center gap-3 empty:hidden">
                 {row.label !== "Preferred" && <StatusPill status={row.status} label={row.label} />}
                 <AddToCalendar pass={pass} visit={visit} name={row.name} />
               </span>
