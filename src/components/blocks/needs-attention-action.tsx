@@ -93,10 +93,10 @@ export function AttentionAction({ item, onAction, onDismiss }: AttentionActionPr
     <div className="flex shrink-0 flex-col items-end gap-1">
       {gone && <span data-dismissed hidden />}
       <div className="flex items-center gap-1">
-        <Button size="sm" variant="outline" data-slot="attention-action" className="min-h-11 shrink-0" aria-label={`${label}: ${item.message}`} disabled={pending} onClick={run}>
+        <Button size="touch-sm" variant="outline" data-slot="attention-action" className="shrink-0" aria-label={`${label}: ${item.message}`} disabled={pending} onClick={run}>
           {label}
         </Button>
-        <Button size="sm" variant="ghost" data-slot="attention-dismiss" className="min-h-11 shrink-0 text-muted-foreground" aria-label={`Dismiss: ${item.message}`} onClick={() => void dismiss()}>
+        <Button size="touch-sm" variant="ghost" data-slot="attention-dismiss" className="shrink-0 text-muted-foreground" aria-label={`Dismiss: ${item.message}`} onClick={() => void dismiss()}>
           Dismiss
         </Button>
       </div>

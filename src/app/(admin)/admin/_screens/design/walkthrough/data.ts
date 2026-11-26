@@ -1,7 +1,7 @@
 import type { SearchHit } from "@/lib/admin/search-hit"
 import { CUSTOMER_STATUS_WORDS } from "@/lib/customers/status"
 import { type CustomerPageData, customerPageOf, withStatus } from "../customer-fixtures"
-import { INVOICE_ROWS, dayWords, invoicePageOf, money, type InvoiceFixture, type InvoiceListRow, type InvoicePageData } from "../invoice-fixtures"
+import { INVOICE_ROWS, invoicePageOf, type InvoiceFixture, type InvoiceListRow, type InvoicePageData } from "../invoice-fixtures"
 import { allRows, GRID_ROWS, contactOf, customerIdOf, customerOfJob, isActiveAgain, isRealCustomer, rowOf } from "./jobs-data"
 import type { Route } from "./routes"
 import { readChoice } from "@/app/_flows/walkthrough/marketing-choice"
@@ -13,7 +13,7 @@ import { recordHref } from "@/components/blocks/record-preview-model"
 import { walkQuotes } from "../quotes/quote-store"
 import { buildWorldCustomer, quoteRowsFor } from "./customer-build"
 import { worldCustomerIds } from "./world-customers"
-
+import { shortDate, money } from "@/lib/admin/format"
 export * from "./jobs-data"
 
 // One consistent world for the walkthrough (docs/plans/2026-11-19-prototype-walkthrough-spec.md, section 2), built from the design fixtures and
@@ -129,7 +129,7 @@ export function customerRows(): CustomerListRow[] {
     const p = customerPage(id)
     if (!p) return []
     const open = p.jobs.find((j) => j.open)
-    return [{ id, name: p.name, street: p.address.join(", ").replace(", CO", ""), next: open ? (open.day ? (open.day.iso === "2026-11-20" ? "Today" : dayWords(open.day.iso)) : "Unscheduled") : "None", unpaid: Number((p.unpaid ?? "$0").replace(/\D/g, "")), pass: "" }]
+    return [{ id, name: p.name, street: p.address.join(", ").replace(", CO", ""), next: open ? (open.day ? (open.day.iso === "2026-11-20" ? "Today" : shortDate(open.day.iso)) : "Unscheduled") : "None", unpaid: Number((p.unpaid ?? "$0").replace(/\D/g, "")), pass: "" }]
   })
   return [...CUSTOMER_ROWS, ...others]
 }
@@ -186,12 +186,12 @@ export function invoicePage(id: string): InvoicePageData | null {
     job: { id: r.jobId, name: r.jobName, ...jobStatus, next: "None ahead", total: amountWords },
     amount: amountWords,
     unpaid: r.balance ? amountWords : "$0",
-    sent: dayWords(r.sentOn),
-    due: dayWords(r.dueOn),
-    paidOn: r.paidOn ? { label: `${dayWords(r.paidOn)}, card`, paymentId: `p-${r.id}` } : undefined,
+    sent: shortDate(r.sentOn),
+    due: shortDate(r.dueOn),
+    paidOn: r.paidOn ? { label: `${shortDate(r.paidOn)}, card`, paymentId: `p-${r.id}` } : undefined,
     lines,
     totals: r.status === "paid" ? paid : r.status === "canceled" ? none : owed,
-    payments: r.paidOn ? base.payments.map((p) => ({ ...p, id: `p-${r.id}`, date: dayWords(r.paidOn!), jobId: r.jobId, jobName: r.jobName, amount: amountWords })) : [],
+    payments: r.paidOn ? base.payments.map((p) => ({ ...p, id: `p-${r.id}`, date: shortDate(r.paidOn!), jobId: r.jobId, jobName: r.jobName, amount: amountWords })) : [],
     reminders: base.reminders.map((m) => ({ ...m, to: swapAll(m.to, pairs) })),
     messages: base.messages.map((m) => ({ ...m, body: swapAll(m.body, pairs) })),
     notes: base.notes.map((n) => ({ ...n, what: swapAll(n.what, pairs) })),

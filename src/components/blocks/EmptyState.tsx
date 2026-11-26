@@ -65,7 +65,7 @@ export function EmptyState({ title, line, action, icon: Icon, scene, size = "md"
           <Icon className="size-5" aria-hidden />
         </span>
       )}
-      <Title className="font-display text-xl text-navy">{title}</Title>
+      <Title className="type-admin-card text-navy">{title}</Title>
       {line && <p className="mt-1 max-w-sm text-sm text-muted-foreground">{line}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>

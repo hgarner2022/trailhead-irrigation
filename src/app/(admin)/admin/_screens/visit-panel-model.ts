@@ -4,7 +4,7 @@
  * booked work) and the messages that are about it. Everything is read from `AdminData`; nothing is derived twice.
  * Dates are Mountain calendar days (YYYY-MM-DD).
  */
-import { TIME_ZONE } from "@/lib/admin/format"
+import { TIME_ZONE, shortDay } from "@/lib/admin/format"
 import { jobTotal } from "@/lib/jobs/lines"
 import { NO_TAX, type TaxRule } from "@/lib/jobs/tax"
 import { dayOf } from "@/lib/admin/calendar"
@@ -15,14 +15,9 @@ import { KIND_LABEL, type OfficeKind } from "@/lib/admin/visit-defaults"
 import { billState, type BillState } from "./bill-model"
 import type { AdminData, Client, JobLine, Message, Pass, SoldJob, Visit } from "@/lib/admin/types"
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-/** "Thu, Oct 14" for a calendar day. */
-export function dayLabel(day: string): string {
-  const d = new Date(`${day}T12:00:00Z`)
-  return `${WEEKDAYS[d.getUTCDay()]}, ${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`
-}
+/** "Thu, Oct 14" for a calendar day (`shortDay`; the name stays for the screens that import it). */
+export const dayLabel = shortDay
 
 /** "8:00 am" for "08:00". */
 export function clockLabel(time: string): string {

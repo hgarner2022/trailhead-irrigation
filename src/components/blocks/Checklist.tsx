@@ -41,10 +41,10 @@ function Item({ item, onToggle, onNote, onPhoto }: { item: ChecklistItem; onTogg
         <span id={`${id}-l`} className={cn("min-w-0 flex-1 text-sm font-medium", item.done && "text-muted-foreground line-through")}>
           {item.label}
         </span>
-        <Button type="button" variant="ghost" className="min-h-11 px-2 text-muted-foreground" aria-label={`Add a note to ${item.label}`} onClick={() => setNoting((n) => !n)}>
+        <Button size="touch" type="button" variant="ghost" className="px-2 text-muted-foreground" aria-label={`Add a note to ${item.label}`} onClick={() => setNoting((n) => !n)}>
           <StickyNote className="size-4" aria-hidden />
         </Button>
-        <Button type="button" variant="ghost" className="min-h-11 px-2 text-muted-foreground" aria-label={`Add a photo to ${item.label}`} onClick={onPhoto}>
+        <Button size="touch" type="button" variant="ghost" className="px-2 text-muted-foreground" aria-label={`Add a photo to ${item.label}`} onClick={onPhoto}>
           <Camera className="size-4" aria-hidden />
         </Button>
       </div>

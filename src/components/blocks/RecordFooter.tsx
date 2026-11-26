@@ -70,7 +70,7 @@ export function RecordFooter({ primary, secondary, more = [], destructive, destr
       {(more.length > 0 || inMenu) && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button type="button" variant="outline" className="min-h-11 px-4">
+            <Button size="touch" type="button" variant="outline" className="px-4">
               More
             </Button>
           </DropdownMenuTrigger>

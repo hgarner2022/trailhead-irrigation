@@ -148,7 +148,7 @@ export function QuotesList({ quotes, now, onRemind, onNewQuote, initialTab = "al
 
   return (
     <div data-slot="quotes-list" className="flex flex-col gap-4">
-      <PageHeader title="Quotes" context={rows.length ? `${t.waiting.count} waiting, ${money(t.waiting.total)}.` : "No quotes yet."} primary={onNewQuote ? <Button type="button" className="min-h-11" onClick={onNewQuote}>New quote</Button> : undefined} />
+      <PageHeader title="Quotes" context={rows.length ? `${t.waiting.count} waiting, ${money(t.waiting.total)}.` : "No quotes yet."} primary={onNewQuote ? <Button size="touch" type="button" onClick={onNewQuote}>New quote</Button> : undefined} />
       <SummaryBand
         items={band}
         className={band.length === 5 ? "lg:grid-cols-5 [&>:last-child:nth-child(odd)]:col-span-2 lg:[&>:last-child:nth-child(odd)]:col-span-1" : undefined}

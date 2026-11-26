@@ -63,7 +63,7 @@ export function TripRow({ title, detail, pills, money, moneyTone, actions = [], 
       {!onToggle && actions.length > 0 && (
         <div className="mt-1 flex flex-wrap gap-2">
           {actions.slice(0, 2).map((a) => (
-            <Button key={a.label} type="button" variant="outline" className="min-h-11" disabled={a.disabled} onClick={a.onClick}>
+            <Button size="touch" key={a.label} type="button" variant="outline" disabled={a.disabled} onClick={a.onClick}>
               {a.label}
             </Button>
           ))}

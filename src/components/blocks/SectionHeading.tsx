@@ -1,9 +1,10 @@
 import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
-// The one heading for a part of an app screen (docs/DESIGN.md, "The recipe"). `section` is a record panel's heading, an h3 in the
-// display face at 18px, navy, with a quiet Edit or Add link at its right; `card` is the title of a card on a screen, an h2 under the
-// page's h1 at 24px; `sub` is a part inside a card (Payments, Invoices): one step under the card title, 16px semibold in the body face. Merges the panel heading and the card title so a heading is one component with two sizes. Pure render, server component.
+// The one heading for a part of an app screen (docs/DESIGN.md, "The recipe" and "The admin type scale"). Two roles: `card` is the title of
+// a card on a screen, an h2 under the page's h1, `type-admin-card` (display face, 20px, 600); `section` is a part inside a card or a record
+// panel, an h3, `type-admin-section` (body face, 16px, 600), with a quiet Edit or Add link at its right. `sub` is another name for `section`
+// (Payments, Invoices inside a card). Pure render, server component.
 
 export interface SectionHeadingProps {
   children: ReactNode
@@ -17,7 +18,7 @@ export interface SectionHeadingProps {
   className?: string
 }
 
-const SIZE = { section: "font-display text-lg leading-tight", card: "font-display text-2xl font-semibold leading-none", sub: "font-sans! text-base font-semibold leading-snug!" } as const
+const SIZE = { section: "type-admin-section", card: "type-admin-card", sub: "type-admin-section" } as const
 
 export function SectionHeading({ children, id, level = 3, size = level === 2 ? "card" : "section", action, className }: SectionHeadingProps) {
   const Tag = level === 2 ? "h2" : "h3"

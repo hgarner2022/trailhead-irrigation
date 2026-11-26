@@ -48,10 +48,10 @@ export function SaveBar({ count, lines = [], problems = [], pending = false, mes
         </p>
         {count > 0 && (
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onDiscard} disabled={pending} className="min-h-11 md:min-h-9">
+            <Button size="adaptive" variant="outline" onClick={onDiscard} disabled={pending}>
               Discard
             </Button>
-            <Button onClick={onSave} disabled={pending || problems.length > 0} className="min-h-11 md:min-h-9">
+            <Button size="adaptive" onClick={onSave} disabled={pending || problems.length > 0}>
               Save
             </Button>
           </div>

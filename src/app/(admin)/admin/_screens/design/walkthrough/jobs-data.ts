@@ -1,11 +1,11 @@
 import type { GridJob, GridStatus, BillingState } from "../JobsGridDesign"
 import { type JobPageData, type JobState, jobPageOf } from "../job-fixtures"
-import { money } from "../invoice-fixtures"
 import { passPageOf, type MultiTripData } from "../trip-fixtures"
 import type { PageCustomer } from "../JobPageTrips"
 import { jobGridRow } from "../quotes/quote-grid"
 import { walkQuotes } from "../quotes/quote-store"
 import { clearWorldCustomers, worldCustomer } from "./world-customers"
+import { money } from "@/lib/admin/format"
 
 // The walkthrough's jobs (see data.ts for the world): the Jobs grid's rows and the page each one opens.
 

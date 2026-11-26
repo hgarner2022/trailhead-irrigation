@@ -113,8 +113,8 @@ function Frame({ title, description, pills, back, children, footer }: Pick<SideP
               <span className="truncate">{back.label}</span>
             </button>
           ) : null}
-          <SheetTitle className="font-display text-2xl font-semibold leading-tight text-navy">{title}</SheetTitle>
-          {description ? <SheetDescription className="mt-1 truncate" title={description}>{description}</SheetDescription> : null}
+          <SheetTitle className="type-heading text-navy">{title}</SheetTitle>
+          {description ? <SheetDescription className="type-admin-meta! mt-1 truncate" title={description}>{description}</SheetDescription> : null}
           {pills ? <div data-slot="side-panel-pills" className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">{pills}</div> : null}
         </div>
         <SheetClose asChild>

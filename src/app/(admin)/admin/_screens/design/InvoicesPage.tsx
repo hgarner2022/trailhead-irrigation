@@ -15,7 +15,8 @@ import { CollectDialog } from "./CustomerDialogs"
 import { CustomerChip, InvoiceChip, JobChip, useRowOpen } from "./RecordChips"
 import { ReminderDialog } from "./ReminderDialog"
 import type { Reach } from "./confirm-copy"
-import { INVOICE_PILL, INVOICE_STATUSES, dayWords, invoiceTotals, money, sortInvoiceRows, type InvoiceListRow } from "./invoice-fixtures"
+import { INVOICE_PILL, INVOICE_STATUSES, invoiceTotals, sortInvoiceRows, type InvoiceListRow } from "./invoice-fixtures"
+import { shortDate, money } from "@/lib/admin/format"
 
 // Invoices, the primary nav item (docs/plans/2026-11-19-job-object-design.md, Hannah's rules of Nov 19 2026), in the shape of the Jobs grid: a
 // summary band (Unpaid, Past due, Sent this month, Paid this month; each tile sets the Status filter, and a tile with nothing is plain), then
@@ -83,7 +84,7 @@ export function InvoicesPage({ rows, initialFilters = [] }: InvoicesPageProps) {
         accessorFn: (r) => `${r.number} ${r.customer} ${r.street}`,
         header: "Invoice",
         meta: { bare: true, csv: (r) => (r as InvoiceListRow).number },
-        cell: ({ row: { original: r } }) => <InvoiceChip table id={r.id} number={r.number} customer={r.customer} status={INVOICE_PILL[r.status].pill} statusLabel={INVOICE_PILL[r.status].label} total={money(r.amount)} balance={money(r.balance)} due={dayWords(r.dueOn)} />,
+        cell: ({ row: { original: r } }) => <InvoiceChip table id={r.id} number={r.number} customer={r.customer} status={INVOICE_PILL[r.status].pill} statusLabel={INVOICE_PILL[r.status].label} total={money(r.amount)} balance={money(r.balance)} due={shortDate(r.dueOn)} />,
       },
       { id: "label", accessorFn: (r) => r.number, header: "Invoice number" },
       { id: "jobText", accessorFn: (r) => r.jobName, header: "Job name" },
@@ -91,8 +92,8 @@ export function InvoicesPage({ rows, initialFilters = [] }: InvoicesPageProps) {
       { id: "customer", accessorFn: (r) => r.customer, header: "Customer", cell: ({ row: { original: r } }) => <CustomerChip table doNotService={r.doNotService} id={r.customerId} name={r.customer} address={r.street} unpaid={money(r.balance)} /> },
       { id: "jobName", accessorFn: (r) => r.jobName, header: "Job", cell: ({ row: { original: r } }) => <JobChip table id={r.jobId} name={r.jobName} customer={r.customer} status="done" total={money(r.amount)} /> },
       { id: "amount", accessorFn: (r) => r.amount, header: "Amount", meta: { align: "right", csv: (r) => String((r as InvoiceListRow).amount) }, cell: ({ row: { original: r } }) => money(r.amount) },
-      { id: "datesText", accessorFn: (r) => `Sent ${dayWords(r.sentOn)}, due ${dayWords(r.dueOn)}`, header: "Sent and due" },
-      { id: "due", accessorFn: (r) => r.dueOn, header: "Due", cell: ({ row: { original: r } }) => dayWords(r.dueOn) },
+      { id: "datesText", accessorFn: (r) => `Sent ${shortDate(r.sentOn)}, due ${shortDate(r.dueOn)}`, header: "Sent and due" },
+      { id: "due", accessorFn: (r) => r.dueOn, header: "Due", cell: ({ row: { original: r } }) => shortDate(r.dueOn) },
       { id: "status", accessorFn: (r) => r.status, header: "Status", meta: { csv: (r) => INVOICE_PILL[(r as InvoiceListRow).status].label }, cell: ({ row: { original: r } }) => <StatusPill status={INVOICE_PILL[r.status].pill} label={INVOICE_PILL[r.status].label} /> },
       { id: "who", accessorFn: (r) => r.who, header: "Who" },
       {
@@ -146,7 +147,7 @@ export function InvoicesPage({ rows, initialFilters = [] }: InvoicesPageProps) {
         emptyTitle="No invoices yet"
         emptyLine="An invoice shows here when a done job is sent to be paid."
       />
-      {remind && <ReminderDialog who={reachOf(remind)} invoice={{ number: remind.number, amount: money(remind.amount), service: remind.jobName.toLowerCase(), dueOn: dayWords(remind.dueOn), pastDue: remind.status === "past-due" }} onClose={() => setRemind(null)} onSend={() => toast(`Reminder texted to ${remind.customer.split(" ")[0]}`)} />}
+      {remind && <ReminderDialog who={reachOf(remind)} invoice={{ number: remind.number, amount: money(remind.amount), service: remind.jobName.toLowerCase(), dueOn: shortDate(remind.dueOn), pastDue: remind.status === "past-due" }} onClose={() => setRemind(null)} onSend={() => toast(`Reminder texted to ${remind.customer.split(" ")[0]}`)} />}
       {collect && <CollectDialog who={reachOf(collect)} amount={collect.balance} card={{ brand: "Visa", last4: "4242" }} invoice={{ number: collect.number, jobName: collect.jobName, amount: money(collect.balance) }} onClose={() => setCollect(null)} />}
     </div>
   )

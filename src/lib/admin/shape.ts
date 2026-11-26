@@ -7,7 +7,7 @@ import type { PhotoItem } from "@/lib/photos/types"
 import { lastVisitAt } from "./last-visit"
 import { zonedToUtc } from "./calendar"
 import type { YardWire } from "./yard"
-import { fullName } from "./format"
+import { fullName, shortDate } from "./format"
 import { causeOf, groupAttention, type QueueAttention } from "./attention-groups"
 import { jobTotal, visitPrice } from "@/lib/jobs/lines"
 import { taxRuleOf, type TaxRule } from "@/lib/jobs/tax"
@@ -395,8 +395,6 @@ export function monthTotals(i: Pick<ShapeInput, "visits" | "mirror" | "paymentRo
 const FOURTEEN_DAYS = 14 * DAY_MS
 
 const KIND_WORDS: Record<string, string> = { "turn-on": "spring turn-on", inspection: "inspection", blowout: "fall blowout", repair: "repair", install: "installation" }
-const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-const shortDay = (day: string) => `${SHORT_MONTHS[Number(day.slice(5, 7)) - 1]} ${Number(day.slice(8, 10))}`
 const possessive = (name: string) => `${name}'s`
 
 /**
@@ -410,7 +408,7 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[], jobs: SoldJob[] = 
   for (const v of all) {
     const job = visitJob(v, i.today, ZONE)
     if (job.notClosed && job.day && job.day >= earliest)
-      out.push({ kind: "not-closed", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} on ${shortDay(job.day)} is not marked done`, since: instantOf(job.day, v.startTime ?? null) })
+      out.push({ kind: "not-closed", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} on ${shortDate(job.day)} is not marked done`, since: instantOf(job.day, v.startTime ?? null) })
   }
   const appIds = new Set(app.map((v) => v.id))
   const cardOf = new Map(i.customers.filter((c) => c.card?.last4).map((c) => [c.id, c.card!]))
@@ -449,7 +447,7 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[], jobs: SoldJob[] = 
   for (const j of jobs) {
     const bill = j.money && j.money.owed <= 0 ? undefined : j.invoice
     if (!bill || bill.dueOn >= i.today) continue
-    out.push({ kind: "overdue", key: `invoice-${bill.id}@${bill.dueOn}`, invoiceId: bill.id, jobId: j.id, customerId: j.customerId, message: `${possessive(names.get(j.customerId) ?? "A customer")} bill of $${bill.total} was due ${shortDay(bill.dueOn)}`, since: instantOf(bill.dueOn, "12:00") })
+    out.push({ kind: "overdue", key: `invoice-${bill.id}@${bill.dueOn}`, invoiceId: bill.id, jobId: j.id, customerId: j.customerId, message: `${possessive(names.get(j.customerId) ?? "A customer")} bill of $${bill.total} was due ${shortDate(bill.dueOn)}`, since: instantOf(bill.dueOn, "12:00") })
   }
   for (const v of all)
     if (appIds.has(v.id) && !v.isPass && v.status === "unscheduled")

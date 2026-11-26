@@ -85,7 +85,7 @@ function Strip({ stack, onJump, onStartOver }: { stack: Route[]; onJump: (index:
           )
         })}
       </ol>
-      <Button type="button" variant="outline" className="min-h-11" onClick={onStartOver}>Start over</Button>
+      <Button size="touch" type="button" variant="outline" onClick={onStartOver}>Start over</Button>
     </nav>
   )
 }

@@ -75,7 +75,7 @@ export function DayField({ label, value, start = "", onChange, from, to, timed =
             onChange={(next) => onChange(next.day ?? "", next.day !== value ? start : (next.start ?? ""))}
           />
           {clearable && value && (
-            <Button type="button" variant="ghost" className="mt-2 min-h-11 px-0 font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent" onClick={() => onChange("", "")}>
+            <Button size="touch" type="button" variant="ghost" className="mt-2 px-0 font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent" onClick={() => onChange("", "")}>
               Clear the day
             </Button>
           )}
@@ -136,7 +136,7 @@ export function DayPopoverField({ id, label, value, onChange, from, to, yearless
       <PopoverContent align="start" aria-label={label} data-slot="day-popover" className="max-h-[min(80svh,var(--radix-popover-content-available-height))] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto p-3 data-[state=closed]:animate-none data-[state=open]:animate-none">
         <DayCalendar offers={[]} free={range} timed={false} yearless={yearless} density="sheet" headingLevel={3} legend={label} value={{ day: iso || null, start: null }} onChange={(next) => next.day && set(next.day)} />
         {clearable && value && (
-          <Button type="button" variant="ghost" className="mt-2 min-h-11 px-0 font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent" onClick={() => set(null)}>
+          <Button size="touch" type="button" variant="ghost" className="mt-2 px-0 font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent" onClick={() => set(null)}>
             Clear the day
           </Button>
         )}

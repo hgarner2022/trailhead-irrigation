@@ -13,13 +13,13 @@ import { FIELD } from "./CustomerPicker"
 import type { JobActions } from "./job-actions-types"
 import { FORM_STATUS } from "./use-runner"
 import { JobLines } from "./VisitLines"
+import { money } from "@/lib/admin/format"
 
 // The Lines section of the job panel: what was sold, one row each, a canceled line struck through, an unpriced line saying
 // Quote later, a Tax line only when there is sales tax, and the total. On an open one-off job a manager changes the price and quantity of a line in place (the total
 // follows), cancels a line, and adds one from the active catalogue or as a free line, each in one dialog. A tech, a pass and a job paid in full
 // see the plain list. Every change goes through `lines.add`, `lines.update` and `lines.cancel`, which refuse what is wrong.
 
-const money = (n: number) => `$${n.toLocaleString("en-US")}`
 const FREE = "free"
 
 /** What a canceled job's canceled lines were worth, whole dollars: shown struck through where the total would be, so "Quote later" stays the word for lines nobody has priced. */
@@ -64,7 +64,7 @@ function EditLineDialog({ line, actions, open, onOpenChange }: { line: JobLine; 
           <Input inputMode="numeric" value={price} placeholder="Quote later" onChange={(e) => setPrice(e.target.value.replace(/\D/g, ""))} className="min-h-11" />
         </FormRow>
       </div>
-      <Button type="button" variant="ghost" className="min-h-11 self-start text-destructive hover:text-destructive" disabled={cancelling} onClick={cancel}>
+      <Button size="touch" type="button" variant="ghost" className="self-start text-destructive hover:text-destructive" disabled={cancelling} onClick={cancel}>
         Cancel line
       </Button>
       <p role="alert" className={`${FORM_STATUS} text-destructive`}>
@@ -161,7 +161,7 @@ export function JobLinesSection({ jobId, lines, total, tax = 0, data, editable, 
                   <span className="tabular-nums">{line.unitPrice > 0 ? money(line.quantity * line.unitPrice) : ""}</span>
                 </RecordRowEnd>
                 {!line.cancelledAt && (
-                  <Button type="button" variant="ghost" size="sm" className="min-h-11 shrink-0 no-underline" aria-label={`Edit ${line.name}`} onClick={() => setEditing(line.id)}>
+                  <Button type="button" variant="ghost" size="touch-sm" className="shrink-0 no-underline" aria-label={`Edit ${line.name}`} onClick={() => setEditing(line.id)}>
                     Edit
                   </Button>
                 )}
@@ -184,7 +184,7 @@ export function JobLinesSection({ jobId, lines, total, tax = 0, data, editable, 
         <span className="tabular-nums"><TotalWords total={total} lines={lines} /></span>
       </p>
       {editable && !adding && !addInFooter && (
-        <Button type="button" variant="outline" className="mt-3 min-h-11" onClick={() => setAdding(true)}>
+        <Button size="touch" type="button" variant="outline" className="mt-3" onClick={() => setAdding(true)}>
           Add a line
         </Button>
       )}

@@ -2,7 +2,7 @@
  * The "Your days" step's data, pure: the days the server offers for each visit, the day the customer holds for each, and the
  * words for a day and its window. The first offer is preselected, so Continue with nothing touched gives good dates.
  */
-import { writtenDate } from "@/lib/admin/format"
+import { longDay } from "@/lib/admin/format"
 
 export type DayKind = "turn-on" | "inspection" | "blowout"
 
@@ -24,10 +24,8 @@ export interface DayChoice extends DayOffer {
 
 export const DAY_KINDS: readonly DayKind[] = ["turn-on", "inspection", "blowout"]
 
-const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-
-/** "Tuesday, May 5": the day as it is written on a card and in the done step. */
-export const dayWords = (iso: string) => `${WEEKDAYS[new Date(`${iso}T12:00:00Z`).getUTCDay()]}, ${writtenDate(iso)}`
+/** "Tuesday, May 5": the day as it is written on a card and in the done step (`longDay`). */
+export const dayWords = longDay
 
 /** The heading over each visit's three cards. */
 export const DAY_HEADINGS: Record<DayKind, string> = { "turn-on": "Your spring turn-on", inspection: "Your July inspection", blowout: "Your fall blowout" }

@@ -114,7 +114,7 @@ export function ConfirmButton({ label, title, description, confirm, onConfirm }:
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Button variant="ghost" size="sm" aria-label={label} className="min-h-11 md:min-h-0" onClick={() => setOpen(true)}>
+      <Button variant="ghost" size="adaptive-sm" aria-label={label} onClick={() => setOpen(true)}>
         {label.split(" ")[0]}
       </Button>
       <ConfirmDialog

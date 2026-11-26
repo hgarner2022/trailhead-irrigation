@@ -69,7 +69,7 @@ export function RequestRows({ rows, now, onRemind, onDismiss, readOnly, classNam
               <Link href="/admin/requests?status=new" className={LINK}>
                 <Body icon={Inbox} tone={TONE_WAIT} name="New requests" message={row.count === 1 ? "1 new request" : `${row.count} new requests`} sub={`${row.count === 1 ? "Came in" : "Oldest came in"} ${relativeTime(row.oldestAt, now)}`} since={row.oldestAt} />
               </Link>
-              <Button asChild variant="outline" className="min-h-11 self-start sm:self-center">
+              <Button size="touch" asChild variant="outline" className="self-start sm:self-center">
                 <Link href="/admin/requests?status=new">Open requests</Link>
               </Button>
             </li>
@@ -81,7 +81,7 @@ export function RequestRows({ rows, now, onRemind, onDismiss, readOnly, classNam
               <Link href="/admin/quotes?status=sent" className={LINK}>
                 <Body icon={FileText} tone={TONE_WAIT} name="Quote waiting" message={`${row.customer}, ${row.service}, ${row.amount}`} sub={`Sent ${relativeTime(row.sentAt, now)}${row.remindedAt ? `. Reminded ${relativeTime(row.remindedAt, now)}` : ""}`} since={row.sentAt} />
               </Link>
-              <Button type="button" variant="outline" className="min-h-11 self-start sm:self-center" disabled={row.remindedToday} onClick={() => onRemind?.(row)}>
+              <Button size="touch" type="button" variant="outline" className="self-start sm:self-center" disabled={row.remindedToday} onClick={() => onRemind?.(row)}>
                 {row.remindedToday ? "Reminded today" : "Remind"}
               </Button>
             </li>
@@ -93,7 +93,7 @@ export function RequestRows({ rows, now, onRemind, onDismiss, readOnly, classNam
             <Link href={row.href ?? recordHref.job(row.jobId)} className={LINK}>
               <Body icon={approved ? CircleCheck : CircleX} tone={approved ? "bg-success/10 text-success" : "bg-stone text-muted-foreground"} name="Quote decided" message={`${row.customer} ${approved ? "approved" : "declined"} a ${row.amount} quote`} sub={relativeTime(row.at, now)} since={row.at} />
             </Link>
-            <Button type="button" variant="outline" className="min-h-11 self-start sm:self-center" onClick={() => (setGone((g) => [...g, rowKey(row)]), onDismiss?.(row))}>
+            <Button size="touch" type="button" variant="outline" className="self-start sm:self-center" onClick={() => (setGone((g) => [...g, rowKey(row)]), onDismiss?.(row))}>
               Dismiss
             </Button>
           </li>

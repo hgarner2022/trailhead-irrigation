@@ -19,13 +19,11 @@ export function BillSent({ invoice, actions }: { invoice: AdminInvoice; actions?
       <p className="font-medium">{billWords(invoice)}</p>
       <p className="mt-1 text-muted-foreground">{`${invoice.number}, $${invoice.total.toLocaleString("en-US")}`}</p>
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        <Button
+        <Button size="touch"
           type="button"
           variant="outline"
-          className="min-h-11"
           disabled={pending}
-          onClick={() => (actions ? run(() => actions.remindBill(invoice.id), undefined, "Reminder sent.") : console.info("remind", invoice.id))}
-        >
+          onClick={() => (actions ? run(() => actions.remindBill(invoice.id), undefined, "Reminder sent.") : console.info("remind", invoice.id))}>
           Remind
         </Button>
         {invoice.payUrl && (
@@ -46,13 +44,11 @@ export function SendBill({ jobId, actions }: { jobId: string; actions?: VisitAct
   const { pending, error, done, run } = useRunner()
   return (
     <div data-slot="send-bill">
-      <Button
+      <Button size="touch"
         type="button"
         variant="outline"
-        className="min-h-11"
         disabled={pending}
-        onClick={() => (actions ? run(() => actions.sendBill(jobId), undefined, "Invoice sent.") : console.info("send an invoice", jobId))}
-      >
+        onClick={() => (actions ? run(() => actions.sendBill(jobId), undefined, "Invoice sent.") : console.info("send an invoice", jobId))}>
         Send an invoice
       </Button>
       <p className="mt-1 text-sm text-muted-foreground">Texts a pay link, or emails it when there is no mobile.</p>

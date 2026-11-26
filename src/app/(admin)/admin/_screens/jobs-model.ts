@@ -5,7 +5,7 @@
  * and Failed. Everything is read from `AdminData`; an invoice reads "$145 · Invoice sent, due Dec 1" and, once the due day has
  * gone, "$145 · Past due since Dec 1". The rows are ordered with the invoices that are out first, the oldest due day on top.
  */
-import { TIME_ZONE } from "@/lib/admin/format"
+import { money, shortDate, TIME_ZONE } from "@/lib/admin/format"
 import { dayOf } from "@/lib/admin/calendar"
 import { visitJob } from "@/lib/admin/jobs"
 import type { AdminData, AdminInvoice, Client, ServiceItem, SoldJob, SoldJobMoney, Visit } from "@/lib/admin/types"
@@ -66,9 +66,6 @@ export interface JobRow {
 
 export const SOURCE_WORDS: Record<SoldJob["source"], string> = { checkout: "website", office: "office", site: "site", renewal: "renewal" }
 export const KIND_WORDS_JOB: Record<JobKind, string> = { pass: "Season Pass", repair: "Repair", install: "Installation", other: "Other" }
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-const monthDay = (day: string) => `${MONTHS[Number(day.slice(5, 7)) - 1]} ${Number(day.slice(8, 10))}`
-const dollars = (n: number) => `$${n.toLocaleString("en-US")}`
 
 /** What a job is called wherever it is named: its pass number, or the work it is. */
 export function jobTitle(job: Pick<SoldJob, "kind" | "passNumber" | "lines">): string {
@@ -111,7 +108,7 @@ export function serviceOptions(services: readonly ServiceItem[] | undefined, row
 /** The job's panel line under the customer's name: "Season Pass TH-2027-0007 · 2027" or "Repair · sold Nov 3". */
 export function jobHeading(job: Pick<SoldJob, "kind" | "passNumber" | "lines" | "soldOn">, season: number): string {
   if (job.kind === "pass") return `${jobTitle(job)} · ${season}`
-  return `${jobTitle(job)}${job.soldOn ? ` · sold ${monthDay(job.soldOn)}` : ""}`
+  return `${jobTitle(job)}${job.soldOn ? ` · sold ${shortDate(job.soldOn)}` : ""}`
 }
 
 /** The job's money as the data carries it, else worked out the same way from its lines and payments (the fixtures carry neither). */
@@ -126,18 +123,18 @@ function moneyOf(job: SoldJob, visits: Visit[], rule: TaxRule): SoldJobMoney {
 export function moneyCell(state: JobMoneyState, m: Pick<SoldJobMoney, "total" | "owed" | "words"> & { paid?: number }, invoice?: Pick<AdminInvoice, "total" | "sentOn" | "dueOn" | "status">): string {
   switch (state) {
     case "paid":
-      return `${dollars(m.total)} · Paid`
+      return `${money(m.total)} · Paid`
     case "owed":
       return m.words
     case "bill-sent":
-      return `${dollars(invoice?.total ?? m.owed)} · Invoice sent${invoice ? `, due ${monthDay(invoice.dueOn)}` : ""}`
+      return `${money(invoice?.total ?? m.owed)} · Invoice sent${invoice ? `, due ${shortDate(invoice.dueOn)}` : ""}`
     case "overdue":
-      return `${dollars(invoice?.total ?? m.owed)} · Past due since ${invoice ? monthDay(invoice.dueOn) : "its due day"}`
+      return `${money(invoice?.total ?? m.owed)} · Past due since ${invoice ? shortDate(invoice.dueOn) : "its due day"}`
     case "failed":
-      return `${dollars(m.owed)} · Failed`
+      return `${money(m.owed)} · Failed`
     default:
       // nothing is due yet: the price, with what arrived beforehand (a deposit) after it
-      return m.total > 0 ? `${dollars(m.total)}${m.paid ? ` · ${dollars(m.paid)} paid` : ""}` : "Quote later"
+      return m.total > 0 ? `${money(m.total)}${m.paid ? ` · ${money(m.paid)} paid` : ""}` : "Quote later"
   }
 }
 
@@ -195,7 +192,7 @@ export function jobRows(data: AdminData, today: string): JobRow[] {
         ...(job.soldOn ? { soldOn: job.soldOn } : {}),
         source: job.source,
         // "Nov 3, website"; "Not sold yet" while a quote is waiting (`sold_on` is empty)
-        soldText: job.soldOn ? [monthDay(job.soldOn), SOURCE_WORDS[job.source]].join(", ") : "Not sold yet",
+        soldText: job.soldOn ? [shortDate(job.soldOn), SOURCE_WORDS[job.source]].join(", ") : "Not sold yet",
         visitsDone: done.length,
         visitsLive: live.length,
         visitsText: live.length ? `${done.length} of ${live.length} done` : "No visits",

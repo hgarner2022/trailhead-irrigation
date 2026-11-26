@@ -3,13 +3,12 @@
  * job's open invoice (`SoldJob.invoice`), its money and its visits, never typed by hand.
  */
 import type { AdminInvoice, SoldJob, Visit } from "@/lib/admin/types"
+import { shortDate } from "@/lib/admin/format"
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-const monthDay = (day: string) => `${MONTHS[Number(day.slice(5, 7)) - 1]} ${Number(day.slice(8, 10))}`
 
 /** "Invoice sent Nov 17, due Dec 1", with ", overdue" once the day after the due day has come. */
 export const billWords = (invoice: Pick<AdminInvoice, "sentOn" | "dueOn" | "status">): string =>
-  `Invoice sent ${monthDay(invoice.sentOn)}, due ${monthDay(invoice.dueOn)}${invoice.status === "overdue" ? ", past due" : ""}`
+  `Invoice sent ${shortDate(invoice.sentOn)}, due ${shortDate(invoice.dueOn)}${invoice.status === "overdue" ? ", past due" : ""}`
 
 export interface BillState {
   /** the job's open invoice, if there is one */

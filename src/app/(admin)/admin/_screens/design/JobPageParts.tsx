@@ -5,7 +5,6 @@ import { useState, type ReactNode } from "react"
 import { Calendar, MapPin, Receipt, UserRound } from "lucide-react"
 import { AsideCard } from "@/components/blocks/AsideCard"
 import { CollectPayment } from "@/components/blocks/CollectPayment"
-import { dollars } from "@/lib/money/collect"
 import { MessageTable } from "@/components/blocks/MessageTable"
 import { RecordChip } from "@/components/blocks/RecordChip"
 import { recordHref } from "@/components/blocks/record-preview-model"
@@ -26,6 +25,7 @@ import type { TimelineLine } from "@/lib/events/timeline"
 import { MessageDialog } from "./MessageDialog"
 import { ScheduleForFacts, type ScheduleResult } from "./ScheduleDialog"
 import { NOW, noop, noteOk, type FooterPlan, type JobPageData, type PastVisit, type PillData } from "./job-fixtures"
+import { money } from "@/lib/admin/format"
 
 // The cards the one-trip, Season Pass and return-trip job pages share, so a card reads the same on every job (the rules are in
 // docs/plans/2026-11-19-admin-page-layout-research.md): the badges for the header, the summary band's four cells, the aside (Customer,
@@ -189,7 +189,7 @@ export function CollectBlock({ collect, facts, handlers, bare }: { collect: NonN
   const toast = useToast()
   return (
     <div className={bare ? "" : "mb-4 rounded-lg bg-stone p-4"}>
-      <CollectPayment plan={collect.plan} summary={collect.summary} firstName="Andrea" onCharge={handlers?.onCharge ?? noteOk} onRecord={handlers?.onRecord ?? noteOk} onInvoice={handlers?.onInvoice ?? noteOk} onLater={handlers?.onLater ?? noop} onClose={handlers?.onClose ?? noop} notNow onDone={(d) => (toast(doneToast(d.way, facts)), handlers?.onDone?.(d.way))} confirmFor={(o, ref) => collectConfirm(o.value, facts, ref)} buttonLabel={(o) => (o.value === "card" ? `Charge ${dollars(collect.plan.amount)} to the ${collect.plan.cardWords}` : PAY_WORDS[o.value] ?? o.button)} />
+      <CollectPayment plan={collect.plan} summary={collect.summary} firstName="Andrea" onCharge={handlers?.onCharge ?? noteOk} onRecord={handlers?.onRecord ?? noteOk} onInvoice={handlers?.onInvoice ?? noteOk} onLater={handlers?.onLater ?? noop} onClose={handlers?.onClose ?? noop} notNow onDone={(d) => (toast(doneToast(d.way, facts)), handlers?.onDone?.(d.way))} confirmFor={(o, ref) => collectConfirm(o.value, facts, ref)} buttonLabel={(o) => (o.value === "card" ? `Charge ${money(collect.plan.amount)} to the ${collect.plan.cardWords}` : PAY_WORDS[o.value] ?? o.button)} />
     </div>
   )
 }

@@ -25,7 +25,7 @@ function Preview({ message, data }: { message: MessageTemplate; data: AdminData 
   const preview = previewMessage(message, data)
   return (
     <>
-      <Button variant="outline" size="sm" aria-label={`Preview ${messageName(message)}`} className="min-h-11 md:min-h-0" onClick={() => setOpen(true)}>
+      <Button variant="outline" size="adaptive-sm" aria-label={`Preview ${messageName(message)}`} onClick={() => setOpen(true)}>
         Preview
       </Button>
       <ConfirmDialog
@@ -39,7 +39,7 @@ function Preview({ message, data }: { message: MessageTemplate; data: AdminData 
         {preview.subject && <p className="text-sm font-medium text-foreground">{preview.subject}</p>}
         <p className="whitespace-pre-line break-words rounded-lg bg-stone p-4 text-sm text-foreground">{preview.text}</p>
         <div className="flex justify-end">
-          <Button variant="outline" className="min-h-11" onClick={() => setOpen(false)}>
+          <Button size="touch" variant="outline" onClick={() => setOpen(false)}>
             Close
           </Button>
         </div>

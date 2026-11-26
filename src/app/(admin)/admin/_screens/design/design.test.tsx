@@ -113,7 +113,7 @@ describe("job page, one trip", () => {
     for (const name of ["Invoices and payments", "Payments"]) {
       const h = screen.getByRole("heading", { name })
       expect(h).toHaveAttribute("data-size", "sub")
-      expect(h.className).toMatch(/text-base/)
+      expect(h.className).toMatch(/type-admin-section/)
       expect(h.className).toMatch(/mb-2/)
       expect(h.closest("section")?.className).toMatch(/mt-6/)
     }

@@ -57,15 +57,14 @@ export function UndoToastProvider({ children, seconds = UNDO_SECONDS }: { childr
           {toast.undo && (
             <Button
               type="button"
-              size="sm"
+              size="touch-sm"
               variant="ghost"
-              className="min-h-11 text-primary-light hover:bg-white/10 hover:text-primary-light"
+              className="text-primary-light hover:bg-white/10 hover:text-primary-light"
               onClick={async () => {
                 const { undo } = toast
                 setToast(null)
                 await undo!()
-              }}
-            >
+              }}>
               Undo
             </Button>
           )}

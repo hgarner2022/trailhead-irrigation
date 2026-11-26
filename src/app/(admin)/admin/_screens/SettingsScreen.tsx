@@ -164,7 +164,7 @@ export function SettingsScreen({ data, today, defaultTab, who = "Hannah", keys, 
           ))}
         </TabsList>
         <div className={cn("min-w-0 flex-1 space-y-4", tab === null && "max-md:hidden")}>
-          <Button variant="ghost" size="sm" className="-ml-2 min-h-11 md:hidden" onClick={() => setTab(null)} aria-label={`Back to Settings from ${label}`}>
+          <Button variant="ghost" size="touch-sm" className="-ml-2 md:hidden" onClick={() => setTab(null)} aria-label={`Back to Settings from ${label}`}>
             <ChevronLeft className="size-4" aria-hidden />
             Settings
           </Button>

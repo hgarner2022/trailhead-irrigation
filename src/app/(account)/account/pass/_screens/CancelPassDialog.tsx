@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { DIALOG_DESTRUCTIVE, DIALOG_TITLE } from "@/components/blocks/dialog-styles"
+import { DIALOG_TITLE } from "@/components/blocks/dialog-styles"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 // The one cancel link on the pass page and the dialog it opens: the plain
@@ -61,7 +61,7 @@ export function CancelPassDialog({ onConfirm }: CancelPassDialogProps) {
             </DialogHeader>
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline" className="min-h-11">Back to my pass</Button>
+                <Button size="touch" variant="outline">Back to my pass</Button>
               </DialogClose>
             </DialogFooter>
           </>
@@ -73,9 +73,9 @@ export function CancelPassDialog({ onConfirm }: CancelPassDialogProps) {
             </DialogHeader>
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline" className="min-h-11">Keep my pass</Button>
+                <Button size="touch" variant="outline">Keep my pass</Button>
               </DialogClose>
-              <Button onClick={confirm} disabled={pending} className={DIALOG_DESTRUCTIVE}>
+              <Button onClick={confirm} disabled={pending} variant="destructive" size="touch">
                 Cancel my pass
               </Button>
             </DialogFooter>

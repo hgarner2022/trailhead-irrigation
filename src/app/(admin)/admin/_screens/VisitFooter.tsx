@@ -6,7 +6,6 @@ import { DayField } from "@/components/blocks/DayField"
 import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
 import { useUndoToast } from "@/components/blocks/UndoToast"
 import { jobUrl } from "@/lib/admin/links"
-import { dollars } from "@/lib/money/collect"
 import type { AdminData, Pass, Visit } from "@/lib/admin/types"
 import { CancelVisitDialog, EditDialog, TextDialog } from "./VisitEditText"
 import { MoveDialog } from "./VisitMove"
@@ -18,6 +17,7 @@ import type { BarId, VisitBar } from "./visit-bar-model"
 import { aheadSentence, type VisitFooterPlan } from "./visit-collect-model"
 import { FORM_STATUS, useRunner } from "./use-runner"
 import { kindLabel, type VisitFacts } from "./visit-panel-model"
+import { money } from "@/lib/admin/format"
 
 // The visit panel's footer (`RecordFooter`) and the dialogs its buttons open, each ONE `ConfirmDialog` and never two at once. Which buttons
 // there are, by state, is `visitBar` (docs/plans/2026-11-18-admin-holistic-design.md, section 7). Mark done asks the day (and "This visit is
@@ -124,10 +124,10 @@ export function VisitFooter({ facts, people, plan, bar, today, visitDay, pass, a
     "on-my-way": { label: LABELS["on-my-way"], onClick: () => setOpen("on-my-way") },
     cancel: { label: LABELS.cancel, onClick: () => setOpen("cancel") },
     confirmed: { label: LABELS.confirmed, onClick: confirmed, disabled: pending },
-    collect: { label: plan.unpaid > 0 ? `Collect ${dollars(plan.unpaid)}` : LABELS.collect, onClick: onCollect },
+    collect: { label: plan.unpaid > 0 ? `Collect ${money(plan.unpaid)}` : LABELS.collect, onClick: onCollect },
     "open-job": host && visit.jobId ? { label: LABELS["open-job"], onClick: () => host.open("job", visit.jobId!) } : { label: LABELS["open-job"], href: visit.jobId ? jobUrl(visit.jobId) : undefined },
     "undo-done": { label: LABELS["undo-done"], onClick: undo, disabled: pending },
-    refund: { label: refund ? `Refund ${dollars(refund.left)}` : LABELS.refund, onClick: () => setOpen("refund") },
+    refund: { label: refund ? `Refund ${money(refund.left)}` : LABELS.refund, onClick: () => setOpen("refund") },
   }
   const pick = (id: BarId) => act[id]
   const secondary = bar.secondary.map(pick)
@@ -155,10 +155,10 @@ export function VisitFooter({ facts, people, plan, bar, today, visitDay, pass, a
       <CancelVisitDialog visit={visit} pass={pass} actions={actions} {...shown("cancel")} />
       {refund && (
         <ConfirmDialog
-          title={`Refund ${dollars(refund.left)}?`}
-          message={`Takes back the ${dollars(refund.left)} recorded by ${refund.method}. It is a refund row on the job and nothing is deleted. The visit reads unpaid again.`}
+          title={`Refund ${money(refund.left)}?`}
+          message={`Takes back the ${money(refund.left)} recorded by ${refund.method}. It is a refund row on the job and nothing is deleted. The visit reads unpaid again.`}
           destructive
-          confirmLabel={`Refund ${dollars(refund.left)}`}
+          confirmLabel={`Refund ${money(refund.left)}`}
           {...shown("refund")}
           onConfirm={actions ? () => actions.refundPayment(refund.paymentId) : undefined}
           log={`refund ${refund.paymentId}`}

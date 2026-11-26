@@ -8,9 +8,10 @@ import { SplitButton } from "@/components/blocks/SplitButton"
 import { useToast } from "@/components/blocks/Toast"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { collectPlan, dollars } from "@/lib/money/collect"
+import { collectPlan } from "@/lib/money/collect"
 import { collectConfirm, type ConfirmCopy, type Reach } from "./confirm-copy"
 import type { CustomerPageData } from "./customer-fixtures"
+import { money } from "@/lib/admin/format"
 
 // The dialogs behind the customer page's buttons. A button that reaches the customer or their money opens one of these first; each states its
 // exact effect and the customer's own channel, and a result is a toast, never a message left in a section. Pure props: nothing is sent.
@@ -59,17 +60,17 @@ export function CollectDialog({ who, amount, card, invoice, onClose, onPaid }: C
     <ConfirmDialog open onOpenChange={(o) => !o && onClose()} title="How is this paid?" actions="none" size="md" slot="collect-dialog">
       <CollectPayment
         plan={plan}
-        summary={invoice ? `Invoice ${invoice.number} · ${invoice.jobName} · ${invoice.amount} unpaid` : `${dollars(amount)} unpaid`}
+        summary={invoice ? `Invoice ${invoice.number} · ${invoice.jobName} · ${invoice.amount} unpaid` : `${money(amount)} unpaid`}
         firstName={who.first}
-        onCharge={async (o) => (so(`Charged ${dollars(amount)} to the ${plan.cardWords ?? "card"}`, o?.notify), { ok: true })}
-        onRecord={async (o) => (so(`Recorded a ${dollars(amount)} ${ways[o.method]}${invoice ? `, invoice ${invoice.number} settled` : ""}`, o.notify), { ok: true })}
+        onCharge={async (o) => (so(`Charged ${money(amount)} to the ${plan.cardWords ?? "card"}`, o?.notify), { ok: true })}
+        onRecord={async (o) => (so(`Recorded a ${money(amount)} ${ways[o.method]}${invoice ? `, invoice ${invoice.number} settled` : ""}`, o.notify), { ok: true })}
         onInvoice={async () => (so("Invoice sent"), { ok: true })}
         onLater={onClose}
         onClose={onClose}
         onSettled={() => (onPaid?.(), onClose())}
         notNow
-        buttonLabel={(o) => (o.value === "card" ? `Charge ${dollars(amount)} to the ${plan.cardWords}` : ({ check: "Record the check", venmo: "Record the Venmo payment", cash: "Record the cash", invoice: "Send the invoice" } as Record<string, string>)[o.value] ?? o.button)}
-        confirmFor={(o, reference) => collectConfirm(o.value, { ...who, service: "job", amount: dollars(amount), address: "", dueOn: "14 days from today", cardWords: plan.cardWords, invoiceOpen: Boolean(invoice), invoiceNumber: invoice?.number }, reference)}
+        buttonLabel={(o) => (o.value === "card" ? `Charge ${money(amount)} to the ${plan.cardWords}` : ({ check: "Record the check", venmo: "Record the Venmo payment", cash: "Record the cash", invoice: "Send the invoice" } as Record<string, string>)[o.value] ?? o.button)}
+        confirmFor={(o, reference) => collectConfirm(o.value, { ...who, service: "job", amount: money(amount), address: "", dueOn: "14 days from today", cardWords: plan.cardWords, invoiceOpen: Boolean(invoice), invoiceNumber: invoice?.number }, reference)}
       />
     </ConfirmDialog>
   )

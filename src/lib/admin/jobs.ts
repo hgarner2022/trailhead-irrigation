@@ -27,7 +27,7 @@
 import type { TaxRule } from "@/lib/jobs/tax"
 import { isPaid, jobMoney as jobMoneyWords, METHOD_WORDS, paidTotal, visitMoney, type MoneyInvoice, type MoneyPayment } from "@/lib/money/words"
 import { addDays, dayOf } from "./calendar"
-import { TIME_ZONE } from "./format"
+import { TIME_ZONE, shortDate } from "./format"
 import type { AdminData, AdminInvoice, AdminPayment, JobLine, Pass, PassVisit, SoldJob, Visit, VisitStatus } from "./types"
 
 export type JobState = "needs-a-day" | "scheduled" | "routed" | "done" | "charged" | "charge-failed" | "cancelled" | "skipped"
@@ -249,13 +249,11 @@ export function windowLabel(startTime: string, minutes = 120): string {
   return a.am === b.am ? `${clock(a)} to ${clock(b)} ${meridiem(b)}` : `${clock(a)} ${meridiem(a)} to ${clock(b)} ${meridiem(b)}`
 }
 
-const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
 /** The day a pass visit has, "Apr 26", with its window when a start time is set: "Apr 26, 8 to 10 am". Empty before a day is set; never a preference. */
 export function dayWords(visit: PassVisit | undefined): string {
   const day = visit?.scheduledOn ?? (visit?.scheduledAt ? dayOf(visit.scheduledAt, TIME_ZONE) : undefined)
   if (!visit || !day) return ""
-  const short = `${SHORT_MONTHS[Number(day.slice(5, 7)) - 1]} ${Number(day.slice(8, 10))}`
+  const short = shortDate(day)
   return visit.startTime ? `${short}, ${windowLabel(visit.startTime, visit.windowMinutes)}` : short
 }
 

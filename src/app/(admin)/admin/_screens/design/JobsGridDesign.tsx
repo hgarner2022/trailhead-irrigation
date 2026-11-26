@@ -8,6 +8,7 @@ import { recordHref } from "@/components/blocks/record-preview-model"
 import { MoneyCell } from "@/components/blocks/MoneyCell"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { StatusPill, type PillStatus } from "@/components/blocks/StatusPill"
+import { money } from "@/lib/admin/format"
 
 // The Jobs grid with the column the design proposes: Billing in place of Money (docs/plans/2026-11-19-job-object-design.md). One row per job:
 // Customer, Job, Property, Status, Visits, Total, Billing, Next (eight columns). Billing is the money word of the job from `words.ts`
@@ -43,7 +44,6 @@ export interface GridJob {
   next: string
 }
 
-const money = (n: number) => `$${n.toLocaleString("en-US")}`
 
 export const jobGridColumns: GridColumnDef<GridJob>[] = [
   { id: "name", accessorFn: (r) => `${r.name} ${r.property} ${r.title}`, header: "Customer", cell: ({ row }) => row.original.name, meta: { csv: (r) => (r as GridJob).name } },
@@ -73,7 +73,7 @@ export function JobsGridDesign({ rows, defaultFilters }: JobsGridDesignProps) {
   const out = rows.filter((r) => r.billingState === "bill-sent" || r.billingState === "overdue").length
   return (
     <div data-slot="jobs-grid-design">
-      <PageHeader title="Jobs" context={rows.length ? `${rows.length} jobs. ${out} invoices out.` : "No jobs yet."} actions={<Button type="button" className="min-h-11">New job</Button>} />
+      <PageHeader title="Jobs" context={rows.length ? `${rows.length} jobs. ${out} invoices out.` : "No jobs yet."} actions={<Button size="touch" type="button">New job</Button>} />
       <DataGrid
         columns={jobGridColumns}
         card={jobGridCard}

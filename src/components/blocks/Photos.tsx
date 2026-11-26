@@ -101,7 +101,7 @@ function Tile({ photo, audience, customerName, canShow, onShow, onRemove, onAsk 
         </div>
       )}
       {photo.canRemove && onRemove && (
-        <Button type="button" variant="ghost" size="sm" className="min-h-11 self-start px-2 text-muted-foreground" onClick={() => onAsk(photo)}>
+        <Button type="button" variant="ghost" size="touch-sm" className="self-start px-2 text-muted-foreground" onClick={() => onAsk(photo)}>
           Remove
         </Button>
       )}
@@ -131,11 +131,11 @@ function PendingTile({ item, onRetry, onDismiss }: { item: PendingPhoto; onRetry
       {failed && (
         <div className="flex gap-1">
           {item.file && item.message === PHOTO_WORDS.uploadFailed && (
-            <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={() => onRetry(item)}>
+            <Button type="button" variant="outline" size="touch-sm" onClick={() => onRetry(item)}>
               Try again
             </Button>
           )}
-          <Button type="button" variant="ghost" size="sm" className="min-h-11 px-2" onClick={() => onDismiss(item.key)}>
+          <Button type="button" variant="ghost" size="touch-sm" className="px-2" onClick={() => onDismiss(item.key)}>
             Dismiss
           </Button>
         </div>
@@ -220,7 +220,7 @@ export function Photos({ photos, audience = "staff", configured = true, onAdd, o
           {onAdd && (
             <>
               <input ref={input} type="file" accept={PHOTO_ACCEPT} multiple {...(camera ? { capture: "environment" as const } : {})} onChange={onPick} aria-label="Choose photos" className="sr-only" tabIndex={-1} />
-              <Button type="button" variant="outline" className="mt-3 min-h-11" onClick={() => input.current?.click()}>
+              <Button size="touch" type="button" variant="outline" className="mt-3" onClick={() => input.current?.click()}>
                 Add photo
               </Button>
             </>

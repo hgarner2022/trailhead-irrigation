@@ -1,6 +1,7 @@
-import { dayWords, invoicePageOf, money as invoiceMoney, type InvoicePageData } from "../invoice-fixtures"
+import { invoicePageOf, type InvoicePageData } from "../invoice-fixtures"
 import { activeLines, currentTotal } from "./price-change"
 import { lineTotal, type ApprovedJob } from "./quote-model"
+import { shortDate, money as invoiceMoney } from "@/lib/admin/format"
 
 // The final invoice of an approved job whose price changed after approval (Hannah, Nov 20 2026): its lines are the job's lines that are not canceled, its
 // total is the job's total now, and a deposit the customer already paid is credited as its own line, so what is unpaid is the new total less the deposit.
@@ -25,14 +26,14 @@ export function finalInvoiceOf(job: ApprovedJob, o: { number: string; sentOn: st
     job: { id: job.jobId, name: job.service, status: "done", statusLabel: "Done", next: "None ahead", total: invoiceMoney(total) },
     amount: invoiceMoney(owed),
     unpaid: invoiceMoney(owed),
-    sent: dayWords(o.sentOn),
-    due: dayWords(o.dueOn),
+    sent: shortDate(o.sentOn),
+    due: shortDate(o.dueOn),
     lines,
-    totals: [["Subtotal", invoiceMoney(total)], ["Tax", "$0"], ["Total", invoiceMoney(total), "strong"], ...(dep && paidOn ? ([[`Deposit paid ${dayWords(paidOn)}`, `-${invoiceMoney(dep.amount)}`]] as const) : []), ["Paid", "$0"], ["Unpaid", invoiceMoney(owed), "alert"]],
-    payments: dep?.paid && paidOn ? [{ id: "p-dep", receipt: "R-1058", date: dayWords(paidOn), sortDay: paidOn, jobId: job.jobId, jobName: job.service, how: dep.paid.how === "card" ? "Card" : dep.paid.how, amount: invoiceMoney(dep.amount), note: "Deposit, applied" }] : [],
+    totals: [["Subtotal", invoiceMoney(total)], ["Tax", "$0"], ["Total", invoiceMoney(total), "strong"], ...(dep && paidOn ? ([[`Deposit paid ${shortDate(paidOn)}`, `-${invoiceMoney(dep.amount)}`]] as const) : []), ["Paid", "$0"], ["Unpaid", invoiceMoney(owed), "alert"]],
+    payments: dep?.paid && paidOn ? [{ id: "p-dep", receipt: "R-1058", date: shortDate(paidOn), sortDay: paidOn, jobId: job.jobId, jobName: job.service, how: dep.paid.how === "card" ? "Card" : dep.paid.how, amount: invoiceMoney(dep.amount), note: "Deposit, applied" }] : [],
     messages: [],
-    notes: [{ id: "n1", at: `${o.sentOn}T17:00:00Z`, actor: "Ryan", what: `Sent invoice ${o.number}, ${invoiceMoney(owed)}, due ${dayWords(o.dueOn)}`, kind: "event" }],
-    schedule: { next: `${dayWords(threeBefore(o.dueOn))}, 3 days before due` },
+    notes: [{ id: "n1", at: `${o.sentOn}T17:00:00Z`, actor: "Ryan", what: `Sent invoice ${o.number}, ${invoiceMoney(owed)}, due ${shortDate(o.dueOn)}`, kind: "event" }],
+    schedule: { next: `${shortDate(threeBefore(o.dueOn))}, 3 days before due` },
     reminders: [],
   }
 }
