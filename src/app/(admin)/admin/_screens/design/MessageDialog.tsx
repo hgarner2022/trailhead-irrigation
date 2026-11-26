@@ -5,6 +5,8 @@ import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { FormRow } from "@/components/blocks/FormRow"
 import { Textarea } from "@/components/ui/textarea"
 import type { ConfirmFacts } from "./confirm-copy"
+import { optionClass } from "@/components/blocks/option-styles"
+import { cn } from "@/lib/utils"
 
 const OPENER = "Trailhead: "
 const STOP = " Reply STOP to opt out."
@@ -21,7 +23,7 @@ export function MessageDialog({ facts, onClose, onSend }: { facts: ConfirmFacts;
       <div className="flex flex-col gap-3 text-sm">
         <div role="radiogroup" aria-label="Channel" className="flex flex-wrap gap-2">
           {([["text", `Text to ${facts.phone}`], ["email", `Email to ${facts.email ?? "the customer"}`]] as const).map(([c, label]) => (
-            <button key={c} type="button" role="radio" aria-checked={channel === c} onClick={() => setChannel(c)} className={`min-h-11 rounded-full border px-3 font-medium ${channel === c ? "border-primary bg-primary/10" : "border-input"}`}>{label}</button>
+            <button key={c} type="button" role="radio" aria-checked={channel === c} onClick={() => setChannel(c)} className={cn(optionClass({ selected: channel === c }), "min-h-11 px-3 font-medium")}>{label}</button>
           ))}
         </div>
         <FormRow label="Message">
