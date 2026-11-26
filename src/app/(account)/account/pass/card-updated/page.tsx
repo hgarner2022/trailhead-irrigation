@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Image from "next/image"
-import { CheckCircle2 } from "lucide-react"
+import { Check } from "lucide-react"
 import { EmptyState } from "@/components/blocks/EmptyState"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -13,7 +13,7 @@ export default function CardUpdatedPage() {
       <Card data-slot="card-updated" className="w-full max-w-sm">
         <CardContent className="flex flex-col gap-2 p-6 sm:p-8">
           <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={57} height={40} className="h-12 w-auto self-start" />
-          <EmptyState icon={CheckCircle2} title="Your card is saved" line="We'll use it for your next visit, and for any visit that was waiting on a new card. You can close this page." className="py-6" />
+          <EmptyState icon={Check} title="Your card is saved" line="We'll use it for your next visit, and for any visit that was waiting on a new card. You can close this page." className="py-6" />
         </CardContent>
       </Card>
     </main>

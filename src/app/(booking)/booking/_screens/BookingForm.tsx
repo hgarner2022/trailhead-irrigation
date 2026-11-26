@@ -224,7 +224,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
     case "service":
       body = (
         <>
-          <p className="-mt-3 mb-6 text-base text-muted-foreground">Choose what you need.</p>
+          <p className="-mt-3 mb-6 text-base text-muted-foreground">How can we help?</p>
           <StepField error={stepError}><ServicePicker entries={lists.bookable} value={serviceKey} onChange={choose} onRequestQuote={startQuote} /></StepField>
         </>
       )

@@ -109,12 +109,12 @@ h1, h2, h3 {
      to 600ms only for large areas; exits shorter than entrances), NN/g "Executing UX Animations: Duration and Motion
      Characteristics" (100 to 500ms, ease-out or ease-in-out, never linear), Apple HIG Motion (brief, in answer to
      the person's action, off under Reduce Motion). */
-  --motion-card-step: 100ms;
-  --motion-card-fill: 280ms;
-  --motion-card-open: 400ms;
-  --motion-card-close: 260ms;
-  --motion-card-line: 260ms;
-  --motion-card-stagger: 40ms;
+  --motion-card-step: 160ms;
+  --motion-card-fill: 450ms;
+  --motion-card-open: 650ms;
+  --motion-card-close: 400ms;
+  --motion-card-line: 420ms;
+  --motion-card-stagger: 60ms;
   --motion-card-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -140,8 +140,8 @@ h1, h2, h3 {
   .opt:active { transform: none; }
 }
 
-/* The check on the Season Pass offer (PassUpsell) draws in once and nothing else moves.
-   Under prefers-reduced-motion it is simply drawn. */
+/* The one tick (blocks/Tick.tsx, `draw`) strokes in once where it answers a press: the Season Pass offer once added,
+   the On file chip. Nothing else moves. Under prefers-reduced-motion it is simply drawn. */
 @keyframes draw-check {
   to { stroke-dashoffset: 0; }
 }
@@ -216,34 +216,17 @@ h1, h2, h3 {
    on the dark half, so the name is never grey on grey. */
 .svc-card > .opt { transition: transform var(--motion-press) var(--motion-ease), color var(--motion-press) var(--motion-card-ease) calc(var(--svc-fill) * 0.3), background-color var(--svc-fill) var(--motion-card-ease); }
 .svc-card .svc-fade { transition: color var(--motion-press) var(--motion-card-ease) calc(var(--svc-fill) * 0.3), background-color var(--svc-fill) var(--motion-card-ease), border-color var(--svc-fill) var(--motion-card-ease); }
-/* The check lands where the ring was at once (the choice is made), its tick draws as the header fills. */
-.svc-check { animation: svc-pop var(--motion-fast) var(--motion-ease) both; }
-/* One soft ring leaves the check as it lands, once. */
-@keyframes svc-ring { from { transform: scale(1); opacity: 0.7; } to { transform: scale(2.4); opacity: 0; } }
-.svc-check::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 9999px;
-  border: 2px solid var(--color-primary);
-  opacity: 0;
-  animation: svc-ring var(--motion-draw) var(--motion-ease) var(--motion-card-step) both;
-}
-.svc-check path {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: svc-draw var(--motion-base) var(--motion-ease) var(--motion-card-step) forwards;
-}
+/* Chosen, the card's ring turns white with the header (.svc-fade) and its dot lands at once: the choice is made. No tick, no pulse. */
+.svc-dot { animation: svc-pop var(--motion-fast) var(--motion-ease) both; }
 /* The quote card answers a press: it gives a little and its arrow moves a few pixels, then both come back. */
 .svc-quote { transition: transform var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease); }
 .svc-arrow { transition: transform var(--motion-fast) var(--motion-ease); }
 .svc-quote:active { transform: scale(0.985); }
 .svc-quote:active .svc-arrow { transform: translateX(4px); }
 @media (prefers-reduced-motion: reduce) {
-  .svc-icon [data-draw], .svc-check path { animation: none; stroke-dashoffset: 0; }
-  .svc-check::after { display: none; }
+  .svc-icon [data-draw] { animation: none; stroke-dashoffset: 0; }
   .svc-spring { animation: none; }
-  .svc-icon [data-pop], .svc-icon [data-turn], .svc-icon [data-rise], .svc-check, .svc-panel[data-open] [data-line] { animation: none; }
+  .svc-icon [data-pop], .svc-icon [data-turn], .svc-icon [data-rise], .svc-dot, .svc-panel[data-open] [data-line] { animation: none; }
   .svc-panel, .svc-panel[data-open], .svc-chevron, .svc-card, .svc-card > .opt, .svc-card .svc-fade, .svc-arrow, .svc-quote { transition: none; }
   .svc-quote:active, .svc-quote:active .svc-arrow, .svc-card:has(> .opt:active) { transform: none; }
 }

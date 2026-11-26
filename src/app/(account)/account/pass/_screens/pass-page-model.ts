@@ -69,7 +69,7 @@ export const visitRows = (pass: Pass): VisitRow[] => pass.visits.map((v) => visi
 /** The turn-on and the blowout can be moved by the customer until a day is set; the inspection has no preference. */
 export const canChange = (visit: PassVisit): visit is PassVisit & { kind: "turn-on" | "blowout" } => visit.kind !== "inspection" && !visit.scheduledAt && !visit.completedAt
 
-export type HeadlineAction = "change-day" | "update-card" | "reserve-next" | "book" | null
+export type HeadlineAction = "change-day" | "update-card" | "book" | null
 
 export interface Headline {
   title: string
@@ -85,19 +85,13 @@ const upcoming = (pass: Pass) => pass.visits.find((v) => !v.completedAt)
 /**
  * The one thing that matters to this customer right now, read top to bottom:
  * a failed card first, then cancelled, then the next
- * visit, then a season that is done (with "Reserve next season" once the next season is
- * on sale). Hannah, 2026-11-13: "think through the different states".
+ * visit, then a season that is done (the pass renews by itself and we email the customer about it). Hannah, 2026-11-13: "think through the different states".
  */
 export function passHeadline(pass: Pass, today: string): Headline {
   if (pass.status === "cancelled") return { title: "This pass is canceled.", line: "Nothing further is charged and no more visits are placed. Book any visit online whenever you like.", action: "book" }
   if (pass.cardFailedAt) return { title: "Your card didn't go through.", line: "Update it and we'll try again. Your visits stay as they are until then.", action: "update-card" }
   const next = upcoming(pass)
-  if (!next) {
-    const renewalOpen = today >= `${pass.season}${SEASON_ROLLS}`
-    return renewalOpen
-      ? { title: `Your ${pass.season} season is done.`, line: `Reserve ${pass.season + 1} on the same card. We charge it after each visit.`, action: "reserve-next" }
-      : { title: `Your ${pass.season} season is done.`, line: `We'll email you in January about ${pass.season + 1}.`, action: null }
-  }
+  if (!next) return { title: `Your ${pass.season} season is done.`, line: `We'll email you in January about ${pass.season + 1}.`, action: null }
   const row = visitRow(next, pass)
   if (next.scheduledAt) return { title: `Next up: ${row.name.toLowerCase()}, ${writtenDate(next.scheduledAt)}.`, line: "We confirm it by text two weeks before and remind you the day before.", action: "change-day", kind: next.kind }
   // A visit with no day yet is never a prompt to pick one: it reads its preference and that we schedule it (below).
@@ -118,13 +112,6 @@ export function seasonSummary(pass: Pass): string {
   const visits = `${done} of ${pass.visits.length} visit${pass.visits.length === 1 ? "" : "s"} done`
   return paid > 0 ? `${visits}, $${paid.toLocaleString("en-US")} paid` : visits
 }
-
-/** The address of the checkout filled in from this pass: "Reserve next season" opens it. */
-export const reserveNextHref = (pass: Pass) => `/season-pass/checkout?renew=${pass.id}`
-
-/** From November 1 of the pass's season, while no later season is held: the customer can reserve the next one. */
-export const canReserveNext = (pass: Pass, passes: Pass[], today: string): boolean =>
-  pass.status === "active" && today >= `${pass.season}${SEASON_ROLLS}` && !passes.some((p) => p.season > pass.season && p.status === "active")
 
 /** Earlier seasons newest first, the current one left out. */
 export const earlierSeasons = (passes: Pass[], current: Pass): Pass[] => passes.filter((p) => p.id !== current.id && p.season < current.season).sort((a, b) => b.season - a.season)

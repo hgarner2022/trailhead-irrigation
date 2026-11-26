@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Image from "next/image"
-import { CheckCircle2 } from "lucide-react"
+import { Check } from "lucide-react"
 import Link from "next/link"
 import { EmptyState } from "@/components/blocks/EmptyState"
 import { Button } from "@/components/ui/button"
@@ -18,7 +18,7 @@ export default function PaidPage() {
       <Card data-slot="pay-thanks" className="w-full max-w-sm">
         <CardContent className="flex flex-col gap-2 p-6 sm:p-8">
           <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={57} height={40} className="h-12 w-auto self-start" />
-          <EmptyState icon={CheckCircle2} title="Thank you, your payment went through" line="Your receipt is on its way by email, and it is in your Trailhead account." className="py-6" />
+          <EmptyState icon={Check} title="Thank you, your payment went through" line="Your receipt is on its way by email, and it is in your Trailhead account." className="py-6" />
           {/* The receipt without waiting for the email (UX audit row 13). Both need the customer's sign-in link: the page itself holds no token. */}
           <Button asChild variant="outline" size="lg" className="w-full">
             <Link href="/account/visits">View the receipt</Link>

@@ -11,12 +11,12 @@ import { PassActions } from "@/components/blocks/PassActions"
 import { PassVisitRows } from "./PassVisitRows"
 import type { BookedTimes } from "@/lib/portal/booked-time"
 import type { TimingKind } from "@/lib/portal/preference-words"
-import { canReserveNext, reserveNextHref, cardAction, chargeLine, earlierSeasons, passHeadline } from "./pass-page-model"
+import { cardAction, chargeLine, earlierSeasons, passHeadline } from "./pass-page-model"
 
 // The Season Pass tab: the customer's plan, and only the plan (docs/plans/2026-11-19-customer-side-design.md, "Account structure (Nov 22 2026)"). The visits are the Visits tab's, with their money and
-// receipts; this page holds what the plan is. In order: whatever needs the customer now (a card that did not go through, a day to pick, next season to reserve; a banner while we are asking for a
+// receipts; this page holds what the plan is. In order: whatever needs the customer now (a card that did not go through, a day to pick; a banner while we are asking for a
 // timing), the pass card at its full size (the brand's one showcase: the artwork and the sheen), "Your season" with the plan's visits as plan lines (state and timing, no money, no receipt), the
-// one line about how it is paid, and the plan's own actions (add the July inspection, skip a visit, cancel). Next season and earlier seasons sit under it. A canceled pass shows the grey card, one
+// one line about how it is paid, and the plan's own actions (add the July inspection, skip a visit, cancel). Earlier seasons sit under it. A canceled pass shows the grey card, one
 // line and the earlier seasons. Pure composition over `pass` and `today`; the route's page.tsx supplies both. Server component; the dialogs carry their own client boundaries.
 
 export interface PassPageScreenProps {
@@ -59,7 +59,7 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
   const earlier = earlierSeasons(passes, pass)
   const headline = passHeadline(pass, today)
   // Only a state that needs the customer is a headline; a pass that is simply on its way is told by the card and its plan lines.
-  const needs = headline.action === "update-card" || headline.action === "reserve-next" || headline.action === "book"
+  const needs = headline.action === "update-card" || headline.action === "book"
   return (
     <main data-slot="pass-page" data-status={pass.status} className="mx-auto max-w-3xl space-y-6 container-padding-x py-8">
       <h1 className="sr-only">Season Pass</h1>
@@ -76,11 +76,6 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
           </h2>
           <p className="mt-2 text-base text-foreground">{headline.line}</p>
           {headline.action === "update-card" && <UpdateCardButton onUpdateCard={onUpdateCard} className="mt-4" />}
-          {headline.action === "reserve-next" && (
-            <Button asChild className="mt-4">
-              <a href={reserveNextHref(pass)}>Reserve next season</a>
-            </Button>
-          )}
           {headline.action === "book" && (
             <Button asChild variant="outline" className="mt-4">
               <a href="/book">Book a visit</a>
@@ -115,20 +110,6 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
               </div>
             </CardContent>
           </Card>
-
-          {canReserveNext(pass, passes, today) && headline.action !== "reserve-next" && (
-            <Card data-slot="reserve-next">
-              <CardHeader>
-                <Title>Next season</Title>
-              </CardHeader>
-              <CardContent className="flex flex-wrap items-center justify-between gap-4">
-                <p className="text-base text-foreground">{`Reserve ${pass.season + 1} now. We fill in your address, zones and card.`}</p>
-                <Button asChild variant="outline">
-                  <a href={reserveNextHref(pass)}>Reserve next season</a>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
 
           <EarlierSeasons passes={earlier} />
         </>
