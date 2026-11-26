@@ -391,7 +391,7 @@ export const AddressNothingPhone: Story = { ...addressNothing.phone, name: "Addr
 const serviceNothing = on({ initial: { step: "service", fields: home, attempted: true } }, "Service, nothing chosen", {
   play: async ({ canvas }) => {
     await noHint(canvas)
-    await expect((await canvas.findAllByText("Choose a service.")).length).toBe(1)
+    await expect((await canvas.findAllByText("Pick a service.")).length).toBe(1)
     await expect(canvas.queryByText("Pick a service to continue.")).toBeNull()
   },
 })
@@ -411,9 +411,9 @@ export const ServiceNothingClearsTest: Story = {
   tags: HIDDEN,
   args: { initial: { step: "service", fields: home, attempted: true } },
   play: async ({ canvas, userEvent }) => {
-    await expect((await canvas.findAllByText("Choose a service.")).length).toBe(1)
+    await expect((await canvas.findAllByText("Pick a service.")).length).toBe(1)
     await userEvent.click(canvas.getByRole("button", { name: /^Sprinkler repair/ }))
-    await waitFor(() => expect(canvas.queryAllByText("Choose a service.")).toHaveLength(0))
+    await waitFor(() => expect(canvas.queryAllByText("Pick a service.")).toHaveLength(0))
   },
 }
 /** The prototype helpers show only when a story asks for them: the note that the card form is drawn, and Add 2 sample photos. Off, as here, the customer screen has neither. */

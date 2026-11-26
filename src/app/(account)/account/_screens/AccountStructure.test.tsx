@@ -40,7 +40,7 @@ describe("Home", () => {
     const { rerender } = render(<HomeScreen customer={andrea} jobs={[passJob]} today="2027-09-10" pass={pass} ask="blowout" onSavePreference={onSavePreference} />)
     const banner = screen.getByRole("region", { name: "Timing for your next visit" })
     expect(banner).toHaveTextContent("When would you like your fall blowout?")
-    fireEvent.click(within(banner).getByRole("button", { name: /Choose when/ }))
+    fireEvent.click(within(banner).getByRole("button", { name: /Pick when/ }))
     expect(screen.getByRole("radio", { name: /Our recommended/ })).toBeChecked()
     fireEvent.click(screen.getByRole("radio", { name: /Late season/ }))
     fireEvent.click(screen.getByRole("button", { name: "Save" }))

@@ -17,7 +17,7 @@ import { paymentOut } from "./queries"
 import { PaymentOut } from "./schemas"
 
 /** What the panel says when the card is declined; the customer has already been emailed the card link. */
-export const DECLINED = "The card didn't go through. Choose another way."
+export const DECLINED = "The card didn't go through. Pick another way."
 
 export const paymentsChargeCard = defineHandler({
   name: "payments.chargeCard",
@@ -34,7 +34,7 @@ export const paymentsChargeCard = defineHandler({
     const [job] = await ctx.db.select().from(s.job).where(and(eq(s.job.id, visit.jobId), eq(s.job.organizationId, ctx.organizationId)))
     if (!job) throw new ApiError("unprocessable", "This visit has no job")
     const [customer] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, job.customerId), eq(s.customer.organizationId, ctx.organizationId)))
-    if (!customer || !customerHasCard(customer) || !customer.stripeCustomerId) throw new ApiError("unprocessable", "This customer has no card on file. Choose another way.")
+    if (!customer || !customerHasCard(customer) || !customer.stripeCustomerId) throw new ApiError("unprocessable", "This customer has no card on file. Pick another way.")
     const { price, paid } = await visitBalance(ctx.db, ctx.organizationId, visit)
     if (price <= 0) throw new ApiError("invalid", "Price the visit before charging it")
     if (paid >= price) throw new ApiError("conflict", "This visit is already paid")

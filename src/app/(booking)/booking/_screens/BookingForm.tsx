@@ -10,7 +10,6 @@ import { fixtureCalendarDays, type DayTimeOffer, type DayTimePick } from "@/lib/
 import { bookingEntries } from "@/lib/booking/pass-entry"
 import { passPlanFor, preferenceVisits } from "@/lib/booking/pass-visits"
 import { TERMS_VERSION } from "@/lib/season-pass"
-import { OnFileMark } from "@/components/blocks/OnFileMark"
 import { accessOf, emailDiffers, fixtureKnown } from "@/lib/booking/known-address"
 import { CATALOGUE, bookableOf, quotableOf } from "@/lib/booking/services"
 import type { TimingPreference } from "@/lib/admin/types"
@@ -30,6 +29,7 @@ import { bookedPassOf, upsellPrices } from "./booking-pass-model"
 import { PreferenceGroups, preferenceQuestion } from "./booking-preference"
 import { LeaveDialog } from "./booking-leave"
 import { StepField } from "./booking-problems"
+import { KnownAddress } from "./known-address"
 import type { BookingFormProps } from "./booking-form-types"
 import { useKnownProperty } from "./use-known-property"
 import { useStepHistory } from "./use-step-history"
@@ -241,12 +241,7 @@ export function BookingForm({ catalogue = CATALOGUE, today = "2027-04-14", initi
               {stepError}
             </p>
           )}
-          {property && (
-            <div data-slot="known-address" className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <OnFileMark />
-              <p className="type-meta text-muted-foreground">We have worked at this address before.</p>
-            </div>
-          )}
+          {property && <KnownAddress />}
           {deadEnd && (
             <p data-slot="address-help" className="mt-4 text-base text-muted-foreground">
               {"Not sure? Call Ryan at "}

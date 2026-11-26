@@ -48,7 +48,7 @@ export const CONFIRM_PASS = "Set up my Season Pass"
 export const ACTIONS: Partial<Record<FormStep, string>> = { address: "Continue", service: "Continue", "quote-service": "Continue", details: "Continue", day: "Continue", preference: "Continue", contact: "Continue", card: "Save card", confirm: CONFIRM_BOOK }
 
 // Continue is never disabled and no standing hint sits above it (Hannah, Nov 25 2026): pressing it with something missing says what, in these words, at the top of the step and beside the field.
-export const SERVICE_PROBLEM = "Choose a service."
+export const SERVICE_PROBLEM = "Pick a service."
 export const DAY_PROBLEM = "Pick a time."
 
 /** What each contact field needs, written as help: the field and the fix. Null when the field can pass. */

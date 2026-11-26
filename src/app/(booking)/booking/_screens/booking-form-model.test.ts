@@ -45,8 +45,8 @@ describe("the booking form's steps", () => {
     const fields = { ...initialState(), place: FIXTURE_HOME, town: "Erie" as const }
     expect(canContinue("service", base({ service: null, fields }))).toBe(false)
     expect(canContinue("service", base({ fields }))).toBe(true)
-    expect(problemList("service", base({ service: null, fields }))[0]).toMatchObject({ message: "Choose a service." })
-    expect(problemList("quote-service", base({ service: null, fields }))[0]).toMatchObject({ message: "Choose a service." })
+    expect(problemList("service", base({ service: null, fields }))[0]).toMatchObject({ message: "Pick a service." })
+    expect(problemList("quote-service", base({ service: null, fields }))[0]).toMatchObject({ message: "Pick a service." })
     expect(canContinue("details", base({ fields }))).toBe(false)
     expect(canContinue("details", base({ fields: { ...fields, access: "yes" as const } }))).toBe(true)
     expect(problemList("details", base({ fields }))[0]).toMatchObject({ message: "Tell us whether we can get to the system without you." })

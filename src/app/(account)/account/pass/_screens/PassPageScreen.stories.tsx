@@ -135,7 +135,7 @@ export const AskingPlay: Story = {
   args: { pass: active, today: "2027-09-10", ask: "blowout" },
   globals: phone,
   play: async ({ canvas, userEvent, args }) => {
-    await userEvent.click(await canvas.findByRole("button", { name: /Choose when/ }))
+    await userEvent.click(await canvas.findByRole("button", { name: /Pick when/ }))
     await userEvent.click(await screen.findByRole("radio", { name: /Early season/ }))
     await userEvent.click(await screen.findByRole("button", { name: "Save" }))
     await expect(args.onChangePreference).toHaveBeenCalledWith("blowout", "earlier")

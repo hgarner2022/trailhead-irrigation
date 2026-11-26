@@ -92,7 +92,7 @@ describe("payments.chargeCard", () => {
   it("refuses a customer with no card Stripe holds and a charge that is still going through", async () => {
     const v = await doneRepair()
     await db.update(s.customer).set({ stripePaymentMethodId: null }).where(eq(s.customer.id, "c100"))
-    await expect(callApi(as(), paymentsChargeCard, { visitId: v.id })).rejects.toMatchObject({ code: "unprocessable", message: "This customer has no card on file. Choose another way." })
+    await expect(callApi(as(), paymentsChargeCard, { visitId: v.id })).rejects.toMatchObject({ code: "unprocessable", message: "This customer has no card on file. Pick another way." })
     await db.update(s.customer).set({ stripePaymentMethodId: "pm_dana" }).where(eq(s.customer.id, "c100"))
     await db.insert(s.charge).values({ organizationId: (await db.select().from(s.visit).where(eq(s.visit.id, v.id)))[0]!.organizationId, jobId: v.jobId, visitId: v.id, customerId: "c100", attempt: 1, amount: 145, status: "pending", method: "card_on_file", paidOn: "2027-05-07" })
     await expect(callApi(as(), paymentsChargeCard, { visitId: v.id })).rejects.toMatchObject({ code: "conflict", message: expect.stringMatching(/still going through/) })
@@ -117,7 +117,7 @@ describe("payments.chargeCard", () => {
     const [retry] = await db.select().from(s.queueItem).where(eq(s.queueItem.key, `${v.id}:retry`))
     expect(retry).toMatchObject({ kind: "pass-charge", status: "pending", payload: { visitId: v.id, retry: true } })
     expect(retry!.runAfter.toISOString()).toBe("2027-05-10T20:00:00.000Z")
-    await expect(callApi(as(), paymentsChargeCard, { visitId: v.id })).rejects.toMatchObject({ code: "conflict", message: "The card didn't go through. Choose another way." })
+    await expect(callApi(as(), paymentsChargeCard, { visitId: v.id })).rejects.toMatchObject({ code: "conflict", message: "The card didn't go through. Pick another way." })
     expect(await rows(v.id)).toHaveLength(1)
     expect(await eventsOf(db, { kind: "payment.failed", visitId: v.id })).toHaveLength(1)
   })

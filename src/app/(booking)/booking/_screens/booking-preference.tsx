@@ -24,7 +24,7 @@ function Group({ visit, value, onChange, single }: { visit: PassVisitPlan; value
           {visitName(visit)}
         </h2>
       )}
-      <TimingChoice kind={visit.kind} label={`${visitName(visit)}, preferred time`} value={value} onChange={onChange} plain />
+      <TimingChoice kind={visit.kind} label={`${visitName(visit)}, preference`} value={value} onChange={onChange} plain />
     </div>
   )
 }

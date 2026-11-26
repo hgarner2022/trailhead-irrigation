@@ -27,16 +27,16 @@ export const preferenceRequestLead = (d: Pick<PreferenceRequestData, "kind" | "a
 
 /** The text: the fact and the one sentence about scheduling, then the link. "Reply STOP to opt out." is added by the caller only on a number's first text (`isFirstText`). */
 export const preferenceRequestText = (d: PreferenceRequestData, o: { optOut: boolean }) =>
-  `Trailhead: tell us when you'd like your ${TIMING_NAME[d.kind]} at ${d.address}. ${TIMING_NEXT} Choose when: ${d.chooseUrl}${o.optOut ? " Reply STOP to opt out." : ""}`
+  `Trailhead: tell us when you'd like your ${TIMING_NAME[d.kind]} at ${d.address}. ${TIMING_NEXT} Pick when: ${d.chooseUrl}${o.optOut ? " Reply STOP to opt out." : ""}`
 
 export function preferenceRequestEmail(d: PreferenceRequestData): RenderedEmail {
   const out = compose({
     origin: d.origin,
     preheader: "Early season, our recommended or late season.",
-    title: `Choose when for your ${TIMING_NAME[d.kind]}`,
+    title: `Pick when for your ${TIMING_NAME[d.kind]}`,
     greeting: greetingLine(d.firstName),
     lead: preferenceRequestLead(d),
-    parts: [summary({ facts: TIMING_CHOICES.map((p): [string, string] => [TIMING_LABEL[p], timingMonth(d.kind, p)]) }), paragraph(TIMING_NEXT), button(d.chooseUrl, "Choose when")],
+    parts: [summary({ facts: TIMING_CHOICES.map((p): [string, string] => [TIMING_LABEL[p], timingMonth(d.kind, p)]) }), paragraph(TIMING_NEXT), button(d.chooseUrl, "Pick when")],
     why: `You are getting this because we are scheduling your ${TIMING_NAME[d.kind]}.`,
     signOff: SIGN_OFF,
     accountUrl: d.accountUrl,
