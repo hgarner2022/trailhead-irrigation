@@ -26,6 +26,28 @@ export function dayDetailLines(column: GridColumn, people: readonly Person[]): s
   return lines
 }
 
+/** Under the Week's day: each person column named by its colour dot and first name, or by initials from five people. Nothing for one person. */
+export function PersonSubRow({ people, colourOf }: { people: readonly Person[]; colourOf: (id: string) => number }) {
+  if (people.length < 2) return null
+  const initials = people.length >= 5
+  return (
+    <div data-slot="person-subrow" className="flex border-t border-border/60">
+      {people.map((p) => (
+        <span key={p.id} role="img" aria-label={p.name} title={p.name} tabIndex={initials ? 0 : undefined} className="flex min-w-0 flex-1 items-center justify-center gap-1 px-0.5 py-1 text-[11px] leading-none text-navy-light focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50">
+          {initials ? (
+            <span aria-hidden className={cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-card text-[9px] font-semibold text-navy ring-2", personStyle(colourOf(p.id)).ring)}>{p.initials}</span>
+          ) : (
+            <>
+              <span aria-hidden className={cn("size-2 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
+              <span aria-hidden className="truncate">{firstNameOf(p.name)}</span>
+            </>
+          )}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 export function DayHead({ column, people, colourOf, variant = "week", onOpenDay }: { column: GridColumn; people: readonly Person[]; colourOf: (id: string) => number; variant?: "week" | "day"; /** the Week's day opens that day */ onOpenDay?: (day: string) => void }) {
   const chip = column.caption ?? column.count
   const label = (
@@ -46,7 +68,8 @@ export function DayHead({ column, people, colourOf, variant = "week", onOpenDay 
       <span className="inline-flex items-center gap-1.5">{label}{chipEl}</span>
     )
     return (
-      <div data-slot="day-head" data-variant="week" className="flex min-w-0 items-center justify-center px-1 py-1.5">
+      <div data-slot="day-head" data-variant="week" className="flex min-w-0 flex-col">
+      <div className="flex min-w-0 items-center justify-center px-1 py-1.5">
         {lines.length ? (
           <HoverCard openDelay={250} closeDelay={80}>
             <HoverCardTrigger asChild>{trigger}</HoverCardTrigger>
@@ -55,6 +78,8 @@ export function DayHead({ column, people, colourOf, variant = "week", onOpenDay 
             </HoverCardContent>
           </HoverCard>
         ) : trigger}
+      </div>
+      <PersonSubRow people={people} colourOf={colourOf} />
       </div>
     )
   }

@@ -36,3 +36,17 @@ export const Full: Story = { args: { column: { day: "2026-11-26", label: "26 Thu
 export const EmptyDay: Story = { args: { column: { day: "2026-11-27", label: "27 Fri" } } }
 /** The Day's head: the day, the count, the towns, and each person with their open time and driving. */
 export const Day: Story = { args: { variant: "day", onOpenDay: undefined, column: { day: "2026-11-24", label: "24 Tue", caption: "5 visits", towns: "Erie 3, Lafayette 2", stats } } }
+/** The Week names each person column under the day: a dot and the first name. */
+export const WeekPersonNames: Story = {
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("img", { name: "Ryan Garner" })).toHaveTextContent("Ryan")
+    await expect(canvas.getByRole("img", { name: "Tech Two" })).toBeInTheDocument()
+  },
+}
+/** One person shown: no sub-row. */
+export const WeekOnePerson: Story = {
+  args: { people: PEOPLE.slice(0, 1) },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole("img", { name: "Ryan Garner" })).not.toBeInTheDocument()
+  },
+}

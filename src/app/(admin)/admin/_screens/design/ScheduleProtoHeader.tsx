@@ -12,7 +12,7 @@ import { rangeWords, shift, type View } from "./schedule-prototype-view"
 import type { Proto } from "./use-schedule-prototype"
 
 // The Schedule prototype's header (docs/plans/2026-11-25-scheduler-design.md, 7.1, with the reconciliation of Nov 25): the title and range and the one filled button, New job (the
-// shell's New job sheet, with the best times); on a phone a More menu with the day, week or month arrows and the shortcuts; under it previous, Today and next, Week | Day | Month | List,
+// shell's New job sheet, with the best times); on a phone four rows at most (title, People, view, Unscheduled and Map) with the arrows and Today in a More menu; under it previous, Today and next, Week | Day | Month | List,
 // and at the right People, Reorder stops, Unscheduled and Map. Time off is set in Settings, People. Pure view over the hook.
 
 const VIEWS = [
@@ -44,6 +44,7 @@ export function ScheduleProtoHeader({ p }: { p: Proto }) {
               <DropdownMenuContent align="end" className="min-w-48">
                 <DropdownMenuItem className="min-h-11" onSelect={() => p.setDay(shift(view, day, -1))}>{`Previous ${UNIT[view]}`}</DropdownMenuItem>
                 <DropdownMenuItem className="min-h-11" onSelect={() => p.setDay(shift(view, day, 1))}>{`Next ${UNIT[view]}`}</DropdownMenuItem>
+                <DropdownMenuItem className="min-h-11" onSelect={() => p.setDay(p.today)}>Today</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </>
@@ -55,7 +56,7 @@ export function ScheduleProtoHeader({ p }: { p: Proto }) {
         }
       />
       <div data-slot="schedule-toolbar" className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div role="group" aria-label={`Go to another ${UNIT[view]}`} className="flex items-center gap-1">
+        <div role="group" aria-label={`Go to another ${UNIT[view]}`} className="flex items-center gap-1 max-md:hidden">
           <Button type="button" variant="outline" size="icon" className={cn("size-11", view !== "day" && "hidden md:inline-flex")} aria-label={`Previous ${UNIT[view]}`} onClick={() => p.setDay(shift(view, day, -1))}>
             <ChevronLeft className="size-4" aria-hidden />
           </Button>

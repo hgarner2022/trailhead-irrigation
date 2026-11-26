@@ -38,6 +38,14 @@ describe("VisitPeek", () => {
     expect(screen.queryByRole("button", { name: "Mark done" })).toBeNull()
     expect(screen.getByText("Done")).toBeInTheDocument()
   })
+  it("has exactly one filled button: Mark done when it shows, else Edit visit", () => {
+    media(true)
+    const filled = () => screen.getAllByRole("button").filter((b) => b.className.includes("bg-primary-dark"))
+    const { rerender } = render(<VisitPeek {...base} />)
+    expect(filled().map((b) => b.textContent)).toEqual(["Edit visit"])
+    rerender(<VisitPeek {...base} canMarkDone />)
+    expect(filled().map((b) => b.textContent)).toEqual(["Mark done"])
+  })
   it("closes with Escape and with its Close button", async () => {
     media(true)
     const onClose = vi.fn()

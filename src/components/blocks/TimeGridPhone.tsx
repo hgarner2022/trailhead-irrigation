@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { PeopleMenu } from "./PeopleMenu"
 import { AnytimeStrip } from "./AnytimeStrip"
 import { TimeGridColumn } from "./TimeGridColumn"
-import { HourGutter } from "./TimeGridHeader"
+import { HourGutter, PersonSubRow, GUTTER } from "./TimeGridHeader"
 import { PHONE_HOUR_PX, conflictMap, visibleRange } from "./time-grid-model"
 import type { TimeGridProps } from "./time-grid-types"
 
@@ -65,6 +65,7 @@ export function TimeGridPhone(props: TimeGridProps) {
           ))}
         </div>
       </div>
+      {chosen.length > 1 && <div className="flex"><div className={GUTTER} /><div className="min-w-0 flex-1"><PersonSubRow people={chosen} colourOf={colourOf} /></div></div>}
       <div
         className="flex overflow-hidden rounded-lg border border-border bg-background"
         onTouchStart={(e) => { swipe.current = e.touches[0]?.clientX ?? null }}

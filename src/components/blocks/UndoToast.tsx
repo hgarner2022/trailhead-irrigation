@@ -53,7 +53,7 @@ export function ToastBar({ message, actions, onClose, placement = "top" }: { mes
       )}
     >
       <span className={cn("min-w-0 flex-1 basis-40 py-2", bottom && "order-1 md:whitespace-nowrap")}>{message}</span>
-      <span className={cn("flex shrink-0 items-center", bottom ? "order-3 w-full justify-end md:order-2 md:w-auto" : "contents")}>
+      <span className={cn("flex shrink-0 items-center", bottom ? cn("order-3 justify-end md:order-2 md:w-auto", actions.length > 1 ? "w-full" : "order-2 md:order-2") : "contents")}>
         {actions.map((a) => (
           <Button key={a.label} type="button" size="sm" variant="ghost" className="min-h-11 text-primary-light hover:bg-white/10 hover:text-primary-light" onClick={() => void a.onClick()}>
             {a.label}
@@ -61,7 +61,7 @@ export function ToastBar({ message, actions, onClose, placement = "top" }: { mes
         ))}
       </span>
       {onClose && (
-        <Button type="button" size="icon" variant="ghost" aria-label="Close" className={cn("size-11 text-white hover:bg-white/10 hover:text-white", bottom && "order-2 md:order-3")} onClick={onClose}>
+        <Button type="button" size="icon" variant="ghost" aria-label="Close" className={cn("size-11 text-white hover:bg-white/10 hover:text-white", bottom && (actions.length > 1 ? "order-2 md:order-3" : "order-3"))} onClick={onClose}>
           <X className="size-4" aria-hidden />
         </Button>
       )}
