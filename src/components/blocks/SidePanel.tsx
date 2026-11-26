@@ -218,17 +218,17 @@ function Docked({ open, onOpenChange, title, description, pills, children, foote
   if (!open) return null
   return (
     <aside aria-label={title} data-slot="side-panel" data-mode="docked" className={cn("flex h-full min-h-0 w-[360px] shrink-0 flex-col border-l border-border bg-background", className)}>
-      <header className="flex items-start gap-3 border-b border-border px-4 py-3">
+      <header className="flex items-center gap-3 border-b border-border py-2 pl-4 pr-2">
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-xl font-semibold leading-tight text-navy">{title}</h2>
-          {description ? <p className="mt-0.5 truncate text-sm text-muted-foreground" title={description}>{description}</p> : null}
+          <h2 className="type-admin-card text-navy">{title}</h2>
+          {description ? <p className="type-admin-meta mt-0.5 truncate text-muted-foreground" title={description}>{description}</p> : null}
           {pills ? <div data-slot="side-panel-pills" className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">{pills}</div> : null}
         </div>
-        <Button variant="ghost" size="icon" aria-label="Close panel" onClick={() => onOpenChange(false)} className="-mr-2 size-11 shrink-0">
+        <Button variant="ghost" size="icon" aria-label="Close panel" onClick={() => onOpenChange(false)} className="shrink-0 text-muted-foreground hover:text-foreground">
           <X className="size-4" aria-hidden />
         </Button>
       </header>
-      <div role="region" aria-label={`${title} details`} tabIndex={0} className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50">
+      <div role="region" aria-label={`${title} details`} tabIndex={0} className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
         {children}
       </div>
       {footer ? <footer className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-3">{footer}</footer> : null}

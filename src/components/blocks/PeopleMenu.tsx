@@ -17,7 +17,7 @@ import { useMedia } from "./use-media"
 // column, stops, pins and rows off the screen and nothing else. The last person shown cannot be turned off. With one person nothing is drawn. On a phone the list is a bottom sheet with 44px
 // rows and a Done button. The host holds the set and keeps it in this browser. Pure render.
 
-const ROW = "flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-md px-2 text-left text-sm text-foreground hover:bg-stone focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50 aria-disabled:cursor-not-allowed"
+const ROW = "type-admin-body flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-md px-2.5 text-left text-foreground transition-colors duration-(--motion-fast) hover:bg-stone focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-reduce:transition-none aria-disabled:cursor-not-allowed"
 
 export interface PeopleMenuProps {
   /** everyone on the schedule, in colour order */
@@ -27,6 +27,8 @@ export interface PeopleMenuProps {
   onToggle: (personId: string) => void
   /** on a phone, the icon and the number showing, 44 px, for a toolbar row that must fit (the summary stays in the name read aloud) */
   compact?: boolean
+  /** in a toolbar: no box around the button until it is pointed at (the Schedule's one row of controls) */
+  quiet?: boolean
   className?: string
 }
 
@@ -43,27 +45,27 @@ function List({ people, hidden, onToggle }: Pick<PeopleMenuProps, "people" | "hi
           const last = on && shownCount === 1
           return (
             <button key={p.id} type="button" role="checkbox" aria-checked={on} aria-disabled={last || undefined} title={last ? "One person always stays on" : undefined} onClick={() => !last && onToggle(p.id)} className={ROW}>
-              <span aria-hidden className={cn("size-3 shrink-0 rounded-full", personStyle(people.indexOf(p)).dot, !on && "opacity-40")} />
+              <span aria-hidden className={cn("size-2.5 shrink-0 rounded-full", personStyle(people.indexOf(p)).dot, !on && "opacity-30")} />
               <span className={cn("min-w-0 flex-1 truncate", !on && "text-muted-foreground")}>{p.name}</span>
               {on && <Check aria-hidden className="size-4 shrink-0 text-navy" />}
             </button>
           )
         })}
-        {rows.length === 0 && <p className="px-2 py-3 text-sm text-muted-foreground">No one by that name.</p>}
+        {rows.length === 0 && <p className="type-admin-body px-2.5 py-3 text-muted-foreground">No one by that name.</p>}
       </div>
     </div>
   )
 }
 
-export function PeopleMenu({ people, hidden, onToggle, compact, className }: PeopleMenuProps) {
+export function PeopleMenu({ people, hidden, onToggle, compact, quiet, className }: PeopleMenuProps) {
   const [open, setOpen] = useState(false)
   const phone = useMedia("(max-width: 767px)")
   if (people.length < 2) return null
   const summary = peopleSummary(people, hidden)
   const trigger = (
-    <Button type="button" variant="outline" data-slot="people-menu" aria-haspopup="dialog" aria-expanded={open} aria-label={`People: ${summary}`} onClick={phone ? () => setOpen(true) : undefined} className={cn("min-h-11 justify-start gap-2", compact ? "max-md:min-w-11 max-md:justify-center max-md:gap-1 max-md:px-2" : "max-md:w-full", className)}>
+    <Button type="button" variant={quiet ? "ghost" : "outline"} size="adaptive" data-slot="people-menu" aria-haspopup="dialog" aria-expanded={open} aria-label={`People: ${summary}`} onClick={phone ? () => setOpen(true) : undefined} className={cn("justify-start gap-2", quiet && "md:px-3 aria-expanded:bg-stone", compact ? "max-md:min-w-11 max-md:justify-center max-md:gap-1 max-md:px-2" : "max-md:w-full", className)}>
       <Users aria-hidden className="size-4 shrink-0" />
-      {compact && <span aria-hidden className="text-sm font-medium tabular-nums md:hidden">{people.length - hidden.length}</span>}
+      {compact && <span aria-hidden className="type-admin-label tabular-nums md:hidden">{people.length - hidden.length}</span>}
       <span className={cn("min-w-0 truncate", compact && "max-md:hidden")}>
         <span className="font-normal text-muted-foreground">People: </span>
         <span className="font-medium">{summary}</span>
@@ -78,11 +80,11 @@ export function PeopleMenu({ people, hidden, onToggle, compact, className }: Peo
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetContent side="bottom" showCloseButton={false} className="max-h-[85dvh] gap-2 rounded-t-lg p-4" aria-describedby={undefined}>
             <SheetHeader className="p-0">
-              <SheetTitle className="font-display text-xl text-navy">People</SheetTitle>
+              <SheetTitle className="type-heading text-navy">People</SheetTitle>
             </SheetHeader>
             <List people={people} hidden={hidden} onToggle={onToggle} />
             <SheetFooter className="p-0">
-              <Button type="button" className="min-h-11" onClick={() => setOpen(false)}>Done</Button>
+              <Button type="button" size="touch" onClick={() => setOpen(false)}>Done</Button>
             </SheetFooter>
           </SheetContent>
         </Sheet>
@@ -91,7 +93,7 @@ export function PeopleMenu({ people, hidden, onToggle, compact, className }: Peo
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent align="end" aria-label="People" className="w-72 p-2">
+      <PopoverContent align="start" aria-label="People" className="w-64 p-1.5">
         <List people={people} hidden={hidden} onToggle={onToggle} />
       </PopoverContent>
     </Popover>

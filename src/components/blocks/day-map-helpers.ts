@@ -112,8 +112,8 @@ export function stopLine(stop: Visit): string {
   return `${stop.clientName} · ${stop.town} · ${KIND_WORDS[stop.kind]}`
 }
 
-/** The background class each person's markers and shade take, by their position in the list; a fourth person wraps. */
-export const PERSON_CLASSES = ["bg-primary", "bg-navy", "bg-positive"] as const
+/** The background class each person's markers and shade take, by their position in the list: five colours told apart (orange, navy, green, lake blue, plum); a sixth person wraps. */
+export const PERSON_CLASSES = ["bg-primary", "bg-navy", "bg-positive", "bg-person-4", "bg-person-5"] as const
 export const personClass = (index: number): (typeof PERSON_CLASSES)[number] => PERSON_CLASSES[index % PERSON_CLASSES.length]
 
 /**

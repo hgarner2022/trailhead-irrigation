@@ -1,10 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, fn, userEvent, within } from "storybook/test"
-import { AdminShell } from "@/components/blocks/AdminShell"
+import { DesignShell } from "./DesignShell"
 import { SchedulePrototype } from "./SchedulePrototype"
 import type { ProtoInitial } from "./use-schedule-prototype"
 import { orderStory } from "./schedule-order-fixture"
 import { teamWorld } from "./schedule-team-fixture"
+import { HOUR_PX } from "@/components/blocks/time-grid-model"
 
 // The Schedule prototype (docs/plans/2026-11-25-scheduler-design.md, sections 7 and 9, and the second review, docs/plans/2026-11-26-scheduler-review-research.md) over the walkthrough's calendar:
 // Ryan Garner and Hannah Garner, today Wednesday, Nov 18 2026, every visit read from its job page. The walkthrough's own Schedule is the way in (Admin walkthrough, clickable); these stories
@@ -22,9 +23,9 @@ const meta = {
   parameters: { layout: "fullscreen", docs: { description: { component: "The Schedule over the walkthrough's calendar. Drag a visit, press Notify the customer, press Undo, open Unscheduled and Map together, press Schedule on a job with no day. See Start here: Scheduler (Nov 25)." } } },
   globals: LAPTOP,
   render: (args) => (
-    <AdminShell current="schedule" user={{ initials: "HG", name: "Hannah" }}>
+    <DesignShell current="schedule">
       <SchedulePrototype {...args} />
-    </AdminShell>
+    </DesignShell>
   ),
 } satisfies Meta<typeof SchedulePrototype>
 export default meta
@@ -223,7 +224,7 @@ export const DropFromUnscheduled: Story = {
     const handle = row.closest("[data-unscheduled-id]")!.firstElementChild!
     const col = canvasElement.querySelector('[data-slot="time-grid-column"][data-day="2026-11-19"][data-person="person_ryan"]')!.getBoundingClientRect()
     const from = handle.getBoundingClientRect()
-    const [x0, y0, x1, y1] = [from.x + 10, from.y + 10, col.x + 40, col.y + 3 * 56 + 10]
+    const [x0, y0, x1, y1] = [from.x + 10, from.y + 10, col.x + 40, col.y + 3 * HOUR_PX + 10]
     pointer("pointerdown", handle, x0, y0)
     for (const f of [0.3, 0.7, 1]) { await pause(); pointer("pointermove", document, x0 + (x1 - x0) * f, y0 + (y1 - y0) * f) }
     await pause()
@@ -265,21 +266,22 @@ export const ScheduleAll: Story = {
   name: "Schedule all",
   args: { panels: { unscheduled: true }, toastSeconds: 0 },
   play: async () => {
-    await userEvent.click(await body().findByRole("button", { name: "Schedule all 4" }))
-    const dialog = within(await body().findByRole("dialog", { name: "Schedule all 4" }))
-    await expect(dialog.getAllByRole("listitem")).toHaveLength(4)
+    // three jobs wait for a day since the admin's Nov 26 merge (the job that waited on a price is a Draft quote now, not a job)
+    await userEvent.click(await body().findByRole("button", { name: "Schedule all 3" }))
+    const dialog = within(await body().findByRole("dialog", { name: "Schedule all 3" }))
+    await expect(dialog.getAllByRole("listitem")).toHaveLength(3)
     await userEvent.click(dialog.getByRole("button", { name: "Remove Andrea Dalton" }))
-    await expect(await body().findByRole("dialog", { name: "Schedule all 3" })).toBeInTheDocument()
+    await expect(await body().findByRole("dialog", { name: "Schedule all 2" })).toBeInTheDocument()
     await userEvent.click(await body().findByRole("button", { name: "Schedule and notify the customer" }))
-    await expect(await body().findByText(/^3 visits scheduled/, undefined, { timeout: 4000 })).toBeInTheDocument()
+    await expect(await body().findByText(/^2 visits scheduled/, undefined, { timeout: 4000 })).toBeInTheDocument()
   },
 }
 // on a phone the Unscheduled sheet is open, so the toast waits for it: the phone twin stops at the preview
 export const ScheduleAllPhone: Story = {
   ...phone(ScheduleAll),
   play: async () => {
-    await userEvent.click(await body().findByRole("button", { name: "Schedule all 4" }))
-    await expect(await body().findByRole("dialog", { name: "Schedule all 4" })).toBeInTheDocument()
+    await userEvent.click(await body().findByRole("button", { name: "Schedule all 3" }))
+    await expect(await body().findByRole("dialog", { name: "Schedule all 3" })).toBeInTheDocument()
   },
 }
 

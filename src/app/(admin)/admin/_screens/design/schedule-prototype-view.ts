@@ -7,7 +7,7 @@ import { monthOf, monthTitle, shiftMonth, type MonthDay } from "@/components/blo
 import { dayColumns } from "@/components/blocks/scheduler-calendar-fixtures"
 import type { GridBlock, TimeOff } from "@/components/blocks/time-grid-model"
 import type { ColumnStat, GridColumn } from "@/components/blocks/time-grid-types"
-import { shortDay } from "@/emails/format"
+import { shortDay } from "@/lib/admin/format"
 import type { Meta } from "./schedule-prototype-model"
 import { personDay, routeOf, type Calendar } from "./schedule-engine"
 

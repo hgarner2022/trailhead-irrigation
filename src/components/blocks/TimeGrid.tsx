@@ -14,7 +14,7 @@ import { useGridDnd, useGridSensors } from "./time-grid-dnd"
 import { HOUR_PX, conflictMap, resizeResult, visibleRange, type GridBlock } from "./time-grid-model"
 import type { TimeGridProps } from "./time-grid-types"
 
-// The clock (docs/plans/2026-11-25-scheduler-design.md, 7.1 to 7.3, 7.10, 7.13): days across, hours down, each day split by person, 56 px an
+// The clock (docs/plans/2026-11-25-scheduler-design.md, 7.1 to 7.3, 7.10, 7.13): days across, hours down, each day split by person, 64 px an
 // hour, a sticky day head and hour gutter inside one scrolling area, an Any time strip under the head, time off, a now line on today. Week
 // passes seven days; Day passes one (and `showPersonNames`). Drag a block to another day, time or person; drag its bottom edge for its length;
 // drag a chip between the strip and the clock; drop a row from the Unscheduled panel on it (`onDropExternal`). Every drag has a way without
@@ -61,6 +61,13 @@ function TimeGridDesktop(props: TimeGridProps) {
   const scroller = useRef<HTMLDivElement>(null)
   const setStepX = useContext(StepCtx)
   const [resize, setResize] = useState<{ id: string; minutes: number } | null>(null)
+  // the head and the gutter sit flat on a hairline; they take a soft shadow only once something has scrolled under them
+  const [under, setUnder] = useState({ x: false, y: false })
+  const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const x = e.currentTarget.scrollLeft > 0
+    const y = e.currentTarget.scrollTop > 0
+    if (x !== under.x || y !== under.y) setUnder({ x, y })
+  }
 
   const timeOff = useMemo(() => props.timeOff ?? [], [props.timeOff])
   const planned = useMemo(() => props.planned ?? [], [props.planned])
@@ -99,7 +106,17 @@ function TimeGridDesktop(props: TimeGridProps) {
   }
 
 
-  const dayWidth = Math.max(people.length * 76, 120)
+  // a person's column never gets too narrow to read a street: the grid scrolls sideways inside itself instead (a panel beside it, five people)
+  const dayWidth = Math.max(people.length * (people.length > 3 ? 80 : 92), 140)
+  const todayDay = columns.find((c) => c.today)?.day
+  useEffect(() => {
+    const el = scroller.current
+    const head = el?.querySelector<HTMLElement>('[data-today="true"]')
+    if (!el || !head || el.scrollWidth <= el.clientWidth) return
+    const left = head.offsetLeft - 56
+    if (left + head.offsetWidth > el.scrollLeft + el.clientWidth - 56 || left < el.scrollLeft) el.scrollLeft = left
+  }, [todayDay, columns.length])
+  const dayEdge = (c: { today?: boolean }, i: number) => cn("flex-1", i > 0 && "border-l border-border", c.today && columns.length > 1 && "bg-primary/[0.03]")
   return (
     <>
     <div
@@ -108,24 +125,25 @@ function TimeGridDesktop(props: TimeGridProps) {
       tabIndex={0}
       aria-label="Schedule"
       data-slot="time-grid"
-      className={cn("relative max-h-[min(44rem,calc(100vh-14rem))] overflow-auto rounded-lg border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", props.className)}
+      onScroll={onScroll}
+      className={cn("relative max-h-[min(48rem,calc(100dvh-11rem))] overflow-auto rounded-lg border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", props.className)}
     >
       <div className="min-w-full" style={{ width: "max-content" }}>
-        <div className="sticky top-0 z-20 border-b border-border bg-background">
+        <div data-slot="time-grid-head" data-under={under.y || undefined} className={cn("sticky top-0 z-20 border-b border-border bg-background transition-shadow duration-(--motion-fast) motion-reduce:transition-none", under.y && "shadow-sm")}>
           <div className="flex">
-            <div className={cn("sticky left-0 z-10 border-r border-border bg-background", GUTTER)} />
-            {columns.map((c) => (
-              <div key={c.day} className="flex-1 border-l border-border/60" style={{ minWidth: dayWidth }}>
+            <div className={cn("sticky left-0 z-10 bg-background", GUTTER)} />
+            {columns.map((c, i) => (
+              <div key={c.day} data-today={c.today || undefined} className={dayEdge(c, i)} style={{ minWidth: dayWidth }}>
                 <DayHead column={c} people={people} colourOf={colourOf} variant={showPersonNames ? "day" : "week"} onOpenDay={showPersonNames ? undefined : props.onOpenDay} />
               </div>
             ))}
           </div>
-          <div className="flex border-t border-border/60" data-slot="anytime-row">
-            <div className={cn("sticky left-0 z-10 flex items-center justify-end border-r border-border bg-background pr-2 text-xs font-medium text-navy-light", GUTTER)}>Any time</div>
-            {columns.map((c) => (
-              <div key={c.day} className="flex flex-1 border-l border-border/60" style={{ minWidth: dayWidth }}>
+          <div className="flex" data-slot="anytime-row">
+            <div className={cn("type-admin-dense sticky left-0 z-10 flex items-center justify-end bg-background pr-2 text-muted-foreground", GUTTER)}>Any time</div>
+            {columns.map((c, i) => (
+              <div key={c.day} className={cn("flex", dayEdge(c, i))} style={{ minWidth: dayWidth }}>
                 {people.map((p) => (
-                  <div key={p.id} className="min-w-0 flex-1 px-0.5">
+                  <div key={p.id} className="min-w-0 flex-1 px-0.5 pb-0.5">
                     <AnytimeStrip
                       labelled={false}
                       label={`Any time, ${names(p.id)}, ${c.label}`}
@@ -148,9 +166,9 @@ function TimeGridDesktop(props: TimeGridProps) {
         </div>
 
         <div className="flex">
-          <HourGutter range={range} hourPx={hourPx} nowMinutes={now && shown.has(now.day) ? now.minutes : undefined} className="sticky left-0 z-10" />
-          {columns.map((c) => (
-            <div key={c.day} className="flex flex-1 border-l border-border/60" style={{ minWidth: dayWidth }}>
+          <HourGutter range={range} hourPx={hourPx} nowMinutes={now && shown.has(now.day) ? now.minutes : undefined} className={cn("sticky left-0 z-10 transition-shadow duration-(--motion-fast) motion-reduce:transition-none", under.x && "shadow-sm")} />
+          {columns.map((c, i) => (
+            <div key={c.day} className={cn("flex", dayEdge(c, i))} style={{ minWidth: dayWidth }}>
               {people.map((p) => (
                 <TimeGridColumn
                   key={p.id}
@@ -170,6 +188,7 @@ function TimeGridDesktop(props: TimeGridProps) {
                   selectedId={selectedId}
                   hoverId={hoverId}
                   dragId={dragId}
+                  resizingId={resize?.id}
                   interactive
                   compact={!showPersonNames}
                   register={register}
@@ -179,7 +198,7 @@ function TimeGridDesktop(props: TimeGridProps) {
                   onTimeOffDrag={props.onTimeOffDrag}
                   onTimeOffClick={props.onTimeOffClick}
                   onResizeStart={startResize}
-                  className="border-l-0 first:border-l-0 [&:not(:first-child)]:border-l"
+                  className="border-l-0 first:border-l-0 [&:not(:first-child)]:border-l [&:not(:first-child)]:border-border/40"
                 />
               ))}
             </div>
@@ -191,9 +210,9 @@ function TimeGridDesktop(props: TimeGridProps) {
         {(source) => {
           const b = all.find((x) => x.id === String(source.id))
           return b ? (
-            <TimeBlock block={b} variant={b.start === null ? "chip" : "block"} personIndex={colourOf(b.personId)} initials={people.find((p) => p.id === b.personId)?.initials} className="size-full shadow-lg ring-2 ring-navy" />
+            <TimeBlock block={b} variant={b.start === null ? "chip" : "block"} personIndex={colourOf(b.personId)} initials={people.find((p) => p.id === b.personId)?.initials} className="cal-lift size-full shadow-lg ring-1 ring-navy/25" />
           ) : (
-            <div className="rounded-lg bg-navy px-2 py-1 text-xs font-semibold text-white shadow-lg">{String(source.data?.label || "Visit")}</div>
+            <div className="type-admin-dense cal-lift rounded-md bg-navy px-2 py-1 font-semibold text-white shadow-lg">{String(source.data?.label || "Visit")}</div>
           )
         }}
       </DragOverlay>

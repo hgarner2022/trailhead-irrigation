@@ -38,7 +38,7 @@ export interface ToastAction {
  * The bar itself, without the timer or the portal: the message and up to two actions (Undo alone for a routine action, Notify and Undo after a move,
  * docs/plans/2026-11-25-scheduler-design.md 7.8) and an optional close. `MovedToast` draws this same bar. It is marked live and given pointer events.
  */
-export function ToastBar({ message, actions, onClose, placement = "top" }: { message: ReactNode; actions: readonly ToastAction[]; onClose?: () => void; placement?: "top" | "bottom" }) {
+export function ToastBar({ message, actions, onClose, placement = "top", className }: { message: ReactNode; actions: readonly ToastAction[]; onClose?: () => void; placement?: "top" | "bottom"; /** the Schedule's bar rises into place (`cal-rise`) */ className?: string }) {
   const bottom = placement === "bottom"
   return (
     <div
@@ -50,6 +50,7 @@ export function ToastBar({ message, actions, onClose, placement = "top" }: { mes
       className={cn(
         "fixed inset-x-4 z-[60] mx-auto flex max-w-md flex-wrap items-center gap-x-1 gap-y-0 rounded-lg bg-navy px-4 py-2 text-sm text-white shadow-lg md:flex-nowrap md:inset-x-auto md:left-1/2 md:max-w-xl md:-translate-x-1/2",
         bottom ? "bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-6" : "top-[calc(0.75rem+env(safe-area-inset-top))]",
+        className,
       )}
     >
       <span className={cn("min-w-0 flex-1 basis-40 py-2", bottom && "order-1 md:whitespace-nowrap")}>{message}</span>

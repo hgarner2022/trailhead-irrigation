@@ -7,7 +7,7 @@ import { defaultMinutes } from "@/lib/scheduling/types"
 import { hoursOf } from "@/lib/admin/people"
 import type { Person, Town, Visit, VisitKind } from "@/lib/admin/types"
 
-export const HOUR_PX = 56
+export const HOUR_PX = 64
 export const PHONE_HOUR_PX = 88
 export const SNAP_MIN = 15
 export const MIN_BLOCK_MIN = 15

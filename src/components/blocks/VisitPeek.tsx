@@ -2,8 +2,11 @@
 
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { Notice } from "./Notice"
+import { RecordFacts, type RecordFact } from "./RecordPanel"
 import { SidePanel } from "./SidePanel"
 import { StatusPill } from "./StatusPill"
+import { TextLink } from "./TextLink"
 
 // The peek (docs/plans/2026-11-26-scheduler-review-research.md, point 2): one click or Enter on a visit on the Schedule opens its facts in the product's docked SidePanel, a non-modal
 // aside beside the grid from 1280 (the grid stays usable) and a full-height sheet on a phone. It shows the customer, service, day and time, length, who, where and the job, and three
@@ -48,13 +51,23 @@ export function VisitPeek({ customer, service, when, length, who, address, job, 
     const heading = document.querySelector<HTMLElement>('aside.visit-peek h2')
     if (heading) {
       heading.tabIndex = -1
-      heading.classList.add("w-fit", "rounded-sm", "outline-none", "focus-visible:ring-2", "focus-visible:ring-primary/50")
+      // the heading is where a reader starts, not a control: it takes the focus without a ring (the next Tab lands on Close, which has one)
+      heading.classList.add("outline-none")
       heading.focus({ preventScroll: true })
     }
   }, [customer, when])
-  const facts: [string, string][] = [["Service", service], ["When", when], ["Length", length], ["Who", who], ["Where", address], ["Job", job]]
-  // A plain link out to the device's maps app, not an API call
+  // A plain link out to the device's maps app, not an API call. The address itself is words, not a record link.
   const directions = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
+  const where = (
+    <>
+      {address}
+      <TextLink href={directions} target="_blank" touch="inline" weight="medium" aria-label={`Directions to ${address}`} data-slot="peek-directions" className="max-md:mt-1 max-md:flex max-md:min-h-11 max-md:w-fit max-md:items-center md:ml-3">
+        Directions
+      </TextLink>
+    </>
+  )
+  // the admin's own fact list (RecordFacts): the customer is the title and is said once, the person and the address are words
+  const facts: RecordFact[] = [["Service", service], ["When", <span key="when" className="tabular-nums">{when}</span>], ["Length", <span key="length" className="tabular-nums">{length}</span>], ["Who", who], ["Where", where], ["Job", job]]
   const primary = canMarkDone && !done
   return (
     <SidePanel
@@ -66,35 +79,16 @@ export function VisitPeek({ customer, service, when, length, who, address, job, 
       className={`visit-peek max-xl:h-dvh max-xl:rounded-none ${className ?? ""}`}
       footer={
         <>
-          {primary && <Button type="button" className="min-h-11" onClick={onMarkDone}>Mark done</Button>}
-          <Button type="button" variant={primary ? "outline" : "default"} className="min-h-11" onClick={onEdit}>Edit visit</Button>
-          <Button type="button" variant="outline" className="min-h-11" onClick={onOpenJob}>Open job</Button>
+          {primary && <Button type="button" size="touch" onClick={onMarkDone}>Mark done</Button>}
+          <Button type="button" size="touch" variant={primary ? "outline" : "default"} onClick={onEdit}>Edit visit</Button>
+          <Button type="button" size="touch" variant="outline" onClick={onOpenJob}>Open job</Button>
         </>
       }
     >
-      <dl data-slot="visit-peek-facts" className="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
-        {facts.map(([label, value]) => (
-          <div key={label} className="contents">
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd className="min-w-0 break-words text-foreground">
-              {value}
-              {label === "Where" && (
-                <a
-                  href={directions}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Directions to ${address}`}
-                  data-slot="peek-directions"
-                  className="mt-1 flex min-h-11 w-fit items-center font-medium text-primary-dark underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 md:mt-0 md:inline-flex md:min-h-0 md:pl-3"
-                >
-                  Directions
-                </a>
-              )}
-            </dd>
-          </div>
-        ))}
-      </dl>
-      {conflict && <p data-slot="conflict-words" className="mt-3 text-sm text-destructive">{conflict}</p>}
+      <div data-slot="visit-peek-facts">
+        <RecordFacts rows={facts} className="mt-0" />
+      </div>
+      {conflict && <Notice tone="error" role="status" data-slot="conflict-words" className="mt-4">{conflict}</Notice>}
     </SidePanel>
   )
 }

@@ -1,14 +1,16 @@
 "use client"
 
 import { useRef, useState, type KeyboardEvent } from "react"
-import { Check, MapPinOff, Search } from "lucide-react"
+import { MapPinOff, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { optionClass } from "./option-styles"
+import { TextLink } from "./TextLink"
 import { EmptyState } from "./EmptyState"
 import { SegmentedControl } from "./SegmentedControl"
-import { shortDay } from "@/emails/format"
+import { shortDay } from "@/lib/admin/format"
 import { recommendedId, sortOpenings, timeRange, type OpeningSort } from "./find-a-time-model"
 import type { Opening } from "./scheduler-panels-types"
 
@@ -52,9 +54,11 @@ const SORTS = [
   { value: "least-driving", label: "Least driving" },
 ] as const
 
-const ROW = "flex min-h-14 w-full cursor-pointer flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 sm:flex-row sm:items-center sm:gap-3"
+/** A row is one option of the admin (`optionClass`: navy when chosen, no mark): the day, time and person at the left, what it adds to the driving at the right, in tabular numerals. */
+const ROW = "type-admin-body grid min-h-14 w-full grid-cols-1 items-center gap-x-4 gap-y-0.5 px-3.5 py-2.5 text-left sm:grid-cols-[minmax(0,1fr)_auto]"
 
 function Row({ row, picked, recommended, forced, index, focusable, onPick, onKey, setRef }: { row: Opening; picked: boolean; recommended: boolean; forced: boolean; index: number; focusable: boolean; onPick: () => void; onKey: (e: KeyboardEvent<HTMLButtonElement>, i: number) => void; setRef: (el: HTMLButtonElement | null) => void }) {
+  const quiet = picked ? "text-white/85" : "text-muted-foreground"
   return (
     <button
       ref={setRef}
@@ -67,19 +71,22 @@ function Row({ row, picked, recommended, forced, index, focusable, onPick, onKey
       data-forced={forced || undefined}
       onClick={onPick}
       onKeyDown={(e) => onKey(e, index)}
-      className={cn(ROW, picked ? "border-navy bg-navy/5" : "border-border bg-background hover:border-navy/40", forced && !picked && "bg-stone text-muted-foreground")}
+      className={cn(optionClass({ selected: picked, settle: false }), ROW, forced && !picked && "bg-stone text-muted-foreground")}
     >
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span className={cn("font-semibold", forced ? "text-muted-foreground" : "text-navy")}>{shortDay(row.day)}</span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <span className="font-semibold">{shortDay(row.day)}</span>
           <span className="tabular-nums">{timeRange(row.start, row.end)}</span>
-          <span className={forced ? "" : "text-muted-foreground"}>{row.personName}</span>
-          {recommended && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary-deep">Recommended</span>}
+          <span className={forced ? "" : quiet}>{row.personName}</span>
         </span>
-        {row.conflict ? <span className="text-sm">{row.conflict}</span> : row.nextTo ? <span className="text-sm text-muted-foreground">{row.nextTo}</span> : null}
+        {(recommended || row.conflict || row.nextTo) && (
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            {recommended && <span className={cn("type-admin-dense rounded-full px-2 py-0.5 font-semibold", picked ? "bg-white/15 text-white" : "bg-primary/10 text-primary-deep")}>Recommended</span>}
+            {row.conflict ? <span>{row.conflict}</span> : row.nextTo ? <span className={quiet}>{row.nextTo}</span> : null}
+          </span>
+        )}
       </span>
-      {!forced && <span className="shrink-0 tabular-nums text-foreground">{row.addedMinutes > 0 ? `+${row.addedMinutes} min driving` : "No extra driving"}</span>}
-      {picked && <Check className="hidden size-4 shrink-0 text-navy sm:block" aria-hidden />}
+      {!forced && <span className="shrink-0 tabular-nums sm:text-right">{row.addedMinutes > 0 ? `+${row.addedMinutes} min driving` : "No extra driving"}</span>}
     </button>
   )
 }
@@ -104,7 +111,7 @@ export function FindATime({ state, openings = [], forced = [], sort, onSort, sel
     <section data-slot="find-a-time" data-state={state} aria-label={oneDay ? "Times that day" : bare ? "Best times" : "Find a time"} className={cn("flex flex-col gap-3", className)}>
       <div className="flex flex-wrap items-center gap-3">
         {!bare && (
-          <Button type="button" variant="outline" className="min-h-11" disabled={state === "no-address" || state === "searching"} onClick={onFind}>
+          <Button type="button" variant="outline" size="touch" disabled={state === "no-address" || state === "searching"} onClick={onFind}>
             <Search className="size-4" aria-hidden />
             Find a time
           </Button>
@@ -114,10 +121,10 @@ export function FindATime({ state, openings = [], forced = [], sort, onSort, sel
             <SegmentedControl label="Sort" options={SORTS} value={sort} onChange={(v) => onSort(v as OpeningSort)} />
           </div>
         )}
-        {state === "results" && estimated && <p className="text-sm text-muted-foreground">Drive times are estimates.</p>}
+        {state === "results" && estimated && <p className="type-admin-meta text-muted-foreground">Drive times are estimates.</p>}
       </div>
 
-      {state === "no-address" && <p className="text-sm text-muted-foreground">Add an address to find a time</p>}
+      {state === "no-address" && <p className="type-admin-body text-muted-foreground">Add an address to find a time</p>}
 
       {state === "searching" && (
         <div role="status" aria-busy="true" data-slot="find-a-time-searching" className="flex flex-col gap-2">
@@ -134,7 +141,7 @@ export function FindATime({ state, openings = [], forced = [], sort, onSort, sel
 
       {state === "results" && (
         <>
-          <div role="radiogroup" aria-label={oneDay ? "Openings that day" : "Openings"} className="flex flex-col gap-2">
+          <div role="radiogroup" aria-label={oneDay ? "Openings that day" : "Openings"} className="flex flex-col gap-1.5">
             {visible.map((row, i) => (
               <Row
                 key={row.id}
@@ -153,7 +160,7 @@ export function FindATime({ state, openings = [], forced = [], sort, onSort, sel
             ))}
           </div>
           {chosen?.conflict && onForcedTicked && (
-            <div className="flex min-h-11 items-center gap-3 text-sm font-medium text-foreground">
+            <div className="type-admin-label flex min-h-11 items-center gap-3 text-foreground">
               <span className="flex size-11 items-center justify-center">
                 <Checkbox checked={forcedTicked} onCheckedChange={(c) => onForcedTicked(c === true)} aria-labelledby="book-anyway-text" />
               </span>
@@ -163,9 +170,9 @@ export function FindATime({ state, openings = [], forced = [], sort, onSort, sel
             </div>
           )}
           {forced.length > 0 && !oneDay && (
-            <Button type="button" variant="ghost" className="min-h-11 self-start px-2 text-primary-deep" aria-expanded={showAll} onClick={() => setShowAll((s) => !s)}>
+            <TextLink weight="medium" className="type-admin-body self-start" aria-expanded={showAll} onClick={() => setShowAll((s) => !s)}>
               {showAll ? "Show fewer times" : `Show all times (${forced.length} more)`}
-            </Button>
+            </TextLink>
           )}
         </>
       )}

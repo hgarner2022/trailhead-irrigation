@@ -27,12 +27,14 @@ export interface MonthGridProps {
   onMonthChange?: (month: string) => void
   /** false on a phone when the screen's own header already names the month and has the arrows (the Schedule) */
   phoneHead?: boolean
+  /** false when the screen's own toolbar already names the month and steps it (the Schedule): the block draws no head of its own */
+  head?: boolean
   className?: string
 }
 
 const WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
-export function MonthGrid({ month, days, people, today, selectedDay, onOpenDay, onMonthChange, phoneHead = true, className }: MonthGridProps) {
+export function MonthGrid({ month, days, people, today, selectedDay, onOpenDay, onMonthChange, phoneHead = true, head = true, className }: MonthGridProps) {
   const grid = useRef<HTMLDivElement>(null)
   const [focus, setFocus] = useState<string | null>(null)
   const by = new Map(days.map((d) => [d.day, d]))
@@ -53,19 +55,19 @@ export function MonthGrid({ month, days, people, today, selectedDay, onOpenDay, 
 
   return (
     <div data-slot="month-grid" className={cn("min-w-0", className)}>
-      <div className={cn("mb-2 flex items-center justify-between gap-2", !phoneHead && "max-md:hidden")}>
-        <button type="button" aria-label="Previous month" onClick={() => onMonthChange?.(shiftMonth(month, -1))} className="flex size-11 cursor-pointer items-center justify-center rounded-lg border border-border text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"><ChevronLeft aria-hidden className="size-5" /></button>
-        <h2 aria-live="polite" className="font-display text-2xl leading-none text-navy">{monthTitle(month)}</h2>
-        <button type="button" aria-label="Next month" onClick={() => onMonthChange?.(shiftMonth(month, 1))} className="flex size-11 cursor-pointer items-center justify-center rounded-lg border border-border text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"><ChevronRight aria-hidden className="size-5" /></button>
+      <div className={cn("mb-2 flex items-center justify-between gap-2", !phoneHead && "max-md:hidden", !head && "hidden")}>
+        <button type="button" aria-label="Previous month" onClick={() => onMonthChange?.(shiftMonth(month, -1))} className="flex size-11 cursor-pointer items-center justify-center rounded-lg text-navy-light transition-colors duration-(--motion-fast) hover:bg-stone hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"><ChevronLeft aria-hidden className="size-5" /></button>
+        <h2 aria-live="polite" className="type-admin-card text-navy">{monthTitle(month)}</h2>
+        <button type="button" aria-label="Next month" onClick={() => onMonthChange?.(shiftMonth(month, 1))} className="flex size-11 cursor-pointer items-center justify-center rounded-lg text-navy-light transition-colors duration-(--motion-fast) hover:bg-stone hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"><ChevronRight aria-hidden className="size-5" /></button>
       </div>
       <div ref={grid} role="grid" aria-label={monthTitle(month)} className="overflow-hidden rounded-lg border border-border bg-border">
         <div role="row" className="grid grid-cols-7 gap-px">
-          {WEEK.map((w) => <div key={w} role="columnheader" className="bg-background py-1.5 text-center text-xs font-medium text-navy-light">{w}</div>)}
+          {WEEK.map((w) => <div key={w} role="columnheader" className="type-admin-dense bg-background py-2 text-center text-muted-foreground">{w}</div>)}
         </div>
         {monthWeeks(month).map((week, i) => (
           <div key={i} role="row" className="mt-px grid grid-cols-7 gap-px">
             {week.map((day, j) => {
-              if (!day) return <div key={j} role="gridcell" aria-hidden className="min-h-14 bg-stone md:min-h-24" />
+              if (!day) return <div key={j} role="gridcell" aria-hidden className="min-h-14 bg-cream md:min-h-24" />
               const d = by.get(day)
               const stops = d?.stops ?? 0
               const isToday = day === today
@@ -85,19 +87,19 @@ export function MonthGrid({ month, days, people, today, selectedDay, onOpenDay, 
                     onKeyDown={(e) => onKey(e, day)}
                     onFocus={() => setFocus(day)}
                     style={d?.allOff ? { ...HATCH_STYLE, "--hatch": "var(--color-navy)" } as React.CSSProperties : undefined}
-                    className={cn("relative flex min-h-14 w-full cursor-pointer flex-col items-start gap-0.5 p-1.5 text-left transition-colors hover:bg-cream focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy md:min-h-24", selectedDay === day && "bg-cream ring-2 ring-inset ring-navy")}
+                    className={cn("relative flex min-h-14 w-full cursor-pointer flex-col items-start gap-0.5 p-2 text-left transition-colors duration-(--motion-fast) hover:bg-cream focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring motion-reduce:transition-none md:min-h-24", isToday && "bg-primary/[0.04]", selectedDay === day && "ring-1 ring-inset ring-navy")}
                   >
-                    <span aria-hidden className={cn("flex size-6 items-center justify-center rounded-full text-sm tabular-nums", isToday ? "bg-navy font-semibold text-white" : "text-navy")}>{Number(day.slice(8))}</span>
-                    {stops > 0 && <span aria-hidden className="font-display text-xl leading-none text-navy md:text-lg">{stops}<span className="hidden text-xs font-sans text-navy-light md:inline">{stops === 1 ? " visit" : " visits"}</span></span>}
-                    {d && d.towns.length > 0 && <span aria-hidden className="hidden max-w-full truncate text-xs text-navy-light md:block">{townsLine(d.towns)}</span>}
+                    <span aria-hidden className={cn("type-admin-body tabular-nums", isToday ? "font-semibold text-primary-dark" : "text-navy-light")}>{Number(day.slice(8))}</span>
+                    {stops > 0 && <span aria-hidden className="type-admin-label font-semibold tabular-nums text-navy">{stops}<span className="type-admin-dense hidden text-muted-foreground md:inline">{stops === 1 ? " visit" : " visits"}</span></span>}
+                    {d && d.towns.length > 0 && <span aria-hidden className="type-admin-dense hidden max-w-full break-words text-muted-foreground md:block">{townsLine(d.towns)}</span>}
                     {d && d.personIds.length > 0 && (
-                      <span aria-hidden className="mt-auto hidden gap-1 md:flex">
-                        {d.personIds.map((id) => <span key={id} className={cn("size-2 rounded-full", personStyle(Math.max(0, people.findIndex((p) => p.id === id))).dot)} />)}
+                      <span aria-hidden className="mt-auto hidden gap-1 pt-1 md:flex">
+                        {d.personIds.map((id) => <span key={id} className={cn("size-1.5 rounded-full", personStyle(Math.max(0, people.findIndex((p) => p.id === id))).dot)} />)}
                       </span>
                     )}
                   </button>
                   {off.length > 0 && !d?.allOff && (
-                    <span aria-hidden data-slot="month-off" className={cn("pointer-events-none absolute inset-x-0 bottom-0 h-2 border-t border-border/60", personStyle(Math.max(0, people.findIndex((p) => p.id === off[0]))).hatch)} style={HATCH_STYLE} />
+                    <span aria-hidden data-slot="month-off" className={cn("pointer-events-none absolute inset-x-0 bottom-0 h-1.5 bg-navy/[0.03]", personStyle(Math.max(0, people.findIndex((p) => p.id === off[0]))).hatch)} style={HATCH_STYLE} />
                   )}
                 </div>
               )
@@ -105,8 +107,8 @@ export function MonthGrid({ month, days, people, today, selectedDay, onOpenDay, 
           </div>
         ))}
       </div>
-      <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-navy-light">
-        {people.map((p, i) => <span key={p.id} className="inline-flex items-center gap-1.5"><span aria-hidden className={cn("size-2 rounded-full", personStyle(i).dot)} />{p.name}</span>)}
+      <p className="type-admin-dense mt-2 flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+        {people.map((p, i) => <span key={p.id} className="inline-flex items-center gap-1.5"><span aria-hidden className={cn("size-1.5 rounded-full", personStyle(i).dot)} />{p.name}</span>)}
       </p>
     </div>
   )

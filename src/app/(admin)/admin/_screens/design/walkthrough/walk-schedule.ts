@@ -1,3 +1,5 @@
+import { shortDay } from "@/lib/admin/format"
+import type { SearchHit } from "@/lib/admin/search-hit"
 import { initialState } from "../schedule-prototype-data"
 import { createWorldStore, type WorldStore } from "../schedule-world-store"
 import type { ProtoWorld } from "../schedule-prototype-model"
@@ -56,4 +58,15 @@ export function syncWalkSchedule() {
     const job = world.unscheduled.find((j) => j.id === row.id)
     if (job) s.dispatch({ type: "add-unscheduled", job })
   }
+}
+
+/** Cmd+K's "Days" group over this calendar: a visit found by its customer or street lands on the Schedule on that day (the live search's `visit` hit), never on a page of its own. */
+export function searchDays(query: string): SearchHit[] {
+  const q = query.trim().toLowerCase()
+  if (q.length < 2) return []
+  const { visits, meta } = walkSchedule().getSnapshot()
+  return visits
+    .filter((v) => `${meta[v.id]?.customer ?? v.name} ${v.title}`.toLowerCase().includes(q))
+    .slice(0, 5)
+    .map((v) => ({ kind: "visit" as const, id: v.id, title: meta[v.id]?.customer ?? v.name, detail: `${v.service}, ${shortDay(v.day)}`, href: `/admin/schedule?day=${v.day}` }))
 }

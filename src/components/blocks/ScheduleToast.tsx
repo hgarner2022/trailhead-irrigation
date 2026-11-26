@@ -46,6 +46,7 @@ export function ScheduleToast({ message, onNotify, onUndo, onClose, seconds }: S
         ]}
         onClose={onClose}
         placement="bottom"
+        className="cal-rise"
       />
     </div>,
     document.body,

@@ -14,6 +14,7 @@ import { orderDay } from "./schedule-order"
 import { createWorldStore, useWorldState, type WorldStore } from "./schedule-world-store"
 import type { ScheduleResult } from "./ScheduleDialog"
 import { startFromWords, buildWalkWorld } from "./walkthrough/visits-data"
+import { walkMoney } from "./walkthrough/walk-home"
 
 // The Schedule prototype's one hook: the calendar's data in a store (the walkthrough holds one for the session, a story makes its own), and state for what is open (the view and
 // day, the two panels, the dialogs). Every route that moves a visit (drag, resize, the keyboard, a row dropped from Unscheduled, Edit visit) ends in
@@ -157,7 +158,7 @@ export function useScheduleProto(init: ProtoInitial = {}) {
   return {
     shown, hidden, togglePerson, orderable, mapPick, setMapPick,
     state, store, dispatch, people, wide, view, setView, day, setDay, panels, setPanel, togglePanel, hoverId, setHoverId, selectedId, setSelectedId, dialog, setDialog,
-    moneyOf: init.moneyOf, keys, openDay, notify, now: world.now, today, toastSeconds: init.toastSeconds, jobs, bestFor, schedule,
+    moneyOf: init.moneyOf ?? walkMoney, keys, openDay, notify, now: world.now, today, toastSeconds: init.toastSeconds, jobs, bestFor, schedule,
     commit, move, onMove, onResize, onDropExternal, onSelect, closePeek, openJob, markDone, onNewJob: init.onNewJob, onOpenSettings: init.onOpenSettings,
   }
 }

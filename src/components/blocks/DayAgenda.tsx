@@ -5,7 +5,7 @@ import { Check, Clock3 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { blockLabel } from "./TimeBlock"
 import { clockWords, timeOffLabel, type GridBlock, type TimeOff } from "./time-grid-model"
-import { personStyle } from "./time-grid-style"
+import { HATCH_STYLE, personStyle } from "./time-grid-style"
 import type { ColumnStat } from "./time-grid-types"
 
 // One day on a phone as an agenda (docs/plans/2026-11-26-scheduler-review-research.md, the phone pass): with one person shown a time-ordered list reads better than a narrow clock. The Any time
@@ -53,51 +53,63 @@ export function agendaItems(blocks: readonly GridBlock[], timeOff: readonly Time
 export function DayAgenda({ day, people, blocks, timeOff = [], stats, drives, now, conflicts, selectedId, onSelect, onTimeOffClick, className }: DayAgendaProps) {
   const nowAt = now && now.day === day ? now.minutes : null
   return (
-    <div data-slot="day-agenda" className={cn("flex min-w-0 flex-col gap-4", className)}>
+    <div data-slot="day-agenda" className={cn("flex min-w-0 flex-col gap-5", className)}>
       {people.map((p) => {
         const items = agendaItems(blocks, timeOff, p.id, day)
         const s = personStyle(p.colour)
         const stat = stats?.[p.id]
         const nowIndex = nowAt === null ? -1 : items.findIndex((it) => it.at >= 0 && it.at > nowAt)
         const nowLast = nowAt !== null && nowIndex === -1 && items.some((it) => it.at >= 0 && it.at <= nowAt)
-        const nowLine = <li aria-hidden data-slot="now-line" className="h-0 border-t-2 border-destructive" />
+        const nowLine = <li aria-hidden data-slot="now-line" className="relative h-0 border-t border-destructive"><span className="absolute -top-[3px] left-0 size-1.5 rounded-full bg-destructive" /></li>
         return (
           <section key={p.id} aria-label={p.name} data-person={p.id}>
             {people.length > 1 && (
-              <p data-slot="agenda-person" className="mb-1 flex flex-wrap items-baseline gap-x-2 text-sm">
-                <span className="font-semibold text-navy">{p.first}</span>
-                {stat && <span className="text-xs text-navy-light">{[stat.open, stat.driving && `${stat.driving} driving`].filter(Boolean).join(", ")}</span>}
+              <p data-slot="agenda-person" className="mb-1.5 flex flex-wrap items-baseline gap-x-2 px-0.5">
+                <span aria-hidden className={cn("size-2 shrink-0 self-center rounded-full", s.dot)} />
+                <span className="type-admin-section text-navy">{p.first}</span>
+                {stat && <span className="type-admin-meta tabular-nums text-muted-foreground">{[stat.open, stat.driving && `${stat.driving} driving`].filter(Boolean).join(", ")}</span>}
               </p>
             )}
             {items.length === 0 ? (
-              <p className="rounded-lg border border-border bg-background px-3 py-3 text-sm text-muted-foreground">Nothing booked</p>
+              <p className="type-admin-body rounded-lg border border-border bg-background px-4 py-3 text-muted-foreground">Nothing booked</p>
             ) : (
               <ol className="overflow-hidden rounded-lg border border-border bg-background">
                 {items.map((it, i) => {
                   const drive = it.kind === "visit" && it.block.start !== null ? drives?.get(it.block.id) : undefined
+                  const conflict = it.kind === "visit" ? conflicts?.get(it.block.id) : undefined
+                  // a hairline between two rows; the drive between two visits is the connector, so it takes the hairline's place
+                  const line = i > 0 && !drive && "border-t border-border/70"
                   return (
                     <Fragment key={it.kind === "visit" ? it.block.id : it.off.id}>
                       {i === nowIndex && nowLine}
-                      {drive ? <li aria-hidden data-slot="drive-line" className="border-t border-border/60 bg-stone/40 px-3 py-0.5 text-[11px] text-navy-light">{`${drive} min drive`}</li> : null}
+                      {drive ? (
+                        <li aria-hidden data-slot="drive-line" className="type-admin-dense relative flex items-center gap-2.5 py-0.5 pl-[1.375rem] tabular-nums text-muted-foreground">
+                          <span className={cn("pointer-events-none absolute inset-y-0 left-0 w-[3px] opacity-35", s.dot)} />
+                          <span className="h-5 border-l border-dotted border-navy/40" />
+                          {`${drive} min drive`}
+                        </li>
+                      ) : null}
                       {it.kind === "off" ? (
-                        <li data-slot="time-off-row" className="border-t border-border/60 first:border-t-0">
-                          <button type="button" onClick={onTimeOffClick ? () => onTimeOffClick(it.off.id) : undefined} disabled={!onTimeOffClick} className="flex min-h-14 w-full items-center bg-navy/5 px-3 text-left text-sm text-navy-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50">
+                        <li data-slot="time-off-row" className={cn(line)}>
+                          <button type="button" onClick={onTimeOffClick ? () => onTimeOffClick(it.off.id) : undefined} disabled={!onTimeOffClick} style={HATCH_STYLE} className={cn("type-admin-body flex min-h-14 w-full items-center bg-navy/[0.03] px-4 text-left text-navy-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring", s.hatch)}>
                             {timeOffLabel(it.off, p.first)}
                           </button>
                         </li>
                       ) : (
-                        <li data-slot="agenda-row" data-id={it.block.id} data-conflict={conflicts?.get(it.block.id) ? "true" : undefined} className={cn("border-t border-border/60 first:border-t-0", "border-l-4", it.block.done ? "border-l-muted bg-stone/60 text-navy-light" : s.bar, selectedId === it.block.id && "ring-2 ring-inset ring-navy", conflicts?.get(it.block.id) && "outline outline-2 -outline-offset-2 outline-destructive")}>
-                          <button type="button" data-slot="time-block-button" aria-label={`${it.number ? `Stop ${it.number}, ` : ""}${blockLabel(it.block, conflicts?.get(it.block.id), p.name)}`} aria-pressed={selectedId === it.block.id || undefined} onClick={() => onSelect?.(it.block.id)} className="flex min-h-14 w-full items-center gap-3 px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy">
-                            <span aria-hidden className="w-[5.5rem] shrink-0 text-sm tabular-nums text-navy">
-                              {it.number ? <span className="mr-1.5 inline-flex size-5 items-center justify-center rounded-full bg-card text-xs font-semibold ring-1 ring-navy/20">{it.number}</span> : null}
+                        <li data-slot="agenda-row" data-id={it.block.id} data-conflict={conflict ? "true" : undefined} className={cn("relative", line, it.block.done && "bg-stone/60 text-navy-light", selectedId === it.block.id && "bg-navy/5 ring-2 ring-inset ring-navy")}>
+                          <span aria-hidden className={cn("pointer-events-none absolute inset-y-0 left-0 w-[3px]", it.block.done ? "bg-muted/50" : s.dot)} />
+                          {conflict && <span aria-hidden data-slot="overlap-mark" className="pointer-events-none absolute right-0 top-0 size-2.5 rounded-bl-sm bg-destructive" />}
+                          <button type="button" data-slot="time-block-button" aria-label={`${it.number ? `Stop ${it.number}, ` : ""}${blockLabel(it.block, conflict, p.name)}`} aria-pressed={selectedId === it.block.id || undefined} onClick={() => onSelect?.(it.block.id)} className="flex min-h-14 w-full items-start gap-3 py-2.5 pl-4 pr-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+                            <span aria-hidden className="type-admin-body w-[4.75rem] shrink-0 tabular-nums text-navy-light">
+                              {it.number ? <span className="mr-1.5 text-muted-foreground">{it.number}</span> : null}
                               {it.block.start === null ? "Any time" : clockWords(it.block.start)}
                             </span>
                             <span aria-hidden className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-semibold text-navy">{it.block.title}</span>
-                              <span className="block truncate text-xs text-navy-light">{`${it.block.service}, ${it.block.town}`}</span>
+                              <span className="type-admin-body block break-words font-semibold text-navy">{it.block.title}</span>
+                              <span className="type-admin-meta block break-words text-muted-foreground">{`${it.block.service}, ${it.block.town}`}</span>
                             </span>
-                            {it.block.done && <Check aria-hidden className="size-4 shrink-0 text-positive-deep" />}
-                            {it.block.waiting && <Clock3 aria-hidden className="size-4 shrink-0 text-warning-ink" />}
+                            {it.block.done && <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-positive-deep" />}
+                            {it.block.waiting && <Clock3 aria-hidden className="mt-0.5 size-4 shrink-0 text-warning-ink" />}
                           </button>
                         </li>
                       )}

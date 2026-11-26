@@ -27,7 +27,7 @@ export function ExternalJobDraggable({ id, minutes, label, disabled, children, c
   const { ref, handleRef, isDragSource } = useExternalJobDrag(id, { minutes, label, disabled })
   return (
     <div ref={ref} data-slot="external-job-draggable" data-unscheduled-id={id} className={cn(isDragSource && "opacity-40", className)}>
-      <div ref={handleRef} tabIndex={disabled ? undefined : 0} className="cursor-grab rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:cursor-grabbing">
+      <div ref={handleRef} tabIndex={disabled ? undefined : 0} className="cursor-grab rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing">
         {children}
       </div>
     </div>

@@ -14,7 +14,7 @@ import { MessageView, ReceiptToast, newestPayment, paidFrom, useReceiptToast, ty
 import { navigate, parseHref, routeTitle, type Route } from "./routes"
 import { ScheduleOverlays } from "../ScheduleOverlays"
 import { WALK_PEOPLE } from "./visits-data"
-import { resetWalkSchedule, walkSchedule } from "./walk-schedule"
+import { resetWalkSchedule, searchDays, walkSchedule } from "./walk-schedule"
 import { useWorldState } from "../schedule-world-store"
 import { newCount } from "../requests/request-model"
 import { requestStore, useRequests } from "../requests/request-store"
@@ -201,7 +201,7 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
 
   return (
     <div data-slot="walkthrough" data-route={`${top.screen}${top.id ? `:${top.id}` : ""}`} style={{ display: "contents" }} onClickCapture={onClickCapture} onKeyDownCapture={onKeyDownCapture}>
-      <AdminShell key={`${top.screen}:${top.id ?? ""}`} current={SECTION_OF[top.screen]} user={USER} defaultSearchOpen={startSearch} requests={{ count: newCount(requests) }} quotes={{ count: waitingCount(Object.values(quoteWorld.quotes)) }} invoices={{ count: pastDueCount(INVOICES) }} onSearch={async (q) => searchWorld(q)} profileHref="/admin/profile" helpHref="/admin/help">
+      <AdminShell key={`${top.screen}:${top.id ?? ""}`} current={SECTION_OF[top.screen]} user={USER} defaultSearchOpen={startSearch} requests={{ count: newCount(requests) }} quotes={{ count: waitingCount(Object.values(quoteWorld.quotes)) }} invoices={{ count: pastDueCount(INVOICES) }} onSearch={async (q) => [...searchWorld(q), ...searchDays(q)]} profileHref="/admin/profile" helpHref="/admin/help">
         <ToastBridge toastRef={toastRef} later={laterToast} />
         <Strip stack={stack} onJump={jump} onStartOver={startOver} />
         <div key={`${epoch}-${top.screen}-${top.id ?? ""}`}>

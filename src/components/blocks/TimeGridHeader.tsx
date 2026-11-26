@@ -31,17 +31,11 @@ export function PersonSubRow({ people, colourOf }: { people: readonly Person[]; 
   if (people.length < 2) return null
   const initials = people.length >= 5
   return (
-    <div data-slot="person-subrow" className="flex border-t border-border/60">
+    <div data-slot="person-subrow" className="flex">
       {people.map((p) => (
-        <span key={p.id} role="img" aria-label={p.name} title={p.name} tabIndex={initials ? 0 : undefined} className="flex min-w-0 flex-1 items-center justify-center gap-1 px-0.5 py-1 text-[11px] leading-none text-navy-light focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50">
-          {initials ? (
-            <span aria-hidden className={cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-card text-[9px] font-semibold text-navy ring-2", personStyle(colourOf(p.id)).ring)}>{p.initials}</span>
-          ) : (
-            <>
-              <span aria-hidden className={cn("size-2 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
-              <span aria-hidden className="truncate">{firstNameOf(p.name)}</span>
-            </>
-          )}
+        <span key={p.id} role="img" aria-label={p.name} title={p.name} tabIndex={initials ? 0 : undefined} className="type-admin-dense flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-sm px-0.5 pb-1.5 leading-none text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+          <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
+          <span aria-hidden className="truncate">{initials ? p.initials : firstNameOf(p.name)}</span>
         </span>
       ))}
     </div>
@@ -51,30 +45,30 @@ export function PersonSubRow({ people, colourOf }: { people: readonly Person[]; 
 export function DayHead({ column, people, colourOf, variant = "week", onOpenDay }: { column: GridColumn; people: readonly Person[]; colourOf: (id: string) => number; variant?: "week" | "day"; /** the Week's day opens that day */ onOpenDay?: (day: string) => void }) {
   const chip = column.caption ?? column.count
   const label = (
-    <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-sm font-semibold", column.today ? "bg-navy text-white" : "text-navy")}>
+    <span className={cn("type-admin-label shrink-0 font-semibold", column.today ? "text-primary-dark" : "text-navy")}>
       {column.label}
       {column.today && <span className="sr-only">, today</span>}
     </span>
   )
-  const chipEl = chip && <span data-slot="day-count" className={cn("truncate text-xs", chip === "Full" ? "font-medium text-warning-ink" : "text-navy-light")}>{chip}</span>
+  const chipEl = chip && <span data-slot="day-count" className={cn("type-admin-dense truncate tabular-nums", chip === "Full" ? "font-semibold text-warning-ink" : "text-muted-foreground")}>{chip}</span>
   if (variant === "week") {
     const lines = dayDetailLines(column, people)
     const trigger = onOpenDay ? (
-      <button type="button" aria-label={`${column.label}${column.today ? ", today" : ""}${chip ? `, ${chip}` : ""}. Open the day`} onClick={() => onOpenDay(column.day)} className="inline-flex min-h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+      <button type="button" aria-label={`${column.label}${column.today ? ", today" : ""}${chip ? `, ${chip}` : ""}. Open the day`} onClick={() => onOpenDay(column.day)} className="inline-flex min-h-8 cursor-pointer items-baseline justify-center gap-2 rounded-md px-2 transition-colors duration-(--motion-fast) hover:bg-stone focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none">
         {label}
         {chipEl}
       </button>
     ) : (
-      <span className="inline-flex items-center gap-1.5">{label}{chipEl}</span>
+      <span className="inline-flex min-h-8 items-baseline gap-2 px-2">{label}{chipEl}</span>
     )
     return (
       <div data-slot="day-head" data-variant="week" className="flex min-w-0 flex-col">
-      <div className="flex min-w-0 items-center justify-center px-1 py-1.5">
+      <div className="flex min-w-0 items-center justify-center px-1 pb-0.5 pt-1.5">
         {lines.length ? (
           <HoverCard openDelay={250} closeDelay={80}>
             <HoverCardTrigger asChild>{trigger}</HoverCardTrigger>
-            <HoverCardContent data-slot="day-detail" side="bottom" align="center" className="w-auto max-w-72 p-3 text-sm">
-              <ul className="space-y-0.5 text-navy">{lines.map((l) => <li key={l}>{l}</li>)}</ul>
+            <HoverCardContent data-slot="day-detail" side="bottom" align="center" sideOffset={28} className="type-admin-body w-auto max-w-72 p-3">
+              <ul className="space-y-1 text-navy">{lines.map((l) => <li key={l}>{l}</li>)}</ul>
             </HoverCardContent>
           </HoverCard>
         ) : trigger}
@@ -84,20 +78,20 @@ export function DayHead({ column, people, colourOf, variant = "week", onOpenDay 
     )
   }
   return (
-    <div data-slot="day-head" data-variant="day" className="flex min-w-0 flex-col items-stretch gap-0.5 px-1 py-1.5">
-      <div className="flex min-w-0 items-center justify-center gap-1.5">
+    <div data-slot="day-head" data-variant="day" className="flex min-w-0 flex-col items-stretch gap-1 px-1 pb-2 pt-2">
+      <div className="flex min-w-0 items-baseline justify-center gap-2">
         {label}
         {chipEl}
       </div>
-      {column.towns && <span className="truncate text-center text-xs text-navy-light">{column.towns}</span>}
+      {column.towns && <span className="type-admin-dense truncate text-center text-muted-foreground">{column.towns}</span>}
       <div className="flex">
         {people.map((p) => {
           const stat = column.stats?.[p.id]
           return (
-            <span key={p.id} className="flex min-w-0 flex-1 items-center justify-center gap-1 whitespace-nowrap px-0.5 text-xs leading-tight text-navy-light">
-              <span aria-hidden className={cn("size-2 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
+            <span key={p.id} className="type-admin-dense flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-0.5 text-muted-foreground">
+              <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", personStyle(colourOf(p.id)).dot)} />
               <span className="truncate">
-                <span className="font-medium text-navy">{firstNameOf(p.name)}</span>
+                <span className="font-semibold text-navy">{firstNameOf(p.name)}</span>
                 {stat && ` ${[stat.open, stat.driving && `${stat.driving} drive`].filter(Boolean).join(" · ")}`}
               </span>
             </span>
@@ -111,14 +105,14 @@ export function DayHead({ column, people, colourOf, variant = "week", onOpenDay 
 export function HourGutter({ range, hourPx, nowMinutes, className }: { range: HourRange; hourPx: number; nowMinutes?: number; className?: string }) {
   const hours = Array.from({ length: range.end - range.start }, (_, i) => range.start + i)
   return (
-    <div aria-hidden data-slot="hour-gutter" className={cn("relative border-r border-border bg-background text-right text-xs tabular-nums text-navy-light", GUTTER, className)} style={{ height: minutesToPx((range.end - range.start) * 60, hourPx) }}>
+    <div aria-hidden data-slot="hour-gutter" className={cn("type-admin-dense relative bg-background text-right tabular-nums text-muted-foreground", GUTTER, className)} style={{ height: minutesToPx((range.end - range.start) * 60, hourPx) }}>
       {hours.map((h, i) => (
-        <span key={h} className="absolute right-2 -translate-y-1/2 bg-background px-0.5" style={{ top: i === 0 ? 8 : i * hourPx }}>
+        <span key={h} className="absolute right-2 -translate-y-1/2 leading-none" style={{ top: i === 0 ? 8 : i * hourPx }}>
           {hourWords(h)}
         </span>
       ))}
       {nowMinutes !== undefined && nowMinutes >= range.start * 60 && nowMinutes <= range.end * 60 && (
-        <span data-slot="now-dot" className="absolute -right-1 size-2.5 -translate-y-1/2 rounded-full bg-destructive" style={{ top: minutesToPx(nowMinutes - range.start * 60, hourPx) }} />
+        <span data-slot="now-dot" className="absolute -right-[3px] size-1.5 -translate-y-1/2 rounded-full bg-destructive" style={{ top: minutesToPx(nowMinutes - range.start * 60, hourPx) }} />
       )}
     </div>
   )

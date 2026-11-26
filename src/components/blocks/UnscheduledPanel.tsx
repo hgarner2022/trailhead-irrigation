@@ -38,10 +38,10 @@ export interface UnscheduledPanelProps {
 }
 
 const words = (job: UnscheduledJob) => (
-  <span className="min-w-0 flex-1 text-sm">
-    <span className="block truncate font-medium text-foreground">{`${job.customer} · ${job.town}`}</span>
-    <span className="block text-muted-foreground">{`${job.service} · ${job.length}`}</span>
-    {job.suggestion && <span data-slot="suggestion" className="block text-muted-foreground">{job.suggestion}</span>}
+  <span className="type-admin-body min-w-0 flex-1">
+    <span className="block break-words font-semibold text-foreground">{`${job.customer} · ${job.town}`}</span>
+    <span className="block tabular-nums text-muted-foreground">{`${job.service} · ${job.length}`}</span>
+    {job.suggestion && <span data-slot="suggestion" className="type-admin-meta mt-0.5 block tabular-nums text-muted-foreground">{job.suggestion}</span>}
   </span>
 )
 
@@ -58,7 +58,7 @@ export function UnscheduledPanel({ open, onOpenChange, jobs, defaultSort = "olde
   const rows = sortJobs(jobs, sort)
   const hover = (id: string | null) => ({ onMouseEnter: () => onHover?.(id), onMouseLeave: () => onHover?.(null), onFocus: () => onHover?.(id), onBlur: () => onHover?.(null) })
   const footer = jobs.length > 1 && onScheduleAll ? (
-    <Button type="button" variant="outline" className="min-h-11" onClick={onScheduleAll}>
+    <Button type="button" variant="outline" size="touch" onClick={onScheduleAll}>
       {`Schedule all ${jobs.length}`}
     </Button>
   ) : undefined
@@ -90,11 +90,11 @@ export function UnscheduledPanel({ open, onOpenChange, jobs, defaultSort = "olde
                   data-hover={hoverId === job.id || undefined}
                   {...dragProps?.(job.id)}
                   {...hover(job.id)}
-                  className={cn("flex items-center gap-2 py-2.5", dragProps && "cursor-grab", hoverId === job.id && "bg-stone")}
+                  className={cn("-mx-2 flex items-center gap-2 rounded-md px-2 py-3 transition-colors duration-(--motion-fast) motion-reduce:transition-none", dragProps && "cursor-grab", hoverId === job.id && "bg-stone")}
                 >
                   {dragProps && <GripVertical className="size-4 shrink-0 text-muted-foreground" aria-hidden />}
                   {dragWrap ? dragWrap(job, words(job)) : words(job)}
-                  <Button type="button" size="sm" variant="outline" className="min-h-11 shrink-0" aria-label={`Schedule ${job.customer}`} onClick={() => onSchedule(job)}>
+                  <Button type="button" size="touch-sm" variant="outline" className="shrink-0" aria-label={`Schedule ${job.customer}`} onClick={() => onSchedule(job)}>
                     Schedule
                   </Button>
                 </li>

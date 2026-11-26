@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { SplitButton } from "@/components/blocks/SplitButton"
-import { shortDay } from "@/emails/format"
+import { shortDay } from "@/lib/admin/format"
 import { clockWords } from "@/components/blocks/time-grid-model"
 import type { ScheduleAllRow } from "./schedule-all"
 
@@ -25,14 +25,14 @@ export function ScheduleAllDialog({ rows, onRemove, onClose, onConfirm }: { rows
         <SplitButton label="Schedule and notify the customer" onClick={() => confirm("text")} disabled={pending || fits === 0} menuLabel="More ways to schedule" menu={[{ label: "Schedule without notifying", disabled: fits === 0, onSelect: () => confirm("quiet") }]} />
       )}
     >
-      <ul data-slot="schedule-all-rows" aria-label="Jobs to schedule" className="max-h-72 divide-y divide-border overflow-y-auto rounded-lg border border-border text-sm">
+      <ul data-slot="schedule-all-rows" aria-label="Jobs to schedule" className="type-admin-body max-h-72 divide-y divide-border overflow-y-auto rounded-lg border border-border">
         {rows.map((r) => (
-          <li key={r.job.id} className="flex items-center gap-2 px-3 py-2">
+          <li key={r.job.id} className="flex items-center gap-3 py-1.5 pl-3.5 pr-1.5">
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-foreground">{`${r.job.customer} · ${r.job.service}`}</span>
-              {r.to ? <span className="block text-muted-foreground">{`${shortDay(r.to.day)}, ${r.to.start === null ? "Any time" : clockWords(r.to.start)}, ${r.to.personName}`}</span> : <span className="block text-destructive">{r.problem}</span>}
+              <span className="block truncate font-medium text-foreground">{`${r.job.customer} · ${r.job.service}`}</span>
+              {r.to ? <span className="block tabular-nums text-muted-foreground">{`${shortDay(r.to.day)}, ${r.to.start === null ? "Any time" : clockWords(r.to.start)}, ${r.to.personName}`}</span> : <span className="block text-destructive">{r.problem}</span>}
             </span>
-            <Button type="button" variant="ghost" size="sm" className="min-h-11 shrink-0" aria-label={`Remove ${r.job.customer}`} onClick={() => onRemove(r.job.id)}>
+            <Button type="button" variant="ghost" size="touch-sm" className="shrink-0 text-muted-foreground hover:text-foreground" aria-label={`Remove ${r.job.customer}`} onClick={() => onRemove(r.job.id)}>
               Remove
             </Button>
           </li>

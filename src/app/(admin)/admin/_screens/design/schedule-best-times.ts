@@ -1,5 +1,5 @@
 import type { Person, Town } from "@/lib/admin/types"
-import { shortDay } from "@/emails/format"
+import { shortDay } from "@/lib/admin/format"
 import { firstNameOf } from "@/lib/admin/people"
 import { recommendedId } from "@/components/blocks/find-a-time-model"
 import { clockWords } from "@/components/blocks/time-grid-model"

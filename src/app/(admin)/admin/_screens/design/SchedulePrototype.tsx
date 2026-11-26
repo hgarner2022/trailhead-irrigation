@@ -6,7 +6,7 @@ import { ScheduleOverlays } from "./ScheduleOverlays"
 import { ScheduleProtoCalendar } from "./ScheduleProtoCalendar"
 import { ScheduleProtoDialogs } from "./ScheduleProtoDialogs"
 import { ScheduleProtoHeader } from "./ScheduleProtoHeader"
-import { ScheduleProtoPanels } from "./ScheduleProtoPanels"
+import { ScheduleProtoPanels, SchedulePeek } from "./ScheduleProtoPanels"
 import { useScheduleProto, type ProtoInitial } from "./use-schedule-prototype"
 
 // The Schedule prototype (docs/plans/2026-11-25-scheduler-design.md, sections 7 and 9, reconciled with the walkthrough on Nov 25, and the second review of Nov 26,
@@ -20,11 +20,12 @@ export function SchedulePrototype({ withOverlays = true, ...props }: ProtoInitia
   return (
     <TooltipProvider>
       <TimeGridDndProvider>
-        <div data-slot="schedule-prototype" className={p.state.toast ? "space-y-4 pb-28 md:pb-20" : "space-y-4"}>
+        <div data-slot="schedule-prototype" className={p.state.toast ? "space-y-3 pb-28 md:space-y-4 md:pb-20" : "space-y-3 md:space-y-4"}>
           <ScheduleProtoHeader p={p} />
           <div className="flex items-start gap-4">
-            <div className="min-w-0 flex-1">
+            <div data-slot="schedule-stage" className="relative min-w-0 flex-1">
               <ScheduleProtoCalendar p={p} />
+              <SchedulePeek p={p} />
             </div>
             <ScheduleProtoPanels p={p} />
           </div>

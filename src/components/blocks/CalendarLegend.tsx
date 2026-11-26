@@ -12,17 +12,17 @@ import { HATCH_STYLE } from "./time-grid-style"
 const MARKS: { key: string; mark: React.ReactNode; word: string }[] = [
   { key: "done", mark: <Check aria-hidden className="size-3.5 text-positive-deep" />, word: "Done" },
   { key: "waiting", mark: <Clock3 aria-hidden className="size-3.5 text-warning-ink" />, word: "Waiting on customer" },
-  { key: "overlaps", mark: <span aria-hidden className="size-3.5 rounded-sm outline outline-2 -outline-offset-1 outline-destructive" />, word: "Overlaps" },
-  { key: "off", mark: <span aria-hidden className="size-3.5 rounded-sm border border-border [--hatch:var(--color-navy)]" style={HATCH_STYLE} />, word: "Time off" },
+  { key: "overlaps", mark: <span aria-hidden className="relative size-3.5 overflow-hidden rounded-sm bg-navy/10 ring-1 ring-inset ring-destructive/70"><span className="absolute right-0 top-0 size-1.5 rounded-bl-sm bg-destructive" /></span>, word: "Overlaps" },
+  { key: "off", mark: <span aria-hidden className="size-3.5 rounded-sm bg-navy/[0.03] ring-1 ring-inset ring-border [--hatch:var(--color-navy)]" style={HATCH_STYLE} />, word: "Time off" },
 ]
 
 export function CalendarLegend({ defaultOpen = true, className }: { defaultOpen?: boolean; className?: string }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div data-slot="calendar-legend" className={cn("text-xs text-navy-light", className)}>
-      <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="inline-flex min-h-11 cursor-pointer items-center gap-1 rounded-md px-1 font-medium text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+    <div data-slot="calendar-legend" className={cn("type-admin-dense text-muted-foreground", className)}>
+      <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="inline-flex min-h-11 cursor-pointer items-center gap-1 rounded-md px-1 font-semibold text-navy-light hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         Legend
-        <ChevronDown aria-hidden className={cn("size-3.5 transition-transform", open && "rotate-180")} />
+        <ChevronDown aria-hidden className={cn("size-3.5 transition-transform duration-(--motion-fast) motion-reduce:transition-none", open && "rotate-180")} />
       </button>
       {open && (
         <ul className="-mt-1 flex flex-wrap gap-x-4 gap-y-1.5 pb-1">

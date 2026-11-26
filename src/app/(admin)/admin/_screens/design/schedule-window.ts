@@ -1,5 +1,5 @@
 import { customerChangeLine } from "../visit-panel-model"
-import { shortDay } from "@/emails/format"
+import { shortDay } from "@/lib/admin/format"
 
 // The customer's 24-hour window on the Schedule (docs/plans/2026-11-25-scheduler-holistic-audit.md, row 8): the product's own `customerChangeLine` (the visit panel's line, `withinCutoff`) for the
 // day a visit is on and the day it is going to, said only when that day is inside the window ("Closed, texts only"): the customer can no longer change it online, so a move there is the one that

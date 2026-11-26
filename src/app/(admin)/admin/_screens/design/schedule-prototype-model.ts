@@ -1,6 +1,6 @@
 import { addDays } from "@/lib/admin/calendar"
 import type { Person, Town } from "@/lib/admin/types"
-import { shortDay } from "@/emails/format"
+import { shortDay } from "@/lib/admin/format"
 import type { UnscheduledJob } from "@/components/blocks/scheduler-panels-types"
 import { placeProblems } from "./schedule-engine"
 import { clockToMinutes, clockWords, hoursSpan, rangeWords, type GridBlock, type TimeOff } from "@/components/blocks/time-grid-model"

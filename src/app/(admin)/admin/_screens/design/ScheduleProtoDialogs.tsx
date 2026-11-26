@@ -63,13 +63,13 @@ export function ScheduleProtoDialogs({ p }: { p: Proto }) {
             return { ok: true }
           }}
         >
-          <ul className="list-disc space-y-1 pl-5 text-sm text-foreground">
+          <ul className="type-admin-body list-disc space-y-1 pl-5 text-foreground">
             {d.problems.map((x) => (
               <li key={x}>{x}</li>
             ))}
           </ul>
           {windowOf(p, d.action).map((x) => (
-            <p key={x} data-slot="window-line" className="mt-3 text-sm text-muted-foreground">{x}</p>
+            <p key={x} data-slot="window-line" className="type-admin-body mt-3 text-muted-foreground">{x}</p>
           ))}
         </ConfirmDialog>
       )}

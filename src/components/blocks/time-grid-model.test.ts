@@ -7,10 +7,10 @@ const b = (id: string, start: number | null, minutes: number, over: Partial<Grid
 })
 
 describe("pixels and snapping", () => {
-  it("is 56 px an hour", () => {
-    expect(minutesToPx(60)).toBe(56)
-    expect(minutesToPx(15)).toBe(14)
-    expect(pxToMinutes(28)).toBe(30)
+  it("is 64 px an hour", () => {
+    expect(minutesToPx(60)).toBe(64)
+    expect(minutesToPx(15)).toBe(16)
+    expect(pxToMinutes(32)).toBe(30)
   })
   it("snaps to 15 minutes", () => {
     expect(snap(7)).toBe(0)
@@ -20,7 +20,7 @@ describe("pixels and snapping", () => {
   })
   it("reads the minute under a pointer", () => {
     expect(minuteAt(0, range)).toBe(480)
-    expect(minuteAt(56, range)).toBe(540)
+    expect(minuteAt(64, range)).toBe(540)
   })
 })
 
@@ -65,7 +65,7 @@ describe("packLanes", () => {
   it("leaves clear blocks alone in one lane", () => {
     const p = packLanes([b("a", 540, 60), b("c", 600, 30)], range)
     expect(p.map((x) => [x.lane, x.lanes])).toEqual([[0, 1], [0, 1]])
-    expect(p[0]).toMatchObject({ top: 56, height: 56 })
+    expect(p[0]).toMatchObject({ top: 64, height: 64 })
   })
   it("sets overlapping blocks side by side and reuses a freed lane", () => {
     const p = packLanes([b("a", 540, 120), b("b", 570, 60), b("c", 630, 30)], range)
@@ -80,7 +80,7 @@ describe("packLanes", () => {
     expect(p.find((x) => x.block.id === "c")?.lanes).toBe(1)
   })
   it("never draws a block shorter than 15 minutes", () => {
-    expect(packLanes([b("a", 540, 5)], range)[0].height).toBe(14)
+    expect(packLanes([b("a", 540, 5)], range)[0].height).toBe(16)
   })
 })
 

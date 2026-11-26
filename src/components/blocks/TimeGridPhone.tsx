@@ -16,7 +16,7 @@ import type { TimeGridProps } from "./time-grid-types"
 // then the chosen day for the chosen people on the same clock at 88 px an hour so a 30 minute visit is still a 44 px target. No drag, no hover
 // plus: a tap opens the visit (`onSelect`; its peek has Edit visit), and a swipe across the day goes to the next or the last. Every control is 44 px. Pure props.
 
-const CHIP = "flex min-h-11 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+const CHIP = "type-admin-body flex min-h-11 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border px-3 transition-colors duration-(--motion-fast) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
 
 export function TimeGridPhone(props: TimeGridProps) {
   const { people, columns, selectedId, hoverId } = props
@@ -44,9 +44,9 @@ export function TimeGridPhone(props: TimeGridProps) {
     <div data-slot="time-grid" data-form="phone" className={cn("min-w-0", props.className)}>
       <div role="group" aria-label="Day" className={cn("-mx-1 flex snap-x gap-1.5 overflow-x-auto px-1 pb-2", columns.length === 1 && "hidden")}>
         {columns.map((c, i) => (
-          <button key={c.day} type="button" aria-pressed={i === dayIndex} onClick={() => setDayIndex(i)} className={cn(CHIP, "min-w-16 snap-start", i === dayIndex ? "border-navy bg-navy text-white" : "border-border bg-background text-navy")}>
+          <button key={c.day} type="button" aria-pressed={i === dayIndex} onClick={() => setDayIndex(i)} className={cn(CHIP, "min-w-16 snap-start", i === dayIndex ? "border-navy bg-navy text-white" : cn("border-transparent", c.today ? "text-primary-dark" : "text-navy"))}>
             <span className="font-semibold">{c.label}</span>
-            {c.count && <span className={cn("text-xs", i === dayIndex ? "text-white/80" : "text-navy-light")}>{c.count}</span>}
+            {c.count && <span className={cn("type-admin-dense tabular-nums", i === dayIndex ? "text-white/85" : "text-muted-foreground")}>{c.count}</span>}
             {c.today && <span className="sr-only">, today</span>}
           </button>
         ))}
@@ -56,7 +56,7 @@ export function TimeGridPhone(props: TimeGridProps) {
       </div>
       {props.personRow !== false && <div className="pb-2"><PeopleMenu people={people} hidden={hidden} onToggle={(id) => setHidden((h) => (h.includes(id) ? h.filter((x) => x !== id) : people.length - h.length > 1 ? [...h, id] : h))} /></div>}
       {(column.caption || (props.showPersonNames && column.stats)) && (
-        <p data-slot="day-stats" className="mb-2 text-xs text-navy-light">
+        <p data-slot="day-stats" className="type-admin-meta mb-3 px-0.5 tabular-nums text-muted-foreground">
           {(props.showPersonNames ? [column.caption, column.towns, ...(agenda ? [] : chosen).map((p) => { const s = column.stats?.[p.id]; return s ? `${firstNameOf(p.name)}: ${[s.open, s.driving && `${s.driving} drive`].filter(Boolean).join(", ")}` : null })].filter(Boolean).join(" · ") : column.caption ?? "")}
         </p>
       )}
@@ -77,7 +77,7 @@ export function TimeGridPhone(props: TimeGridProps) {
       ) : (
         <>
       <div className="mb-2 flex items-start gap-2" data-slot="anytime-row">
-        <span className="w-14 shrink-0 pt-1 text-xs font-medium text-navy-light">Any time</span>
+        <span className="type-admin-dense w-14 shrink-0 pt-1 text-muted-foreground">Any time</span>
         <div className="min-w-0 flex-1 space-y-1">
           {chosen.map((p) => (
             <AnytimeStrip key={p.id} touch labelled={false} label={`Any time, ${names(p.id)}`} blocks={anytime.filter((b) => b.personId === p.id)} personIndex={colourOf(p.id)} initials={p.initials} who={p.name} selectedId={selectedId} hoverId={hoverId} onSelect={props.onSelect} />

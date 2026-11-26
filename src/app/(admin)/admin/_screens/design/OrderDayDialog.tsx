@@ -14,11 +14,11 @@ function Route({ title, route, meta, moved }: { title: string; route: readonly G
   const legs = new Map(drivingOf(route, meta).legs.map((l) => [l.toId, l.minutes]))
   return (
     <section aria-label={title} className="min-w-0">
-      <h3 className="mb-1 text-sm font-semibold text-foreground">{title}</h3>
-      <ol className="divide-y divide-border rounded-lg border border-border text-sm">
+      <h3 className="type-admin-label mb-1.5 text-foreground">{title}</h3>
+      <ol className="type-admin-body divide-y divide-border rounded-lg border border-border">
         {route.map((b, i) => (
-          <li key={b.id} className="px-3 py-1.5">
-            {legs.get(b.id) ? <span className="block text-xs text-muted-foreground">{`${legs.get(b.id)} min drive`}</span> : null}
+          <li key={b.id} className="px-3.5 py-2">
+            {legs.get(b.id) ? <span className="type-admin-dense block tabular-nums text-muted-foreground">{`${legs.get(b.id)} min drive`}</span> : null}
             <span className={moved?.has(b.id) ? "flex justify-between gap-2 font-semibold text-foreground" : "flex justify-between gap-2 text-foreground"}>
               <span className="min-w-0 truncate">{`${i + 1}. ${b.title}, ${b.town}`}</span>
               <span className="shrink-0 tabular-nums text-muted-foreground">{b.start === null ? "Any time" : clockWords(b.start)}</span>
@@ -46,21 +46,21 @@ export function OrderDayDialog({ plan, meta, who, onClose, onConfirm, onAnotherD
       onConfirm={async () => (onConfirm(), { ok: true })}
     >
       <div className="flex flex-col gap-4">
-        <div className="grid gap-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Route title="Now" route={plan.before.route} meta={meta} />
           <Route title="Reordered" route={plan.after.route} meta={meta} moved={moved} />
         </div>
         {plan.doesNotFit.length > 0 && (
           <section aria-label="No room today" data-slot="does-not-fit">
-            <h3 className="mb-1 text-sm font-semibold text-foreground">No room today</h3>
-            <ul className="divide-y divide-border text-sm text-foreground">
+            <h3 className="type-admin-label mb-1.5 text-foreground">No room today</h3>
+            <ul className="type-admin-body divide-y divide-border text-foreground">
               {plan.doesNotFit.map((b) => (
                 <li key={b.id} className="flex items-center gap-2 py-1">
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{`${b.title}, ${b.town}`}</span>
                     <span className="block text-muted-foreground">{b.start === null ? "Stays where it is." : `Stays at ${clockWords(b.start)}.`}</span>
                   </span>
-                  {onAnotherDay && <Button type="button" size="sm" variant="outline" className="min-h-11 shrink-0" aria-label={`Another day for ${b.title}`} onClick={() => onAnotherDay(b.id)}>Another day</Button>}
+                  {onAnotherDay && <Button type="button" size="touch-sm" variant="outline" className="shrink-0" aria-label={`Another day for ${b.title}`} onClick={() => onAnotherDay(b.id)}>Another day</Button>}
                 </li>
               ))}
             </ul>

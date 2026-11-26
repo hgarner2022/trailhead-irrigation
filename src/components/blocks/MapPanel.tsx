@@ -41,7 +41,7 @@ export interface MapPanelProps {
   className?: string
 }
 
-const CHIP = "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+const CHIP = "type-admin-label inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 transition-colors duration-(--motion-fast) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none xl:min-h-9"
 
 export function MapPanel({ open, onOpenChange, stops, people, unscheduled, ghost, day, days, dayValue, onDayChange, hoverId, onHover, selectedId, onSelect, driving, peopleMenu = true, className }: MapPanelProps) {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set())
@@ -55,9 +55,9 @@ export function MapPanel({ open, onOpenChange, stops, people, unscheduled, ghost
     <SidePanel variant="docked" open={open} onOpenChange={onOpenChange} title={day ? `Map, ${day}` : "Map"} className={className}>
       <div className="flex flex-col gap-3">
         {days && days.length > 0 && (
-          <div role="group" aria-label="Day on the map" data-slot="map-days" className="-mx-1 flex gap-2 overflow-x-auto px-1 md:flex-wrap md:overflow-visible">
+          <div role="group" aria-label="Day on the map" data-slot="map-days" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5 xl:overflow-visible">
             {days.map((d) => (
-              <button key={d.day} type="button" aria-pressed={d.day === dayValue} onClick={() => onDayChange?.(d.day)} className={cn(CHIP, "shrink-0 px-3", d.day === dayValue ? "border-navy bg-navy text-white" : "border-border bg-background text-navy")}>
+              <button key={d.day} type="button" aria-pressed={d.day === dayValue} onClick={() => onDayChange?.(d.day)} className={cn(CHIP, "shrink-0 px-3 tabular-nums xl:min-w-0 xl:flex-1 xl:px-1", d.day === dayValue ? "border-navy bg-navy text-white" : "border-border bg-background text-navy hover:border-navy/40")}>
                 {d.label}
               </button>
             ))}
@@ -83,12 +83,12 @@ export function MapPanel({ open, onOpenChange, stops, people, unscheduled, ghost
           className="h-[60dvh] min-h-72 lg:h-80"
         />
         {driving && driving.some((d) => d.minutes > 0) && (
-          <ul data-slot="map-driving" aria-label="Driving" className="space-y-0.5 text-sm text-navy-light">
+          <ul data-slot="map-driving" aria-label="Driving" className="type-admin-body space-y-0.5 tabular-nums text-muted-foreground">
             {driving.filter((d) => d.minutes > 0).map((d) => <li key={d.id}>{`${d.name} ${hoursWords(d.minutes)} driving`}</li>)}
           </ul>
         )}
         {empty && (
-          <p role="status" className="text-sm text-muted-foreground">
+          <p role="status" className="type-admin-body text-muted-foreground">
             No visits on this day.
           </p>
         )}

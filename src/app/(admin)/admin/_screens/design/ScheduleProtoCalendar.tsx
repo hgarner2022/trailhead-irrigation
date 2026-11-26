@@ -28,16 +28,18 @@ export function ScheduleProtoCalendar({ p }: { p: Proto }) {
   }, [visits, p.shown])
   const listData = useMemo(() => adminDataOf({ visits, meta: state.meta }, p.people, p.moneyOf), [visits, state.meta, p.people, p.moneyOf])
   // List is the product's own visits grid over this calendar; a row opens the visit as a block does
-  if (view === "list") return <VisitsList key={p.hidden.join()} data={listData} today={nowOn(p.today)} onOpenVisit={p.onSelect} defaultFilters={p.hidden.length ? [{ column: "personId", values: p.shown.map((x) => x.id) }] : undefined} />
+  if (view === "list") return <VisitsList key={p.hidden.join()} data={listData} today={nowOn(p.today)} onOpenVisit={p.onSelect} rowOpens defaultFilters={p.hidden.length ? [{ column: "personId", values: p.shown.map((x) => x.id) }] : undefined} />
   if (view === "month")
     return (
       <MonthGrid
+        className="cal-fade relative"
         month={monthOf(day)}
         days={monthDays(visits, timeOff, p.shown)}
         people={p.shown}
         today={p.today}
         selectedDay={day}
         phoneHead={false}
+        head={false}
         onOpenDay={p.openDay}
         onMonthChange={(m) => p.setDay(`${m}-01`)}
       />
@@ -46,7 +48,7 @@ export function ScheduleProtoCalendar({ p }: { p: Proto }) {
     <>
     <TimeGrid
       key={view}
-      className="min-w-0"
+      className="cal-fade min-w-0"
       people={p.shown}
       allPeople={p.people}
       personRow={false}
@@ -69,7 +71,7 @@ export function ScheduleProtoCalendar({ p }: { p: Proto }) {
       onToday={() => p.setDay(p.today)}
       onOpenDay={view === "week" ? p.openDay : undefined}
     />
-    <CalendarLegend className="mt-1" />
+    <CalendarLegend defaultOpen={false} className="mt-1" />
     </>
   )
 }

@@ -59,7 +59,7 @@ Every colour the app uses is a token in `src/app/globals.css`, inside the `@them
 | `--color-positive` | `#15803D` | Readable green, about 5:1 on white | Paid, confirmed, a delta that is good for the business; it is used as text, which is why it is darker than `--color-success`. 4.8:1 on cream, so it is for text on white or cream only. |
 | `--color-positive-deep` | `#166534` | Darker green | Ink for 12px text on the positive tint, as in the active, paid and completed status pills: 6.2:1 on `bg-positive/10` over white, 6.0 over cream |
 | `--color-input` | `#E7E5E4` | Border | Input and select borders |
-| `--color-ring` | `#B45309` | Primary dark | The one focus ring, `focus-visible:ring-2 focus-visible:ring-ring`, on every primitive and block (5.0:1 on white; `ring-primary/50` was 1.75:1 and is gone except in the scheduler files until their redesign). Inside the navy rail it is `--color-sidebar-ring` |
+| `--color-ring` | `#B45309` | Primary dark | The one focus ring, `focus-visible:ring-2 focus-visible:ring-ring`, on every primitive and block (5.0:1 on white; `ring-primary/50` was 1.75:1 and is gone; the scheduler files dropped it in their Nov 26 2026 polish). Inside the navy rail it is `--color-sidebar-ring` |
 | `--color-sidebar` | `#2B3544` | Navy | The sidebar rail background |
 | `--color-sidebar-foreground` | `#FAFAF8` | Cream | Text and icons in the rail |
 | `--color-sidebar-primary` | `#B45309` | Primary dark | The active nav item background; white text on it passes AA |
@@ -121,6 +121,7 @@ Every admin screen sets type by role too, from the same place: the `type-admin-*
 | Label | `type-admin-label` | Body, 14, 500 | The label over a field, a name in a facts list |
 | Meta | `type-admin-meta` | Body, 13, 400 | A quiet second line: the line under a page title or a panel title, a stat tile's name and delta |
 | Caption | `type-admin-caption` | Body, 12, 600, uppercase | An overline or a short status; never a sentence |
+| Dense | `type-admin-dense` | Body, 12, 400, 1.3 | A visit on the calendar, an hour in its gutter, a count beside a day; a name and a time, never a sentence (the Schedule, Nov 26 2026) |
 | Figure | `type-admin-figure` | Display, 36, 600, tabular | The number on a stat tile |
 
 The rules: the display face is always 600 and names things; the body face says things. A card title is 20px semibold wherever a card is, on Home, a record page, Settings and an empty list. A section is smaller than the card it sits in (16 under 20, as 24 sits over 20 in a modal). Colour is not part of a role (`text-navy` on the display face, `text-muted-foreground` on meta). A screen or a block never types `font-display text-…` for a heading: it names the role. `SectionHeading` has two sizes only, `card` (level 2, the default for an h2) and `section` (level 3, the default for an h3); `sub` is kept as a name for `section`. A grid's header cells, empty titles and the stat tiles read the roles; the older hand-typed sizes in the rest of the admin (`text-[11px]` and the like) are the debt the pattern audit's polish backlog pays off block by block. Inputs stay 16px on a phone.
@@ -342,6 +343,19 @@ One rule for every record page: the title is the record's OWN name, never anothe
 | Customer | The customer's name | "Customer since Apr 2026 · 480 Briggs St, Erie" | "Andrea Dalton · Customer · Trailhead admin" |
 
 The word is **visit**, never "trip", on every admin screen and story ("Return visit", "Add a return visit", "Visit 1"); "trip" is left only in code names (`TripRow`, `trip-fixtures.ts`).
+
+## Schedule calendar (the prototype's polish pass, Nov 26 2026)
+
+Storybook only (`SchedulePrototype`, the walkthrough's Schedule). The older "Schedule week" section below describes the live screen.
+
+- **Chrome.** The shell's bar holds "Schedule" and New job. Under it one row, everything 40 px: previous and next as ghost icons, Today, the range as the row's title (`type-admin-card`), the view switch (`SegmentedControl compact`), People as a quiet control (`PeopleMenu quiet`), and at the right Reorder stops (ghost) and Unscheduled with its count and Map joined as one toggle pair. Only Today, the view switch and the pair carry an edge.
+- **Grid.** 64 px an hour (a 30 minute visit is 32 px). A hairline on the hour, nothing on the half hour; hour labels `type-admin-dense`, muted, centred on their line; off hours and time off at 3 percent navy (time off adds a thin hatch and its label); today's column at 3 percent orange with its date in `text-primary-dark`, the one accent; the now line 1 px with a 6 px dot, under the visits. The head and the gutter sit flat on a hairline and take `shadow-sm` only once something has scrolled under them. A person's column is never narrower than 92 px (80 from four people): with a panel beside it the grid scrolls sideways inside itself and opens on today.
+- **Block (`TimeBlock`).** One treatment: an opaque soft fill of the person's colour, a solid 3 px left edge, `rounded-md`, no border, no resting shadow, no avatar. Time (tabular, muted; the start alone in the Week, the span in the Day) and street (the one heavier weight) on the first line; service and town under it when the height holds another line (stacked in a narrow column, on one line from 9.5rem, by container query). Text wraps at a word and is cut on a whole line: never an ellipsis. Done: grey fill, small check. Waiting on customer: small clock. Overlap: a 1 px inset destructive edge and a corner mark; the sentence is the block's title, is read aloud and is a `Notice` in the peek. Selected: a 2 px navy ring with a 1 px gap. Hover: the fill a step stronger, 1 px lift, `shadow-sm`. Focus: the product's `ring-ring`, inset. In the Week two overlapping visits cascade (14 px in, over the one before); in the Day and on a phone they sit side by side.
+- **People's colours.** Five, told apart: `primary`, `navy`, `positive`, `person-4` (lake blue), `person-5` (plum) in `tokens.css` and `PERSON_CLASSES`; a sixth wraps. Navy text on each fill is 9:1 or better.
+- **Peek.** From 1280 a 360 px card floating over the calendar's stage at the edge away from the visit (`shadow-xl`, `cal-enter`); the calendar does not move. Another visit swaps the words in place. Below 1280 the full-height sheet. Facts are `RecordFacts`; one primary and two outlines.
+- **Panels.** Unscheduled and Map are one 328 px column beside the calendar, sharing its height; the map's days are one row of five.
+- **Motion** (`base.css`, on `--motion-fast`, `--motion-base`, `--motion-ease`; all off under reduced motion): `cal-settle` (a visit lands), `cal-glide` (it slides to a new time or length in its column), `cal-lift` (the dragged copy), `cal-enter` (peek and panels), `cal-rise` (toast), `cal-fade` (a view arriving). A fade is a veil of the surface colour lifting, so the words are at full contrast from the first frame.
+- **Phone.** The day strip's unchosen days carry no box; the day list is a time column, the street in semibold over the service and town, a 3 px person edge, a hairline between rows and the drive as a dotted connector in place of the hairline; the legend is folded.
 
 ## Schedule week
 

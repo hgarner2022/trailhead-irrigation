@@ -33,8 +33,8 @@ export interface AnytimeStripProps {
 export function AnytimeStrip({ blocks, personIndex = 0, initials, who, selectedId, hoverId, label = "Any time", labelled = true, touch, draggingId, wrap, onSelect, onHover, className }: AnytimeStripProps) {
   const empty = blocks.length === 0
   return (
-    <div role="group" aria-label={label} data-slot="anytime-strip" data-empty={empty || undefined} className={cn("flex min-w-0 items-center gap-1.5", empty ? "min-h-5" : "flex-wrap py-1", className)}>
-      {labelled && <span className={cn("shrink-0 text-xs font-medium text-navy-light", !empty && "mr-1")}>Any time</span>}
+    <div role="group" aria-label={label} data-slot="anytime-strip" data-empty={empty || undefined} className={cn("flex min-w-0 items-center gap-1.5", empty ? "min-h-4" : "flex-wrap py-1", className)}>
+      {labelled && <span className={cn("type-admin-dense shrink-0 text-muted-foreground", !empty && "mr-1")}>Any time</span>}
       {empty && labelled && <span aria-hidden className="h-px min-w-6 flex-1 bg-border" />}
       {blocks.map((b, i) => {
         const chip = (

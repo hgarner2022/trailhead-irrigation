@@ -15,7 +15,7 @@ export function CalendarKeysHelp({ open, onOpenChange }: CalendarKeysHelpProps) 
           <DialogTitle>Keyboard shortcuts</DialogTitle>
           <DialogDescription>On the Schedule. Tab to a visit, press Space to pick it up, move it with the arrows and press Enter to drop it.</DialogDescription>
         </DialogHeader>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 type-admin-body">
           {CALENDAR_KEYS.map((k) => (
             <div key={k.keys} className="contents">
               <dt><kbd className="rounded border border-border bg-stone px-1.5 py-0.5 font-mono text-xs text-navy">{k.keys}</kbd></dt>

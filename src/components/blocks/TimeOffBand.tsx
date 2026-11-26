@@ -28,7 +28,7 @@ export function TimeOffBand({ label, personIndex = 0, wholeDay, onOpen, touch, s
       title={label}
       data-form={wholeDay ? "day" : "hours"}
       style={{ ...HATCH_STYLE, ...style }}
-      className={cn("pointer-events-none absolute inset-x-0 z-[1] overflow-hidden border-y border-border/60", s.hatch, wholeDay && "inset-y-0", className)}
+      className={cn("pointer-events-none absolute inset-x-0 z-[1] overflow-hidden bg-navy/[0.03]", s.hatch, wholeDay && "inset-y-0", className)}
     >
       {onOpen ? (
         <button
@@ -36,12 +36,12 @@ export function TimeOffBand({ label, personIndex = 0, wholeDay, onOpen, touch, s
           data-slot="time-off-open"
           onClick={onOpen}
           aria-label={`Time off, change it in Settings: ${label}`}
-          className={cn("pointer-events-auto m-0.5 inline-flex max-w-full cursor-pointer items-center truncate rounded bg-background/90 px-1 text-xs font-medium text-navy underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy", touch ? "min-h-11" : "min-h-6")}
+          className={cn("type-admin-dense pointer-events-auto m-1 inline-flex max-w-[calc(100%-0.5rem)] cursor-pointer items-center rounded-sm bg-background/85 px-1.5 text-left font-semibold text-navy-light underline-offset-2 hover:text-navy hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", touch ? "min-h-11" : "min-h-6")}
         >
-          <span className="truncate">{label}</span>
+          <span className="line-clamp-2 break-words">{label}</span>
         </button>
       ) : (
-        <span className="m-0.5 inline-block max-w-full truncate rounded bg-background/90 px-1 text-xs font-medium text-navy">{label}</span>
+        <span className="type-admin-dense m-1 inline-block max-w-[calc(100%-0.5rem)] rounded-sm bg-background/85 px-1.5 py-0.5 font-semibold text-navy-light"><span className="line-clamp-2 break-words">{label}</span></span>
       )}
     </div>
   )

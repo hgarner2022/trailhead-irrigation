@@ -13,7 +13,7 @@ import type { ExternalDrop, MoveEvent } from "./time-grid-types"
 // Resize is NOT here: dnd-kit moves things between targets and has no edge-resize, so TimeGrid does it with plain pointer events.
 
 export const colKey = (day: string, personId: string) => `${day}|${personId}`
-export const ROW_STEP_PX = 14 // 15 minutes at 56 px an hour
+export const ROW_STEP_PX = 16 // 15 minutes at 64 px an hour (HOUR_PX)
 
 export interface Preview extends MoveResult { id: string; conflict: string | null; external: boolean }
 type Entity = { id: string | number; data: Record<string, unknown>; element?: Element }

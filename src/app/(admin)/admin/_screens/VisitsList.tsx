@@ -26,6 +26,8 @@ export interface VisitsListProps {
   defaultFilters?: { column: string; values: string[] }[]
   /** a row opens somewhere other than the panel (the prototype's job page) */
   onOpenVisit?: (visitId: string) => void
+  /** the whole row opens the visit, by pressing the first cell's link (the reviewed admin's one link a row; the Schedule prototype passes it) */
+  rowOpens?: boolean
 }
 
 const TOWNS = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
@@ -33,7 +35,7 @@ const TOWNS = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broo
 /** The line over the grid when the list is filtered to one job: which job and how many visits. */
 const jobLine = (rows: VisitRow[]) => (rows.length === 0 ? "No visits on that job." : `${rows[0]!.jobLabel}: ${rows.length} ${rows.length === 1 ? "visit" : "visits"}.`)
 
-export function VisitsList({ data, today, forJob, defaultFilters, onOpenVisit }: VisitsListProps) {
+export function VisitsList({ data, today, forJob, defaultFilters, onOpenVisit, rowOpens }: VisitsListProps) {
   const host = useOpenVisit()
   const open = onOpenVisit ?? host
   const all = useMemo(() => visitRows(data, today), [data, today])
@@ -68,6 +70,7 @@ export function VisitsList({ data, today, forJob, defaultFilters, onOpenVisit }:
         search={{ column: "name", placeholder: "Search by name or street" }}
         filters={filters}
         onOpen={(row) => open?.(row.id)}
+        rowOpens={rowOpens}
         exportName="visits"
         defaultFilters={defaultFilters}
         pageSize={25}
