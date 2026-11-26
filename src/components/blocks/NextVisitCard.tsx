@@ -4,12 +4,13 @@ import { CalendarDays } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Stack } from "@/components/ui/grid"
+import { EmptyState } from "./EmptyState"
 import { cn } from "@/lib/utils"
 
 // The first thing on an account's Home: what is coming (docs/plans/2026-11-19-customer-side-polish-research.md, section 1a). The day with its exact time is the one headline
 // ("Wednesday, April 28 at 10:30 am"), read once; under it who is coming, then the service and the street, and "Someone must be home" when the property says so. The two
 // actions (Reschedule as the one filled button and Cancel visit as a quiet link, or Text Ryan and Call Ryan inside 24 hours) are a slot the screen fills. With no visit the card
-// says "Nothing booked right now." and offers Book Online. Spacing is the 8-point scale: 8 inside a group, 16 between groups. Pure props, server-safe.
+// is the shared EmptyState: the trail drawing, "Nothing booked right now." and Book Online. Spacing is the 8-point scale: 8 inside a group, 16 between groups. Pure props, server-safe.
 
 export interface NextVisitProps {
   /** "Wednesday, April 28 at 10:30 am"; "Wednesday, April 28" while the time is not set; "Pick a day" or "Day coming soon" */
@@ -41,15 +42,17 @@ export function NextVisitCard({ visit, className }: { visit: NextVisitProps | nu
     return (
       <Card data-slot="next-visit" data-state="none" className={className}>
         <CardContent className={FRAME}>
-          <Stack gap="md">
-            <Stack gap="sm">
-              <Label />
-              <h2 className="type-heading text-navy">Nothing booked right now.</h2>
-            </Stack>
-            <Button asChild>
-              <a href="/book">Book Online</a>
-            </Button>
-          </Stack>
+          <EmptyState
+            scene="trail"
+            titleAs="h2"
+            title="Nothing booked right now."
+            className="py-4"
+            action={
+              <Button asChild>
+                <a href="/book">Book Online</a>
+              </Button>
+            }
+          />
         </CardContent>
       </Card>
     )

@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { EmptyState } from "@/components/blocks/EmptyState"
 import { Button } from "@/components/ui/button"
 import { TextRyan } from "@/components/blocks/TextRyan"
 import { textRyanHref } from "@/lib/portal/words"
@@ -11,14 +12,21 @@ export const ACCOUNT_NOT_FOUND_LINE = "We can't open that visit. Go to your visi
 export function AccountNotFound() {
   return (
     <main data-slot="account-not-found" className="mx-auto max-w-xl container-padding-x py-10">
-      <h1 className="type-title text-navy">We can&apos;t open that</h1>
-      <p className="mt-3 text-base text-foreground">{ACCOUNT_NOT_FOUND_LINE}</p>
-      <div className="mt-6 space-y-4">
-        <Button asChild size="lg">
-          <Link href="/account/visits">Go to your visits</Link>
-        </Button>
-        <TextRyan textHref={textRyanHref("Hi Ryan, a link in my Trailhead account did not open.")} why={false} />
-      </div>
+      <EmptyState
+        scene="compass"
+        size="page"
+        titleAs="h1"
+        title="We can't open that"
+        line={ACCOUNT_NOT_FOUND_LINE}
+        action={
+          <div className="space-y-4">
+            <Button asChild size="lg">
+              <Link href="/account/visits">Go to your visits</Link>
+            </Button>
+            <TextRyan textHref={textRyanHref("Hi Ryan, a link in my Trailhead account did not open.")} why={false} />
+          </div>
+        }
+      />
     </main>
   )
 }
