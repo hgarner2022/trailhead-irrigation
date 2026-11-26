@@ -86,7 +86,7 @@ const MARK = "/images/logo-badge-trim.png"
 /** The quiet Search button in the top bar: the same box Cmd or Ctrl+K opens, for anyone without the keys. */
 function SearchButton({ onClick, className, iconOnly = false }: { onClick: () => void; className?: string; iconOnly?: boolean }) {
   return (
-    <Button type="button" variant="outline" size={iconOnly ? "icon" : "default"} aria-label="Search" onClick={onClick} className={cn("min-h-11 shrink-0 text-muted-foreground", iconOnly && "min-w-11", className)}>
+    <Button type="button" variant="outline" size={iconOnly ? "touch-icon" : "touch"} aria-label="Search" onClick={onClick} className={cn("shrink-0 text-muted-foreground", className)}>
       <Search className="size-4" aria-hidden />
       {!iconOnly && (
         <>

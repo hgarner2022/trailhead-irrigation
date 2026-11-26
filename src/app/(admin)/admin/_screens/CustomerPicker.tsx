@@ -85,7 +85,7 @@ function EmailField({ id, value, onChange, required, className }: { id: string; 
     <div className={className}>
       <Input id={id} aria-label="Email" type="email" placeholder={required ? "Email, for the confirmation" : "Email"} value={value} onChange={(e) => onChange(e.target.value)} className="min-h-11" aria-invalid={problem ? true : undefined} />
       {suggestion && (
-        <Button type="button" variant="ghost" className="mt-1 min-h-11 px-2 text-primary-dark underline underline-offset-2" onClick={() => onChange(suggestion)}>
+        <Button size="touch" type="button" variant="ghost" className="mt-1 px-2 text-primary-dark underline underline-offset-2" onClick={() => onChange(suggestion)}>
           {`Did you mean ${suggestion}?`}
         </Button>
       )}
@@ -122,7 +122,7 @@ export function CustomerPicker({ data, customerId, value, onChange, emailRequire
               <span className="block text-muted-foreground">{[client.address, client.town].filter(Boolean).join(", ")}</span>
             </span>
             {!customerId && (
-              <Button type="button" variant="ghost" className="min-h-11" onClick={() => onChange({ ...value, chosen: undefined })}>
+              <Button size="touch" type="button" variant="ghost" onClick={() => onChange({ ...value, chosen: undefined })}>
                 Change
               </Button>
             )}
@@ -173,7 +173,7 @@ export function CustomerPicker({ data, customerId, value, onChange, emailRequire
         </>
       )}
       {!customerId && (
-        <Button type="button" variant="ghost" className="mt-1 min-h-11 px-2 text-primary-dark underline underline-offset-2" onClick={() => onChange({ ...value, isNew: !isNew })}>
+        <Button size="touch" type="button" variant="ghost" className="mt-1 px-2 text-primary-dark underline underline-offset-2" onClick={() => onChange({ ...value, isNew: !isNew })}>
           {isNew ? "Find an existing customer" : "New customer"}
         </Button>
       )}

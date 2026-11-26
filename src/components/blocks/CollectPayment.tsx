@@ -137,7 +137,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
         <p role="status" className="font-display text-2xl text-navy">{result.title}</p>
         <p className="text-sm">{result.line}</p>
         {place(
-          <Button type="button" className={cn("min-h-11", !slot && "self-start")} onClick={onClose}>
+          <Button type="button" size="touch" className={cn(!slot && "self-start")} onClick={onClose}>
             Close
           </Button>,
         )}
@@ -160,7 +160,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
         ))}
       </fieldset>
       {plan.anotherWay.length > 0 && !more && (
-        <Button type="button" variant="ghost" className="min-h-11 self-start text-muted-foreground" onClick={() => (setMore(true), setChoice("check"))}>
+        <Button size="touch" type="button" variant="ghost" className="self-start text-muted-foreground" onClick={() => (setMore(true), setChoice("check"))}>
           Paid another way
         </Button>
       )}
@@ -181,11 +181,11 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
       </p>
       {place(
         <div className={cn("flex flex-wrap items-center gap-2", !slot && "w-full")}>
-          <Button type="button" className="min-h-11 w-full sm:w-auto" disabled={busy || (handed && plan.needsAmount && !Number(amount))} onClick={press}>
+          <Button size="touch" type="button" className="w-full sm:w-auto" disabled={busy || (handed && plan.needsAmount && !Number(amount))} onClick={press}>
             {buttonLabel ? buttonLabel(picked) : picked.button}
           </Button>
           {notNow && picked.value !== "later" && (
-            <Button type="button" variant="ghost" className="min-h-11 text-muted-foreground" disabled={busy} onClick={onLater}>
+            <Button size="touch" type="button" variant="ghost" className="text-muted-foreground" disabled={busy} onClick={onLater}>
               Not now
             </Button>
           )}

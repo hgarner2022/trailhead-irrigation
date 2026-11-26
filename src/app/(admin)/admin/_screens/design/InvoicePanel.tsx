@@ -54,7 +54,7 @@ function RemindersCard({ d, rows, paused, onPause }: { d: InvoicePageData; rows:
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
         <p data-slot="reminder-schedule" className="text-sm font-medium">{line}</p>
         {!done && d.schedule && (
-          <Button type="button" variant="outline" className="min-h-11" onClick={onPause}>
+          <Button size="touch" type="button" variant="outline" onClick={onPause}>
             {paused ? "Resume" : "Pause"}
           </Button>
         )}

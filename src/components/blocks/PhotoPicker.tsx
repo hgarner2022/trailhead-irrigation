@@ -54,7 +54,7 @@ export function PhotoPicker({ photos, onAdd, onRemove, samples, max = 6, hint, c
           </span>
         </label>
         {samples && samples.length > 0 && (
-          <Button type="button" variant="outline" className="min-h-11 text-base" onClick={() => onAdd(fresh(samples))}>
+          <Button size="touch" type="button" variant="outline" className="text-base" onClick={() => onAdd(fresh(samples))}>
             {`Add ${samples.length} sample photos`}
           </Button>
         )}

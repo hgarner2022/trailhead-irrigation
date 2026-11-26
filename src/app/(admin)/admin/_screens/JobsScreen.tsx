@@ -92,7 +92,7 @@ export function JobsScreen({ data, today, defaultJobId, defaultVisitId, readOnly
           actions={
             <>
               {out > 0 && (
-                <Button type="button" variant="outline" className="min-h-11" aria-pressed={billsOn} onClick={toggleBills}>
+                <Button size="touch" type="button" variant="outline" aria-pressed={billsOn} onClick={toggleBills}>
                   {billsChip(out)}
                 </Button>
               )}

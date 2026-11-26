@@ -73,7 +73,7 @@ export function JobsGridDesign({ rows, defaultFilters }: JobsGridDesignProps) {
   const out = rows.filter((r) => r.billingState === "bill-sent" || r.billingState === "overdue").length
   return (
     <div data-slot="jobs-grid-design">
-      <PageHeader title="Jobs" context={rows.length ? `${rows.length} jobs. ${out} invoices out.` : "No jobs yet."} actions={<Button type="button" className="min-h-11">New job</Button>} />
+      <PageHeader title="Jobs" context={rows.length ? `${rows.length} jobs. ${out} invoices out.` : "No jobs yet."} actions={<Button size="touch" type="button">New job</Button>} />
       <DataGrid
         columns={jobGridColumns}
         card={jobGridCard}

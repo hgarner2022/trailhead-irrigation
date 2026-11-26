@@ -54,7 +54,7 @@ export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen:
   const out = rows.filter((r) => r.billingState === "bill-sent" || r.billingState === "overdue").length
   return (
     <div data-slot="jobs-grid-design">
-      <PageHeader title="Jobs" context={`${rows.length} jobs. ${out} invoices out.`} primary={<Button type="button" className="min-h-11" onClick={onNew}>New job</Button>} />
+      <PageHeader title="Jobs" context={`${rows.length} jobs. ${out} invoices out.`} primary={<Button size="touch" type="button" onClick={onNew}>New job</Button>} />
       <DataGrid
         columns={jobsColumns}
         card={jobGridCard}
@@ -102,7 +102,7 @@ const customerColumns: GridColumnDef<ListRow>[] = [
   { id: "next", accessorKey: "next", header: "Next visit" },
   { id: "unpaid", accessorKey: "unpaid", header: "Unpaid", cell: ({ row }) => <MoneyCell end text={row.original.unpaid ? money(row.original.unpaid) : null} />, meta: { align: "right", csv: (r) => String((r as CustomerListRow).unpaid) } },
   { id: "pass", accessorKey: "pass", header: "Season Pass", cell: ({ row }) => (row.original.pass ? <StatusPill status="active" label={row.original.pass} /> : null) },
-  { id: "newjob", header: () => <span className="sr-only">Actions</span>, enableSorting: false, cell: ({ row }) => <Button asChild variant="outline" size="sm" className="min-h-8"><a href={`/admin/jobs?new=1&customer=${row.original.id}`} aria-label={`New job for ${row.original.name}`}>New job</a></Button> },
+  { id: "newjob", header: () => <span className="sr-only">Actions</span>, enableSorting: false, cell: ({ row }) => <Button asChild variant="outline" size="sm"><a href={`/admin/jobs?new=1&customer=${row.original.id}`} aria-label={`New job for ${row.original.name}`}>New job</a></Button> },
 ]
 const customerCard: GridCardSlots = { title: "name", line: ["street"], state: "status", when: ["next"], money: "unpaid" }
 
@@ -116,7 +116,7 @@ export function CustomersList({ onOpen }: { onOpen: (id: string) => void }) {
   const data = useMemo<ListRow[]>(() => customerRows().map((r) => { const p = customerPage(r.id); const made = allRows().find((j) => j.id.startsWith("new-") && customerIdOf(j.name) === r.id); return { ...r, next: made?.next ?? r.next, status: p?.status ?? "active", dns: p?.doNotService } }), [])
   return (
     <div data-slot="walkthrough-customers">
-      <PageHeader title="Customers" context={`${data.filter((r) => showArchived || r.status !== "archived").length} customers`} actions={<Button type="button" variant={showArchived ? "default" : "outline"} aria-pressed={showArchived} className="min-h-11" onClick={() => setShowArchived((v) => !v)}>Show archived</Button>} />
+      <PageHeader title="Customers" context={`${data.filter((r) => showArchived || r.status !== "archived").length} customers`} actions={<Button size="touch" type="button" variant={showArchived ? "default" : "outline"} aria-pressed={showArchived} onClick={() => setShowArchived((v) => !v)}>Show archived</Button>} />
       <DataGrid
         key={String(showArchived)}
         columns={customerColumns}

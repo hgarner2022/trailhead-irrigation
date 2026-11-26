@@ -162,7 +162,7 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
           archivedAt ? (
             <p data-slot="archived-banner" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-5 py-3 text-sm shadow-sm">
               <span>Archived Nov 20. New work brings them back.</span>
-              <Button type="button" variant="outline" className="min-h-11" onClick={() => (setArchivedAt(null), toast(`${d.firstName} is back on the Customers list`))}>
+              <Button size="touch" type="button" variant="outline" onClick={() => (setArchivedAt(null), toast(`${d.firstName} is back on the Customers list`))}>
                 Unarchive
               </Button>
             </p>
@@ -193,7 +193,7 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
           {d.jobs.length ? (
             <JobsTable rows={d.jobs} customer={d.name} />
           ) : (
-            <EmptyState title="No jobs yet" line="Start with a repair, a spring turn-on or a Season Pass. The job and its days show here." action={<Button asChild variant="outline" className="min-h-11"><Link href={`/admin/jobs?new=1&customer=${d.id}`}>New job</Link></Button>} />
+            <EmptyState title="No jobs yet" line="Start with a repair, a spring turn-on or a Season Pass. The job and its days show here." action={<Button size="touch" asChild variant="outline"><Link href={`/admin/jobs?new=1&customer=${d.id}`}>New job</Link></Button>} />
           )}
         </SectionCard>
         <CustomerQuotes quotes={d.quotes ?? []} customerId={d.id} />

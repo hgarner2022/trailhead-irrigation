@@ -71,12 +71,12 @@ export function ConfirmDialog({ title, message, blocked, children, confirmLabel,
         </p>
         {actions === "confirm" && (
           <DialogFooter>
-            <Button variant="outline" className="min-h-11" onClick={() => onOpenChange(false)}>
+            <Button size="touch" variant="outline" onClick={() => onOpenChange(false)}>
               {dismissLabel ?? (destructive || blocked ? "Keep it" : "Cancel")}
             </Button>
             {!blocked && renderConfirm && renderConfirm({ confirm, pending: pending || Boolean(confirmDisabled) })}
             {!blocked && !renderConfirm && confirmLabel && (
-              <Button className={cn("min-h-11", destructive && "bg-destructive text-white hover:bg-destructive/90")} onClick={() => confirm()} disabled={pending || confirmDisabled}>
+              <Button size="touch" variant={destructive ? "destructive" : "default"} onClick={() => confirm()} disabled={pending || confirmDisabled}>
                 {confirmLabel}
               </Button>
             )}

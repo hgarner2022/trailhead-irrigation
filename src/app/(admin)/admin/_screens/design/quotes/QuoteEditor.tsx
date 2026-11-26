@@ -73,7 +73,7 @@ export function QuoteEditor({ quote, onPrice, onCancelLine, onRestoreLine, onEdi
       </div>
       <DepositControl total={total} draft={draft} amount={result.amount} problem={result.problem} onChange={onDeposit} />
       <div data-slot="quote-editor-footer" className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4">
-        <Button type="button" className="min-h-11 w-full sm:w-auto" disabled={Boolean(missing)} aria-describedby={missing ? MISSING_ID : undefined} onClick={onSend}>
+        <Button size="touch" type="button" className="w-full sm:w-auto" disabled={Boolean(missing)} aria-describedby={missing ? MISSING_ID : undefined} onClick={onSend}>
           Send a quote
         </Button>
         {missing && (

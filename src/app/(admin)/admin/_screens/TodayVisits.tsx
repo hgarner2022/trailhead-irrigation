@@ -83,7 +83,7 @@ export function TodayVisits({ view, areas, next, className }: TodayVisitsProps) 
           line="Jobs with no day wait on the Schedule."
           className="py-8"
           action={
-            <Button asChild variant="outline" className="min-h-11">
+            <Button size="touch" asChild variant="outline">
               <Link href="/admin/schedule">Open Schedule</Link>
             </Button>
           }

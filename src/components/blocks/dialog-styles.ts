@@ -5,5 +5,3 @@
 
 /** A dialog's title: the display face, navy. */
 export const DIALOG_TITLE = "type-heading text-navy"
-/** The confirm of something hard to take back (cancel a visit, cancel the pass): the destructive colour, never the orange of a primary. */
-export const DIALOG_DESTRUCTIVE = "min-h-11 bg-destructive text-white hover:bg-destructive/90"
