@@ -6,6 +6,8 @@ export type Screen = "home" | "schedule" | "requests" | "jobs" | "quotes" | "cus
 export interface Route {
   screen: Screen
   id?: string
+  /** a job's page with this visit in focus (a block of the Schedule): a Season Pass opens that trip */
+  visit?: string
   /** the New job sheet is open on the Jobs screen; `id` is the customer it was started from */
   newJob?: boolean
   /** the Requests list opened with its Status chip set (Home's "2 new requests" row: new), or the Quotes list on the quotes still waiting (Home's Quote waiting row: sent) */
@@ -39,7 +41,10 @@ export function parseHref(href: string): Route | null {
   if (!screen) return null
   const id = KEY[section] ? url.searchParams.get(KEY[section]!) : null
   const record = RECORD[section]
-  if (record && id) return { screen: record, id }
+  if (record && id) {
+    const visit = record === "job" ? url.searchParams.get("visit") : null
+    return visit ? { screen: record, id, visit } : { screen: record, id }
+  }
   if (section === "quotes" && url.searchParams.get("new") === "1") {
     const customer = url.searchParams.get("customer")
     return customer ? { screen: "quotes", newQuote: true, id: customer } : { screen: "quotes", newQuote: true }

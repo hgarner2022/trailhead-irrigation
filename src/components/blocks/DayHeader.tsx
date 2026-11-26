@@ -1,7 +1,7 @@
 import { Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-// The head of a Schedule day (docs/plans/2026-11-18-admin-holistic-design.md, 5.2): the day's name, how full it is ("5 stops, 3 h open") and the towns
+// The head of a Schedule day (docs/plans/2026-11-18-admin-holistic-design.md, 5.2): the day's name, how full it is ("5 visits, 3 h open") and the towns
 // already in it ("Erie 3, Lafayette 2"), so Ryan sees the day filling by neighbourhood before he places anything. Today is marked. The "+" opens New job
 // with the day filled in, and is left off for a tech, who reads the week. Pure render: the words come from `fillWords` and `townsWords`
 // (src/lib/admin/day-fill.ts) and the screen decides which element wraps it (a table header in the week, a heading in the day).
@@ -12,7 +12,7 @@ export interface DayHeaderProps {
   /** YYYY-MM-DD, for the "+" button's name and the callback */
   day: string
   today?: boolean
-  /** "5 stops, 3 h open" */
+  /** "5 visits, 3 h open" */
   fill: string
   /** "Erie 3, Lafayette 2"; empty for an empty day */
   towns: string

@@ -29,9 +29,15 @@ export interface SidePanelProps {
   /** Pinned under the scrolling body: the primary button first, then the secondary ones */
   footer?: ReactNode
   className?: string
+  /**
+   * `overlay` (the default) is the modal drawer above. `docked` is for a list that sits beside a page and never covers it (the Schedule's Unscheduled and Map panels,
+   * docs/plans/2026-11-25-scheduler-design.md 7.6): from 1280 an `aside` in the page's own layout, not modal, no scrim, the page stays usable; below 1280 a sheet from the bottom, one at a time.
+   */
+  variant?: "overlay" | "docked"
 }
 
 const LG = "(min-width: 1024px)"
+const XL = "(min-width: 1280px)"
 export const MIN_WIDTH = 360
 export const DEFAULT_WIDTH = 480
 export const STEP = 40
@@ -39,13 +45,14 @@ const KEY = "trailhead.side-panel-width"
 // The body scrolls on its own, so it is a named region in the tab order for keyboard scrolling.
 const BODY = "min-w-0 flex-1 overflow-y-auto px-6 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
 
-const subscribe = (onChange: () => void) => {
-  const query = window.matchMedia(LG)
+const subscribeTo = (media: string) => (onChange: () => void) => {
+  const query = window.matchMedia(media)
   query.addEventListener("change", onChange)
   return () => query.removeEventListener("change", onChange)
 }
+const useMedia = (media: string) => useSyncExternalStore(subscribeTo(media), () => window.matchMedia(media).matches, () => false)
 /** True from Tailwind's lg breakpoint. False on the server, so a laptop sees the drawer once hydrated. */
-const useDesktop = () => useSyncExternalStore(subscribe, () => window.matchMedia(LG).matches, () => false)
+const useDesktop = () => useMedia(LG)
 
 // The remembered width, read once per open and written when the person lets go. Storage can throw (a private window), so every use is wrapped.
 function storedWidth(): number {
@@ -184,18 +191,18 @@ function Drawer({ open, onOpenChange, title, description, pills, back, children,
   )
 }
 
-function PhoneSheet({ open, onOpenChange, title, description, pills, back, children, footer, className }: SidePanelProps) {
+function PhoneSheet({ open, onOpenChange, title, description, pills, back, children, footer, className, side = "right" }: SidePanelProps & { side?: "right" | "bottom" }) {
   const { content, ...handoff } = useFocusHandoff()
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         ref={content}
-        side="right"
+        side={side}
         showCloseButton={false}
         data-slot="side-panel"
         data-mode="sheet"
         {...handoff}
-        className={cn("w-full gap-0 outline-none sm:max-w-none", className)}
+        className={cn("w-full gap-0 outline-none sm:max-w-none", side === "bottom" && "h-[85dvh] rounded-t-lg", className)}
         {...(description ? {} : { "aria-describedby": undefined })}
       >
         <Frame title={title} description={description} pills={pills} back={back} footer={footer}>
@@ -206,6 +213,32 @@ function PhoneSheet({ open, onOpenChange, title, description, pills, back, child
   )
 }
 
+/** The docked variant from 1280: a plain `aside` beside the page, named by its title, with the same header, body and footer. */
+function Docked({ open, onOpenChange, title, description, pills, children, footer, className }: SidePanelProps) {
+  if (!open) return null
+  return (
+    <aside aria-label={title} data-slot="side-panel" data-mode="docked" className={cn("flex h-full min-h-0 w-[360px] shrink-0 flex-col border-l border-border bg-background", className)}>
+      <header className="flex items-center gap-3 border-b border-border py-2 pl-4 pr-2">
+        <div className="min-w-0 flex-1">
+          <h2 className="type-admin-card text-navy">{title}</h2>
+          {description ? <p className="type-admin-meta mt-0.5 truncate text-muted-foreground" title={description}>{description}</p> : null}
+          {pills ? <div data-slot="side-panel-pills" className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">{pills}</div> : null}
+        </div>
+        <Button variant="ghost" size="icon" aria-label="Close panel" onClick={() => onOpenChange(false)} className="shrink-0 text-muted-foreground hover:text-foreground">
+          <X className="size-4" aria-hidden />
+        </Button>
+      </header>
+      <div role="region" aria-label={`${title} details`} tabIndex={0} className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+        {children}
+      </div>
+      {footer ? <footer className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-3">{footer}</footer> : null}
+    </aside>
+  )
+}
+
 export function SidePanel(props: SidePanelProps) {
-  return useDesktop() ? <Drawer {...props} /> : <PhoneSheet {...props} />
+  const desktop = useDesktop()
+  const wide = useMedia(XL)
+  if (props.variant === "docked") return wide ? <Docked {...props} /> : <PhoneSheet {...props} side="bottom" />
+  return desktop ? <Drawer {...props} /> : <PhoneSheet {...props} />
 }

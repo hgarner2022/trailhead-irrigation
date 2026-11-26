@@ -1,0 +1,102 @@
+import { addDays, weekdayOf, WEEKDAYS, worksOn } from "@/lib/admin/calendar"
+import { dayFill, hoursWords, townsWords } from "@/lib/admin/day-fill"
+import type { Person, Visit } from "@/lib/admin/types"
+import { shortDate } from "@/lib/admin/format"
+import { longDay } from "@/lib/portal/words"
+import { monthOf, monthTitle, shiftMonth, type MonthDay } from "@/components/blocks/month-grid-model"
+import { dayColumns } from "@/components/blocks/scheduler-calendar-fixtures"
+import type { GridBlock, TimeOff } from "@/components/blocks/time-grid-model"
+import type { ColumnStat, GridColumn } from "@/components/blocks/time-grid-types"
+import { shortDay } from "@/lib/admin/format"
+import type { Meta } from "./schedule-prototype-model"
+import { personDay, routeOf, type Calendar } from "./schedule-engine"
+
+// What the Schedule prototype draws, derived from its state: the days of a week, the columns, the words over them, the map's stops, the month's cells.
+// Pure; the screen holds the view and the day, this reads them.
+
+export type View = "week" | "day" | "month" | "list"
+export const TIME_ZONE = "America/Denver"
+
+/** The Monday of the week a day is in. */
+export const mondayOf = (day: string): string => addDays(day, -WEEKDAYS.indexOf(weekdayOf(day)))
+
+/** Monday to Friday, plus a weekend day that holds a visit or has someone who works it. */
+export function weekDaysShown(week: string, people: readonly Person[], visits: readonly GridBlock[]): string[] {
+  return Array.from({ length: 7 }, (_, i) => addDays(week, i)).filter((d, i) => i < 5 || people.some((p) => worksOn(p, d)) || visits.some((v) => v.day === d))
+}
+
+
+/** "Week of Nov 23", "Wednesday, November 25", "November 2026". */
+export function rangeWords(view: View, day: string): string {
+  if (view === "week" || view === "list") return `Week of ${shortDate(mondayOf(day))}`
+  if (view === "day") return longDay(day)
+  return monthTitle(monthOf(day))
+}
+
+/** One step back or forward: a day, a week or a month. Month keeps the day of the month where it can. */
+export function shift(view: View, day: string, n: number): string {
+  if (view === "day") return addDays(day, n)
+  if (view === "month") return `${shiftMonth(monthOf(day), n)}-01`
+  return addDays(day, 7 * n)
+}
+
+/** A visit as the map and the day's fill read it: a point, a stop order and a start. */
+export function visitsOf(blocks: readonly GridBlock[], meta: Record<string, Meta>, day?: string): Visit[] {
+  const mine = blocks.filter((b) => !day || b.day === day)
+  return mine.map((b) => {
+    const order = routeOf(blocks, b.personId, b.day).findIndex((o) => o.id === b.id)
+    const at = b.start ?? 12 * 60
+    const m = meta[b.id]
+    return {
+      id: b.id, clientId: `client_${b.id}`, clientName: m?.customer ?? b.name, town: b.town, kind: b.kind, status: b.done ? "completed" : "scheduled", isPass: false, jobberUrl: "",
+      scheduledOn: b.day, personId: b.personId, minutes: b.minutes, stopOrder: order + 1, lat: m?.lat, lng: m?.lng,
+      startAt: `${b.day}T${String(Math.floor(at / 60)).padStart(2, "0")}:${String(at % 60).padStart(2, "0")}:00-07:00`,
+    }
+  })
+}
+
+/** "7 h 30", "45": the open time without its unit word, the head adds "open". */
+const compactHours = (minutes: number): string => (minutes >= 60 ? `${Math.floor(minutes / 60)} h${minutes % 60 ? ` ${minutes % 60}` : ""}` : `${minutes} min`)
+
+/** The columns over the clock: a Week's days or a Day's one, each with its stops, the towns in it, and every person's own open time and driving ("3 h open", "Full", "38 min driving"). */
+export function columnsFor(view: View, day: string, people: readonly Person[], blocks: readonly GridBlock[], meta: Record<string, Meta>, today: string, timeOff: readonly TimeOff[] = []): GridColumn[] {
+  const cal: Calendar = { people, visits: blocks, meta, timeOff }
+  const head = (d: string): Pick<GridColumn, "caption" | "towns" | "stats"> => {
+    const fill = dayFill(visitsOf(blocks, meta, d), d, [...people], TIME_ZONE)
+    const days = people.filter((p) => worksOn(p, d)).map((p) => personDay(cal, p, d))
+    const stats: Record<string, ColumnStat> = {}
+    for (const pd of days) stats[pd.personId] = { open: pd.full ? "Full" : `${compactHours(pd.openMinutes)} open`, driving: pd.driving > 0 ? hoursWords(pd.driving) : undefined }
+    // "3 visits" over everyone; "Full" takes the count's place only when every person who works the day is full; an empty day has no chip
+    const caption = fill.stops === 0 ? undefined : days.length && days.every((x) => x.full) ? "Full" : `${fill.stops} ${fill.stops === 1 ? "visit" : "visits"}`
+    return { caption, towns: townsWords(fill) || undefined, stats }
+  }
+  if (view === "day") return dayColumns([day]).map((c) => ({ ...c, today: day === today, count: undefined, ...head(day) }))
+  const days = weekDaysShown(mondayOf(day), people, blocks)
+  return dayColumns(days).map((c) => ({ ...c, today: c.day === today, ...head(c.day) }))
+}
+
+/** The month's cells, read from the state alone: a day with a visit or a time off has a cell with its count and towns; the days with neither are empty. */
+export function monthDays(blocks: readonly GridBlock[], timeOff: readonly TimeOff[], people: readonly Person[]): MonthDay[] {
+  const days = new Set([...blocks.map((b) => b.day), ...timeOff.map((o) => o.day)])
+  return [...days].sort().map((day) => {
+    const mine = blocks.filter((b) => b.day === day)
+    const counts = new Map<GridBlock["town"], number>()
+    for (const b of mine) counts.set(b.town, (counts.get(b.town) ?? 0) + 1)
+    const off = timeOff.filter((o) => o.day === day)
+    const working = people.filter((p) => worksOn(p, day))
+    const wholeOff = new Set(off.filter((o) => o.start === null || o.end === null).map((o) => o.personId))
+    return {
+      day, stops: mine.length, towns: [...counts].sort((a, b) => b[1] - a[1]).map(([t]) => t), personIds: [...new Set(mine.map((b) => b.personId))],
+      offIds: [...new Set(off.map((o) => o.personId))], allOff: working.length > 0 && working.every((p) => wholeOff.has(p.id)),
+    }
+  })
+}
+
+/** The day the map shows: the open day, else today when it is in the week, else Monday. */
+export function mapDayOf(view: View, day: string, today: string): string {
+  if (view === "day") return day
+  const week = mondayOf(day)
+  return mondayOf(today) === week ? today : week
+}
+
+export const mapDayWords = (day: string) => shortDay(day)

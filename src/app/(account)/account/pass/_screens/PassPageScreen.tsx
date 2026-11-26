@@ -104,6 +104,9 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
                 </p>
                 {!pass.cardLast4 && <UpdateCardButton onUpdateCard={onUpdateCard} variant="outline" label={cardAction(pass)} />}
               </div>
+              <p data-slot="renew-line" className="text-base text-muted-foreground">
+                Your pass renews by itself each year, and we email you about it.
+              </p>
               <div data-slot="plan-actions" className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 <PassActions pass={pass} include={["inspection", "skip"]} onAddInspection={onAddInspection} onSkip={onSkip} />
                 <CancelPassDialog onConfirm={onCancel} />

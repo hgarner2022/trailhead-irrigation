@@ -4,7 +4,9 @@ import type { RecordFact } from "@/components/blocks/RecordPanel"
 import { INVOICE_PILL, type InvoiceListRow } from "../invoice-fixtures"
 import { GRID_TONE, GRID_WORDS, type GridJob } from "../JobsGridDesign"
 import type { CustomerBillingData, CustomerInvoiceRow, CustomerJobRow, CustomerPageData, CustomerPaymentRow, CustomerQuoteRow, MoneyWord } from "../customer-types"
-import { withStatus, AS_OF } from "../customer-status-fixtures"
+import { withStatus } from "../customer-status-fixtures"
+import { liveOf } from "./jobs-data"
+import { WEEK_TODAY } from "./week-visits"
 import { money as quoteMoney, quoteTotal, QUOTE_PILL, type ApprovedJob, type QuoteRecord } from "../quotes/quote-model"
 import { worldCustomer, type WorldCustomer } from "./world-customers"
 import { shortDate, money } from "@/lib/admin/format"
@@ -25,7 +27,7 @@ const OPEN: GridJob["stage"][] = ["unscheduled", "scheduled", "today", "late", "
 
 /** The day a row's Next words name ("Mon, Nov 16", "Today"), as an ISO day; none when it has no day. */
 function nextDay(next: string): string | null {
-  if (next === "Today") return AS_OF
+  if (next === "Today") return WEEK_TODAY
   const m = next.match(/([A-Z][a-z]{2}) (\d{1,2})$/)
   const at = m ? MONTHS.indexOf(m[1]!) : -1
   if (!m || at < 0) return null
@@ -52,7 +54,7 @@ function jobRowOf(row: GridJob, invoices: readonly InvoiceListRow[], jobs: reado
     name: row.title,
     open,
     sortDay: when ?? decided ?? invoice?.sentOn ?? last ?? "2026-11-13",
-    ...(when && row.stage !== "cancelled" ? { day: { iso: when, label: dayLong(when), time: "Any time", stops: 1 } } : {}),
+    ...(when && row.stage !== "cancelled" ? { day: { iso: when, label: dayLong(when), time: liveTime(row.id), stops: 1 } } : {}),
     ...(row.who && !/^No one/.test(row.who) ? { who: row.who } : {}),
     status: GRID_TONE[row.stage],
     statusLabel: GRID_WORDS[row.stage],
@@ -192,7 +194,7 @@ export function buildWorldCustomer(id: string, input: WorldInput): CustomerPageD
     ...(w.doNotService ? { doNotService: w.doNotService } : {}),
     statusFacts: { jobs: [], visitAhead: false, passInForce: false },
     band: {
-      next: next ? { value: next.day ? (next.day.iso === AS_OF ? "Today" : shortDate(next.day.iso)) : "Unscheduled", sub: next.day ? `${next.day.time}${next.who ? `, ${next.who}` : ""}` : "Needs a day", jobId: next.id } : { value: "None", sub: "Nothing scheduled" },
+      next: next ? { value: next.day ? (next.day.iso === WEEK_TODAY ? "Today" : shortDate(next.day.iso)) : "Unscheduled", sub: next.day ? `${next.day.time}${next.who ? `, ${next.who}` : ""}` : "Needs a day", jobId: next.id } : { value: "None", sub: "Nothing scheduled" },
       unpaid: unpaid > 0 && out ? { value: money(unpaid), sub: out.status === "past-due" ? `Past due since ${shortDate(out.dueOn)}` : `Invoice sent, due ${shortDate(out.dueOn)}`, ...(out.status === "past-due" ? { alert: true } : {}), invoiceId: out.id } : { value: "$0", sub: "Nothing unpaid" },
       pass: { value: "None", sub: "No Season Pass" },
       card: w.card ? { value: `${w.card.brand} ${w.card.last4}`, sub: `Expires ${w.card.expires}` } : { value: "No card", sub: "Add one when you collect" },
@@ -214,4 +216,11 @@ export function buildWorldCustomer(id: string, input: WorldInput): CustomerPageD
     },
     area: { kind: "sell", label: "Get a Season Pass", line: "Reserve the spring turn-on and the fall blowout at today's per-zone prices, with the days picked now.", earlier: [] },
   })
+}
+
+/** "Any time" or "9:00 am": the time the calendar holds for the visit, else Any time. */
+function liveTime(id: string): string {
+  const v = liveOf(id)
+  if (!v || v.start === null) return "Any time"
+  return `${Math.floor(v.start / 60) % 12 || 12}:${String(v.start % 60).padStart(2, "0")} ${v.start < 720 ? "am" : "pm"}`
 }

@@ -184,7 +184,7 @@ describe("WeekGrid", () => {
     expect(dots[0]).toHaveClass("bg-primary")
     expect(dots[1]).toHaveClass("bg-navy")
     const thursday = within(table()).getByRole("columnheader", { name: /Thu 12/ })
-    expect(thursday.querySelector('[data-slot="day-fill"]')?.textContent).toMatch(/^4 stops, \d+ h( \d+ min)? open$/)
+    expect(thursday.querySelector('[data-slot="day-fill"]')?.textContent).toMatch(/^4 visits, \d+ h( \d+ min)? open$/)
     expect(thursday.querySelector('[data-slot="day-towns"]')?.textContent).toMatch(/\w+ \d/)
     expect(within(table()).getByRole("columnheader", { name: /Sun 15/ }).querySelector('[data-slot="day-fill"]')).toHaveTextContent("Day off")
   })

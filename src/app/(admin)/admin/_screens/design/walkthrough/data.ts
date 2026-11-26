@@ -13,11 +13,11 @@ import { recordHref } from "@/components/blocks/record-preview-model"
 import { walkQuotes } from "../quotes/quote-store"
 import { buildWorldCustomer, quoteRowsFor } from "./customer-build"
 import { worldCustomerIds } from "./world-customers"
+import { WEEK_TODAY } from "./week-visits"
 import { shortDate, money } from "@/lib/admin/format"
 import { passService, requestHeading } from "@/lib/admin/record-title"
 import { invoiceHits } from "../invoice-search"
 export * from "./jobs-data"
-
 // One consistent world for the walkthrough (docs/plans/2026-11-19-prototype-walkthrough-spec.md, section 2), built from the design fixtures and
 // re-keyed so every chip resolves. Andrea Dalton (480 Briggs St, Erie) has the repair the job flow walks, a 2026 Season Pass and a 2027 one
 // (renewed from it), and invoices INV-2026-0042 (sent) and INV-2026-0031 (paid). Marcus Bell has the past-due invoice INV-2026-0035. Dale Whitaker
@@ -131,7 +131,7 @@ export function customerRows(): CustomerListRow[] {
     const p = customerPage(id)
     if (!p) return []
     const open = p.jobs.find((j) => j.open)
-    return [{ id, name: p.name, street: p.address.join(", ").replace(", CO", ""), next: open ? (open.day ? (open.day.iso === "2026-11-20" ? "Today" : shortDate(open.day.iso)) : "Unscheduled") : "None", unpaid: Number((p.unpaid ?? "$0").replace(/\D/g, "")), pass: "" }]
+    return [{ id, name: p.name, street: p.address.join(", ").replace(", CO", ""), next: open ? (open.day ? (open.day.iso === WEEK_TODAY ? "Today" : shortDate(open.day.iso)) : "Unscheduled") : "None", unpaid: Number((p.unpaid ?? "$0").replace(/\D/g, "")), pass: "" }]
   })
   return [...CUSTOMER_ROWS, ...others]
 }

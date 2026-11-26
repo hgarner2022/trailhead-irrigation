@@ -43,7 +43,7 @@ export function TermsLine() {
       <a href="/terms" target="_blank" rel="noreferrer" className={LINK}>
         Trailhead terms of service<span className="sr-only"> (opens in a new tab)</span>
       </a>
-      .
+      {". We'll also email you tips and offers. You can turn that off any time in your account."}
     </p>
   )
 }

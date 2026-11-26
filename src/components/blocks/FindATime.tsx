@@ -1,0 +1,181 @@
+"use client"
+
+import { useRef, useState, type KeyboardEvent } from "react"
+import { MapPinOff, Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
+import { optionClass } from "./option-styles"
+import { TextLink } from "./TextLink"
+import { EmptyState } from "./EmptyState"
+import { SegmentedControl } from "./SegmentedControl"
+import { shortDay } from "@/lib/admin/format"
+import { recommendedId, sortOpenings, timeRange, type OpeningSort } from "./find-a-time-model"
+import type { Opening } from "./scheduler-panels-types"
+
+// The office's ranked list of openings, inside New job (docs/plans/2026-11-25-scheduler-design.md, 7.7). Ryan types an address and a service and sees the best few
+// times, each with the minutes it adds to his driving. Picking a row selects it (the screen lights the calendar and the map from `onPick`). Rows that break a rule
+// are behind "Show all times", greyed with the engine's own words, and need one tick, "Book it anyway". The drive times are estimates until a road lookup answers, and the
+// grey note says so. Controlled: the screen holds the sort, the pick and the tick. Pure props, client component.
+
+/** `ready`: an address is in and the search has not run; the button is on and nothing else is drawn */
+export type FindATimeState = "no-address" | "ready" | "searching" | "results" | "none" | "outside"
+
+export interface FindATimeProps {
+  state: FindATimeState
+  /** the openings that break no rule, in any order: the block sorts them */
+  openings?: readonly Opening[]
+  /** the openings that break a rule, each with its `conflict` words */
+  forced?: readonly Opening[]
+  sort: OpeningSort
+  onSort: (sort: OpeningSort) => void
+  selectedId?: string | null
+  onPick: (row: Opening) => void
+  /** the drive times are the straight-line estimate */
+  estimated?: boolean
+  /** "Book it anyway" is ticked for the chosen forced row */
+  forcedTicked?: boolean
+  onForcedTicked?: (ticked: boolean) => void
+  /** the day the search looked as far as, for "No open day before Nov 30": already worded */
+  noneBefore?: string
+  /** the Find a time button; the block draws it off before an address */
+  onFind?: () => void
+  /** inside the Schedule dialog: the list is just its sort control and its rows, no button and no title (the section is named for a screen reader only) */
+  bare?: boolean
+  /** one day's openings: the rows that break a rule are listed greyed with their words, and the sort is left out */
+  oneDay?: boolean
+  className?: string
+}
+
+const SORTS = [
+  { value: "recommended", label: "Recommended" },
+  { value: "soonest", label: "Soonest" },
+  { value: "least-driving", label: "Least driving" },
+] as const
+
+/** A row is one option of the admin (`optionClass`: navy when chosen, no mark): the day, time and person at the left, what it adds to the driving at the right, in tabular numerals. */
+const ROW = "type-admin-body grid min-h-14 w-full grid-cols-1 items-center gap-x-4 gap-y-0.5 px-3.5 py-2.5 text-left sm:grid-cols-[minmax(0,1fr)_auto]"
+
+function Row({ row, picked, recommended, forced, index, focusable, onPick, onKey, setRef }: { row: Opening; picked: boolean; recommended: boolean; forced: boolean; index: number; focusable: boolean; onPick: () => void; onKey: (e: KeyboardEvent<HTMLButtonElement>, i: number) => void; setRef: (el: HTMLButtonElement | null) => void }) {
+  const quiet = picked ? "text-white/85" : "text-muted-foreground"
+  return (
+    <button
+      ref={setRef}
+      type="button"
+      role="radio"
+      aria-checked={picked}
+      tabIndex={focusable ? 0 : -1}
+      data-slot="opening"
+      data-recommended={recommended || undefined}
+      data-forced={forced || undefined}
+      onClick={onPick}
+      onKeyDown={(e) => onKey(e, index)}
+      className={cn(optionClass({ selected: picked, settle: false }), ROW, forced && !picked && "bg-stone text-muted-foreground")}
+    >
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <span className="font-semibold">{shortDay(row.day)}</span>
+          <span className="tabular-nums">{timeRange(row.start, row.end)}</span>
+          <span className={forced ? "" : quiet}>{row.personName}</span>
+        </span>
+        {(recommended || row.conflict || row.nextTo) && (
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            {recommended && <span className={cn("type-admin-dense rounded-full px-2 py-0.5 font-semibold", picked ? "bg-white/15 text-white" : "bg-primary/10 text-primary-deep")}>Recommended</span>}
+            {row.conflict ? <span>{row.conflict}</span> : row.nextTo ? <span className={quiet}>{row.nextTo}</span> : null}
+          </span>
+        )}
+      </span>
+      {!forced && <span className="shrink-0 tabular-nums sm:text-right">{row.addedMinutes > 0 ? `+${row.addedMinutes} min driving` : "No extra driving"}</span>}
+    </button>
+  )
+}
+
+export function FindATime({ state, openings = [], forced = [], sort, onSort, selectedId, onPick, estimated, forcedTicked = false, onForcedTicked, noneBefore, onFind, bare = false, oneDay = false, className }: FindATimeProps) {
+  const [showAll, setShowAll] = useState(false)
+  const refs = useRef<(HTMLButtonElement | null)[]>([])
+  const ranked = sortOpenings(openings, sort)
+  const star = recommendedId(openings)
+  const visible = [...ranked, ...(showAll || oneDay ? forced : [])]
+  const chosen = visible.find((r) => r.id === selectedId) ?? null
+  const move = (event: KeyboardEvent<HTMLButtonElement>, from: number) => {
+    const step = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : event.key === "ArrowUp" || event.key === "ArrowLeft" ? -1 : 0
+    if (!step) return
+    event.preventDefault()
+    const next = (from + step + visible.length) % visible.length
+    onPick(visible[next]!)
+    refs.current[next]?.focus()
+  }
+  const tabIndex = Math.max(0, visible.findIndex((r) => r.id === selectedId))
+  return (
+    <section data-slot="find-a-time" data-state={state} aria-label={oneDay ? "Times that day" : bare ? "Best times" : "Find a time"} className={cn("flex flex-col gap-3", className)}>
+      <div className="flex flex-wrap items-center gap-3">
+        {!bare && (
+          <Button type="button" variant="outline" size="touch" disabled={state === "no-address" || state === "searching"} onClick={onFind}>
+            <Search className="size-4" aria-hidden />
+            Find a time
+          </Button>
+        )}
+        {state === "results" && !oneDay && (
+          <div className="max-w-full overflow-x-auto">
+            <SegmentedControl label="Sort" options={SORTS} value={sort} onChange={(v) => onSort(v as OpeningSort)} />
+          </div>
+        )}
+        {state === "results" && estimated && <p className="type-admin-meta text-muted-foreground">Drive times are estimates.</p>}
+      </div>
+
+      {state === "no-address" && <p className="type-admin-body text-muted-foreground">Add an address to find a time</p>}
+
+      {state === "searching" && (
+        <div role="status" aria-busy="true" data-slot="find-a-time-searching" className="flex flex-col gap-2">
+          <span className="sr-only">Finding times</span>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-14 w-full rounded-lg" />
+          ))}
+        </div>
+      )}
+
+      {state === "none" && <EmptyState title={noneBefore ? `No open day before ${noneBefore}.` : "No time open."} line="Pick a day yourself." className="py-6" />}
+
+      {state === "outside" && <EmptyState icon={MapPinOff} title="Outside the six towns." line="Pick a day yourself." className="py-6" />}
+
+      {state === "results" && (
+        <>
+          <div role="radiogroup" aria-label={oneDay ? "Openings that day" : "Openings"} className="flex flex-col gap-1.5">
+            {visible.map((row, i) => (
+              <Row
+                key={row.id}
+                row={row}
+                index={i}
+                picked={row.id === selectedId}
+                recommended={row.id === star}
+                forced={Boolean(row.conflict)}
+                focusable={i === tabIndex}
+                onPick={() => onPick(row)}
+                onKey={move}
+                setRef={(el) => {
+                  refs.current[i] = el
+                }}
+              />
+            ))}
+          </div>
+          {chosen?.conflict && onForcedTicked && (
+            <div className="type-admin-label flex min-h-11 items-center gap-3 text-foreground">
+              <span className="flex size-11 items-center justify-center">
+                <Checkbox checked={forcedTicked} onCheckedChange={(c) => onForcedTicked(c === true)} aria-labelledby="book-anyway-text" />
+              </span>
+              <span id="book-anyway-text" className="cursor-pointer" onClick={() => onForcedTicked(!forcedTicked)}>
+                Book it anyway
+              </span>
+            </div>
+          )}
+          {forced.length > 0 && !oneDay && (
+            <TextLink weight="medium" className="type-admin-body self-start" aria-expanded={showAll} onClick={() => setShowAll((s) => !s)}>
+              {showAll ? "Show fewer times" : `Show all times (${forced.length} more)`}
+            </TextLink>
+          )}
+        </>
+      )}
+    </section>
+  )
+}

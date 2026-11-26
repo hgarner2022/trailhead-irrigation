@@ -59,6 +59,11 @@
   --color-chart-4: #78716C;
   --color-chart-5: #F59E0B;
 
+  /* The fourth and fifth person on the Schedule (the first three are primary, navy and positive; `PERSON_CLASSES`). Each is 5:1 or better on white as an
+     edge or a dot, and navy text on its 14 percent tint is over 9:1. A sixth person wraps. */
+  --color-person-4: #0369A1;             /* lake blue */
+  --color-person-5: #7E22CE;             /* plum */
+
   --color-row-hover: #FAFAF8;            /* = cream */
   --color-row-selected: #FEF3C7;         /* pale amber tint */
 

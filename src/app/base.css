@@ -100,6 +100,7 @@ h1, h2, h3 {
   --type-admin-body: 0.875rem;    /* 14: sentences, cells, facts, labels */
   --type-admin-meta: 0.8125rem;   /* 13: a quiet second line */
   --type-admin-caption: 0.75rem;  /* 12: an overline or a short status */
+  --type-admin-dense: 0.75rem;    /* 12: a visit on the calendar, an hour, a count; a name and a time, never a sentence */
   --type-admin-figure: 2.25rem;   /* 36: the number on a stat tile */
 }
 @utility type-admin-title { font-family: var(--font-display); font-size: var(--type-admin-title); font-weight: 600; line-height: 1.1; letter-spacing: 0.01em; text-wrap: balance; }
@@ -108,13 +109,14 @@ h1, h2, h3 {
 @utility type-admin-body { font-family: var(--font-sans); font-size: var(--type-admin-body); font-weight: 400; line-height: 1.5; }
 @utility type-admin-label { font-family: var(--font-sans); font-size: var(--type-admin-body); font-weight: 500; line-height: 1.4; }
 @utility type-admin-meta { font-family: var(--font-sans); font-size: var(--type-admin-meta); font-weight: 400; line-height: 1.4; }
+@utility type-admin-dense { font-family: var(--font-sans); font-size: var(--type-admin-dense); font-weight: 400; line-height: 1.3; }
 @utility type-admin-caption { font-family: var(--font-sans); font-size: var(--type-admin-caption); font-weight: 600; line-height: 1.3; letter-spacing: 0.06em; text-transform: uppercase; }
 @utility type-admin-figure { font-family: var(--font-display); font-size: var(--type-admin-figure); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* a heading tag keeps the global h1, h2, h3 face and line height unless the role says otherwise */
 :is(h1, h2, h3).type-admin-title { line-height: 1.1; }
 :is(h1, h2, h3).type-admin-card { line-height: 1.2; }
 :is(h1, h2, h3).type-admin-figure { line-height: 1; }
-:is(h1, h2, h3):is(.type-admin-section, .type-admin-body, .type-admin-label, .type-admin-meta, .type-admin-caption) { font-family: var(--font-sans); letter-spacing: normal; line-height: 1.4; }
+:is(h1, h2, h3):is(.type-admin-section, .type-admin-body, .type-admin-label, .type-admin-meta, .type-admin-dense, .type-admin-caption) { font-family: var(--font-sans); letter-spacing: normal; line-height: 1.4; }
 :is(h1, h2, h3).type-admin-caption { letter-spacing: 0.06em; line-height: 1.3; }
 
 /* MOTION, one set for every customer screen (and nothing else defines a duration or an easing): a press answers in
@@ -157,6 +159,27 @@ h1, h2, h3 {
 }
 @media (prefers-reduced-motion: reduce) {
   .settle { animation: none; }
+}
+
+/* The Schedule (TimeBlock, TimeGrid, the peek, the toast). Four small moves, each once, on the same tokens: a visit that was just dropped or
+   drawn settles into place (`cal-settle`), a visit that changes time or length in its column glides there (`cal-glide`), the peek and a panel ease
+   in from the right (`cal-enter`), the toast rises (`cal-rise`) and a view fades in as it changes (`cal-fade`). Under prefers-reduced-motion none of them runs. */
+@keyframes cal-settle { from { transform: scale(1.03); } to { transform: scale(1); } }
+@keyframes cal-enter { from { transform: translateX(12px); } to { transform: translateX(0); } }
+@keyframes cal-rise { from { transform: translateY(16px); } to { transform: translateY(0); } }
+@keyframes cal-veil { from { opacity: 0.9; } to { opacity: 0; } }
+.cal-settle { animation: cal-settle var(--motion-fast) var(--motion-ease) both; }
+.cal-glide { transition: top var(--motion-fast) var(--motion-ease), height var(--motion-fast) var(--motion-ease), left var(--motion-fast) var(--motion-ease), width var(--motion-fast) var(--motion-ease), box-shadow var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease), translate var(--motion-fast) var(--motion-ease); }
+.cal-enter { animation: cal-enter var(--motion-base) var(--motion-ease) both; }
+.cal-rise { animation: cal-rise var(--motion-base) var(--motion-ease) both; }
+/* The fade is a veil of the surface's own colour that lifts, not the content's opacity: the words are at full contrast from the first frame. */
+.cal-enter::after, .cal-fade::after { content: ""; position: absolute; inset: 0; z-index: 40; border-radius: inherit; background: var(--color-background); pointer-events: none; animation: cal-veil var(--motion-base) var(--motion-ease) both; }
+.cal-lift { transform: scale(1.03); }
+@media (prefers-reduced-motion: reduce) {
+  .cal-settle, .cal-enter, .cal-rise { animation: none; }
+  .cal-enter::after, .cal-fade::after { animation: none; opacity: 0; }
+  .cal-glide { transition: none; }
+  .cal-lift { transform: none; }
 }
 
 /* Every option the customer can choose (option-styles.ts) and every service card header answers a press the same way:

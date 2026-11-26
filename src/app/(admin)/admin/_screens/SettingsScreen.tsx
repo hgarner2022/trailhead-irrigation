@@ -16,7 +16,7 @@ import { Billing } from "./settings-tabs/Billing"
 import { ApiKeys } from "./settings-tabs/ApiKeys"
 import { messageProblems } from "./settings-messages"
 import { Messages } from "./settings-tabs/Messages"
-import { People } from "./settings-tabs/People"
+import { People, type PeopleTimeOff } from "./settings-tabs/People"
 import { peopleProblems } from "./settings-people"
 import { Services } from "./settings-tabs/Services"
 import type { Apply } from "./settings-tabs/fields"
@@ -48,6 +48,8 @@ export interface SettingsScreenProps {
   readOnly?: boolean
   /** Save and the key buttons; server actions in the app. Without them the screen only edits locally, as in the catalog. */
   actions?: SettingsActions
+  /** People's Time off rows (the prototype passes it: the Schedule only draws the band); the live admin leaves it off for now */
+  timeOff?: PeopleTimeOff
 }
 
 export interface SettingsActions {
@@ -64,7 +66,7 @@ const TABS: { value: SettingsTab; label: string }[] = [
   { value: "keys", label: "API keys" },
 ]
 
-export function SettingsScreen({ data, today, defaultTab, who = "Hannah", keys, readOnly = false, actions }: SettingsScreenProps) {
+export function SettingsScreen({ data, today, defaultTab, who = "Hannah", keys, readOnly = false, actions, timeOff }: SettingsScreenProps) {
   // The fixtures carry no billing settings: they read the defaults, as an organization that never saved the tab does.
   const fresh = (): SettingsState => ({ settings: { ...data.settings, billing: data.settings.billing ?? DEFAULT_BILLING }, changes: data.settingsChanges, keys: keys ?? SAMPLE_KEYS, services: [...(data.services ?? SERVICE_LIST)] })
   const [state, setState] = useState<SettingsState>(fresh)
@@ -143,7 +145,7 @@ export function SettingsScreen({ data, today, defaultTab, who = "Hannah", keys, 
 
   return (
     <div data-slot="settings-screen" className="space-y-6">
-      <PageHeader title="Settings" context={readOnly ? "You can read the settings. A manager changes them." : "Changes apply from the next schedule run."} />
+      <PageHeader title="Settings" context={readOnly ? "You can read the settings. A manager changes them." : "Applies to new openings only. Booked visits don't move."} />
       <Tabs value={open} onValueChange={(v) => setTab(v as SettingsTab)} orientation="vertical" className="flex-col gap-6 md:flex-row md:items-start md:gap-8">
         <TabsList
           variant="line"
@@ -170,7 +172,7 @@ export function SettingsScreen({ data, today, defaultTab, who = "Hannah", keys, 
           </Button>
           <TabsContent value="people">
             <fieldset disabled={readOnly} className="min-w-0">
-              <People state={shown} apply={apply} />
+              <People state={shown} apply={apply} timeOff={timeOff} />
             </fieldset>
           </TabsContent>
           <TabsContent value="services">

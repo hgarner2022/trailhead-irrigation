@@ -24,7 +24,7 @@ describe("PayScreen", () => {
     expect(screen.getByText("Repair")).toBeInTheDocument()
     expect(screen.getByText("One hour on site.")).toBeInTheDocument()
     expect(screen.getByText("Due Dec 1")).toBeInTheDocument()
-    expect(screen.getByText("You can keep the card for future visits on the next page.")).toBeInTheDocument()
+    expect(screen.getByText("To keep this card for future visits, tick “Save my payment method for future use” on the next page.")).toBeInTheDocument()
     expect(screen.getByText("Paid by check, Venmo or cash already? Nothing to do.")).toBeInTheDocument()
     expect(screen.getAllByRole("button")).toHaveLength(1)
     expect(screen.getByRole("button", { name: "Pay $145 by card" })).toBeInTheDocument()

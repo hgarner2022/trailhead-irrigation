@@ -13,9 +13,9 @@ const OPENER = "Trailhead: "
 const STOP = " Reply STOP to opt out."
 
 /** Send a message: the channel as a chip at the top (a text, or an email when both exist), the fixed "Trailhead:" opener in grey before the cursor, a live count, and a preview of exactly what the customer reads (the opt-out line only on the first text to that number). */
-export function MessageDialog({ facts, onClose, onSend }: { facts: ConfirmFacts; onClose: () => void; onSend: (m: { channel: "text" | "email"; body: string }) => void }) {
+export function MessageDialog({ facts, onClose, onSend, initialBody = "" }: { facts: ConfirmFacts; onClose: () => void; onSend: (m: { channel: "text" | "email"; body: string }) => void; /** the words the box opens with (after the fixed "Trailhead:" opener): a move's "your spring turn-on moved to Thu, Nov 26 at 9:00 am." */ initialBody?: string }) {
   const [channel, setChannel] = useState<"text" | "email">(facts.channel === "email" ? "email" : "text")
-  const [body, setBody] = useState("")
+  const [body, setBody] = useState(initialBody)
   const kbd = useKeyboardFocus()
   const isText = channel === "text"
   const sent = isText ? `${OPENER}${body}${facts.firstText ? STOP : ""}` : body
