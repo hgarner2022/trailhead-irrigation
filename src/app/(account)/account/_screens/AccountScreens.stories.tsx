@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react"
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, fn, screen } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
@@ -79,6 +80,7 @@ export const HomeOneOffNoPassLaptop: Story = { ...laptop, args: { hasPass: false
 export const HomeNoPassNoVisitPhone: Story = { ...phone, args: { hasPass: false }, render: () => <HomeScreen customer={danaCustomer} jobs={[repairJob]} today={TODAY} {...actions} /> }
 export const HomeNoPassNoVisitLaptop: Story = { ...laptop, args: { hasPass: false }, render: () => <HomeScreen customer={danaCustomer} jobs={[repairJob]} today={TODAY} {...actions} /> }
 export const HomeNothingPhone: Story = { ...phone, args: { hasPass: false }, render: () => <HomeScreen customer={danaCustomer} jobs={[]} today={TODAY} /> }
+export const HomeNothingLaptop: Story = { ...laptop, args: { hasPass: false }, render: () => <HomeScreen customer={danaCustomer} jobs={[]} today={TODAY} /> }
 
 const visits = { render: () => <VisitsScreen customer={andreaCustomer} jobs={[passJob, repairJob, invoicedJob, canceledRepairJob]} today={TODAY} /> }
 export const VisitsPhone: Story = { ...phone, ...visits }
@@ -88,6 +90,14 @@ export const VisitsTwoPropertiesPhone: Story = { ...phone, render: () => <Visits
 export const VisitsTwoPropertiesLaptop: Story = { ...laptop, render: () => <VisitsScreen customer={andreaTwoProperties} jobs={[passJob, oneOffJob, repairJob]} today={TODAY} street="12 Cottonwood Way" /> }
 export const VisitsPassCanceledPhone: Story = { ...phone, render: () => <VisitsScreen customer={andreaCustomer} jobs={[passJobCanceled]} today={TODAY} /> }
 export const VisitsEmptyPhone: Story = { ...phone, args: { hasPass: false }, render: () => <VisitsScreen customer={danaCustomer} jobs={[]} today={TODAY} /> }
+export const VisitsEmptyLaptop: Story = { ...laptop, args: { hasPass: false }, render: () => <VisitsScreen customer={danaCustomer} jobs={[]} today={TODAY} /> }
+/** Only past visits (the usual off-season account): Coming up is one quiet row with the trail and Book Online, Past under it. */
+export const VisitsNothingAheadPhone: Story = { ...phone, args: { hasPass: false }, render: () => <VisitsScreen customer={andreaCustomer} jobs={[repairJob]} today={TODAY} /> }
+export const VisitsNothingAheadLaptop: Story = { ...laptop, args: { hasPass: false }, render: () => <VisitsScreen customer={andreaCustomer} jobs={[repairJob]} today={TODAY} /> }
+/** A visit with no photo on it yet: the Photos section is one quiet row and Add photo. */
+const noPhotos = { items: [], configured: true, onAdd: fn(async () => ({ ok: true as const })) } as unknown as NonNullable<ComponentProps<typeof VisitScreen>["photos"]>
+export const VisitNoPhotosPhone: Story = { ...phone, render: () => <VisitScreen customer={andreaCustomer} job={passJob} visitId="v1" today={TODAY} days={days.v1} photos={noPhotos} {...actions} /> }
+export const VisitNoPhotosLaptop: Story = { ...laptop, render: () => <VisitScreen customer={andreaCustomer} job={passJob} visitId="v1" today={TODAY} days={days.v1} photos={noPhotos} {...actions} /> }
 
 const visit = (job: typeof passJob, id: string, over: { today?: string; days?: string[]; cal?: boolean } = {}) => ({
   render: () => <VisitScreen customer={andreaCustomer} job={job} visitId={id} today={over.today ?? TODAY} days={over.days ?? days.v1} calendar={over.cal === false ? undefined : calendar} {...actions} />,

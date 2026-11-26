@@ -1,5 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
+import { EmptyState } from "@/components/blocks/EmptyState"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { TextRyan } from "@/components/blocks/TextRyan"
@@ -16,14 +17,22 @@ export function PayNotFound() {
       <Card className="h-fit w-full max-w-md">
         <CardContent className="p-5 pt-5 sm:p-8 sm:pt-8">
           <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={57} height={40} className="h-12 w-auto" priority />
-          <h1 className="mt-5 type-title text-navy">We can&apos;t open that invoice</h1>
-          <p className="mt-3 text-base text-foreground">{PAY_NOT_FOUND_LINE}</p>
-          <div className="mt-6 space-y-4">
-            <Button asChild size="lg" className="w-full">
-              <Link href="/account">Sign in</Link>
-            </Button>
-            <TextRyan textHref={textRyanHref("Hi Ryan, my invoice link did not open.")} why={false} />
-          </div>
+          <EmptyState
+            scene="compass"
+            size="page"
+            titleAs="h1"
+            title="We can't open that invoice"
+            line={PAY_NOT_FOUND_LINE}
+            className="mt-5"
+            action={
+              <div className="space-y-4">
+                <Button asChild size="lg" className="w-full">
+                  <Link href="/account">Sign in</Link>
+                </Button>
+                <TextRyan textHref={textRyanHref("Hi Ryan, my invoice link did not open.")} why={false} />
+              </div>
+            }
+          />
         </CardContent>
       </Card>
     </main>
