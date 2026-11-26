@@ -5,7 +5,8 @@ import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { FormRow } from "@/components/blocks/FormRow"
 import { Textarea } from "@/components/ui/textarea"
 import type { ConfirmFacts } from "./confirm-copy"
-import { optionClass } from "@/components/blocks/option-styles"
+import { optionClass, optionGroup } from "@/components/blocks/option-styles"
+import { useKeyboardFocus } from "@/components/blocks/keyboard-focus"
 import { cn } from "@/lib/utils"
 
 const OPENER = "Trailhead: "
@@ -15,15 +16,16 @@ const STOP = " Reply STOP to opt out."
 export function MessageDialog({ facts, onClose, onSend }: { facts: ConfirmFacts; onClose: () => void; onSend: (m: { channel: "text" | "email"; body: string }) => void }) {
   const [channel, setChannel] = useState<"text" | "email">(facts.channel === "email" ? "email" : "text")
   const [body, setBody] = useState("")
+  const kbd = useKeyboardFocus()
   const isText = channel === "text"
   const sent = isText ? `${OPENER}${body}${facts.firstText ? STOP : ""}` : body
   const count = isText ? sent.length : 0
   return (
     <ConfirmDialog open onOpenChange={(o) => !o && onClose()} size="md" title="Send a message" confirmLabel={isText ? "Send the text" : "Send the email"} confirmDisabled={!body.trim()} slot="message-dialog" onConfirm={async () => (onSend({ channel, body: sent }), { ok: true })}>
       <div className="flex flex-col gap-3 text-sm">
-        <div role="radiogroup" aria-label="Channel" className="flex flex-wrap gap-2">
+        <div role="radiogroup" aria-label="Channel" className={cn("flex flex-wrap gap-2", optionGroup)} data-kbd={kbd.shown || undefined} {...kbd.handlers}>
           {([["text", `Text to ${facts.phone}`], ["email", `Email to ${facts.email ?? "the customer"}`]] as const).map(([c, label]) => (
-            <button key={c} type="button" role="radio" aria-checked={channel === c} onClick={() => setChannel(c)} className={cn(optionClass({ selected: channel === c }), "min-h-11 px-3 font-medium")}>{label}</button>
+            <button key={c} type="button" role="radio" aria-checked={channel === c} onClick={() => setChannel(c)} className={cn(optionClass({ selected: channel === c, focus: "selfKbd" }), "min-h-11 px-3 font-medium")}>{label}</button>
           ))}
         </div>
         <FormRow label="Message">

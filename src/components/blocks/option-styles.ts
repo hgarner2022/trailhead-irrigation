@@ -12,7 +12,15 @@ const FOCUS = {
   self: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
   peer: "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
   has: "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2",
+  // The same two, drawn ONLY while the keyboard is steering: the options' group carries `optionGroup` and sets `data-kbd` from `useKeyboardFocus` (keyboard-focus.ts). A chosen option is
+  // filled navy, and `:focus-visible` alone also matches the focus a click or a dialog opening leaves on it, which drew an orange ring round the navy fill that read as a double border
+  // (Hannah, Nov 25 2026). The admin's option groups (the ways to pay, the message channel, Who) use these.
+  selfKbd: "focus-visible:outline-none group-data-[kbd]/opt:focus-visible:ring-2 group-data-[kbd]/opt:focus-visible:ring-ring group-data-[kbd]/opt:focus-visible:ring-offset-2",
+  hasKbd: "group-data-[kbd]/opt:has-[:focus-visible]:ring-2 group-data-[kbd]/opt:has-[:focus-visible]:ring-ring group-data-[kbd]/opt:has-[:focus-visible]:ring-offset-2",
 } as const
+
+/** The class of a group whose options draw their ring only for the keyboard (`focus: "selfKbd"` or `"hasKbd"`): put it on the element that spreads `useKeyboardFocus().handlers` and sets `data-kbd`. */
+export const optionGroup = "group/opt"
 
 /** The same ring round a container whose control is inside it and fills it (the service card: the ring follows the card's own corners), drawn ONLY while the keyboard holds the focus: the
  * container sets `data-kbd` from `useKeyboardFocus` (keyboard-focus.ts). `:focus-visible` alone also matches a focus a script gives (a step opening on its chosen card) and, on some phones, a
