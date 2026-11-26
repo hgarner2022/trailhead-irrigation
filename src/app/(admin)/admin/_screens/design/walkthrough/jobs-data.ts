@@ -41,7 +41,6 @@ export const GRID_ROWS: GridJob[] = [
   g("g-dana", "Dana Cho", "Fall blowout", "Fall blowout", "18 Cedar Way, Erie", "done", "1 of 1 done", 115, "paid", "Paid, card", "None", RYAN, "2026"),
   g("g-priya", "Priya Shah", "Sprinkler repair", "Sprinkler repair", "330 Elm Dr, Lafayette", "done", "1 of 1 done", 145, "paid", "Paid, check", "None", HANNAH),
   g("g-tom", "Tom Becker", "Sprinkler repair", "Sprinkler repair", "600 Hill Rd, Broomfield", "cancelled", "0 of 1 done", 145, null, "", "None", NOONE),
-  g("g-tom-install", "Tom Becker", "New sprinkler system installation", "New sprinkler system installation", "600 Hill Rd, Broomfield", "unscheduled", "0 of 1 done", 0, null, "", "Unscheduled", NOONE),
   g("g-lena-lights", "Lena Park", "Christmas lights", "Christmas lights", "7 Oak Ct, Lafayette", "unscheduled", "0 of 1 done", 600, null, "", "Unscheduled", NOONE),
   g("hal-turn-on", "Hal Reed", "Spring turn-on", "Spring turn-on", "41 Cottonwood Dr, Erie", "done", "1 of 1 done", 145, "overdue", "Past due since Apr 3, 2025", "None", RYAN, "2025"),
   g("ivy-repair", "Ivy Lund", "Sprinkler repair", "Sprinkler repair", "9 Meadow Ln, Louisville", "done", "1 of 1 done", 145, "paid", "Paid, check", "None", RYAN, "2024"),

@@ -114,10 +114,8 @@ export function Walkthrough({ start = START, startStack, startSearch = false, st
     setStack((s) => {
       const cur = s[s.length - 1]!
       const owner = ownerOf(cur)
-      let r = resolveRoute(parsed, owner)
-      // A bare "Customer" link on a job or an invoice opens that page's customer; on the customer's own page it is the list
-      if (r.screen === "customers" && !r.id && (cur.screen === "job" || cur.screen === "invoice") && owner) r = { screen: "customer", id: owner }
-      return navigate(s, r)
+      // a link to a list is that list, always (a crumb names the parent list and goes to it); a record link opens this world's record
+      return navigate(s, resolveRoute(parsed, owner))
     })
   }, [])
 

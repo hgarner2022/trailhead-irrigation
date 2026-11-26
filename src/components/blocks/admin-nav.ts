@@ -54,3 +54,13 @@ export const TAB_ITEMS: readonly NavItem[] = NAV.filter((n) => TAB_IDS.includes(
 export function moreItems(has: NavHas = {}): readonly NavItem[] {
   return railItems(has).filter((n) => !TAB_IDS.includes(n.id))
 }
+
+/**
+ * The crumb above a record page's title (Hannah, Nov 25 2026): it names the PARENT LIST, the rail item the record belongs to ("‹ Jobs", "‹ Invoices",
+ * "‹ Customers"), and goes to that list. Never the record or the screen the reader just left: the browser's Back does that. A page asks here,
+ * so a crumb can only ever be one of the rail's own lists, with the rail's own word and address.
+ */
+export function listCrumb(section: AdminSection): { label: string; href: string } {
+  const item = NAV.find((n) => n.id === section)!
+  return { label: item.label, href: item.href }
+}

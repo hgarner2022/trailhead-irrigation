@@ -27,14 +27,14 @@ function Strip({ stage, onReset }: { stage: TripState; onReset: () => void }) {
   const at = STEPS.findIndex(([, s]) => s.includes(stage))
   return (
     <nav aria-label="Flow" data-slot="flow-strip" className="mx-auto mb-4 flex max-w-6xl flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm shadow-sm">
-      <span className="font-semibold text-navy">Trip 1</span>
+      <span className="font-semibold text-navy">Visit 1</span>
       <ol className="flex flex-1 flex-wrap items-center gap-2">
         {STEPS.map(([name], i) => (
           <li key={name} aria-current={i === at ? "step" : undefined} className={i === at ? "rounded-full bg-navy px-3 py-1 font-medium text-white" : i < at ? "rounded-full bg-stone px-3 py-1" : "rounded-full px-3 py-1 text-muted-foreground"}>
             {i + 1}. {name}
           </li>
         ))}
-        <li className={stage === "charged" ? "rounded-full bg-navy px-3 py-1 font-medium text-white" : "rounded-full px-3 py-1 text-muted-foreground"}>Trip 2 ahead</li>
+        <li className={stage === "charged" ? "rounded-full bg-navy px-3 py-1 font-medium text-white" : "rounded-full px-3 py-1 text-muted-foreground"}>Visit 2 ahead</li>
       </ol>
       <Button size="touch" type="button" variant="outline" onClick={onReset}>Start over</Button>
     </nav>

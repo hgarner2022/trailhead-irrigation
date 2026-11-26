@@ -10,9 +10,9 @@ import { STATE_NOTES, jobPageOf, type JobState } from "./job-fixtures"
 // the one primary action is. Pure screens over fixtures: no handlers, no API.
 
 const meta = {
-  title: "Admin/Job page, one trip",
+  title: "Admin/Job page, one visit",
   component: JobPage,
-  parameters: { layout: "fullscreen", docs: { description: { component: "Every state of a one-trip job on its page: the header with its badges and actions, the summary band, What's included, Billing and Messages. Click through the states; the clickable one is Admin / Walkthrough (clickable)." } } },
+  parameters: { layout: "fullscreen", docs: { description: { component: "Every state of a one-visit job on its page: the header with its badges and actions, the summary band, What's included, Billing and Messages. Click through the states; the clickable one is Admin / Walkthrough (clickable)." } } },
   args: { job: jobPageOf("scheduled") },
   render: (args) => (
     <DesignShell current="jobs">
@@ -67,7 +67,7 @@ export const BandTilesPhone: Story = { name: "Band tiles, phone",
   },
 }
 
-/** Ryan sees a trip whose day passed with no Mark done. The one primary action is Mark done, with Skip beside it. */
+/** Ryan sees a visit whose day passed with no Mark done. The one primary action is Mark done, with Skip beside it. */
 export const Late: Story = { ...story("late", laptop), name: "Late" }
 export const LatePhone: Story = { ...story("late", phone), name: "Late, phone" }
 

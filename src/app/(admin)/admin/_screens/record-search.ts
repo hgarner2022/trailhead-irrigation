@@ -7,8 +7,8 @@ import { jobRows } from "./jobs-model"
 import { dayLabel } from "./visit-panel-model"
 import { visitRows } from "./visits-model"
 
-// Cmd+K (docs/plans/2026-11-18-admin-holistic-design.md, section 4): one search over customers, jobs and the days work is scheduled, by name,
-// street, phone or pass number. Every word of the query must be somewhere in the record's text; a phone matches in any format. A hit names the record
+// Cmd+K (docs/plans/2026-11-18-admin-holistic-design.md, section 4): one search over customers, jobs, the invoices that are out and the days work is scheduled, by name,
+// street, phone, pass number or invoice number. Every word of the query must be somewhere in the record's text; a phone matches in any format. A hit names the record
 // it opens and the page that shows it. Up to six customers, each with the phone and email under the name so two of one name are told apart, and three
 // jobs and three days, each group ending "See all N" when there are more (a street matches every job on it). Pure; the server action reads the data and calls this.
 
@@ -40,12 +40,20 @@ export function searchRecords(data: AdminData, today: string, query: string): Se
       const contact = [r.phone ? formatPhone(r.phone) : "", r.email ?? ""].filter(Boolean).join(" · ")
       return { kind: "customer", id: r.id, title: r.name, detail: [r.address, r.town].filter(Boolean).join(", "), href: customerUrl(r.id), ...(contact ? { contact } : {}) }
     })
-  const jobs = jobRows(data, today)
+  const allJobs = jobRows(data, today)
+  // An invoice that is out is found by its number ("INV-2026-0042", or just "0042") or its customer (Hannah, Nov 25 2026, as Jobber's search finds one).
+  // The live app shows an invoice inside its job, so the hit is titled with the number and opens that job.
+  const invoices = (data.jobs ?? []).flatMap((job): SearchHit[] => {
+    const row = allJobs.find((r) => r.id === job.id)
+    if (!job.invoice || !row || !matches(words, `${job.invoice.number} ${row.search}`)) return []
+    return [{ kind: "invoice", id: job.invoice.id, title: job.invoice.number, detail: `${row.name}, ${row.title} · ${row.moneyText}`, href: jobUrl(job.id) }]
+  })
+  const jobs = allJobs
     .filter((r) => matches(words, `${r.search} ${r.title} ${r.kindLabel}`))
     .map((r): SearchHit => ({ kind: "job", id: r.id, title: `${r.name}, ${r.title}`, detail: [r.property, r.stageLabel].filter(Boolean).join(" · "), href: jobUrl(r.id) }))
   // A canceled or skipped visit is not work: it is left out, so a search never offers a day that is gone or calls it "no day yet".
   const days = visitRows(data, today)
     .filter((r) => r.work !== "cancelled" && matches(words, `${r.search} ${r.kindLabel} ${r.passNumber ?? ""}`))
     .map((r): SearchHit => ({ kind: "visit", id: r.id, title: r.name, detail: r.day ? `${r.kindLabel}, ${dayLabel(r.day)}` : `${r.kindLabel}, no day yet`, href: visitUrl(r.id) }))
-  return [...customers, ...capped(jobs, "job", "jobs", "/admin/jobs"), ...capped(days, "visit", "days", "/admin/schedule?view=list")]
+  return [...customers, ...capped(jobs, "job", "jobs", "/admin/jobs"), ...capped(invoices, "invoice", "invoices", "/admin/jobs"), ...capped(days, "visit", "days", "/admin/schedule?view=list")]
 }

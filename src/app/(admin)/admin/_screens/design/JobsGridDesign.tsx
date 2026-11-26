@@ -17,7 +17,7 @@ import { money } from "@/lib/admin/format"
 export type BillingState = "owed" | "bill-sent" | "overdue" | "paid" | "refunded"
 export const BILLING_WORDS: Record<BillingState, string> = { owed: "Unpaid", "bill-sent": "Invoice sent", overdue: "Past due", paid: "Paid", refunded: "Refunded" }
 
-// The Jobs list holds only real work (Hannah, Nov 22 2026: a quote is its own record and a job is made when it is approved), so Needs a quote and Quote sent are not job statuses: they are the quote's Draft and Sent, on the Quotes list
+// The Jobs list holds only real work (Hannah, Nov 22 2026: a quote is its own record and a job is made when it is approved), so every job has a price (there is no "Quote later": work that waits on a price is a Draft on Quotes) and Needs a quote and Quote sent are not job statuses: they are the quote's Draft and Sent, on the Quotes list
 export type GridStatus = "today" | "active" | "unscheduled" | "scheduled" | "late" | "done" | "cancelled"
 export const GRID_WORDS: Record<GridStatus, string> = { today: "Today", active: "Active", unscheduled: "Unscheduled", scheduled: "Scheduled", late: "Late", done: "Done", cancelled: "Canceled" }
 export const GRID_TONE: Record<GridStatus, PillStatus> = { today: "today", active: "job-active", unscheduled: "needs-a-day", scheduled: "scheduled", late: "overdue", done: "done", cancelled: "cancelled" }
@@ -61,7 +61,7 @@ export const jobGridColumns: GridColumnDef<GridJob>[] = [
   { id: "stage", accessorKey: "stage", header: "Status", cell: ({ row }) => <StatusPill status={GRID_TONE[row.original.stage]} label={GRID_WORDS[row.original.stage]} data-pill="work" />, meta: { csv: (r) => GRID_WORDS[(r as GridJob).stage] } },
   { id: "who", accessorKey: "who", header: "Who" },
   { id: "visits", accessorKey: "visits", header: "Visits" },
-  { id: "total", accessorKey: "total", header: "Total", cell: ({ row }) => (row.original.stage === "cancelled" ? null : <MoneyCell end text={row.original.total > 0 ? money(row.original.total) : "Quote later"} />), meta: { align: "right", csv: (r) => String((r as GridJob).total) } },
+  { id: "total", accessorKey: "total", header: "Total", cell: ({ row }) => (row.original.stage === "cancelled" ? null : <MoneyCell end text={row.original.total > 0 ? money(row.original.total) : null} />), meta: { align: "right", csv: (r) => String((r as GridJob).total) } },
   { id: "billing", accessorFn: (r) => r.billingState ?? "", header: "Billing", cell: ({ row }) => <MoneyCell text={row.original.billing || null} tone={row.original.billingState === "overdue" ? "past-due" : "plain"} />, meta: { csv: (r) => (r as GridJob).billing } },
   { id: "next", accessorKey: "next", header: "Next" },
 ]

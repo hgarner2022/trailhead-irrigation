@@ -35,6 +35,16 @@ describe("searchRecords", () => {
     expect(hits).toContainEqual(expect.objectContaining({ kind: "job", id: pass.id, href: `/admin/jobs?job=${pass.id}` }))
   })
 
+  it("finds an invoice that is out by its number, whole or in part, titled with the number, and opens its job", () => {
+    const job = jobsData.jobs!.find((j) => j.invoice)!
+    const number = job.invoice!.number
+    for (const query of [number, number.toLowerCase(), number.slice(-4)]) {
+      const hit = searchRecords(jobsData, JOBS_TODAY, query).find((h) => h.kind === "invoice")
+      expect(hit).toMatchObject({ id: job.invoice!.id, title: number, href: `/admin/jobs?job=${job.id}` })
+      expect(hit!.detail).toMatch(/Invoice sent|Past due/)
+    }
+  })
+
   it("matches every word of the query, not any", () => {
     const hits = searchRecords(jobsData, JOBS_TODAY, `${first.firstName} zzzzqqq`)
     expect(hits).toEqual([])

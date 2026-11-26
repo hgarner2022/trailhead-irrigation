@@ -23,6 +23,7 @@ import { canArchive, canChangeService, canSend, QUOTE_PILL, QUOTES_NOW, VIA_WORD
 import { useQuoteWorld, type QuoteStore } from "./quote-store"
 import { Notice } from "@/components/blocks/Notice"
 import { quoteHeading } from "@/lib/admin/record-title"
+import { listCrumb } from "@/components/blocks/admin-nav"
 
 // A quote as a page of its own (Hannah, Nov 22 2026: "A quote probably should be [its own thing] until it's approved"), built like the invoice page: the quote number as the title with its
 // status pill (no chip in the header), the band (Total, Deposit, Sent, Decision once it is sent), the one Quote editor while it is a Draft (price the lines in their rows, an optional deposit, then Send a quote) or its facts once it is out,
@@ -89,7 +90,7 @@ export function QuotePage({ store, quoteId, now = QUOTES_NOW, photos, initialDia
   return (
     <>
       <RecordPage
-        crumb={{ label: "Quotes", href: "/admin/quotes" }}
+        crumb={listCrumb("quotes")}
         {...quoteHeading({ number: q.id, service: q.service, customer: q.customer, detail: q.requestId ? "From a request" : q.visit ? "From a design visit" : q.replaces ? `Revision of ${q.replaces}` : "Made by the office" })}
         badges={<StatusPill status={pill.status} label={pill.label} size="lg" />}
         notice={notice ? <Notice tone="page" role="status">{notice}</Notice> : undefined}

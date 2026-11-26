@@ -24,7 +24,6 @@ const JOBS: GridJob[] = [
   job("j5", "Sam Ortiz", "Sprinkler repair", "Sprinkler repair", "14 Aspen Dr, Firestone", "today", "0 of 1 done", 145, null, "", "Today", RYAN),
   job("j6", "Dana Cho", "Spring turn-on", "Spring turn-on", "18 Cedar Way, Erie", "done", "1 of 1 done", 145, "paid", "Paid, card", "None", RYAN, "2026"),
   job("j7", "Priya Shah", "Sprinkler repair", "Sprinkler repair", "330 Elm Dr, Lafayette", "done", "1 of 1 done", 145, "paid", "Paid, Venmo", "None", "Hannah Garner"),
-  job("j8", "Tom Becker", "New sprinkler system installation", "New sprinkler system installation", "600 Hill Rd, Broomfield", "unscheduled", "0 of 1 done", 0, null, "", "Unscheduled", "No one yet"),
   job("j9", "Lena Park", "Christmas lights", "Christmas lights", "7 Oak Ct, Lafayette", "unscheduled", "0 of 1 done", 600, null, "", "Unscheduled", "No one yet"),
   job("j10", "Greg Olsen", "Core aeration", "Core aeration", "5 Birch Ln, Erie", "cancelled", "0 of 1 done", 95, null, "", "None", "No one yet"),
   job("j12", "Kim Ortega", "Sprinkler repair", "Sprinkler repair", "12 Oak St, Erie", "done", "1 of 1 done", 145, "refunded", "Refunded", "None", RYAN),

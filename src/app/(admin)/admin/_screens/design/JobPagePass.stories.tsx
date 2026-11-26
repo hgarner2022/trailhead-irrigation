@@ -6,13 +6,13 @@ import { JobPagePass, JobPageReturnTrip } from "./JobPageTrips"
 import { passPageBoughtOf, passPageOf, returnTripOf, type PassState } from "./trip-fixtures"
 import { passService } from "@/lib/admin/record-title"
 
-// The job page for a job with more than one trip: Andrea's Season Pass in four states (Season Pass TH-2027-0008, the 2027 season) and a
-// repair with a return trip, at 1280 and 375. The trips are rows with Move and Mark done on the row. Pure screens over fixtures.
+// The job page for a job with more than one visit: Andrea's Season Pass in four states (Season Pass TH-2027-0008, the 2027 season) and a
+// repair with a return visit, at 1280 and 375. The visits are rows with Move and Mark done on the row. Pure screens over fixtures.
 
 const meta = {
-  title: "Admin/Job page, Season Pass and return trip",
+  title: "Admin/Job page, Season Pass and return visit",
   component: JobPagePass,
-  parameters: { layout: "fullscreen", docs: { description: { component: "A Season Pass job and a repair with a return trip: the Visits card with one row per trip, each with its own badge, money word and Move or Mark done. Compare the four pass states and the renewal link." } } },
+  parameters: { layout: "fullscreen", docs: { description: { component: "A Season Pass job and a repair with a return visit: the Visits card with one row per visit, each with its own badge, money word and Move or Mark done. Compare the four pass states and the renewal link." } } },
   args: { data: passPageOf("ahead") },
   render: (args) => (
     <DesignShell current="jobs">
@@ -39,7 +39,7 @@ const back = (globals: typeof laptop): Story => ({
   ),
 })
 
-/** Both visits ahead. Each row opens in place, one at a time, and the first is open: When and Who as chips, the trip's actions (Move is the primary), its checklist from the spring turn-on template, its photos (From Andrea, Ours), its notes, and "Charged after this visit" under the pill. */
+/** Both visits ahead. Each row opens in place, one at a time, and the first is open: When and Who as chips, the visit's actions (Move is the primary), its checklist from the spring turn-on template, its photos (From Andrea, Ours), its notes, and "Charged after this visit" under the pill. */
 export const BothAhead: Story = { ...pass("ahead", laptop), name: "Both ahead" }
 export const BothAheadPhone: Story = { ...pass("ahead", phone), name: "Both ahead, phone" }
 
@@ -65,11 +65,11 @@ export const BoughtJanuaryPhone: Story = { args: { data: passPageBoughtOf("janua
 export const OneDone: Story = { ...pass("one-done", laptop), name: "One done" }
 export const OneDonePhone: Story = { ...pass("one-done", phone), name: "One done, phone" }
 
-/** The spring turn-on charged, with its trip open: the finished checklist, the photos from the visit, the history with the charge, and no actions but More. */
-export const OneDoneFirstOpen: Story = { ...pass("one-done", laptop, "t1"), name: "One done, first trip open" }
-export const OneDoneFirstOpenPhone: Story = { ...pass("one-done", phone, "t1"), name: "One done, first trip open, phone" }
+/** The spring turn-on charged, with its visit open: the finished checklist, the photos from the visit, the history with the charge, and no actions but More. */
+export const OneDoneFirstOpen: Story = { ...pass("one-done", laptop, "t1"), name: "One done, first visit open" }
+export const OneDoneFirstOpenPhone: Story = { ...pass("one-done", phone, "t1"), name: "One done, first visit open, phone" }
 
-/** Both visits done and charged and the season settled: a green Paid in full line over two Payments rows. The first trip is open. */
+/** Both visits done and charged and the season settled: a green Paid in full line over two Payments rows. The first visit is open. */
 export const BothDone: Story = { ...pass("both-done", laptop, "t1"), name: "Both done" }
 export const BothDonePhone: Story = { ...pass("both-done", phone, "t1"), name: "Both done, phone" }
 
@@ -86,9 +86,9 @@ export const RenewedFrom: Story = { name: "Renewed from", ...renewedFrom, global
 /** Ryan sees "Renewed as TH-2027-0008" on last season's pass once the renewal exists, a link to the new one. */
 export const RenewedAs: Story = { name: "Renewed as", ...renewedAs, globals: laptop }
 
-/** Ryan sees a repair with its first trip done and paid and a return trip scheduled, as two rows. The action is Mark done on the second row. */
-export const ReturnTrip: Story = { ...back(laptop), name: "Return trip" }
-export const ReturnTripPhone: Story = { ...back(phone), name: "Return trip, phone" }
+/** Ryan sees a repair with its first visit done and paid and a return visit scheduled, as two rows. The action is Mark done on the second row. */
+export const ReturnVisit: Story = { ...back(laptop), name: "Return visit" }
+export const ReturnVisitPhone: Story = { ...back(phone), name: "Return visit, phone" }
 
 const flowShell = () => (
   <DesignShell current="jobs">
@@ -96,7 +96,7 @@ const flowShell = () => (
   </DesignShell>
 )
 
-/** The Season Pass branch, clickable: trip 1 goes Scheduled, Today, Active, Done and Charged ("Charge the card as agreed"), then trip 2 is next ahead and opens by itself. */
+/** The Season Pass branch, clickable: visit 1 goes Scheduled, Today, Active, Done and Charged ("Charge the card as agreed"), then visit 2 is next ahead and opens by itself. */
 export const SeasonPassFlow: Story = {
   name: "Season Pass flow",
   globals: laptop,

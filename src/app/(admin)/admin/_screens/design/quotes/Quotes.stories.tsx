@@ -304,6 +304,25 @@ export const Search: Story = {
   ),
 }
 
+/** Cmd+K by number (Hannah, Nov 25 2026): the quote's number, whole or just its last digits, finds the quote, titled with the number as its page is. */
+export const SearchByNumber: Story = {
+  name: "Cmd+K finds a quote by its number",
+  args,
+  globals: laptop,
+  render: () => (
+    <QuotesShell quotes={ALL} defaultSearchOpen defaultSearchQuery="Q-2026-0005">
+      <QuotesList quotes={ALL} now={QUOTES_NOW} />
+    </QuotesShell>
+  ),
+  play: async () => {
+    const box = within(await within(document.body).findByRole("dialog", { name: "Search" }))
+    const hit = await box.findByRole("option", { name: /Q-2026-0005/ })
+    await expect(hit).toHaveAttribute("data-value", "quote-Q-2026-0005")
+    await expect(box.getAllByRole("option")).toHaveLength(1)
+  },
+}
+export const SearchByNumberPhone: Story = { ...SearchByNumber, name: "Cmd+K finds a quote by its number, phone", globals: phone }
+
 // ---------------------------------------------------------------------------------------------------------------------- New quote
 
 /** The New quote sheet: the customer (search, or a new one), and the required "What is this for?" picker ending in Something else. The button is off until both are chosen, and one quiet line says what is missing. */

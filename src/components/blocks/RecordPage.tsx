@@ -22,7 +22,7 @@ export interface RecordPageProps {
   tab?: string
   /** the status badges beside the title: one or two `StatusPill size="lg"` */
   badges?: ReactNode
-  /** the list this page belongs to, as a crumb above the title: Jobs */
+  /** the PARENT LIST this record belongs to, as a crumb above the title ("‹ Jobs"): always `listCrumb(section)` from admin-nav, never the record or screen the reader just left */
   crumb?: { label: string; href: string }
   /** a line of status or a refusal under the header */
   notice?: ReactNode

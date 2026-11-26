@@ -253,13 +253,13 @@ export function returnTripOf(): MultiTripData {
     tripsHeading: "Visits",
     trips: [
       { id: "t1", title: "Sprinkler repair visit", detail: "Thu, Nov 12 · Ryan · Done at 2:30 pm", pills: [{ status: "done" }], money: "Paid, card", actions: [] },
-      { id: "t2", title: "Return trip: new valve", detail: "Thu, Nov 19 · Ryan · Any time", pills: [{ status: "scheduled" }], money: null, actions: [act("Move"), act("Mark done")] },
+      { id: "t2", title: "Return visit: new valve", detail: "Thu, Nov 19 · Ryan · Any time", pills: [{ status: "scheduled" }], money: null, actions: [act("Move"), act("Mark done")] },
     ],
     lines: [{ name: "Repair", description: "A visit to find the problem and fix what we can that day.", amount: "$145" }, { name: "Valve replacement", description: "A new zone valve for the front lawn, installed on the return trip.", amount: "$85" }],
     totals: [["Total", "$230", "strong"], ["Paid", "$145"], ["Unpaid", "$85", "alert"]],
     billing: { summary: [["Total", "$230"], ["Paid", "$145"], ["Unpaid", "$85"]], rows: [{ id: "p1", kind: "payment", title: "Card", detail: "Sprinkler repair visit · Nov 12", amount: "$145" }] },
-    notes: [event("n1", "2026-11-12T21:40:00Z", "Added a return trip for the valve, Thu, Nov 19")],
+    notes: [event("n1", "2026-11-12T21:40:00Z", "Added a return visit for the valve, Thu, Nov 19")],
     messages: [msg("m1", "2026-11-12T21:41:00Z", "sms", "date-set", "Trailhead: Ryan is back Thu, Nov 19.")],
-    footer: { secondary: [act("Add a return trip"), act("Send a message")], more: [act("Edit"), act("Add a note")], destructive: act("Cancel job") },
+    footer: { secondary: [act("Add a return visit"), act("Send a message")], more: [act("Edit"), act("Add a note")], destructive: act("Cancel job") },
   }
 }

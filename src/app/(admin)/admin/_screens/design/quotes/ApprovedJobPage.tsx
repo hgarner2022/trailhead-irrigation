@@ -23,6 +23,7 @@ import { jobStageOf, money, QUOTES_NOW, STAGE_PILL, VIA_WORDS } from "./quote-mo
 import { useQuoteWorld, type QuoteStore } from "./quote-store"
 import { Notice } from "@/components/blocks/Notice"
 import { jobHeading } from "@/lib/admin/record-title"
+import { listCrumb } from "@/components/blocks/admin-nav"
 
 // The page of a job made from an approved quote (Hannah, Nov 22 2026: a job is created only when the quote is approved, so it has no quote state of its own: no Needs a quote, no Quote sent, no
 // quote editor). It is ready to schedule with no day, says which quote it came from ONCE (that quote's chip, in the aside under the customer; not in the subtitle and not in the band), has the band every job has (When, Who, Where, Total), and holds the approved lines, copied once from the frozen quote. A price change after
@@ -68,7 +69,7 @@ export function ApprovedJobPage({ store, jobId, now = QUOTES_NOW, photos, initia
   return (
     <>
       <RecordPage
-        crumb={{ label: "Jobs", href: "/admin/jobs" }}
+        crumb={listCrumb("jobs")}
         {...jobHeading({ service: job.service, customer: job.customer })}
         badges={<StatusPill status={pill.status} label={pill.label} size="lg" />}
         notice={stage === "canceled" ? <Notice tone="page" role="status">This job is canceled.</Notice> : undefined}

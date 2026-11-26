@@ -14,6 +14,7 @@ import { SectionCard } from "./SectionCard"
 import { SidePanel } from "./SidePanel"
 import { StatusPill } from "./StatusPill"
 import { SummaryBand } from "./SummaryBand"
+import { listCrumb } from "./admin-nav"
 
 // Admin / Navigation (docs/plans/2026-11-19-navigation-design.md): the admin's top bar, the account menu in the rail's footer, phone More and the way back, for Hannah to review.
 // Stories only, nothing wired. Every state is shown at 1280 (laptop) and at 375 (phone).
@@ -116,7 +117,7 @@ export const AccountMenuOpenStaffOnly: Story = { name: "Account menu open staff 
   },
 }
 
-/** 375: logo, "+ New job" (it stays in the sticky bar on every screen that has it), Search, the initials; the bottom bar is Home, Schedule, Jobs, Customers, More. */
+/** 375: logo, "+ New job" (it stays in the sticky bar on every screen that has it), Search, the initials; the bottom bar is Home, Schedule, Customers, Jobs, More. */
 export const ShellPhone: Story = { name: "Shell, phone", globals: PHONE, render: () => <Shell /> }
 
 /** 375: the account menu from the initials, Sign out inside it. */
@@ -129,14 +130,14 @@ export const AccountMenuOpenPhone: Story = { name: "Account menu open, phone",
   },
 }
 
-/** 375: More is a bordered, labelled button; open it shows Reports and Settings and nothing else. */
+/** 375: More is a bordered, labelled button; it opens a sheet from the bottom with the rest of the rail (here Reports and Settings: the live app has no Requests, Quotes or Invoices page yet). */
 export const MoreOpenPhone: Story = { name: "More open, phone",
   globals: PHONE,
   render: () => <Shell />,
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole("button", { name: "More" }))
-    const menu = within(await within(document.body).findByRole("menu"))
-    await expect(menu.getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Reports", "Settings"])
+    const sheet = within(await within(document.body).findByRole("dialog", { name: "More" }))
+    await expect(sheet.getAllByRole("link").map((i) => i.textContent)).toEqual(["Reports", "Settings"])
   },
 }
 
@@ -162,13 +163,14 @@ function PanelFrom({ from, title }: { from: string; title: string }) {
   )
 }
 
-function PageFrom({ from, href }: { from: string; href: string }) {
+/** A job as a page of its own. Wherever it was opened from (Home, Search, a customer, the Jobs list), its crumb is its parent list: "‹ Jobs". */
+function JobAsPage() {
   return (
     <div className="min-h-svh bg-cream">
       <RecordPage
-        crumb={{ label: from, href }}
-        title="Andrea Reyes"
-        subtitle="Spring turn-on · Added Nov 18"
+        crumb={listCrumb("jobs")}
+        title="Spring turn-on"
+        subtitle="for Andrea Reyes · Added Nov 18"
         badges={<StatusPill status="scheduled" size="lg" />}
         band={
           <SummaryBand
@@ -198,21 +200,21 @@ export const RecordFromHomeLaptop: Story = { name: "Record from home, laptop",
     await expect(await within(document.body).findByRole("button", { name: /Home/ })).toBeInTheDocument()
   },
 }
-/** 375, opened from Home: the record is a full page; "‹ Home" is its first line. */
-export const RecordFromHomePhone: Story = { name: "Record from home, phone", globals: PHONE, render: () => <PageFrom from="Home" href="/admin" /> }
+/** 375, opened from Home: the record is a full page, and its crumb is its parent list, "‹ Jobs" (never "‹ Home": the browser's Back goes there). */
+export const RecordFromHomePhone: Story = { name: "Record from home, phone", globals: PHONE, render: () => <JobAsPage /> }
 
 /** 1280, opened from Search: "‹ Search" above the title; Back reopens the search with its query. */
 export const RecordFromSearchLaptop: Story = { name: "Record from search, laptop", render: () => <PanelFrom from="Search" title="Opened from Search" /> }
-/** 375, opened from Search. */
-export const RecordFromSearchPhone: Story = { name: "Record from search, phone", globals: PHONE, render: () => <PageFrom from="Search" href="/admin" /> }
+/** 375, opened from Search: the same page with the same crumb, "‹ Jobs". */
+export const RecordFromSearchPhone: Story = { name: "Record from search, phone", globals: PHONE, render: () => <JobAsPage /> }
 
 /** 1280, opened from another record (the customer's job list): "‹ Andrea Reyes". */
 export const RecordFromRecordLaptop: Story = { name: "Record from record, laptop", render: () => <PanelFrom from="Andrea Reyes" title="Opened from the customer's panel" /> }
-/** 375, opened from another record. */
-export const RecordFromRecordPhone: Story = { name: "Record from record, phone", globals: PHONE, render: () => <PageFrom from="Andrea Reyes" href="/admin/customers" /> }
+/** 375, opened from another record (the customer): the crumb is still the job's parent list, "‹ Jobs", not the customer's name. */
+export const RecordFromRecordPhone: Story = { name: "Record from record, phone", globals: PHONE, render: () => <JobAsPage /> }
 
 /** A record opened from a list: "‹ Jobs". */
-export const RecordFromListPhone: Story = { name: "Record from list, phone", globals: PHONE, render: () => <PageFrom from="Jobs" href="/admin/jobs" /> }
+export const RecordFromListPhone: Story = { name: "Record from list, phone", globals: PHONE, render: () => <JobAsPage /> }
 
 // ---- Settings ---------------------------------------------------------------------------------------------------------------------------------
 

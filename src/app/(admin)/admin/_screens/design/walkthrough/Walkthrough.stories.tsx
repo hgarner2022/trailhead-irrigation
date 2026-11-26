@@ -53,7 +53,7 @@ const laptopPath: Story["play"] = async ({ canvasElement }) => {
   await waitFor(() => expect(route(canvasElement)).toBe("customer:andrea"))
   await expect(await c.findByRole("heading", { level: 1, name: "Andrea Dalton" })).toBeInTheDocument()
   // Invoices in the rail, then an invoice, then back to Jobs
-  await userEvent.click(await c.findByRole("link", { name: "Invoices" }))
+  await userEvent.click(await c.findByRole("link", { name: /^Invoices/ }))
   await waitFor(() => expect(route(canvasElement)).toBe("invoices"))
   await userEvent.click((await c.findAllByRole("link", { name: /INV-2026-0042/ }))[0]!)
   await waitFor(() => expect(route(canvasElement)).toBe("invoice:inv-42"))
