@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { maskEmail } from "@/lib/auth/mask-email"
 import { cn } from "@/lib/utils"
+import { TextLink } from "./TextLink"
 
 // The sign-in card for /admin/sign-in and /account/sign-in (docs/DESIGN.md,
 // app surfaces): the badge, the title in the display face, one email field,
@@ -71,9 +72,9 @@ export function SignInCard({ audience, state = "form", email = "", action, retry
                 </form>
               )}
               {retryHref && (
-                <a href={retryHref} className="inline-flex min-h-11 items-center text-sm font-medium text-primary-dark underline-offset-4 hover:underline">
+                <TextLink href={retryHref} native weight="medium" className="text-sm">
                   Use a different email
-                </a>
+                </TextLink>
               )}
             </div>
           ) : (

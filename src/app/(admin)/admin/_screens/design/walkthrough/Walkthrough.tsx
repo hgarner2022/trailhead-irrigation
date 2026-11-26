@@ -21,6 +21,7 @@ import { newCount } from "../requests/request-model"
 import { requestStore, useRequests } from "../requests/request-store"
 import { waitingCount } from "../quotes/quote-list-model"
 import { useQuoteWorld, walkQuotes } from "../quotes/quote-store"
+import { TextLink } from "@/components/blocks/TextLink"
 
 // The one clickable admin prototype (docs/plans/2026-11-19-prototype-walkthrough-spec.md, section 2): the real AdminShell around a screen chosen by
 // an in-memory route stack, no Next router and no address changes (Storybook owns the URL). Navigation is by intercepting the links the pages
@@ -81,15 +82,15 @@ function Strip({ stack, onJump, onStartOver }: { stack: Route[]; onJump: (index:
               {last ? (
                 <span aria-current="page" className="font-medium text-foreground">{name}</span>
               ) : (
-                <button type="button" onClick={() => onJump(i)} className="min-h-11 rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-8">
+                <TextLink onClick={() => onJump(i)} className="md:min-h-8">
                   {name}
-                </button>
+                </TextLink>
               )}
             </li>
           )
         })}
       </ol>
-      <Button type="button" variant="outline" className="min-h-11" onClick={onStartOver}>Start over</Button>
+      <Button size="touch" type="button" variant="outline" onClick={onStartOver}>Start over</Button>
     </nav>
   )
 }

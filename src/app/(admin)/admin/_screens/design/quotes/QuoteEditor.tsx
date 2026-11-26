@@ -5,10 +5,10 @@ import { FormRow } from "@/components/blocks/FormRow"
 import { RecordList, RecordRowEnd, RECORD_ROW } from "@/components/blocks/RecordPanel"
 import { SectionCard } from "@/components/blocks/SectionCard"
 import { SegmentedControl } from "@/components/blocks/SegmentedControl"
+import { TextLink } from "@/components/blocks/TextLink"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { QUIET } from "./QuoteParts"
 import { depositOf, lineTotal, linesTotal, money, sendBlock, type DepositInput, type DepositMode, type QuoteLine, type QuoteRecord } from "./quote-model"
 
 // The Quote editor (Hannah, Nov 20 2026: "Create a quote here. What's the flow?"; moved to the quote's own page on Nov 22 2026): the one card a Draft quote leads with. Ryan PRICES
@@ -63,9 +63,7 @@ export function QuoteEditor({ quote, onPrice, onCancelLine, onRestoreLine, onEdi
         ))}
       </RecordList>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-6 border-t border-border pt-2">
-        <button type="button" className={QUIET} onClick={onAddLine}>
-          Add a line
-        </button>
+        <TextLink onClick={onAddLine}>Add a line</TextLink>
         <dl className="flex items-baseline gap-6 text-sm font-semibold">
           <dt>Total</dt>
           <dd className="tabular-nums">{money(total)}</dd>
@@ -73,7 +71,7 @@ export function QuoteEditor({ quote, onPrice, onCancelLine, onRestoreLine, onEdi
       </div>
       <DepositControl total={total} draft={draft} amount={result.amount} problem={result.problem} onChange={onDeposit} />
       <div data-slot="quote-editor-footer" className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4">
-        <Button type="button" className="min-h-11 w-full sm:w-auto" disabled={Boolean(missing)} aria-describedby={missing ? MISSING_ID : undefined} onClick={onSend}>
+        <Button size="touch" type="button" className="w-full sm:w-auto" disabled={Boolean(missing)} aria-describedby={missing ? MISSING_ID : undefined} onClick={onSend}>
           Send a quote
         </Button>
         {missing && (
@@ -138,17 +136,17 @@ function LineRow({ line, onPrice, onCancel, onRestore, onEdit, focusFirst }: { l
           </span>
           {many && !line.canceled && <span className="w-20 text-right tabular-nums text-muted-foreground">{money(lineTotal(line))}</span>}
           {line.canceled ? (
-            <button type="button" className={cn(QUIET, "text-sm")} aria-label={`Restore ${line.name}`} onClick={() => onRestore(line.id)}>
+            <TextLink className="text-sm" aria-label={`Restore ${line.name}`} onClick={() => onRestore(line.id)}>
               Restore
-            </button>
+            </TextLink>
           ) : (
             <>
-              <button type="button" className={cn(QUIET, "text-sm")} aria-label={`Edit ${line.name}`} onClick={() => onEdit(line.id)}>
+              <TextLink className="text-sm" aria-label={`Edit ${line.name}`} onClick={() => onEdit(line.id)}>
                 Edit
-              </button>
-              <button type="button" className={cn(QUIET, "text-sm")} aria-label={`Cancel ${line.name}`} onClick={() => onCancel(line.id)}>
+              </TextLink>
+              <TextLink className="text-sm" aria-label={`Cancel ${line.name}`} onClick={() => onCancel(line.id)}>
                 Cancel
-              </button>
+              </TextLink>
             </>
           )}
         </span>

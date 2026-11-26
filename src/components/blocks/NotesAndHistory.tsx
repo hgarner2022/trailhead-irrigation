@@ -96,7 +96,7 @@ export function NotesAndHistory({ lines, onAddNote, now, bare, className }: Note
         <FormRow label="Add a note">
           <Textarea value={text} maxLength={NOTE_MAX} rows={3} onChange={(e) => setText(e.target.value)} />
         </FormRow>
-        <Button type="submit" variant="outline" className="mt-2 min-h-11" disabled={pending || !text.trim()}>
+        <Button size="touch" type="submit" variant="outline" className="mt-2" disabled={pending || !text.trim()}>
           {pending ? "Adding" : "Add note"}
         </Button>
         <p role="alert" className="mt-1 text-sm text-destructive empty:hidden">

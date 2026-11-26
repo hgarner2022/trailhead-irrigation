@@ -6,11 +6,11 @@ import { FormRow } from "@/components/blocks/FormRow"
 import { pickMissing, pickOf, pickedService, type ServicePick } from "./request-catalogue"
 import { ServicePicker } from "./ServicePicker"
 import { ARCHIVE_REASONS, fullName, matchWords, type ArchiveReason, type Match, type RequestData } from "./request-model"
+import { SelectField } from "@/components/blocks/SelectField"
 
 // The two questions a request asks (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.4). Both are staff decisions and neither sends the person
 // anything, so neither has a "without notifying" caret. The dialog states the exact effect before the button does it.
 
-const SELECT = "min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
 
 /** The two ways out of a request: a job at once (Create job, for a priced service) or a quote in Draft to price and send (the job is made only when the quote is approved). */
 export type CreateMode = "job" | "quote"
@@ -66,10 +66,10 @@ export function CreateJobDialog({ request, match, mode, onClose, onCreate, initi
       <div className="flex flex-col gap-3">
         {match ? (
           <FormRow label="Customer">
-            <select value={asNew ? "new" : "match"} onChange={(e) => setAsNew(e.target.value === "new")} className={SELECT}>
+            <SelectField value={asNew ? "new" : "match"} onChange={(e) => setAsNew(e.target.value === "new")}>
               <option value="match">{`Add to ${match.customer.name} (${matchWords(match).toLowerCase()})`}</option>
               <option value="new">Add as a new customer instead</option>
-            </select>
+            </SelectField>
           </FormRow>
         ) : (
           <div className="text-sm">
@@ -103,11 +103,11 @@ export function ArchiveDialog({ request, onClose, onArchive }: ArchiveDialogProp
       onConfirm={async () => (onArchive(reason), { ok: true })}
     >
       <FormRow label="Reason">
-        <select value={reason} onChange={(e) => setReason(e.target.value as ArchiveReason)} className={SELECT}>
+        <SelectField value={reason} onChange={(e) => setReason(e.target.value as ArchiveReason)}>
           {ARCHIVE_REASONS.map((r) => (
             <option key={r}>{r}</option>
           ))}
-        </select>
+        </SelectField>
       </FormRow>
     </ConfirmDialog>
   )

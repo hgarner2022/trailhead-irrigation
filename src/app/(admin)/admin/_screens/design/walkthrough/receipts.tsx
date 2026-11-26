@@ -65,7 +65,7 @@ export function ReceiptToast({ text, onView }: { text: string; onView: () => voi
   return (
     <div role="status" aria-live="polite" data-slot="receipt-toast" className="fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-[70] mx-auto flex max-w-md items-center justify-between gap-3 rounded-lg bg-navy px-4 py-2 text-sm font-medium text-white shadow-lg md:inset-x-auto md:left-1/2 md:-translate-x-1/2">
       <span>{text}</span>
-      <Button type="button" size="sm" variant="secondary" className="min-h-9 shrink-0" onClick={onView}>View the receipt</Button>
+      <Button type="button" size="compact" variant="secondary" className="shrink-0" onClick={onView}>View the receipt</Button>
     </div>
   )
 }
@@ -75,7 +75,7 @@ export function ReceiptRoute({ id, onBack }: { id: string; onBack: () => void })
   const [way, ref] = id.split("|") as [Way, string | undefined]
   return (
     <div data-slot="walkthrough-receipt">
-      <PageHeader title="Receipt" context="As Andrea sees it" actions={<Button type="button" variant="outline" className="min-h-11" onClick={onBack}>Back</Button>} />
+      <PageHeader title="Receipt" context="As Andrea sees it" actions={<Button size="touch" type="button" variant="outline" onClick={onBack}>Back</Button>} />
       <div className="rounded-lg border border-border bg-cream">
         <ReceiptPage way={way} reference={ref || undefined} />
       </div>
@@ -88,7 +88,7 @@ export function MessageView({ channel, paid, onClose }: { channel: "text" | "ema
   return (
     <ConfirmDialog open onOpenChange={(o) => !o && onClose()} title={paid.way === "refund" ? "Refund notice" : "Receipt"} message={channel === "text" ? "The text Andrea got" : "The email Andrea got"} actions="none" size="md" slot="receipt-message">
       {channel === "text" ? <TextBubble body={receiptText(paid.way)} /> : <EmailFrame way={paid.way} reference={paid.ref} height={420} />}
-      <Button type="button" variant="outline" className="min-h-11 self-end" onClick={onClose}>Close</Button>
+      <Button size="touch" type="button" variant="outline" className="self-end" onClick={onClose}>Close</Button>
     </ConfirmDialog>
   )
 }

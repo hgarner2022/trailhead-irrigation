@@ -8,6 +8,7 @@ import { chargingWords, paidWords, receiptLine, type CollectPlan, type PayChoice
 import { cn } from "@/lib/utils"
 import { FormRow } from "./FormRow"
 import { useFooterSlot } from "./record-slot"
+import { optionClass, optionDetailClass } from "./option-styles"
 
 // "How is this paid?": the second beat of a finished visit, in one block for the visit panel and the job panel. Pure props. The
 // choices come from `collectPlan` (the card on file first and selected, the cash ways, an invoice, Pay later only for a customer
@@ -46,19 +47,20 @@ export interface CollectPaymentProps {
   className?: string
 }
 
-const RADIO = "flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border border-input px-3 py-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:disabled]:cursor-not-allowed has-[:disabled]:border-dashed"
+// a way to pay is an option: navy when chosen, the same look as every choice in a form (`optionClass`); the radio inside keeps the group's keyboard behaviour and its ring shows on the box
+const RADIO = "flex min-h-14 items-start gap-3 px-3 py-2 text-sm has-[:disabled]:cursor-not-allowed has-[:disabled]:border-dashed"
 
 function Choice({ option, checked, disabled, onPick, effect }: { option: PayOption; checked: boolean; disabled: boolean; onPick: () => void; effect?: ReactNode }) {
   const title = useId()
   const line = useId()
   return (
-    <div className={RADIO} onClick={() => !disabled && onPick()}>
-      <input type="radio" name="pay-choice" value={option.value} checked={checked} disabled={disabled} onChange={onPick} aria-labelledby={title} aria-describedby={line} className="mt-0.5 size-4 shrink-0 accent-primary" />
+    <div className={cn(optionClass({ selected: checked, focus: "has" }), RADIO)} onClick={() => !disabled && onPick()}>
+      <input type="radio" name="pay-choice" value={option.value} checked={checked} disabled={disabled} onChange={onPick} aria-labelledby={title} aria-describedby={line} className={cn("mt-0.5 size-4 shrink-0", checked ? "accent-white" : "accent-primary")} />
       <span className="flex min-w-0 flex-col">
-        <span id={title} className="font-medium text-foreground">
+        <span id={title} className="font-medium">
           {option.label}
         </span>
-        <span id={line} className="text-navy-light">
+        <span id={line} className={optionDetailClass(checked)}>
           {option.line}
         </span>
         {effect}
@@ -102,11 +104,11 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
   // The one button: in the footer of the panel it is in, else under the choices.
   const ask = confirmFor?.(picked, reference) ?? null
   const effectFor = ask && (
-    <span data-slot="collect-effect" className="mt-1 flex flex-col gap-1 text-foreground" onClick={(e) => e.stopPropagation()}>
+    <span data-slot="collect-effect" className="mt-1 flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
       <span>{ask.reportOption ? (report ? ask.reportOption.with : ask.reportOption.without) : ask.message}</span>
       {ask.reportOption && (
         <span className="flex min-h-11 items-center gap-3 font-medium">
-          <input id="collect-report" type="checkbox" checked={report} onChange={(e) => setReport(e.target.checked)} aria-labelledby="collect-report-l" className="size-5 shrink-0 cursor-pointer accent-primary" />
+          <input id="collect-report" type="checkbox" checked={report} onChange={(e) => setReport(e.target.checked)} aria-labelledby="collect-report-l" className="size-5 shrink-0 cursor-pointer accent-white" />
           <span id="collect-report-l" className="cursor-pointer" onClick={() => setReport((r) => !r)}>{ask.reportOption.label}</span>
         </span>
       )}
@@ -137,7 +139,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
         <p role="status" className="font-display text-2xl text-navy">{result.title}</p>
         <p className="text-sm">{result.line}</p>
         {place(
-          <Button type="button" className={cn("min-h-11", !slot && "self-start")} onClick={onClose}>
+          <Button type="button" size="touch" className={cn(!slot && "self-start")} onClick={onClose}>
             Close
           </Button>,
         )}
@@ -160,7 +162,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
         ))}
       </fieldset>
       {plan.anotherWay.length > 0 && !more && (
-        <Button type="button" variant="ghost" className="min-h-11 self-start text-muted-foreground" onClick={() => (setMore(true), setChoice("check"))}>
+        <Button size="touch" type="button" variant="ghost" className="self-start text-muted-foreground" onClick={() => (setMore(true), setChoice("check"))}>
           Paid another way
         </Button>
       )}
@@ -181,11 +183,11 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
       </p>
       {place(
         <div className={cn("flex flex-wrap items-center gap-2", !slot && "w-full")}>
-          <Button type="button" className="min-h-11 w-full sm:w-auto" disabled={busy || (handed && plan.needsAmount && !Number(amount))} onClick={press}>
+          <Button size="touch" type="button" className="w-full sm:w-auto" disabled={busy || (handed && plan.needsAmount && !Number(amount))} onClick={press}>
             {buttonLabel ? buttonLabel(picked) : picked.button}
           </Button>
           {notNow && picked.value !== "later" && (
-            <Button type="button" variant="ghost" className="min-h-11 text-muted-foreground" disabled={busy} onClick={onLater}>
+            <Button size="touch" type="button" variant="ghost" className="text-muted-foreground" disabled={busy} onClick={onLater}>
               Not now
             </Button>
           )}

@@ -28,4 +28,29 @@ describe("EmptyState", () => {
     render(<EmptyState title="No passes sold yet" line="Passes appear here." />)
     expect(block().querySelector('[data-slot="empty-state-icon"]')).toBeNull()
   })
+
+  it("draws a Trailhead scene in place of the icon, hidden from a screen reader, with the title on the customer type scale", () => {
+    render(<EmptyState scene="signpost" title="No visits yet." line="Every visit shows up here." />)
+    const drawing = block().querySelector('[data-slot="trail-icon"]')
+    expect(drawing).toHaveAttribute("data-icon", "signpost")
+    expect(drawing).toHaveAttribute("aria-hidden", "true")
+    expect(block().querySelector('[data-slot="empty-state-icon"]')).toBeNull()
+    expect(screen.getByText("No visits yet.")).toHaveClass("type-heading")
+  })
+
+  it("needs no line, and makes the title the heading the screen asks for", () => {
+    render(<EmptyState scene="trail" titleAs="h2" title="Nothing booked right now." />)
+    expect(screen.getByRole("heading", { level: 2, name: "Nothing booked right now." })).toBeInTheDocument()
+    expect(block().querySelectorAll("p")).toHaveLength(0)
+  })
+
+  it("is one row inside a section at sm and the page's own h1 at page", () => {
+    const { unmount } = render(<EmptyState scene="photo" size="sm" title="No photos yet." />)
+    expect(block()).toHaveAttribute("data-size", "sm")
+    expect(screen.getByText("No photos yet.")).toHaveClass("type-body")
+    unmount()
+    render(<EmptyState scene="compass" size="page" titleAs="h1" title="We can't open that" line="Go to your visits, or text Ryan." />)
+    expect(screen.getByRole("heading", { level: 1, name: "We can't open that" })).toHaveClass("type-title")
+    expect(block()).toHaveClass("items-start")
+  })
 })

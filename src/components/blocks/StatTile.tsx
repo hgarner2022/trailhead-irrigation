@@ -60,16 +60,16 @@ export function StatTile({ label, value, delta, sparkline, href, className }: St
   const body = (
     <>
       <div className="flex items-start justify-between gap-2">
-        <p id={labelId} className="text-sm text-muted-foreground">
+        <p id={labelId} className="type-admin-meta text-muted-foreground">
           {label}
         </p>
         {href && <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />}
       </div>
-      <p data-slot="stat-value" className="mt-1 font-display text-4xl font-semibold leading-none tabular-nums text-navy @max-[220px]:text-3xl">
+      <p data-slot="stat-value" className="type-admin-figure mt-1 text-navy @max-[220px]:text-3xl">
         {value}
       </p>
       {delta && (
-        <p data-slot="stat-delta" className={cn("mt-2 text-sm", deltaTone(delta))}>
+        <p data-slot="stat-delta" className={cn("type-admin-meta mt-2", deltaTone(delta))}>
           {deltaText(delta)}
         </p>
       )}

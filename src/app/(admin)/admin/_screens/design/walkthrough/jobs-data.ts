@@ -1,6 +1,5 @@
 import type { GridJob, GridStatus, BillingState } from "../JobsGridDesign"
 import { type JobPageData, type JobState, jobPageOf } from "../job-fixtures"
-import { money } from "../invoice-fixtures"
 import { passPageOf, type MultiTripData } from "../trip-fixtures"
 import type { PageCustomer } from "../JobPageTrips"
 import { jobGridRow } from "../quotes/quote-grid"
@@ -24,6 +23,7 @@ function withLive(r: GridJob): GridJob {
   const stage: GridStatus = r.stage === "unscheduled" || r.stage === "scheduled" || r.stage === "today" || r.stage === "late" ? (v.day === WEEK_TODAY ? "today" : v.day < WEEK_TODAY ? "late" : "scheduled") : r.stage
   return { ...r, stage, next: v.day === WEEK_TODAY ? "Today" : weekDayShort(v.day), who: v.personName }
 }
+import { money } from "@/lib/admin/format"
 
 // The walkthrough's jobs (see data.ts for the world): the Jobs grid's rows and the page each one opens.
 

@@ -23,6 +23,7 @@ import { ApproveByHandDialog, ArchiveQuoteDialog, LineDialog, QuoteReminderDialo
 import { JobMadeCard, QuoteCard, QuoteLines, Revisions, VisitCard, historyLines, quoteBand } from "./QuoteParts"
 import { canArchive, canChangeService, canSend, QUOTE_PILL, QUOTES_NOW, VIA_WORDS, type QuoteRecord } from "./quote-model"
 import { useQuoteWorld, type QuoteStore } from "./quote-store"
+import { Notice } from "@/components/blocks/Notice"
 
 // A quote as a page of its own (Hannah, Nov 22 2026: "A quote probably should be [its own thing] until it's approved"), built like the invoice page: the quote number as the title with its
 // status pill and the customer chip, the band, the one Quote editor while it is a Draft (price the lines in their rows, an optional deposit, then Send a quote) or its facts once it is out,
@@ -98,7 +99,7 @@ export function QuotePage({ store, quoteId, now = QUOTES_NOW, photos, initialDia
             <CustomerChip id={q.customerId} name={q.customer} phone={q.phone} address={q.street} />
           </>
         }
-        notice={notice ? <p role="status" className="rounded-lg border border-border bg-card px-5 py-3 text-sm font-medium shadow-sm">{notice}</p> : undefined}
+        notice={notice ? <Notice tone="page" role="status">{notice}</Notice> : undefined}
         band={<SummaryBand items={quoteBand(q)} />}
         asideLabel="About this quote"
         actions={actions}

@@ -6,6 +6,7 @@ import { HoverCard } from "radix-ui"
 import { cn } from "@/lib/utils"
 import { RecordMark, RecordPreview } from "./RecordPreview"
 import { KIND_WORD, type RecordKind, type RecordPreviewData } from "./record-preview-model"
+import { textLinkClass } from "./TextLink"
 
 // The one way a record's name appears (docs/plans/2026-11-19-record-links-research.md): the object's icon or the person's initials, then the
 // name in orange with a thin underline that goes solid on hover and focus. A screen reader hears the kind first ("Customer: Andrea Reyes").
@@ -34,7 +35,8 @@ export interface RecordChipProps {
   className?: string
 }
 
-const LINK = "rounded-sm text-primary-dark underline decoration-primary/40 underline-offset-2 hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+/** the chip is the one text link drawn on an element of its own (the icon square beside the name), so it asks for the class and not the component */
+const LINK = textLinkClass({ touch: "inline", underline: "always" })
 
 export function RecordChip({ kind, name, href, size = "row", noMark, flag, short, onOpen, preview, previewOpen, className }: RecordChipProps) {
   const [open, setOpen] = useState(Boolean(previewOpen))

@@ -24,7 +24,7 @@ export function CheckDeliveryButton({ onCheck }: { onCheck?: () => Promise<Check
       <span role="status" className="text-xs text-muted-foreground empty:hidden">
         {note}
       </span>
-      <Button type="button" variant="outline" size="sm" className="min-h-11" disabled={pending} onClick={run}>
+      <Button type="button" variant="outline" size="touch-sm" disabled={pending} onClick={run}>
         {pending ? "Checking" : "Check delivery"}
       </Button>
     </span>

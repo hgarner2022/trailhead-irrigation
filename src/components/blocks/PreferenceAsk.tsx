@@ -35,7 +35,7 @@ export function TimingDialog({ kind, value, onSave, label = "Change", asButton =
   return (
     <Dialog onOpenChange={(open) => !open && setSaved(false)}>
       <DialogTrigger asChild>
-        <Button variant={asButton ? "outline" : "link"} aria-label={`${label}: your ${TIMING_NAME[kind]}`} className={asButton ? undefined : "h-auto min-h-11 px-0 py-1 text-primary-dark"}>
+        <Button variant={asButton ? "outline" : "link"} size={asButton ? "default" : "touch"} aria-label={`${label}: your ${TIMING_NAME[kind]}`} className={asButton ? undefined : "px-0 py-1 text-primary-dark"}>
           {label}
         </Button>
       </DialogTrigger>

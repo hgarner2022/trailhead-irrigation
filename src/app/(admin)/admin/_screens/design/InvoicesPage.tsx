@@ -1,13 +1,13 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Link from "next/link"
 import { CircleDollarSign, Clock, FileText, Receipt, Send } from "lucide-react"
 import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
 import type { GridCardSlots } from "@/components/blocks/DataGridCard"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { SummaryBand } from "@/components/blocks/SummaryBand"
+import { TextLink } from "@/components/blocks/TextLink"
 import { recordHref } from "@/components/blocks/record-preview-model"
 import { useToast } from "@/components/blocks/Toast"
 import { useMedia } from "@/components/blocks/use-media"
@@ -15,7 +15,8 @@ import { CollectDialog } from "./CustomerDialogs"
 import { CustomerChip, InvoiceChip, JobChip, useRowOpen } from "./RecordChips"
 import { ReminderDialog } from "./ReminderDialog"
 import type { Reach } from "./confirm-copy"
-import { INVOICE_PILL, INVOICE_STATUSES, dayWords, invoiceTotals, money, sortInvoiceRows, type InvoiceListRow } from "./invoice-fixtures"
+import { INVOICE_PILL, INVOICE_STATUSES, invoiceTotals, sortInvoiceRows, type InvoiceListRow } from "./invoice-fixtures"
+import { shortDate, money } from "@/lib/admin/format"
 
 // Invoices, the primary nav item (docs/plans/2026-11-19-job-object-design.md, Hannah's rules of Nov 19 2026), in the shape of the Jobs grid: a
 // summary band (Unpaid, Past due, Sent this month, Paid this month; each tile sets the Status filter, and a tile with nothing is plain), then
@@ -24,8 +25,8 @@ import { INVOICE_PILL, INVOICE_STATUSES, dayWords, invoiceTotals, money, sortInv
 // buttons and Open as an icon, and the invoice chip opens the invoice. Remind confirms with the exact text, Collect payment opens "How is this
 // paid?"; a result is a toast. Pure props: the rows come in.
 
-const TEXT_BUTTON = "inline-flex min-h-11 items-center whitespace-nowrap rounded-sm px-2 text-sm font-medium text-primary-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:text-muted-foreground disabled:no-underline"
-const ICON_LINK = "inline-flex size-11 items-center justify-center rounded-sm text-primary-dark hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+/** a row action: a quiet text link that never wraps (Remind, Collect payment, Open invoice) */
+const ROW_ACTION = "whitespace-nowrap px-2 text-sm"
 
 const reachOf = (r: InvoiceListRow): Reach => ({ first: r.customer.split(" ")[0]!, channel: "text", phone: "(970) 555-0123", email: `${r.customer.split(" ")[0]!.toLowerCase()}@example.com` })
 const CARD: GridCardSlots = { title: "label", line: ["customerText", "jobText"], state: "status", when: ["datesText"], money: "amount", actions: "actions" }
@@ -39,22 +40,22 @@ function Actions({ row, onRemind, onCollect }: { row: InvoiceListRow; onRemind: 
     <span className="flex flex-nowrap items-center justify-end gap-0.5">
       {row.balance > 0 && (
         <>
-          <button type="button" className={TEXT_BUTTON} disabled={row.remindedToday} onClick={() => onRemind(row)}>
+          <TextLink weight="medium" className={ROW_ACTION} disabled={row.remindedToday} onClick={() => onRemind(row)}>
             {row.remindedToday ? "Reminded today" : "Remind"}
-          </button>
-          <button type="button" className={TEXT_BUTTON} onClick={() => onCollect(row)}>
+          </TextLink>
+          <TextLink weight="medium" className={ROW_ACTION} onClick={() => onCollect(row)}>
             Collect payment
-          </button>
+          </TextLink>
         </>
       )}
       {phone ? (
-        <Link href={href} className={TEXT_BUTTON}>
+        <TextLink href={href} weight="medium" className={ROW_ACTION}>
           Open invoice
-        </Link>
+        </TextLink>
       ) : (
-        <Link href={href} aria-label="Open invoice" title="Open invoice" className={ICON_LINK}>
+        <TextLink href={href} icon aria-label="Open invoice" title="Open invoice">
           <FileText className="size-4" aria-hidden />
-        </Link>
+        </TextLink>
       )}
     </span>
   )
@@ -83,7 +84,7 @@ export function InvoicesPage({ rows, initialFilters = [] }: InvoicesPageProps) {
         accessorFn: (r) => `${r.number} ${r.customer} ${r.street}`,
         header: "Invoice",
         meta: { bare: true, csv: (r) => (r as InvoiceListRow).number },
-        cell: ({ row: { original: r } }) => <InvoiceChip table id={r.id} number={r.number} customer={r.customer} status={INVOICE_PILL[r.status].pill} statusLabel={INVOICE_PILL[r.status].label} total={money(r.amount)} balance={money(r.balance)} due={dayWords(r.dueOn)} />,
+        cell: ({ row: { original: r } }) => <InvoiceChip table id={r.id} number={r.number} customer={r.customer} status={INVOICE_PILL[r.status].pill} statusLabel={INVOICE_PILL[r.status].label} total={money(r.amount)} balance={money(r.balance)} due={shortDate(r.dueOn)} />,
       },
       { id: "label", accessorFn: (r) => r.number, header: "Invoice number" },
       { id: "jobText", accessorFn: (r) => r.jobName, header: "Job name" },
@@ -91,8 +92,8 @@ export function InvoicesPage({ rows, initialFilters = [] }: InvoicesPageProps) {
       { id: "customer", accessorFn: (r) => r.customer, header: "Customer", cell: ({ row: { original: r } }) => <CustomerChip table doNotService={r.doNotService} id={r.customerId} name={r.customer} address={r.street} unpaid={money(r.balance)} /> },
       { id: "jobName", accessorFn: (r) => r.jobName, header: "Job", cell: ({ row: { original: r } }) => <JobChip table id={r.jobId} name={r.jobName} customer={r.customer} status="done" total={money(r.amount)} /> },
       { id: "amount", accessorFn: (r) => r.amount, header: "Amount", meta: { align: "right", csv: (r) => String((r as InvoiceListRow).amount) }, cell: ({ row: { original: r } }) => money(r.amount) },
-      { id: "datesText", accessorFn: (r) => `Sent ${dayWords(r.sentOn)}, due ${dayWords(r.dueOn)}`, header: "Sent and due" },
-      { id: "due", accessorFn: (r) => r.dueOn, header: "Due", cell: ({ row: { original: r } }) => dayWords(r.dueOn) },
+      { id: "datesText", accessorFn: (r) => `Sent ${shortDate(r.sentOn)}, due ${shortDate(r.dueOn)}`, header: "Sent and due" },
+      { id: "due", accessorFn: (r) => r.dueOn, header: "Due", cell: ({ row: { original: r } }) => shortDate(r.dueOn) },
       { id: "status", accessorFn: (r) => r.status, header: "Status", meta: { csv: (r) => INVOICE_PILL[(r as InvoiceListRow).status].label }, cell: ({ row: { original: r } }) => <StatusPill status={INVOICE_PILL[r.status].pill} label={INVOICE_PILL[r.status].label} /> },
       { id: "who", accessorFn: (r) => r.who, header: "Who" },
       {
@@ -146,7 +147,7 @@ export function InvoicesPage({ rows, initialFilters = [] }: InvoicesPageProps) {
         emptyTitle="No invoices yet"
         emptyLine="An invoice shows here when a done job is sent to be paid."
       />
-      {remind && <ReminderDialog who={reachOf(remind)} invoice={{ number: remind.number, amount: money(remind.amount), service: remind.jobName.toLowerCase(), dueOn: dayWords(remind.dueOn), pastDue: remind.status === "past-due" }} onClose={() => setRemind(null)} onSend={() => toast(`Reminder texted to ${remind.customer.split(" ")[0]}`)} />}
+      {remind && <ReminderDialog who={reachOf(remind)} invoice={{ number: remind.number, amount: money(remind.amount), service: remind.jobName.toLowerCase(), dueOn: shortDate(remind.dueOn), pastDue: remind.status === "past-due" }} onClose={() => setRemind(null)} onSend={() => toast(`Reminder texted to ${remind.customer.split(" ")[0]}`)} />}
       {collect && <CollectDialog who={reachOf(collect)} amount={collect.balance} card={{ brand: "Visa", last4: "4242" }} invoice={{ number: collect.number, jobName: collect.jobName, amount: money(collect.balance) }} onClose={() => setCollect(null)} />}
     </div>
   )

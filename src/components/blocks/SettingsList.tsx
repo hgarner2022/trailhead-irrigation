@@ -47,7 +47,7 @@ export function SettingsList({ title, description, action, rows, empty, changes,
           <SectionHeading level={2} id="settings-list-title">
             {title}
           </SectionHeading>
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+          {description && <p className="type-admin-meta text-muted-foreground">{description}</p>}
         </div>
         {action}
       </div>
@@ -62,7 +62,7 @@ export function SettingsList({ title, description, action, rows, empty, changes,
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <SectionHeading level={3}>{row.title}</SectionHeading>
-                  {row.subtitle && <p className="text-sm text-muted-foreground">{row.subtitle}</p>}
+                  {row.subtitle && <p className="type-admin-meta text-muted-foreground">{row.subtitle}</p>}
                 </div>
                 {row.aside && <div className="flex shrink-0 items-center gap-2">{row.aside}</div>}
               </div>

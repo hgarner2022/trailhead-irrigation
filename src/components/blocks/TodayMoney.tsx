@@ -33,7 +33,7 @@ export function TodayMoney({ figures, scheduleHref, className }: TodayMoneyProps
           <StatTile key={figure.label} label={figure.label} value={figure.value} />
         ))}
       </div>
-      <Button asChild variant="outline" className="h-11 w-full lg:h-auto lg:w-auto lg:self-stretch lg:px-6">
+      <Button size="touch" asChild variant="outline" className="w-full lg:h-auto lg:w-auto lg:self-stretch lg:px-6">
         <Link href={scheduleHref}>
           <CalendarDays className="size-4" aria-hidden />
           View schedule

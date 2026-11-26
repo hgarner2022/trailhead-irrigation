@@ -22,6 +22,7 @@ import { FromQuoteCard, LinesCard, QuoteBilling, jobBand } from "./ApprovedJobPa
 import { untoldChange, type PriceChange } from "./price-change"
 import { jobStageOf, money, QUOTES_NOW, STAGE_PILL, VIA_WORDS } from "./quote-model"
 import { useQuoteWorld, type QuoteStore } from "./quote-store"
+import { Notice } from "@/components/blocks/Notice"
 
 // The page of a job made from an approved quote (Hannah, Nov 22 2026: a job is created only when the quote is approved, so it has no quote state of its own: no Needs a quote, no Quote sent, no
 // quote editor). It is ready to schedule with no day, says which quote it came from with that quote's chip, and holds the approved lines, copied once from the frozen quote. A price change after
@@ -71,7 +72,7 @@ export function ApprovedJobPage({ store, jobId, now = QUOTES_NOW, photos, initia
         title={job.customer}
         subtitle={`${job.service} · From quote ${job.quoteId}`}
         badges={<StatusPill status={pill.status} label={pill.label} size="lg" />}
-        notice={stage === "canceled" ? <p role="status" className="rounded-lg border border-border bg-card px-5 py-3 text-sm font-medium shadow-sm">This job is canceled.</p> : undefined}
+        notice={stage === "canceled" ? <Notice tone="page" role="status">This job is canceled.</Notice> : undefined}
         band={<SummaryBand items={jobBand(job)} />}
         asideLabel="About this job"
         actions={actions}

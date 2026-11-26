@@ -103,7 +103,7 @@ function CreateKey({ onCreate }: { onCreate: OnCreateKey }) {
           {copied ? "Copied" : ""}
         </p>
         <div className="flex justify-end">
-          <Button className="min-h-11" onClick={reset}>
+          <Button size="touch" onClick={reset}>
             Done
           </Button>
         </div>

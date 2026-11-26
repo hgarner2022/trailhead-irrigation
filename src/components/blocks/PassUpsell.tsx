@@ -37,7 +37,7 @@ export function PassUpsell({ on, onChange, prices, className }: PassUpsellProps)
             <Tick draw className="size-5 text-current" />
             {UPSELL_ADDED}
           </p>
-          <Button type="button" variant="ghost" onClick={() => onChange(false)} className="h-auto min-h-11 px-2 text-base font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent">
+          <Button size="touch" type="button" variant="ghost" onClick={() => onChange(false)} className="px-2 text-base font-semibold text-primary-deep underline underline-offset-2 hover:bg-transparent">
             {UPSELL_REMOVE}
           </Button>
         </div>
@@ -55,7 +55,7 @@ export function PassUpsell({ on, onChange, prices, className }: PassUpsellProps)
             ))}
           </ul>
           <PriceLines className="mt-4" lines={prices.map((p) => ({ name: p.name, value: p.price }))} />
-          <Button type="button" variant="outline" size="lg" onClick={() => onChange(true)} className="mt-4 min-h-12 w-full text-base sm:w-auto">
+          <Button type="button" variant="outline" size="lg" onClick={() => onChange(true)} className="mt-4 w-full text-base sm:w-auto">
             {UPSELL_ADD}
           </Button>
         </>

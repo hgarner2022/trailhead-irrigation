@@ -12,6 +12,7 @@ import { DataGridBulkBar, DataGridToolbar, type GridBulkAction, type GridFilter,
 import { DataGridCards, type GridCardSlots } from "./DataGridCard"
 import { useMedia } from "./use-media"
 import { SELECT_COLUMN, columnId, gridFeatures, useScrollCue, withFilterFns, type GridColumnDef } from "./data-grid-table"
+import { TextLink } from "./TextLink"
 
 // The one table of the app (docs/DESIGN.md, Tables): shadcn's TanStack data
 // table recipe on TanStack Table v9, with filter chips, a Columns menu that
@@ -101,7 +102,6 @@ function SortIcon({ sorted }: { sorted: false | "asc" | "desc" }) {
   return <Icon className={cn("size-3.5 shrink-0", sorted ? "text-primary-dark" : "text-muted-foreground")} aria-hidden />
 }
 
-const LINK = "cursor-pointer font-medium text-primary-dark underline-offset-4 hover:underline focus-visible:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring"
 
 export function DataGrid<T extends RowData>({
   columns,
@@ -190,7 +190,7 @@ export function DataGrid<T extends RowData>({
                     <TableHead
                       key={header.id}
                       aria-sort={column.getCanSort() ? (sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none") : undefined}
-                      className={cn(freeze(column.id), right && "text-right", column.columnDef.meta?.width, inCard && cn("h-9 text-xs text-muted-foreground", CARD_CELL))}
+                      className={cn(inCard ? "type-admin-meta h-9 text-muted-foreground" : "type-admin-label", freeze(column.id), right && "text-right", column.columnDef.meta?.width, inCard && CARD_CELL)}
                     >
                       {header.isPlaceholder ? null : column.getCanSort() ? (
                         <button
@@ -227,14 +227,14 @@ export function DataGrid<T extends RowData>({
                 <TableCell colSpan={visibleCount} className="py-12 text-center whitespace-normal">
                   {data.length > 0 ? (
                     <>
-                      <p className="font-display text-xl text-navy">{noMatchTitle}</p>
-                      <Button variant="outline" className="mt-4 min-h-11" onClick={() => table.setColumnFilters([])}>
+                      <p className="type-admin-card text-navy">{noMatchTitle}</p>
+                      <Button size="touch" variant="outline" className="mt-4" onClick={() => table.setColumnFilters([])}>
                         Clear filters
                       </Button>
                     </>
                   ) : (
                     <>
-                      <p className="font-display text-xl text-navy">{emptyTitle}</p>
+                      <p className="type-admin-card text-navy">{emptyTitle}</p>
                       <p className="mt-1 text-sm text-muted-foreground">{emptyLine}</p>
                     </>
                   )}
@@ -252,13 +252,13 @@ export function DataGrid<T extends RowData>({
                         {column.id !== nameId || column.columnDef.meta?.bare ? (
                           <table.FlexRender cell={cell} />
                         ) : href ? (
-                          <a href={href} className={LINK}>
+                          <TextLink href={href} native touch="inline" underline="hover" weight="medium">
                             <table.FlexRender cell={cell} />
-                          </a>
+                          </TextLink>
                         ) : (
-                          <button type="button" onClick={() => onOpen?.(row.original)} className={LINK}>
+                          <TextLink touch="inline" underline="hover" weight="medium" onClick={() => onOpen?.(row.original)}>
                             <table.FlexRender cell={cell} />
-                          </button>
+                          </TextLink>
                         )}
                       </TableCell>
                     )

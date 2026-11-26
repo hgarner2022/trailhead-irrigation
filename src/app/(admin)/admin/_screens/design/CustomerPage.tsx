@@ -31,6 +31,7 @@ import { CustomerQuotes } from "./CustomerQuotes"
 import { MessageDialog } from "./MessageDialog"
 import { ReminderDialog } from "./ReminderDialog"
 import { NOW, noteOk } from "./job-fixtures"
+import { TextLink } from "@/components/blocks/TextLink"
 
 // The customer page (Hannah: "update the customer layout to look like this"), on the page frame of the job page and the rules of
 // docs/plans/2026-11-19-admin-page-layout-research.md and her rules of Nov 19 2026. Header: the name, the badges, and the actions at the top
@@ -40,7 +41,6 @@ import { NOW, noteOk } from "./job-fixtures"
 // to reach them), Property, Consent. Every record named is a chip. Every action that reaches the customer or their money confirms in a dialog
 // with the effect and the customer's channel; a result is a toast, never a message in a section. Pure props, nothing wired.
 
-const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 export type CustomerDialog = "archive" | "message" | "collect" | "card-link" | "refund" | "remind" | "edit" | "merge" | "delete" | null
 
 const scrollTo = (id: string) => () => {
@@ -162,7 +162,7 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
           archivedAt ? (
             <p data-slot="archived-banner" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-5 py-3 text-sm shadow-sm">
               <span>Archived Nov 20. New work brings them back.</span>
-              <Button type="button" variant="outline" className="min-h-11" onClick={() => (setArchivedAt(null), toast(`${d.firstName} is back on the Customers list`))}>
+              <Button size="touch" type="button" variant="outline" onClick={() => (setArchivedAt(null), toast(`${d.firstName} is back on the Customers list`))}>
                 Unarchive
               </Button>
             </p>
@@ -173,16 +173,16 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
         actions={<RecordFooter primary={{ label: "New job", href: `/admin/jobs?new=1&customer=${d.id}` }} secondary={secondary} more={more} destructive={d.untouched ? act("Delete customer", open("delete")) : undefined} destructiveInMenu />}
         aside={
           <>
-            <SectionCard title="Contact" id="contact-h" action={<button type="button" onClick={open("edit")} className={`min-h-11 ${LINK}`}>Edit</button>}>
+            <SectionCard title="Contact" id="contact-h" action={<TextLink onClick={open("edit")}>Edit</TextLink>}>
               <RecordFacts
                 divided
                 rows={[
-                  ["Phone", <a key="p" href={d.contact.phone.href} className={`${LINK} inline-flex min-h-11 items-center`}>{d.contact.phone.text}</a>],
-                  ["Email", <a key="e" href={`mailto:${d.contact.email}`} className={`${LINK} inline-flex min-h-11 items-center break-all`}>{d.contact.email}</a>],
+                  ["Phone", <TextLink key="p" href={d.contact.phone.href}>{d.contact.phone.text}</TextLink>],
+                  ["Email", <TextLink key="e" href={`mailto:${d.contact.email}`} className="break-all">{d.contact.email}</TextLink>],
                 ]}
               />
             </SectionCard>
-            <SectionCard title="Property" id="property-h" action={<button type="button" onClick={open("edit")} className={`min-h-11 ${LINK}`}>Edit</button>}>
+            <SectionCard title="Property" id="property-h" action={<TextLink onClick={open("edit")}>Edit</TextLink>}>
               <RecordFacts divided rows={[["Address", <AddressChip key="a" customerId={d.id} street={d.address[0]} />], ...d.property]} />
             </SectionCard>
             <ConsentCard consent={d.consent} firstName={d.firstName} initial={initialConsent} />
@@ -193,7 +193,7 @@ export function CustomerPage({ customer: d, initialDialog = null, initialConsent
           {d.jobs.length ? (
             <JobsTable rows={d.jobs} customer={d.name} />
           ) : (
-            <EmptyState title="No jobs yet" line="Start with a repair, a spring turn-on or a Season Pass. The job and its days show here." action={<Button asChild variant="outline" className="min-h-11"><Link href={`/admin/jobs?new=1&customer=${d.id}`}>New job</Link></Button>} />
+            <EmptyState title="No jobs yet" line="Start with a repair, a spring turn-on or a Season Pass. The job and its days show here." action={<Button size="touch" asChild variant="outline"><Link href={`/admin/jobs?new=1&customer=${d.id}`}>New job</Link></Button>} />
           )}
         </SectionCard>
         <CustomerQuotes quotes={d.quotes ?? []} customerId={d.id} />

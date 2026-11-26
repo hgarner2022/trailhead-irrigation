@@ -8,10 +8,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { formatPhone } from "@/lib/format/contact"
 import { visitPaid } from "@/lib/admin/jobs"
 import type { AdminData, Client, Pass, Visit } from "@/lib/admin/types"
-import { FIELD } from "./CustomerPicker"
 import type { VisitActions } from "./visit-actions-types"
 import { BLOCKED_LINE, pausedLine, useNumberBlocked, useTextsPaused } from "./texts-paused"
 import { dayLabel, dayOfVisit, kindLabel, priceWords } from "./visit-panel-model"
+import { SelectField } from "@/components/blocks/SelectField"
 
 // Edit (minutes, who, access note: notes are added in the Notes and history block, never rewritten here), Send a text and Cancel visit:
 // the visit panel's quieter actions, each a footer button that opens ONE `ConfirmDialog` (nothing grows in the panel's body). Edit and
@@ -42,23 +42,23 @@ export function EditDialog({ visit, people, actions, open, onOpenChange }: { vis
     <ConfirmDialog slot="visit-edit" title="Edit" message="Minutes, who and the access note. Notes are added in Notes and history." confirmLabel="Save" open={open} onOpenChange={onOpenChange} onConfirm={save}>
       <div className="grid grid-cols-2 gap-3">
         <FormRow label="Minutes">
-          <select value={minutes} onChange={(e) => setMinutes(e.target.value)} className={FIELD}>
+          <SelectField value={minutes} onChange={(e) => setMinutes(e.target.value)}>
             {Array.from({ length: 32 }, (_, i) => (i + 1) * 15).map((m) => (
               <option key={m} value={m}>
                 {m}
               </option>
             ))}
-          </select>
+          </SelectField>
         </FormRow>
         <FormRow label="Who">
-          <select value={personId} onChange={(e) => setPersonId(e.target.value)} className={FIELD} disabled={!visit.scheduledOn}>
+          <SelectField value={personId} onChange={(e) => setPersonId(e.target.value)} disabled={!visit.scheduledOn}>
             {!visit.personId && <option value="">No one yet</option>}
             {people.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
             ))}
-          </select>
+          </SelectField>
         </FormRow>
       </div>
       <FormRow label="Access note">

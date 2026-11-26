@@ -83,7 +83,7 @@ export function RescheduleSheet({ service, address, currentDay, days, textHref, 
             </DialogHeader>
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline" className="min-h-11">Done</Button>
+                <Button size="touch" variant="outline">Done</Button>
               </DialogClose>
             </DialogFooter>
           </div>
@@ -128,9 +128,9 @@ export function RescheduleSheet({ service, address, currentDay, days, textHref, 
                 </div>
                 <DialogFooter className="gap-2 border-t border-border px-6 py-4">
                   <DialogClose asChild>
-                    <Button variant="outline" className="min-h-11">{moving && currentDay ? `Keep ${longDay(currentDay)}` : "Not now"}</Button>
+                    <Button size="touch" variant="outline">{moving && currentDay ? `Keep ${longDay(currentDay)}` : "Not now"}</Button>
                   </DialogClose>
-                  <Button onClick={submit} disabled={busy || (timed ? !slot.start : !chosen)} className="min-h-11">
+                  <Button size="touch" onClick={submit} disabled={busy || (timed ? !slot.start : !chosen)}>
                     {timed ? (slot.day && slot.start ? `${moving ? "Move it to" : "Book"} ${dayAtTime(slot.day, slot.start)}` : "Tap a time") : chosen ? (moving ? `Move it to ${longDayShort(chosen)}` : `Book ${longDayShort(chosen)}`) : "Pick a day"}
                   </Button>
                 </DialogFooter>

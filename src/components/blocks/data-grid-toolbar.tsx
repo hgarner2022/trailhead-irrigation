@@ -140,7 +140,7 @@ function ColumnsMenu<T extends RowData>({ table, nameId, disabled }: Pick<Toolba
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 text-sm" disabled={disabled}>
+        <Button variant="outline" size="compact" disabled={disabled}>
           <SlidersHorizontal className="size-3.5" aria-hidden />
           Columns
         </Button>
@@ -191,7 +191,7 @@ function ExportButton<T extends RowData>({ table, exportName, disabled }: Pick<T
     downloadCsv(exportName, rowsToCsv(header, records))
   }
   return (
-    <Button variant="outline" size="sm" className="h-9 text-sm" disabled={disabled || rows.length === 0} onClick={save}>
+    <Button variant="outline" size="compact" disabled={disabled || rows.length === 0} onClick={save}>
       <Download className="size-3.5" aria-hidden />
       Export {rows.length} {rows.length === 1 ? "row" : "rows"}
     </Button>
@@ -209,7 +209,7 @@ export function DataGridToolbar<T extends RowData>({ table, nameId, search, filt
         <FilterChip key={filter.column} table={table} filter={filter} disabled={disabled} />
       ))}
       {anyActive && (
-        <Button variant="ghost" size="sm" className="h-9" onClick={clear} disabled={disabled}>
+        <Button variant="ghost" size="compact" onClick={clear} disabled={disabled}>
           Clear filters
         </Button>
       )}

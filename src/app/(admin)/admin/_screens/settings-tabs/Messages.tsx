@@ -13,6 +13,7 @@ import type { AdminData, MessageTemplate } from "@/lib/admin/types"
 import { channelWord, editableRows, lockedWords, messageName, previewMessage, setMessage } from "../settings-messages"
 import type { SettingsState } from "../settings-model"
 import type { Apply } from "./fields"
+import { Notice } from "@/components/blocks/Notice"
 
 // The messages the office may edit: the day-of voice (day set, day moved, two weeks out, day before, on the way) and the invoice
 // reminder text, one SettingsList row each. Receipts, invoices, card, cancel, purchase and renewal carry money and consent wording and
@@ -25,7 +26,7 @@ function Preview({ message, data }: { message: MessageTemplate; data: AdminData 
   const preview = previewMessage(message, data)
   return (
     <>
-      <Button variant="outline" size="sm" aria-label={`Preview ${messageName(message)}`} className="min-h-11 md:min-h-0" onClick={() => setOpen(true)}>
+      <Button variant="outline" size="adaptive-sm" aria-label={`Preview ${messageName(message)}`} onClick={() => setOpen(true)}>
         Preview
       </Button>
       <ConfirmDialog
@@ -39,7 +40,7 @@ function Preview({ message, data }: { message: MessageTemplate; data: AdminData 
         {preview.subject && <p className="text-sm font-medium text-foreground">{preview.subject}</p>}
         <p className="whitespace-pre-line break-words rounded-lg bg-stone p-4 text-sm text-foreground">{preview.text}</p>
         <div className="flex justify-end">
-          <Button variant="outline" className="min-h-11" onClick={() => setOpen(false)}>
+          <Button size="touch" variant="outline" onClick={() => setOpen(false)}>
             Close
           </Button>
         </div>
@@ -79,9 +80,9 @@ function Words({ message, apply }: { message: MessageTemplate; apply: Apply }) {
 /** Shown at the top while `TEXTS_PAUSED` is on: the words the office edits here still go, but by email. */
 export function TextsPausedBanner() {
   return (
-    <p role="status" data-slot="texts-paused-banner" className="rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-foreground">
+    <Notice tone="warning" role="status" data-slot="texts-paused-banner" className="p-4">
       {TEXTS_PAUSED_ROW}
-    </p>
+    </Notice>
   )
 }
 

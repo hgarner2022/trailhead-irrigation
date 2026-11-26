@@ -61,7 +61,7 @@ export function ConfirmDialog({ title, message, blocked, children, confirmLabel,
     <Dialog open={open} onOpenChange={(next) => (setProblem(""), onOpenChange(next))}>
       <DialogContent showCloseButton={false} data-slot={slot ?? "confirm-dialog"} className={cn("flex max-h-[92svh] flex-col overflow-hidden", size === "md" ? "sm:max-w-md" : "sm:max-w-[400px]")}>
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl font-semibold text-navy">{title}</DialogTitle>
+          <DialogTitle className="type-heading! text-navy">{title}</DialogTitle>
           {text ? <DialogDescription>{text}</DialogDescription> : <DialogDescription className="sr-only">{title}</DialogDescription>}
         </DialogHeader>
         {/* a long body (a month calendar) scrolls here, so the title and the buttons stay in view on a phone */}
@@ -71,12 +71,12 @@ export function ConfirmDialog({ title, message, blocked, children, confirmLabel,
         </p>
         {actions === "confirm" && (
           <DialogFooter>
-            <Button variant="outline" className="min-h-11" onClick={() => onOpenChange(false)}>
+            <Button size="touch" variant="outline" onClick={() => onOpenChange(false)}>
               {dismissLabel ?? (destructive || blocked ? "Keep it" : "Cancel")}
             </Button>
             {!blocked && renderConfirm && renderConfirm({ confirm, pending: pending || Boolean(confirmDisabled) })}
             {!blocked && !renderConfirm && confirmLabel && (
-              <Button className={cn("min-h-11", destructive && "bg-destructive text-white hover:bg-destructive/90")} onClick={() => confirm()} disabled={pending || confirmDisabled}>
+              <Button size="touch" variant={destructive ? "destructive" : "default"} onClick={() => confirm()} disabled={pending || confirmDisabled}>
                 {confirmLabel}
               </Button>
             )}

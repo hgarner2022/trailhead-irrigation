@@ -104,10 +104,10 @@ export function PropertyFields({ propertyId, yard, actions, onDone, onCancel }: 
       </div>
       {area("notes", "Property notes", "Anything about the yard that is always true")}
       <div className="flex flex-wrap gap-3">
-        <Button type="submit" variant="outline" className="min-h-11" disabled={pending}>
+        <Button size="touch" type="submit" variant="outline" disabled={pending}>
           Save
         </Button>
-        <Button type="button" variant="ghost" className="min-h-11" disabled={pending} onClick={onCancel}>
+        <Button size="touch" type="button" variant="ghost" disabled={pending} onClick={onCancel}>
           Cancel
         </Button>
       </div>
@@ -128,7 +128,7 @@ export function PropertyBlock({ propertyId, yard, readOnly = false, actions }: {
         id="customer-property"
         action={
           !readOnly && !editing ? (
-            <Button type="button" variant="outline" className="min-h-11" onClick={() => setEditing(true)}>
+            <Button size="touch" type="button" variant="outline" onClick={() => setEditing(true)}>
               Edit
             </Button>
           ) : undefined

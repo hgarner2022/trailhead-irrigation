@@ -41,6 +41,7 @@ import { walkRoutePeople } from "./visits-data"
 import { HOME_NOW, homeData } from "./walk-home"
 import { WALK_SCHEDULE_WORLD, walkSchedule } from "./walk-schedule"
 import { useWorldState } from "../schedule-world-store"
+import { money } from "@/lib/admin/format"
 
 // The screens of the walkthrough, each one of the design pages over the walkthrough's data (docs/plans/2026-11-19-prototype-walkthrough-spec.md,
 // section 2). Records open through the links the pages already draw; the two grids pass the router to their `onOpen`. No page component is edited.
@@ -52,14 +53,13 @@ const jobsColumns: GridColumnDef<GridJob>[] = jobGridColumns.map((c) =>
 // Home, Reports and Settings are the live screens over the repo's own fixture (the catalogue stories use the same); they are not re-keyed to this world's customers. The Schedule is the Schedule prototype over this world's own calendar (`WalkSchedule`).
 const LIVE = snapshot as AdminData
 const LIVE_TODAY = "2026-11-12T19:56:30Z"
-const money = (n: number) => `$${n.toLocaleString("en-US")}`
 
 /** The Jobs grid of the design with New job wired: it opens the sheet, and Add job opens the flow at Schedule. */
 export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen: (id: string) => void; onNew: () => void }) {
   const out = rows.filter((r) => r.billingState === "bill-sent" || r.billingState === "overdue").length
   return (
     <div data-slot="jobs-grid-design">
-      <PageHeader title="Jobs" context={`${rows.length} jobs. ${out} invoices out.`} primary={<Button type="button" className="min-h-11" onClick={onNew}>New job</Button>} />
+      <PageHeader title="Jobs" context={`${rows.length} jobs. ${out} invoices out.`} primary={<Button size="touch" type="button" onClick={onNew}>New job</Button>} />
       <DataGrid
         columns={jobsColumns}
         card={jobGridCard}
@@ -110,7 +110,7 @@ const customerColumns: GridColumnDef<ListRow>[] = [
   { id: "next", accessorKey: "next", header: "Next visit" },
   { id: "unpaid", accessorKey: "unpaid", header: "Unpaid", cell: ({ row }) => <MoneyCell end text={row.original.unpaid ? money(row.original.unpaid) : null} />, meta: { align: "right", csv: (r) => String((r as CustomerListRow).unpaid) } },
   { id: "pass", accessorKey: "pass", header: "Season Pass", cell: ({ row }) => (row.original.pass ? <StatusPill status="active" label={row.original.pass} /> : null) },
-  { id: "newjob", header: () => <span className="sr-only">Actions</span>, enableSorting: false, cell: ({ row }) => <Button asChild variant="outline" size="sm" className="min-h-8"><a href={`/admin/jobs?new=1&customer=${row.original.id}`} aria-label={`New job for ${row.original.name}`}>New job</a></Button> },
+  { id: "newjob", header: () => <span className="sr-only">Actions</span>, enableSorting: false, cell: ({ row }) => <Button asChild variant="outline" size="sm"><a href={`/admin/jobs?new=1&customer=${row.original.id}`} aria-label={`New job for ${row.original.name}`}>New job</a></Button> },
 ]
 const customerCard: GridCardSlots = { title: "name", line: ["street"], state: "status", when: ["next"], money: "unpaid" }
 
@@ -124,7 +124,7 @@ export function CustomersList({ onOpen }: { onOpen: (id: string) => void }) {
   const data = useMemo<ListRow[]>(() => customerRows().map((r) => { const p = customerPage(r.id); const made = allRows().find((j) => j.id.startsWith("new-") && customerIdOf(j.name) === r.id); return { ...r, next: made?.next ?? r.next, status: p?.status ?? "active", dns: p?.doNotService } }), [])
   return (
     <div data-slot="walkthrough-customers">
-      <PageHeader title="Customers" context={`${data.filter((r) => showArchived || r.status !== "archived").length} customers`} actions={<Button type="button" variant={showArchived ? "default" : "outline"} aria-pressed={showArchived} className="min-h-11" onClick={() => setShowArchived((v) => !v)}>Show archived</Button>} />
+      <PageHeader title="Customers" context={`${data.filter((r) => showArchived || r.status !== "archived").length} customers`} actions={<Button size="touch" type="button" variant={showArchived ? "default" : "outline"} aria-pressed={showArchived} onClick={() => setShowArchived((v) => !v)}>Show archived</Button>} />
       <DataGrid
         key={String(showArchived)}
         columns={customerColumns}

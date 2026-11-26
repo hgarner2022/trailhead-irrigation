@@ -124,7 +124,7 @@ function Strip({ stage, onReset, embedded }: { stage: Stage; onReset: () => void
         ))}
         {stage === "canceled" && <li className="rounded-full bg-stone px-3 py-1 font-medium">Canceled</li>}
       </ol>
-      {!embedded && <Button type="button" variant="outline" className="min-h-11" onClick={onReset}>Start over</Button>}
+      {!embedded && <Button size="touch" type="button" variant="outline" onClick={onReset}>Start over</Button>}
     </nav>
   )
 }

@@ -73,7 +73,7 @@ export function DataGridCards<T extends RowData>({ table, rows, slots, nameId, l
         {empty.hasData ? (
           <>
             <p className="font-display text-xl text-navy">{empty.noMatchTitle}</p>
-            <Button variant="outline" className="mt-4 min-h-11" onClick={() => table.setColumnFilters([])}>
+            <Button size="touch" variant="outline" className="mt-4" onClick={() => table.setColumnFilters([])}>
               Clear filters
             </Button>
           </>

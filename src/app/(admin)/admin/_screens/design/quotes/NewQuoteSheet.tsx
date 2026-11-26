@@ -46,17 +46,16 @@ export function NewQuoteSheet({ data, open, onOpenChange, customerId, initial, o
       description="A customer and what it is for."
       footer={
         <div className="flex flex-col gap-2">
-          <Button
+          <Button size="touch"
             type="button"
-            className="min-h-11 w-full sm:w-fit"
+            className="w-full sm:w-fit"
             disabled={Boolean(missing)}
             aria-describedby={missing ? "new-quote-missing" : undefined}
             onClick={() => {
               if (!service) return
               onCreate({ choice, service: { name: service.name, ...(service.price !== undefined ? { price: service.price } : {}) } })
               change(false)
-            }}
-          >
+            }}>
             New quote
           </Button>
           {missing && (

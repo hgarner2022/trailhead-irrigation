@@ -36,7 +36,7 @@ function Strip({ stage, onReset }: { stage: TripState; onReset: () => void }) {
         ))}
         <li className={stage === "charged" ? "rounded-full bg-navy px-3 py-1 font-medium text-white" : "rounded-full px-3 py-1 text-muted-foreground"}>Trip 2 ahead</li>
       </ol>
-      <Button type="button" variant="outline" className="min-h-11" onClick={onReset}>Start over</Button>
+      <Button size="touch" type="button" variant="outline" onClick={onReset}>Start over</Button>
     </nav>
   )
 }

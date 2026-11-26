@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { dueDay } from "@/lib/portal/words"
+import { Notice } from "./Notice"
 
 // The invoice an account is waiting to be paid, as one line and one button (docs/plans/2026-11-18-customer-portal-design.md, Home, item 1):
 // "Repair: $115 unpaid, due Dec 1" with Pay now, or, once the due day has passed, "Repair: $115 unpaid, past due since Dec 1". The button is
@@ -21,16 +22,20 @@ export interface InvoiceBannerProps {
 export function InvoiceBanner({ jobName, total, dueOn, status, payHref, className }: InvoiceBannerProps) {
   const late = status === "overdue"
   return (
-    <section
+    <Notice
+      as="section"
+      tone={late ? "error" : "info"}
       data-slot="invoice-banner"
       data-status={status}
       aria-label={late ? "Past due invoice" : "Invoice sent"}
-      className={cn("flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border px-4 py-3", late ? "border-destructive/30 bg-destructive/10" : "border-primary/30 bg-primary/10", className)}
+      className={cn("text-base font-semibold text-foreground", className)}
+      action={
+        <Button asChild variant="outline" className="bg-background">
+          <a href={payHref}>Pay now</a>
+        </Button>
+      }
     >
-      <p className="min-w-0 text-base font-semibold text-foreground">{late ? `${jobName}: $${total} unpaid, past due since ${dueDay(dueOn)}` : `${jobName}: $${total} unpaid, due ${dueDay(dueOn)}`}</p>
-      <Button asChild variant="outline" className="bg-background">
-        <a href={payHref}>Pay now</a>
-      </Button>
-    </section>
+      {late ? `${jobName}: $${total} unpaid, past due since ${dueDay(dueOn)}` : `${jobName}: $${total} unpaid, due ${dueDay(dueOn)}`}
+    </Notice>
   )
 }

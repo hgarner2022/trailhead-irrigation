@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { DIALOG_DESTRUCTIVE, DIALOG_TITLE } from "./dialog-styles"
+import { DIALOG_TITLE } from "./dialog-styles"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { ADD_IT_BACK, CANCEL_CHANGED_MIND, CANCELED_DONE } from "@/lib/portal/words"
@@ -73,7 +73,7 @@ export function CancelVisitSheet({ service, dayWords, consequence, textHref, onC
             </DialogHeader>
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline" className="min-h-11">Done</Button>
+                <Button size="touch" variant="outline">Done</Button>
               </DialogClose>
             </DialogFooter>
           </>
@@ -95,9 +95,9 @@ export function CancelVisitSheet({ service, dayWords, consequence, textHref, onC
             )}
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline" className="min-h-11">Keep my visit</Button>
+                <Button size="touch" variant="outline">Keep my visit</Button>
               </DialogClose>
-              <Button onClick={confirm} disabled={busy} className={DIALOG_DESTRUCTIVE}>
+              <Button onClick={confirm} disabled={busy} variant="destructive" size="touch">
                 Cancel visit
               </Button>
             </DialogFooter>

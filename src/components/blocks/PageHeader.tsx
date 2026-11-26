@@ -25,9 +25,9 @@ export interface PageHeaderProps {
 function Title({ title, context }: Pick<PageHeaderProps, "title" | "context">) {
   return (
     <>
-      <h1 className="shrink-0 font-display text-[1.75rem] font-semibold leading-none text-navy">{title}</h1>
+      <h1 className="type-admin-title shrink-0 text-navy">{title}</h1>
       {context && (
-        <p data-slot="page-context" className="min-w-0 truncate text-sm text-muted-foreground">
+        <p data-slot="page-context" className="type-admin-meta min-w-0 truncate text-muted-foreground">
           {context}
         </p>
       )}
@@ -58,9 +58,9 @@ export function PageHeader({ title, context, actions, primary, className }: Page
   return (
     <header data-slot="page-header" className={cn("mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3", className)}>
       <div className="min-w-0">
-        <h1 className="font-display text-[1.75rem] font-semibold leading-none text-navy">{title}</h1>
+        <h1 className="type-admin-title text-navy">{title}</h1>
         {context && (
-          <p data-slot="page-context" className="mt-2 text-sm text-muted-foreground">
+          <p data-slot="page-context" className="type-admin-meta mt-2 text-muted-foreground">
             {context}
           </p>
         )}

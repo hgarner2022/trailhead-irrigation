@@ -6,6 +6,7 @@ import type { TimelineLine } from "@/lib/events/timeline"
 import type { Reach } from "./confirm-copy"
 import type { CustomerPaymentRow } from "./customer-fixtures"
 import { depositInvoice, partRefundedInvoice } from "./invoice-money-fixtures"
+import { money, shortDate } from "@/lib/admin/format"
 
 // Design fixtures for the Invoices object (docs/plans/2026-11-18-invoice-workflow-research.md): the list and the invoice page. Today is
 // Wednesday, Nov 18, 2026. Invoice words are the glossary's: Invoice sent, Past due, Paid, Canceled. A payment on an invoice settles it, so an
@@ -47,9 +48,6 @@ export interface InvoiceListRow {
   remindedToday?: boolean
 }
 
-export const money = (n: number) => `$${n.toLocaleString("en-US")}`
-const DAY = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
-export const dayWords = (iso: string) => DAY.format(new Date(`${iso}T12:00:00Z`))
 
 const row = (id: string, n: string, customer: string, street: string, jobName: string, amount: number, sentOn: string, dueOn: string, status: InvoiceStatus, who: string, over: Partial<InvoiceListRow> = {}): InvoiceListRow => ({
   id,

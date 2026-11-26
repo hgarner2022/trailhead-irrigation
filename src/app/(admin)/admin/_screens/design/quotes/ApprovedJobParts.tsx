@@ -6,10 +6,11 @@ import type { PaymentRowData } from "@/components/blocks/BillingTables"
 import { RecordList, RecordRowEnd, RECORD_ROW } from "@/components/blocks/RecordPanel"
 import { SectionCard } from "@/components/blocks/SectionCard"
 import type { SummaryItem } from "@/components/blocks/SummaryBand"
+import { TextLink } from "@/components/blocks/TextLink"
 import { cn } from "@/lib/utils"
 import { QuoteChip } from "../RecordChips"
 import { approvedTotal, currentTotal, isApproved, untoldChange } from "./price-change"
-import { HOW_WORDS, QUIET } from "./QuoteParts"
+import { HOW_WORDS } from "./QuoteParts"
 import { dayOf, lineTotal, money, type ApprovedJob } from "./quote-model"
 
 // The cards of the page of a job made from an approved quote (ApprovedJobPage.tsx; Hannah, Nov 22 2026: the job has no quote state, it only says which quote it came from): What's
@@ -65,7 +66,7 @@ export function LinesCard({ job, onAdd, onEdit, onTell }: { job: ApprovedJob; on
   const was = approvedTotal(job)
   const untold = isApproved(job) ? untoldChange(job) : null
   return (
-    <SectionCard title="What's included" id="included-h" action={<button type="button" className={QUIET} onClick={onAdd}>Add a line</button>}>
+    <SectionCard title="What's included" id="included-h" action={<TextLink onClick={onAdd}>Add a line</TextLink>}>
       <RecordList data-slot="quote-lines">
         {job.lines.map((l) => (
           <li key={l.id} data-canceled={l.canceled ? "true" : undefined} className={cn("flex items-start", RECORD_ROW)}>
@@ -78,9 +79,9 @@ export function LinesCard({ job, onAdd, onEdit, onTell }: { job: ApprovedJob; on
               {l.canceled ? (
                 <span className="ml-3 text-sm text-muted-foreground">Canceled</span>
               ) : (
-                <button type="button" className={cn(QUIET, "ml-3 text-sm")} aria-label={`Edit ${l.name}`} onClick={() => onEdit(l.id)}>
+                <TextLink className="ml-3 text-sm" aria-label={`Edit ${l.name}`} onClick={() => onEdit(l.id)}>
                   Edit
-                </button>
+                </TextLink>
               )}
             </RecordRowEnd>
           </li>
@@ -94,9 +95,7 @@ export function LinesCard({ job, onAdd, onEdit, onTell }: { job: ApprovedJob; on
       {untold && onTell && (
         <p data-slot="untold-price" className="mt-2 flex flex-wrap items-center gap-x-3 text-sm">
           <span>{job.first} has not been told the new total, {money(untold.to)}.</span>
-          <button type="button" className={QUIET} onClick={onTell}>
-            Tell {job.first}
-          </button>
+          <TextLink onClick={onTell}>Tell {job.first}</TextLink>
         </p>
       )}
     </SectionCard>
