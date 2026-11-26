@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { useState } from "react"
 import { Calendar, MapPin, Receipt, UserRound } from "lucide-react"
 import { AsideCard } from "@/components/blocks/AsideCard"
 import { CollectPayment } from "@/components/blocks/CollectPayment"
@@ -284,6 +284,3 @@ export function Actions({ plan, facts, onDo, onMessage, intercept = [], collect,
   )
 }
 
-export function Notice({ children }: { children: ReactNode }) {
-  return <p role="status" className="rounded-lg border border-border bg-card px-5 py-3 text-sm font-medium shadow-sm">{children}</p>
-}

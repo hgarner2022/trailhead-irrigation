@@ -1,12 +1,12 @@
 "use client"
 
 import { AlertCircle, CheckCircle2, Clock, Undo2 } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { InvoiceTable, PaymentTable } from "./BillingTables"
 import { billingFigures, splitBilling, type InvoiceRowData, type PaymentRowData } from "./billing-model"
 import { RecordChip } from "./RecordChip"
 import { RecordFacts } from "./RecordPanel"
 import { SectionHeading } from "./SectionHeading"
+import { Notice, type NoticeTone } from "./Notice"
 
 // The inside of a Billing card, one body for a job page and a customer page (Hannah, Nov 20 2026: "this could be cleaned up"). Top to bottom:
 //   1. the status line, the headline: "Paid in full", "Refunded", "$145 unpaid. Invoice INV-2026-0042 sent Nov 18, due Dec 2.", "Past due since Nov 17";
@@ -24,28 +24,20 @@ export interface BillingLine {
   invoice?: { name: string; href: string }
 }
 
-const TONE = {
-  paid: "border-positive/30 bg-positive/10 text-positive-deep",
-  unpaid: "border-warning/40 bg-warning/14 text-warning-ink",
-  pastdue: "border-destructive/30 bg-destructive/10 text-destructive",
-  refunded: "border-border bg-stone text-muted-foreground",
-} as const
+const TONE: Record<BillingLine["tone"], NoticeTone> = { paid: "success", unpaid: "warning", pastdue: "error", refunded: "neutral" }
 
 export function BillingHeadline({ line }: { line: BillingLine }) {
   const Icon = { paid: CheckCircle2, unpaid: Clock, pastdue: AlertCircle, refunded: Undo2 }[line.tone]
   const text = line.text ?? ""
   const [before, after] = line.invoice ? text.split("{invoice}") : [text, ""]
   return (
-    <p data-slot="settled-line" data-tone={line.tone} className={cn("flex items-start gap-2 rounded-lg border px-3 py-2 text-sm", TONE[line.tone])}>
-      <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
-      <span>
-        <span className="font-semibold">{text ? `${line.title}.` : line.title}</span>
-        {text ? " " : ""}
-        {before}
-        {line.invoice && <RecordChip kind="invoice" name={line.invoice.name} href={line.invoice.href} className="text-sm font-medium text-current! md:min-h-8" />}
-        {after}
-      </span>
-    </p>
+    <Notice tone={TONE[line.tone]} icon={Icon} data-slot="settled-line" data-tone={line.tone}>
+      <span className="font-semibold">{text ? `${line.title}.` : line.title}</span>
+      {text ? " " : ""}
+      {before}
+      {line.invoice && <RecordChip kind="invoice" name={line.invoice.name} href={line.invoice.href} className="text-sm font-medium text-current! md:min-h-8" />}
+      {after}
+    </Notice>
   )
 }
 

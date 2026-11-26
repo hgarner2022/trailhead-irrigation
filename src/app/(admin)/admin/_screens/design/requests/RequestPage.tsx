@@ -19,6 +19,7 @@ import { ArchiveDialog, CreateJobDialog, type ChosenService, type CreateMode } f
 import { isQuoteFirst, type ServicePick } from "./request-catalogue"
 import { REQUEST_PILL, SOURCE_WORDS, cameIn, cameInOn, fullName, matchNote, matchOf, matchWords, serviceWords, stateOf, type ArchiveReason, type Match, type RequestData } from "./request-model"
 import { TextLink } from "@/components/blocks/TextLink"
+import { Notice } from "@/components/blocks/Notice"
 
 // A request as a page of its own (docs/plans/2026-11-20-requests-and-quotes-research.md, 4.2 to 4.5; Hannah's answers 2 and 3 of Nov 20 2026), on the
 // record page frame: the person's name with its status, the band (when it came in, what they asked for, where, which customer they match), the customer's
@@ -152,7 +153,7 @@ export function RequestPage({ request, now = NOW.toISOString(), match: matchProp
             <StatusPill status={REQUEST_PILL[state].status} label={REQUEST_PILL[state].label} size="lg" />
           </>
         }
-        notice={archivedNote ? <p role="status" className="rounded-lg border border-border bg-card px-5 py-3 text-sm font-medium shadow-sm">{archivedNote}</p> : undefined}
+        notice={archivedNote ? <Notice tone="page" role="status">{archivedNote}</Notice> : undefined}
         band={<SummaryBand items={band} />}
         asideLabel="About this request"
         actions={actions}
